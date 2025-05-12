@@ -7,6 +7,8 @@ import {
   Form, InsertForm, forms,
   Metrics, InsertMetrics, metrics
 } from "@shared/schema";
+import { eq, like, and, or, desc, asc } from "drizzle-orm";
+import { db } from "./db";
 
 // Storage interface
 export interface IStorage {
@@ -601,4 +603,374 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// Database storage implementation
+
+export class DatabaseStorage implements IStorage {
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values(insertUser)
+      .returning();
+    return user;
+  }
+
+  async getContact(id: number): Promise<Contact | undefined> {
+    const [contact] = await db.select().from(contacts).where(eq(contacts.id, id));
+    return contact || undefined;
+  }
+
+  async getContactByEmail(email: string): Promise<Contact | undefined> {
+    const [contact] = await db.select().from(contacts).where(eq(contacts.email, email));
+    return contact || undefined;
+  }
+
+  async getContactByExternalId(source: string, id: string): Promise<Contact | undefined> {
+    let field: keyof Contact | undefined;
+    
+    if (source === 'close') field = 'closeId';
+    
+    if (!field) return undefined;
+    
+    const [contact] = await db.select().from(contacts).where(eq(contacts[field] as any, id));
+    return contact || undefined;
+  }
+
+  async getAllContacts(limit: number = 50, offset: number = 0): Promise<Contact[]> {
+    return db.select().from(contacts).limit(limit).offset(offset).orderBy(desc(contacts.createdAt));
+  }
+
+  async createContact(contact: InsertContact): Promise<Contact> {
+    const [newContact] = await db.insert(contacts).values(contact).returning();
+    return newContact;
+  }
+
+  async updateContact(id: number, contact: Partial<InsertContact>): Promise<Contact | undefined> {
+    const [updatedContact] = await db
+      .update(contacts)
+      .set(contact)
+      .where(eq(contacts.id, id))
+      .returning();
+    return updatedContact || undefined;
+  }
+
+  async deleteContact(id: number): Promise<boolean> {
+    const result = await db.delete(contacts).where(eq(contacts.id, id));
+    return true; // PostgreSQL doesn't return deleted rows count easily
+  }
+
+  async searchContacts(query: string): Promise<Contact[]> {
+    return db
+      .select()
+      .from(contacts)
+      .where(
+        or(
+          like(contacts.name, `%${query}%`),
+          like(contacts.email, `%${query}%`),
+          like(contacts.company, `%${query}%`),
+          like(contacts.phone, `%${query}%`)
+        )
+      );
+  }
+
+  async getActivity(id: number): Promise<Activity | undefined> {
+    const [activity] = await db.select().from(activities).where(eq(activities.id, id));
+    return activity || undefined;
+  }
+
+  async getActivitiesByContactId(contactId: number): Promise<Activity[]> {
+    return db
+      .select()
+      .from(activities)
+      .where(eq(activities.contactId, contactId))
+      .orderBy(desc(activities.date));
+  }
+
+  async createActivity(activity: InsertActivity): Promise<Activity> {
+    const [newActivity] = await db.insert(activities).values(activity).returning();
+    return newActivity;
+  }
+
+  async deleteActivity(id: number): Promise<boolean> {
+    await db.delete(activities).where(eq(activities.id, id));
+    return true;
+  }
+
+  async getDeal(id: number): Promise<Deal | undefined> {
+    const [deal] = await db.select().from(deals).where(eq(deals.id, id));
+    return deal || undefined;
+  }
+
+  async getDealsByContactId(contactId: number): Promise<Deal[]> {
+    return db
+      .select()
+      .from(deals)
+      .where(eq(deals.contactId, contactId))
+      .orderBy(desc(deals.createdAt));
+  }
+
+  async createDeal(deal: InsertDeal): Promise<Deal> {
+    const [newDeal] = await db.insert(deals).values(deal).returning();
+    return newDeal;
+  }
+
+  async updateDeal(id: number, deal: Partial<InsertDeal>): Promise<Deal | undefined> {
+    const [updatedDeal] = await db
+      .update(deals)
+      .set(deal)
+      .where(eq(deals.id, id))
+      .returning();
+    return updatedDeal || undefined;
+  }
+
+  async deleteDeal(id: number): Promise<boolean> {
+    await db.delete(deals).where(eq(deals.id, id));
+    return true;
+  }
+
+  async getMeeting(id: number): Promise<Meeting | undefined> {
+    const [meeting] = await db.select().from(meetings).where(eq(meetings.id, id));
+    return meeting || undefined;
+  }
+
+  async getMeetingsByContactId(contactId: number): Promise<Meeting[]> {
+    return db
+      .select()
+      .from(meetings)
+      .where(eq(meetings.contactId, contactId))
+      .orderBy(asc(meetings.startTime));
+  }
+
+  async getMeetingByCalendlyEventId(eventId: string): Promise<Meeting | undefined> {
+    const [meeting] = await db
+      .select()
+      .from(meetings)
+      .where(eq(meetings.calendlyEventId, eventId));
+    return meeting || undefined;
+  }
+
+  async createMeeting(meeting: InsertMeeting): Promise<Meeting> {
+    const [newMeeting] = await db.insert(meetings).values(meeting).returning();
+    return newMeeting;
+  }
+
+  async updateMeeting(id: number, meeting: Partial<InsertMeeting>): Promise<Meeting | undefined> {
+    const [updatedMeeting] = await db
+      .update(meetings)
+      .set(meeting)
+      .where(eq(meetings.id, id))
+      .returning();
+    return updatedMeeting || undefined;
+  }
+
+  async deleteMeeting(id: number): Promise<boolean> {
+    await db.delete(meetings).where(eq(meetings.id, id));
+    return true;
+  }
+
+  async getForm(id: number): Promise<Form | undefined> {
+    const [form] = await db.select().from(forms).where(eq(forms.id, id));
+    return form || undefined;
+  }
+
+  async getFormsByContactId(contactId: number): Promise<Form[]> {
+    return db
+      .select()
+      .from(forms)
+      .where(eq(forms.contactId, contactId))
+      .orderBy(desc(forms.submittedAt));
+  }
+
+  async getFormByTypeformResponseId(responseId: string): Promise<Form | undefined> {
+    const [form] = await db
+      .select()
+      .from(forms)
+      .where(eq(forms.typeformResponseId, responseId));
+    return form || undefined;
+  }
+
+  async createForm(form: InsertForm): Promise<Form> {
+    const [newForm] = await db.insert(forms).values(form).returning();
+    return newForm;
+  }
+
+  async updateForm(id: number, form: Partial<InsertForm>): Promise<Form | undefined> {
+    const [updatedForm] = await db
+      .update(forms)
+      .set(form)
+      .where(eq(forms.id, id))
+      .returning();
+    return updatedForm || undefined;
+  }
+
+  async deleteForm(id: number): Promise<boolean> {
+    await db.delete(forms).where(eq(forms.id, id));
+    return true;
+  }
+
+  async getMetrics(date: Date, userId?: string): Promise<Metrics | undefined> {
+    const dateString = date.toISOString().split('T')[0];
+    
+    const conditions = [eq(metrics.date, dateString)];
+    if (userId) {
+      conditions.push(eq(metrics.userId, userId));
+    }
+    
+    const [metric] = await db
+      .select()
+      .from(metrics)
+      .where(and(...conditions));
+    
+    return metric || undefined;
+  }
+
+  async createMetrics(metricsData: InsertMetrics): Promise<Metrics> {
+    const [newMetrics] = await db.insert(metrics).values(metricsData).returning();
+    return newMetrics;
+  }
+
+  async updateMetrics(id: number, metricsData: Partial<InsertMetrics>): Promise<Metrics | undefined> {
+    const [updatedMetrics] = await db
+      .update(metrics)
+      .set(metricsData)
+      .where(eq(metrics.id, id))
+      .returning();
+    return updatedMetrics || undefined;
+  }
+
+  async getDashboardData(date: Date, userId?: string): Promise<any> {
+    // Get metrics for the date
+    const metricsData = await this.getMetrics(date, userId);
+    
+    if (!metricsData || !metricsData.dashboardData) {
+      // Return sample data for now, in production this would be computed from raw data
+      return {
+        kpis: {
+          closedDeals: 4,
+          cashCollected: 125500,
+          revenueGenerated: 195000,
+          totalCalls: 38,
+          call1Taken: 25,
+          call2Taken: 13,
+          closingRate: 31,
+          avgCashCollected: 31375,
+          solutionCallShowRate: 87,
+          earningPerCall2: 9654
+        },
+        salesTeam: [
+          {
+            name: "Josh Sweetnam",
+            id: "user_1",
+            closed: 2,
+            cashCollected: 72000,
+            contractedValue: 110000,
+            calls: 12,
+            call1: 8,
+            call2: 4,
+            call2Sits: 6,
+            closingRate: 50,
+            adminMissingPercent: 10
+          },
+          {
+            name: "Mazin Gazar",
+            id: "user_2",
+            closed: 1,
+            cashCollected: 28500,
+            contractedValue: 45000,
+            calls: 15,
+            call1: 10,
+            call2: 5,
+            call2Sits: 5,
+            closingRate: 20,
+            adminMissingPercent: 5
+          },
+          {
+            name: "Bryann Cabral",
+            id: "user_3",
+            closed: 1,
+            cashCollected: 25000,
+            contractedValue: 40000,
+            calls: 11,
+            call1: 7,
+            call2: 4,
+            call2Sits: 4,
+            closingRate: 25,
+            adminMissingPercent: 15
+          }
+        ],
+        triageMetrics: {
+          booked: 48,
+          sits: 42,
+          showRate: 87.5,
+          solutionBookingRate: 35,
+          cancelRate: 12.5,
+          outboundTriagesSet: 18,
+          totalDirectBookings: 12,
+          directBookingRate: 25
+        },
+        leadMetrics: {
+          newLeads: 75,
+          disqualified: 12,
+          totalDials: 120,
+          pickUpRate: "35%"
+        },
+        advancedMetrics: {
+          costPerClosedWon: 1250,
+          closerSlotUtilization: 85,
+          solutionCallCloseRate: 42,
+          salesCycle: 14,
+          callsToClose: 3.5,
+          profitPerSolutionCall: 4200
+        },
+        missingAdmins: [
+          {
+            assignedTo: "Josh Sweetnam",
+            count: 2,
+            contacts: [
+              {
+                id: 101,
+                name: "Alice Johnson",
+                email: "alice@example.com",
+                eventType: "Solution Call",
+                callDateTime: "2025-03-15T10:00:00"
+              },
+              {
+                id: 102,
+                name: "Bob Smith",
+                email: "bob@example.com",
+                eventType: "Triage Call",
+                callDateTime: "2025-03-16T11:30:00"
+              }
+            ]
+          },
+          {
+            assignedTo: "Mazin Gazar",
+            count: 1,
+            contacts: [
+              {
+                id: 103,
+                name: "Carol White",
+                email: "carol@example.com",
+                eventType: "Solution Call",
+                callDateTime: "2025-03-18T14:00:00"
+              }
+            ]
+          }
+        ]
+      };
+    }
+    
+    return metricsData.dashboardData;
+  }
+}
+
+export const storage = new DatabaseStorage();
