@@ -304,15 +304,20 @@ async function syncLeadOpportunities(leadId: string, contactId: number) {
         const dealData = {
           contactId,
           title: opportunity.opportunity_name || 'Unnamed Deal',
-          stage: opportunity.status_label || 'Unknown',
-          value: opportunity.value || 0,
-          currency: opportunity.value_currency || 'USD',
           status: opportunity.status_type || 'active',
-          sourceId: opportunity.id,
-          sourceType: 'close',
-          date: new Date(opportunity.date_created),
-          dueDate: opportunity.date_won ? new Date(opportunity.date_won) : null,
-          sourceData: JSON.stringify(opportunity)
+          value: opportunity.value_formatted || String(opportunity.value) || null,
+          closeDate: opportunity.date_won ? new Date(opportunity.date_won).toISOString() : null,
+          assignedTo: opportunity.assigned_to_name || null,
+          closeId: opportunity.id,
+          createdAt: new Date(opportunity.date_created),
+          metadata: {
+            status_label: opportunity.status_label,
+            value_currency: opportunity.value_currency,
+            value_period: opportunity.value_period,
+            confidence: opportunity.confidence,
+            lead_name: opportunity.lead_name,
+            opportunity_data: opportunity
+          }
         };
         
         // Check if deal exists by external ID

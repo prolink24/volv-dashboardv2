@@ -1,7 +1,12 @@
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CalendarIcon, FormInput, Phone, Mail, Activity, FileText, TrendingUp, CircleDollarSign } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { CalendarIcon, FormInput, Phone, Mail, Activity, FileText, TrendingUp, CircleDollarSign, ExternalLink, Info, ChevronDown, BarChart, ListFilter } from "lucide-react";
 
 interface TimelineEvent {
   id: number;
@@ -30,10 +35,35 @@ interface AttributionJourneyProps {
 }
 
 export function AttributionJourney({ contact, events }: AttributionJourneyProps) {
+  const [activeTab, setActiveTab] = useState("timeline");
+  const [selectedEventType, setSelectedEventType] = useState<string | null>(null);
+  const [selectedSource, setSelectedSource] = useState<string | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<TimelineEvent | null>(null);
+  
   // Sort events by date
   const sortedEvents = [...events].sort((a, b) => 
     new Date(a.date).getTime() - new Date(b.date).getTime()
   );
+  
+  // Filter events based on selected filters
+  const filteredEvents = sortedEvents.filter(event => {
+    if (selectedEventType && event.type !== selectedEventType) return false;
+    if (selectedSource && event.source !== selectedSource) return false;
+    return true;
+  });
+  
+  // Calculate event type distribution for analytics
+  const eventTypeCounts = events.reduce((acc, event) => {
+    acc[event.type] = (acc[event.type] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  
+  // Calculate source distribution for analytics
+  const sourceCounts = events.reduce((acc, event) => {
+    acc[event.source] = (acc[event.source] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
   
   // Format date for display
   const formatDate = (dateStr: string) => {
@@ -54,6 +84,11 @@ export function AttributionJourney({ contact, events }: AttributionJourneyProps)
     const diffTime = Math.abs(d2.getTime() - d1.getTime());
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
+  
+  // Calculate total journey duration
+  const totalJourneyDays = sortedEvents.length > 0 
+    ? daysBetween(contact.createdAt, sortedEvents[sortedEvents.length - 1].date)
+    : 0;
   
   // Get icon for event type
   const getEventIcon = (type: string, source: string) => {
