@@ -167,22 +167,82 @@ export async function fetchAllResponses(formId: string) {
   }
 }
 
-// Sync all form responses from Typeform to our system
+// Sync all form responses from Typeform to our system with comprehensive data handling
 export async function syncAllResponses() {
   try {
+    console.log('Fetching all Typeform forms...');
     const forms = await fetchAllForms();
-    let totalResponses = 0;
+    console.log(`Found ${forms.length} forms to process`);
     
-    for (const form of forms) {
+    let totalResponses = 0;
+    let successCount = 0;
+    let errorCount = 0;
+    let noEmailCount = 0;
+    
+    // Process each form
+    for (let formIndex = 0; formIndex < forms.length; formIndex++) {
+      const form = forms[formIndex];
+      console.log(`Processing form ${formIndex + 1}/${forms.length}: ${form.title} (${form.id})`);
+      
+      // Fetch all responses for this form
+      console.log(`Fetching responses for form ${form.id}...`);
       const responses = await fetchAllResponses(form.id);
+      console.log(`Found ${responses.length} responses for form ${form.title}`);
       totalResponses += responses.length;
       
-      for (const response of responses) {
-        await syncTypeformResponse(form.id, response.response_id);
+      // Process in batches to prevent memory issues with large datasets
+      const batchSize = 25;
+      const totalBatches = Math.ceil(responses.length / batchSize);
+      
+      for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+        const batchStart = batchIndex * batchSize;
+        const batchEnd = Math.min((batchIndex + 1) * batchSize, responses.length);
+        const batch = responses.slice(batchStart, batchEnd);
+        
+        console.log(`Processing Typeform batch ${batchIndex + 1}/${totalBatches} for form "${form.title}" (responses ${batchStart + 1}-${batchEnd})`);
+        
+        // Process each response in the batch
+        for (const response of batch) {
+          try {
+            const result = await syncTypeformResponse(form.id, response.response_id);
+            if (result) {
+              successCount++;
+            } else {
+              noEmailCount++;
+            }
+          } catch (error) {
+            console.error(`Error syncing response ${response.response_id}:`, error);
+            errorCount++;
+          }
+          
+          // Add a small delay to avoid overwhelming the system
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+        console.log(`Completed batch ${batchIndex + 1}/${totalBatches} for form "${form.title}"`);
+        
+        // Add a larger delay between batches to let the system catch up
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
+      
+      console.log(`Completed processing form ${formIndex + 1}/${forms.length}: ${form.title}`);
     }
     
-    return { success: true, formsCount: forms.length, responsesCount: totalResponses };
+    console.log(`Completed syncing all Typeform responses:`);
+    console.log(`- Forms processed: ${forms.length}`);
+    console.log(`- Total responses: ${totalResponses}`);
+    console.log(`- Successfully synced: ${successCount}`);
+    console.log(`- Failed with errors: ${errorCount}`);
+    console.log(`- No email found: ${noEmailCount}`);
+    
+    return { 
+      success: true, 
+      formsCount: forms.length, 
+      responsesCount: totalResponses,
+      syncedCount: successCount,
+      errorCount: errorCount,
+      noEmailCount: noEmailCount
+    };
   } catch (error) {
     console.error('Error syncing all responses from Typeform:', error);
     throw error;

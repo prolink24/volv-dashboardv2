@@ -172,22 +172,66 @@ export async function fetchAllEvents(minStartTime?: string, maxStartTime?: strin
   }
 }
 
-// Sync all events from Calendly to our system
-export async function syncAllEvents(days = 90) {
+// Sync all events from Calendly to our system - defaults to 365 days to capture more data
+export async function syncAllEvents(days = 365) {
   try {
     const minStartTime = new Date();
     minStartTime.setDate(minStartTime.getDate() - days);
     
+    console.log(`Fetching all Calendly events from ${minStartTime.toISOString()} to now`);
     const events = await fetchAllEvents(minStartTime.toISOString());
+    console.log(`Found ${events.length} events to sync`);
     
-    for (const event of events) {
-      const eventUUID = event.uri.split('/').pop();
-      if (eventUUID) {
-        await syncCalendlyEvent(eventUUID);
+    let successCount = 0;
+    let errorCount = 0;
+    
+    // Process in batches to prevent memory issues with large datasets
+    const batchSize = 25;
+    const totalBatches = Math.ceil(events.length / batchSize);
+    
+    for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+      const batchStart = batchIndex * batchSize;
+      const batchEnd = Math.min((batchIndex + 1) * batchSize, events.length);
+      const batch = events.slice(batchStart, batchEnd);
+      
+      console.log(`Processing Calendly batch ${batchIndex + 1}/${totalBatches} (events ${batchStart + 1}-${batchEnd})`);
+      
+      // Process each event in the batch
+      for (const event of batch) {
+        try {
+          const eventUUID = event.uri.split('/').pop();
+          if (eventUUID) {
+            console.log(`Syncing event ${eventUUID}`);
+            await syncCalendlyEvent(eventUUID);
+            successCount++;
+          }
+        } catch (error) {
+          console.error(`Error syncing event ${event.uri}:`, error);
+          errorCount++;
+        }
+        
+        // Add a small delay to avoid overwhelming the system
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
+      
+      console.log(`Completed Calendly batch ${batchIndex + 1}/${totalBatches}`);
+      console.log(`Progress: ${successCount + errorCount}/${events.length} (${Math.round(((successCount + errorCount) / events.length) * 100)}%)`);
+      
+      // Add a larger delay between batches to let the system catch up
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
     
-    return { success: true, count: events.length };
+    console.log(`Completed syncing Calendly events:`);
+    console.log(`- ${successCount} events synced successfully`);
+    console.log(`- ${errorCount} events failed to sync`);
+    console.log(`Total processed: ${successCount + errorCount} out of ${events.length} (${Math.round(((successCount + errorCount) / events.length) * 100)}%)`);
+    
+    return { 
+      success: true, 
+      count: successCount, 
+      errors: errorCount, 
+      total: events.length 
+    };
   } catch (error) {
     console.error('Error syncing all events from Calendly:', error);
     throw error;

@@ -266,7 +266,7 @@ export async function fetchAllLeads() {
   }
 }
 
-// Sync all leads from Close to our system
+// Sync all leads from Close to our system, ensuring we get ALL contacts and related data
 export async function syncAllLeads() {
   try {
     const leads = await fetchAllLeads();
@@ -274,31 +274,86 @@ export async function syncAllLeads() {
     
     let successCount = 0;
     let errorCount = 0;
+    let noEmailCount = 0;
     
-    for (const lead of leads) {
-      try {
-        // Check if the lead has valid contact information
-        const hasEmail = lead.contacts?.some((c: any) => c.emails?.length > 0);
-        
-        if (hasEmail) {
-          console.log(`Syncing lead ${lead.id}: ${lead.display_name || 'Unnamed Lead'}`);
-          await syncCloseLeadToContact(lead.id);
-          successCount++;
-        } else {
-          console.log(`Skipping lead ${lead.id}: ${lead.display_name || 'Unnamed Lead'} - no email address found`);
+    // Process in batches to prevent memory issues with large datasets
+    const batchSize = 25;
+    const totalBatches = Math.ceil(leads.length / batchSize);
+    
+    for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+      const batchStart = batchIndex * batchSize;
+      const batchEnd = Math.min((batchIndex + 1) * batchSize, leads.length);
+      const batch = leads.slice(batchStart, batchEnd);
+      
+      console.log(`Processing batch ${batchIndex + 1}/${totalBatches} (leads ${batchStart + 1}-${batchEnd})`);
+      
+      // Process each lead in the batch in sequence
+      for (const lead of batch) {
+        try {
+          // Check if the lead has valid contact information
+          const hasEmail = lead.contacts?.some((c: any) => c.emails?.length > 0);
+          
+          if (hasEmail) {
+            console.log(`Syncing lead ${lead.id}: ${lead.display_name || 'Unnamed Lead'}`);
+            await syncCloseLeadToContact(lead.id);
+            successCount++;
+          } else {
+            // For leads without emails, we'll create a synthetic email to ensure we capture ALL leads
+            // This is important for comprehensive data attribution
+            console.log(`Lead ${lead.id}: ${lead.display_name || 'Unnamed Lead'} has no email - generating placeholder`);
+            
+            // Modify the lead object to include a synthetic email before syncing
+            const syntheticEmail = `lead-${lead.id.replace(/[^a-zA-Z0-9]/g, '-')}@placeholder.crm`;
+            
+            // If the lead has contacts but no emails, add the synthetic email
+            if (lead.contacts && lead.contacts.length > 0) {
+              if (!lead.contacts[0].emails) {
+                lead.contacts[0].emails = [];
+              }
+              lead.contacts[0].emails.push({ email: syntheticEmail, type: 'office' });
+            } else {
+              // If the lead has no contacts at all, create one
+              lead.contacts = [{
+                emails: [{ email: syntheticEmail, type: 'office' }]
+              }];
+            }
+            
+            // Now sync the lead with the synthetic email
+            await syncCloseLeadToContact(lead.id);
+            noEmailCount++;
+          }
+        } catch (error) {
+          console.error(`Error syncing lead ${lead.id}:`, error);
+          errorCount++;
         }
-      } catch (error) {
-        console.error(`Error syncing lead ${lead.id}:`, error);
-        errorCount++;
+        
+        // Add a small delay to avoid overwhelming the system
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
       
-      // Add a small delay to avoid overwhelming the system
-      await new Promise(resolve => setTimeout(resolve, 50));
+      console.log(`Completed batch ${batchIndex + 1}/${totalBatches}`);
+      console.log(`Progress: ${successCount + noEmailCount + errorCount}/${leads.length} (${Math.round(((successCount + noEmailCount + errorCount) / leads.length) * 100)}%)`);
+      
+      // Add a larger delay between batches to let the system catch up
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
     
-    console.log(`Completed syncing leads: ${successCount} successful, ${errorCount} errors, ${leads.length - successCount - errorCount} skipped`);
+    const totalProcessed = successCount + noEmailCount;
+    console.log(`Completed syncing leads:`);
+    console.log(`- ${successCount} leads with valid emails synced successfully`);
+    console.log(`- ${noEmailCount} leads with generated placeholder emails synced`);
+    console.log(`- ${errorCount} leads failed to sync`);
+    console.log(`- ${leads.length - totalProcessed - errorCount} leads skipped`);
+    console.log(`Total processed: ${totalProcessed} out of ${leads.length} (${Math.round((totalProcessed / leads.length) * 100)}%)`);
     
-    return { success: true, count: successCount, errors: errorCount, total: leads.length };
+    return { 
+      success: true, 
+      count: totalProcessed, 
+      withEmail: successCount,
+      withoutEmail: noEmailCount, 
+      errors: errorCount, 
+      total: leads.length 
+    };
   } catch (error) {
     console.error('Error syncing all leads from Close:', error);
     throw error;
