@@ -635,14 +635,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getContactByExternalId(source: string, id: string): Promise<Contact | undefined> {
-    let field: keyof Contact | undefined;
-    
-    if (source === 'close') field = 'closeId';
-    
-    if (!field) return undefined;
-    
-    const [contact] = await db.select().from(contacts).where(eq(contacts[field] as any, id));
-    return contact || undefined;
+    // Use the sourceId field combined with leadSource to find the contact
+    try {
+      const [contact] = await db.select()
+        .from(contacts)
+        .where(
+          and(
+            eq(contacts.sourceId, id),
+            eq(contacts.leadSource, source)
+          )
+        );
+      return contact || undefined;
+    } catch (error) {
+      console.error(`Error in getContactByExternalId(${source}, ${id}):`, error);
+      return undefined;
+    }
   }
 
   async getAllContacts(limit: number = 50, offset: number = 0): Promise<Contact[]> {
