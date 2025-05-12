@@ -31,6 +31,7 @@ function Router() {
           <Route path="/analytics" component={Analytics} />
           <Route path="/settings" component={Settings} />
           <Route path="/attribution-journey" component={AttributionJourney} />
+          <Route path="/attribution-journey/:id" component={AttributionJourney} />
           <Route component={NotFound} />
         </Switch>
       </div>

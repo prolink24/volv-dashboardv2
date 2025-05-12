@@ -7,7 +7,7 @@ import calendlyApi from "./api/calendly";
 import typeformApi from "./api/typeform";
 import attributionService from "./services/attribution";
 import syncService from "./services/sync";
-import syncStatus from "./api/sync-status";
+import * as syncStatus from "./api/sync-status";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
