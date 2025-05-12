@@ -133,7 +133,7 @@ async function syncAllLeads() {
               status: lead.status_label || 'unknown',
               sourceId: lead.id,
               sourceData: JSON.stringify(lead),
-              createdAt: new Date(lead.date_created).toISOString()
+              createdAt: new Date(lead.date_created) // Pass Date object, not ISO string
             };
             
             // Extract email if available
@@ -310,8 +310,8 @@ async function syncLeadOpportunities(leadId: string, contactId: number) {
           status: opportunity.status_type || 'active',
           sourceId: opportunity.id,
           sourceType: 'close',
-          date: new Date(opportunity.date_created).toISOString(),
-          dueDate: opportunity.date_won ? new Date(opportunity.date_won).toISOString() : null,
+          date: new Date(opportunity.date_created),
+          dueDate: opportunity.date_won ? new Date(opportunity.date_won) : null,
           sourceData: JSON.stringify(opportunity)
         };
         
@@ -368,7 +368,7 @@ async function syncLeadActivities(leadId: string, contactId: number) {
               type: type,
               title: activity.subject || `${type} activity`,
               description: activity.note || '',
-              date: new Date(activity.date_created).toISOString(),
+              date: new Date(activity.date_created),
               status: activity.is_complete ? 'completed' : 'pending',
               sourceId: activity.id,
               sourceType: 'close',
