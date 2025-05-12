@@ -13,6 +13,8 @@ export async function syncAllData() {
     console.log('This process will import ALL data from Close CRM, Calendly, and Typeform');
     console.log('For large datasets (5000+ contacts), this may take some time');
     
+    // Initialize sync status tracking
+    syncStatus.initializeSyncStatus();
     const startTime = Date.now();
     
     // Sync data from Close CRM - getting ALL leads/contacts
@@ -20,7 +22,19 @@ export async function syncAllData() {
     console.log('Syncing leads, contacts, opportunities, activities from Close CRM...');
     console.log('This will fetch ALL leads and process in batches to handle large datasets');
     
+    syncStatus.setCurrentPhase('close');
+    
+    // Get Close API data
     const closeResult = await closeApi.syncAllLeads();
+    
+    // Update sync status with Close results
+    syncStatus.updateCloseStatus({
+      totalLeads: closeResult.total,
+      processedLeads: closeResult.total,
+      importedContacts: closeResult.count,
+      errors: closeResult.errors,
+      percentComplete: 100
+    });
     
     console.log('\nClose CRM Sync Summary:');
     console.log(`Total leads processed: ${closeResult.total}`);
@@ -34,7 +48,19 @@ export async function syncAllData() {
     console.log('Syncing all events, invitees and meetings from Calendly...');
     console.log('This will fetch a full year of calendar data for complete attribution');
     
-    const calendlyResult = await calendlyApi.syncAllEvents(365); // Get a full year of data
+    syncStatus.setCurrentPhase('calendly');
+    
+    // Get Calendly data for a full year
+    const calendlyResult = await calendlyApi.syncAllEvents(365);
+    
+    // Update sync status with Calendly results
+    syncStatus.updateCalendlyStatus({
+      totalEvents: calendlyResult.total,
+      processedEvents: calendlyResult.total,
+      importedMeetings: calendlyResult.count,
+      errors: calendlyResult.errors,
+      percentComplete: 100
+    });
     
     console.log('\nCalendly Sync Summary:');
     console.log(`Total events processed: ${calendlyResult.total}`);
@@ -46,7 +72,20 @@ export async function syncAllData() {
     console.log('Syncing all forms and responses from Typeform...');
     console.log('This will process ALL historical form submissions for complete data integration');
     
+    syncStatus.setCurrentPhase('typeform');
+    
+    // Get Typeform data
     const typeformResult = await typeformApi.syncAllResponses();
+    
+    // Update sync status with Typeform results
+    syncStatus.updateTypeformStatus({
+      totalForms: typeformResult.formsCount,
+      totalResponses: typeformResult.responsesCount,
+      processedResponses: typeformResult.responsesCount,
+      importedSubmissions: typeformResult.syncedCount,
+      errors: typeformResult.errorCount || 0,
+      percentComplete: 100
+    });
     
     console.log('\nTypeform Sync Summary:');
     console.log(`Forms processed: ${typeformResult.formsCount}`);
@@ -59,10 +98,14 @@ export async function syncAllData() {
     const allContacts = await storage.getAllContacts(10000);
     console.log(`\nTotal contacts in database after sync: ${allContacts.length}`);
     
+    // Update status with total contact count
+    syncStatus.setTotalContacts(allContacts.length);
+    
     // Run attribution on all contacts to ensure complete data linkage
     console.log('\n=== RUNNING CONTACT ATTRIBUTION ===');
     console.log('Attributing all contacts across platforms to create unified customer journeys...');
     
+    syncStatus.setCurrentPhase('attribution');
     const attributionResult = await attributionService.attributeAllContacts();
     
     console.log('\nAttribution Summary:');
@@ -72,6 +115,7 @@ export async function syncAllData() {
     console.log('\n=== CALCULATING METRICS ===');
     console.log('Generating KPIs and metrics from the unified dataset...');
     
+    syncStatus.setCurrentPhase('metrics');
     await calculateMetrics();
     
     const endTime = Date.now();
@@ -84,6 +128,9 @@ export async function syncAllData() {
     console.log(`Total contacts in system: ${allContacts.length}`);
     console.log(`Next automatic sync scheduled in 60 minutes`);
     
+    // Mark sync as completed
+    syncStatus.setCurrentPhase('completed');
+    
     return {
       success: true,
       close: closeResult,
@@ -95,6 +142,7 @@ export async function syncAllData() {
     };
   } catch (error) {
     console.error('Error during comprehensive data sync:', error);
+    syncStatus.setSyncError(error.message || 'Unknown error during sync');
     throw error;
   }
 }

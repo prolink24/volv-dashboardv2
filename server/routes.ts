@@ -7,6 +7,7 @@ import calendlyApi from "./api/calendly";
 import typeformApi from "./api/typeform";
 import attributionService from "./services/attribution";
 import syncService from "./services/sync";
+import syncStatus from "./api/sync-status";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -162,6 +163,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to fetch metrics" });
     }
   });
+  
+  // Sync status endpoint - get current sync status for the frontend
+  apiRouter.get("/sync/status", async (req: Request, res: Response) => {
+    try {
+      const status = syncStatus.getSyncStatus();
+      res.json(status);
+    } catch (error) {
+      console.error("Error fetching sync status:", error);
+      res.status(500).json({ error: "Failed to fetch sync status" });
+    }
+  });
 
   // Register API routes with prefix
   app.use("/api", apiRouter);
@@ -174,5 +186,3 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
   return httpServer;
 }
-
-import express from "express";
