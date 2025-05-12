@@ -163,28 +163,32 @@ async function syncAllEvents() {
                     status: 'lead',
                     sourceId: invitee.uri,
                     sourceData: JSON.stringify(invitee),
-                    createdAt: new Date(invitee.created_at).toISOString()
+                    createdAt: new Date(invitee.created_at)
                   };
                   
                   contact = await storage.createContact(contactData);
                 }
                 
                 // Create the meeting record
+                const startTime = new Date(event.start_time);
+                const endTime = new Date(event.end_time);
+                
                 const meetingData = {
                   contactId: contact.id,
                   title: event.name || 'Calendly Meeting',
-                  description: eventDetails.description || '',
-                  date: new Date(event.start_time).toISOString(),
-                  duration: Math.round((new Date(event.end_time).getTime() - new Date(event.start_time).getTime()) / 60000),
+                  type: event.event_type || 'meeting',
                   status: event.status,
-                  location: event.location?.join(', ') || 'Virtual',
-                  sourceId: event.uri,
-                  sourceType: 'calendly',
-                  sourceData: JSON.stringify({
+                  calendlyEventId: event.uri,
+                  startTime,
+                  endTime,
+                  assignedTo: null,
+                  metadata: {
+                    location: event.location?.join(', ') || 'Virtual',
+                    description: eventDetails.description || '',
                     event: event,
                     invitee: invitee,
                     details: eventDetails
-                  })
+                  }
                 };
                 
                 // Check if meeting already exists by source ID
