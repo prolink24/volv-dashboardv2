@@ -28,17 +28,30 @@ const statusMap: Record<string, string> = {
 // Sync a lead from Close to our system
 export async function syncCloseLeadToContact(leadId: string) {
   try {
+    console.log(`Processing lead ID: ${leadId}`);
+    
     // Check if we already have this lead
     const existingContact = await storage.getContactByExternalId('close', leadId);
+    console.log(`Existing contact for lead ${leadId}: ${existingContact ? 'Yes (ID: ' + existingContact.id + ')' : 'No'}`);
     
     // Fetch lead data from Close
+    console.log(`Fetching lead data from Close for lead ID: ${leadId}`);
     const response = await closeApi.get(`/lead/${leadId}`);
     const leadData = response.data;
+    
+    // Check if lead has valid email
+    const email = leadData.contacts?.[0]?.emails?.[0]?.email;
+    if (!email) {
+      console.warn(`Lead ${leadId} (${leadData.display_name || 'Unnamed'}) has no email - cannot create contact`);
+      throw new Error('Lead has no email address');
+    }
+    
+    console.log(`Creating contact data for ${leadData.display_name}, email: ${email}`);
     
     // Extract contact data
     const contactData: InsertContact = {
       name: leadData.display_name || 'Unknown',
-      email: leadData.contacts?.[0]?.emails?.[0]?.email || '',
+      email: email,
       phone: leadData.contacts?.[0]?.phones?.[0]?.phone || '',
       company: leadData.company || '',
       title: leadData.contacts?.[0]?.title || '',
@@ -52,21 +65,39 @@ export async function syncCloseLeadToContact(leadId: string) {
     let contact;
     if (existingContact) {
       // Update existing contact
+      console.log(`Updating existing contact ID ${existingContact.id} for lead ${leadId}`);
       contact = await storage.updateContact(existingContact.id, contactData);
     } else {
       // Create new contact
-      contact = await storage.createContact(contactData);
+      console.log(`Creating new contact for lead ${leadId}`);
+      try {
+        contact = await storage.createContact(contactData);
+        console.log(`Successfully created contact ID ${contact.id} for lead ${leadId}`);
+      } catch (dbError: any) {
+        console.error(`Database error creating contact for lead ${leadId}:`, dbError.message);
+        if (dbError.code) {
+          console.error(`SQL error code: ${dbError.code}`);
+        }
+        throw dbError;
+      }
+    }
+    
+    if (!contact) {
+      throw new Error(`Failed to create or update contact for lead ${leadId}`);
     }
     
     // Sync activities
-    await syncCloseActivities(leadId, contact!.id);
+    console.log(`Syncing activities for lead ${leadId}, contact ID ${contact.id}`);
+    await syncCloseActivities(leadId, contact.id);
     
     // Sync opportunities (deals)
-    await syncCloseOpportunities(leadId, contact!.id);
+    console.log(`Syncing opportunities for lead ${leadId}, contact ID ${contact.id}`);
+    await syncCloseOpportunities(leadId, contact.id);
     
+    console.log(`Successfully synced lead ${leadId} to contact ID ${contact.id}`);
     return contact;
-  } catch (error) {
-    console.error('Error syncing Close lead:', error);
+  } catch (error: any) {
+    console.error(`Error syncing Close lead ${leadId}:`, error.message);
     throw error;
   }
 }
@@ -247,7 +278,7 @@ export async function syncAllLeads() {
     for (const lead of leads) {
       try {
         // Check if the lead has valid contact information
-        const hasEmail = lead.contacts?.some(c => c.emails?.length > 0);
+        const hasEmail = lead.contacts?.some((c: any) => c.emails?.length > 0);
         
         if (hasEmail) {
           console.log(`Syncing lead ${lead.id}: ${lead.display_name || 'Unnamed Lead'}`);
