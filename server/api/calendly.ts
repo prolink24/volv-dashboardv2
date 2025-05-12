@@ -318,9 +318,64 @@ async function getEventInvitees(eventUri: string) {
   }
 }
 
+/**
+ * Fetch a limited number of events for testing purposes
+ * @param limit Maximum number of events to fetch
+ */
+async function fetchEvents(limit: number = 5) {
+  try {
+    // First, test the API connection
+    const connectionTest = await testApiConnection();
+    if (!connectionTest.success) {
+      throw new Error(`Calendly API connection failed: ${connectionTest.error}`);
+    }
+    
+    // Get the current user's organization
+    const currentUser = connectionTest.user;
+    const organizationUri = currentUser.current_organization;
+    const userId = currentUser.uri;
+    
+    console.log(`Fetching up to ${limit} events from Calendly API for testing...`);
+    
+    // Calculate date range for recent events (last 3 months)
+    const now = new Date();
+    const threeMonthsAgo = new Date(now);
+    threeMonthsAgo.setMonth(now.getMonth() - 3);
+    
+    const response = await calendlyApiClient.get('/scheduled_events', {
+      params: {
+        organization: organizationUri,
+        count: limit,
+        min_start_time: threeMonthsAgo.toISOString(),
+        max_start_time: now.toISOString(),
+        sort: 'start_time:desc'
+      }
+    });
+    
+    // Map to a simpler event structure
+    const events = (response.data.collection || []).map((event: any) => {
+      return {
+        id: event.uri.split('/').pop(),
+        uri: event.uri,
+        name: event.name,
+        eventType: event.event_type,
+        startTime: event.start_time,
+        endTime: event.end_time,
+        status: event.status
+      };
+    });
+    
+    return events;
+  } catch (error: any) {
+    console.error('Error fetching events for testing:', error.message);
+    throw error;
+  }
+}
+
 export default {
   syncAllEvents,
   getEventDetails,
   getEventInvitees,
-  testApiConnection
+  testApiConnection,
+  fetchEvents
 };

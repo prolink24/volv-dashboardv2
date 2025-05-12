@@ -494,10 +494,82 @@ function extractCompanyFromResponse(response: any, formDetails: any) {
   return null;
 }
 
+/**
+ * Fetch a limited number of form responses for testing purposes
+ * @param limit Maximum number of responses to fetch
+ */
+async function fetchResponses(limit: number = 5) {
+  try {
+    // First, test the API connection
+    const connectionTest = await testApiConnection();
+    if (!connectionTest.success) {
+      throw new Error(`Typeform API connection failed: ${connectionTest.error}`);
+    }
+    
+    console.log(`Fetching up to ${limit} form responses from Typeform API for testing...`);
+    
+    // First, get available forms
+    const forms = await getAllForms();
+    
+    if (!forms || forms.length === 0) {
+      console.log('No forms found in Typeform account');
+      return [];
+    }
+    
+    console.log(`Found ${forms.length} forms in Typeform account`);
+    
+    // Get responses from the most recent form
+    const form = forms[0];
+    console.log(`Fetching responses for form: ${form.title} (${form.id})`);
+    
+    const response = await typeformApiClient.get(`/forms/${form.id}/responses`, {
+      params: {
+        page_size: limit,
+        completed: true
+      }
+    });
+    
+    // Map to a simpler response structure
+    const responses = (response.data.items || []).map((item: any) => {
+      // Extract email and name from answers if available
+      let email = '';
+      let name = '';
+      
+      if (item.answers && item.answers.length > 0) {
+        for (const answer of item.answers) {
+          if (answer.type === 'email') {
+            email = answer.email;
+          }
+          if (answer.type === 'text' && (answer.field.ref.includes('name') || answer.field.ref.includes('Name'))) {
+            name = answer.text;
+          }
+        }
+      }
+      
+      return {
+        id: item.token,
+        formId: form.id,
+        formName: form.title,
+        submittedAt: item.submitted_at,
+        email,
+        name,
+        hidden: item.hidden || {},
+        answers: item.answers || []
+      };
+    });
+    
+    return responses;
+  } catch (error: any) {
+    console.error('Error fetching form responses for testing:', error.message);
+    throw error;
+  }
+}
+
 export default {
   syncAllResponses,
   getAllForms,
   getFormDetails,
   getFormResponses,
-  testApiConnection
+  testApiConnection,
+  fetchResponses
 };

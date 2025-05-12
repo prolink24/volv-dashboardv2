@@ -413,10 +413,37 @@ async function syncLeadActivities(leadId: string, contactId: number) {
   }
 }
 
+/**
+ * Fetch a limited number of leads for testing purposes
+ * @param limit Maximum number of leads to fetch
+ */
+async function fetchLeads(limit: number = 5) {
+  try {
+    // First, test the API connection
+    const connectionTest = await testApiConnection();
+    if (!connectionTest.success) {
+      throw new Error(`Close API connection failed: ${connectionTest.error}`);
+    }
+    
+    console.log(`Fetching up to ${limit} leads from Close API for testing...`);
+    const response = await closeApiClient.get('/lead/', {
+      params: {
+        _limit: limit
+      }
+    });
+    
+    return response.data.data || [];
+  } catch (error: any) {
+    console.error('Error fetching leads for testing:', error.message);
+    throw error;
+  }
+}
+
 export default {
   syncAllLeads,
   getLeadDetails,
   syncLeadOpportunities,
   syncLeadActivities,
-  testApiConnection
+  testApiConnection,
+  fetchLeads
 };
