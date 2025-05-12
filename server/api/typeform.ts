@@ -137,7 +137,7 @@ async function syncAllResponses() {
                 status: 'lead',
                 sourceId: response.token,
                 sourceData: JSON.stringify(response),
-                createdAt: new Date(response.submitted_at).toISOString()
+                createdAt: new Date(response.submitted_at)
               };
               
               contact = await storage.createContact(contactData);
@@ -146,20 +146,16 @@ async function syncAllResponses() {
             // Create form submission record
             const formData = {
               contactId: contact.id,
-              title: form.title,
-              description: formDetails.title || form.title,
-              formId: form.id,
-              responseId: response.token,
-              date: new Date(response.submitted_at).toISOString(),
-              source: 'typeform',
-              sourceId: response.token,
-              answers: JSON.stringify(response.answers),
-              metadata: JSON.stringify({
-                form: form,
-                response: response,
+              typeformResponseId: response.token,
+              formName: form.title,
+              submittedAt: new Date(response.submitted_at),
+              answers: {
+                data: response.answers,
                 hiddenFields: response.hidden || {},
-                calculatedFields: response.calculated || {}
-              })
+                calculatedFields: response.calculated || {},
+                formData: form,
+                formDetails: formDetails
+              }
             };
             
             // Check if form response already exists

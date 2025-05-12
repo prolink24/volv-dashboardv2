@@ -369,10 +369,13 @@ async function syncLeadActivities(leadId: string, contactId: number) {
               title: activity.subject || `${type} activity`,
               description: activity.note || '',
               date: new Date(activity.date_created),
-              status: activity.is_complete ? 'completed' : 'pending',
+              source: 'close',
               sourceId: activity.id,
-              sourceType: 'close',
-              sourceData: JSON.stringify(activity)
+              metadata: {
+                status: activity.is_complete ? 'completed' : 'pending',
+                activityType: type,
+                activityData: activity
+              }
             };
             
             // Check if activity exists by external ID

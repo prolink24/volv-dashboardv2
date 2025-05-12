@@ -701,6 +701,27 @@ export class DatabaseStorage implements IStorage {
       .where(eq(activities.contactId, contactId))
       .orderBy(desc(activities.date));
   }
+  
+  async getActivityBySourceId(source: string, id: string): Promise<Activity | undefined> {
+    const [activity] = await db.select()
+      .from(activities)
+      .where(
+        and(
+          eq(activities.sourceId, id),
+          eq(activities.source, source)
+        )
+      );
+    return activity || undefined;
+  }
+  
+  async updateActivity(id: number, activity: Partial<InsertActivity>): Promise<Activity | undefined> {
+    const [updatedActivity] = await db
+      .update(activities)
+      .set(activity)
+      .where(eq(activities.id, id))
+      .returning();
+    return updatedActivity || undefined;
+  }
 
   async createActivity(activity: InsertActivity): Promise<Activity> {
     const [newActivity] = await db.insert(activities).values(activity).returning();
@@ -723,6 +744,18 @@ export class DatabaseStorage implements IStorage {
       .from(deals)
       .where(eq(deals.contactId, contactId))
       .orderBy(desc(deals.createdAt));
+  }
+  
+  async getDealBySourceId(source: string, id: string): Promise<Deal | undefined> {
+    // Use the closeId field for deals from Close
+    if (source === 'close') {
+      const [deal] = await db.select()
+        .from(deals)
+        .where(eq(deals.closeId, id));
+      return deal || undefined;
+    }
+    
+    return undefined;
   }
 
   async createDeal(deal: InsertDeal): Promise<Deal> {
