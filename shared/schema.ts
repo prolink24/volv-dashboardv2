@@ -28,12 +28,11 @@ export const contacts = pgTable("contacts", {
   phone: text("phone"),
   company: text("company"),
   title: text("title"),
-  closeId: text("close_id"),
-  calendlyId: text("calendly_id"),
-  typeformId: text("typeform_id"),
+  sourceId: text("source_id"),           // External ID from the source system
+  sourceData: jsonb("source_data"),      // Raw data from the source system
   lastActivityDate: timestamp("last_activity_date"),
   createdAt: timestamp("created_at").defaultNow(),
-  leadSource: text("lead_source"),
+  leadSource: text("lead_source"),       // "close", "calendly", "typeform"
   status: text("status").default("lead"),
   assignedTo: text("assigned_to"),
   notes: text("notes"),

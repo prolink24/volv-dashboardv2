@@ -1,188 +1,277 @@
 /**
- * Comprehensive Data Sync Service
+ * Synchronization Service
  * 
- * This service coordinates data synchronization from multiple external sources:
- * - Close CRM (leads, contacts, opportunities, activities)
- * - Calendly (scheduled meetings)
- * - Typeform (form submissions)
+ * This service coordinates the synchronization of data from all platforms
+ * (Close CRM, Calendly, Typeform) and maintains the sync status.
+ * It handles sequential execution, error handling, and reporting.
  */
 
-import { storage } from '../storage';
+import closeAPI from '../api/close';
+import calendlyAPI from '../api/calendly';
+import typeformAPI from '../api/typeform';
 import * as syncStatus from '../api/sync-status';
+import { storage } from '../storage';
 
-// Mock APIs for now, will implement these once their modules are created
-const closeApi = {
-  syncAllLeads: async () => ({ 
-    success: true, 
-    count: 0, 
-    withEmail: 0, 
-    withoutEmail: 0, 
-    errors: 0, 
-    total: 0,
-    importedContacts: 0 
-  })
-};
-
-const calendlyApi = {
-  syncAllEvents: async () => ({ 
-    success: true, 
-    count: 0, 
-    errors: 0, 
-    total: 0,
-    importedMeetings: 0 
-  })
-};
-
-const typeformApi = {
-  syncAllResponses: async () => ({ 
-    success: true, 
-    formsCount: 0, 
-    responsesCount: 0, 
-    syncedCount: 0, 
-    errorCount: 0, 
-    noEmailCount: 0,
-    importedResponses: 0 
-  })
-};
-
-// Attribution service mock
-const attributionService = {
-  attributeContact: async (id: number) => ({ success: true })
-};
-
-// Track whether a sync is currently in progress
-let syncInProgress = false;
-let syncTimer: NodeJS.Timeout | null = null;
+// Cache schedule state
+let syncIntervalId: NodeJS.Timeout | null = null;
+let isInitialSyncCompleted = false;
 
 /**
- * Synchronize all data from all integrations
- * Handles large datasets (5000+ contacts) using batch processing
+ * Start an automatic sync schedule
+ * This will sync data periodically (every hour by default)
+ * 
+ * @param intervalMinutes Time between syncs in minutes (default: 60)
  */
-export async function syncAllData() {
-  if (syncInProgress) {
-    return { success: false, message: "Sync already in progress" };
-  }
-
-  syncInProgress = true;
-  console.log('======================================');
-  console.log('STARTING COMPREHENSIVE DATA SYNC');
-  console.log('======================================');
-  console.log('This process will import ALL data from Close CRM, Calendly, and Typeform');
-  console.log('For large datasets (5000+ contacts), this may take some time');
-
-  // Initialize sync status
-  syncStatus.startSync();
-
-  try {
-    // Step 1: Sync Close CRM data
-    console.log('=== SYNCING CLOSE CRM DATA ===');
-    console.log('Syncing leads, contacts, opportunities, activities from Close CRM...');
-    console.log('This will fetch ALL leads and process in batches to handle large datasets');
-    const closeResult = await closeApi.syncAllLeads();
-    
-    // Step 2: Sync Calendly data
-    console.log('=== SYNCING CALENDLY DATA ===');
-    console.log('Syncing meetings and scheduled events from Calendly...');
-    console.log('This will fetch a full year of calendar data');
-    const calendlyResult = await calendlyApi.syncAllEvents();
-    
-    // Step 3: Sync Typeform data
-    console.log('=== SYNCING TYPEFORM DATA ===');
-    console.log('Syncing form submissions from Typeform...');
-    console.log('This will process ALL historical form submissions');
-    const typeformResult = await typeformApi.syncAllResponses();
-    
-    // Step 4: Run attribution across all platforms
-    console.log('=== RUNNING ATTRIBUTION ===');
-    console.log('Attributing contacts across all platforms...');
-    syncStatus.updateAttributionStatus(0);
-    
-    const totalContacts = await storage.getAllContacts(10000, 0);
-    let processedContacts = 0;
-    
-    // Process contacts in batches for attribution
-    const batchSize = 100;
-    for (let i = 0; i < totalContacts.length; i += batchSize) {
-      const batch = totalContacts.slice(i, i + batchSize);
-      
-      for (const contact of batch) {
-        try {
-          await attributionService.attributeContact(contact.id);
-        } catch (error) {
-          console.error(`Error attributing contact ${contact.id}:`, error);
-        }
-        
-        processedContacts++;
-        
-        // Update attribution status
-        const percentComplete = Math.round((processedContacts / totalContacts.length) * 100);
-        syncStatus.updateAttributionStatus(percentComplete);
-      }
-    }
-    
-    // Step 5: Calculate and store metrics
-    console.log('=== CALCULATING METRICS ===');
-    // Generate metrics based on the synced data
-    // This would typically aggregate data across all platforms
-    
-    // Mark sync as complete
-    console.log('=== SYNC COMPLETE ===');
-    syncStatus.completeSync(totalContacts.length);
-    
-    syncInProgress = false;
-    return {
-      success: true,
-      counts: {
-        contacts: closeResult.importedContacts,
-        meetings: calendlyResult.importedMeetings,
-        forms: typeformResult.importedResponses
-      },
-      message: "Data sync completed successfully"
-    };
-  } catch (error: any) {
-    console.error('=== SYNC ERROR ===', error);
-    syncStatus.completeSync(
-      (await storage.getAllContacts()).length,
-      error?.message || "Unknown error during sync"
-    );
-    syncInProgress = false;
-    
-    return {
-      success: false,
-      error: error?.message || "Unknown error",
-      message: "Data sync failed"
-    };
-  }
-}
-
-/**
- * Schedule regular data sync at specified interval (in minutes)
- */
-export function scheduleRegularSync(intervalMinutes: number = 60) {
-  // Clear any existing timer
-  if (syncTimer) {
-    clearInterval(syncTimer);
+export function startSyncSchedule(intervalMinutes = 60) {
+  // Clear any existing schedule
+  if (syncIntervalId) {
+    clearInterval(syncIntervalId);
   }
   
   // Convert minutes to milliseconds
-  const interval = intervalMinutes * 60 * 1000;
+  const intervalMs = intervalMinutes * 60 * 1000;
   
   console.log(`Scheduling regular data sync every ${intervalMinutes} minutes`);
   
-  // Schedule the sync
-  syncTimer = setInterval(async () => {
-    if (!syncInProgress) {
-      console.log(`Running scheduled data sync (${new Date().toISOString()})`);
-      await syncAllData();
-    } else {
-      console.log(`Skipping scheduled sync - another sync is in progress`);
-    }
-  }, interval);
+  // Run the first sync immediately if we've never synced
+  if (!isInitialSyncCompleted) {
+    // We'll run initial sync async to not block startup
+    setTimeout(() => {
+      syncAll()
+        .then(() => {
+          isInitialSyncCompleted = true;
+        })
+        .catch(error => {
+          console.error('Initial data sync failed:', error);
+          // We'll try again on the next scheduled interval
+        });
+    }, 10000); // Small delay to ensure server is fully up
+  }
   
-  return { success: true, message: `Regular sync scheduled every ${intervalMinutes} minutes` };
+  // Schedule regular syncs
+  syncIntervalId = setInterval(() => {
+    console.log('Running scheduled data sync...');
+    syncAll()
+      .then(() => {
+        console.log('Scheduled data sync completed');
+      })
+      .catch(error => {
+        console.error('Scheduled data sync failed:', error);
+      });
+  }, intervalMs);
+  
+  return { 
+    success: true, 
+    message: `Sync scheduled every ${intervalMinutes} minutes` 
+  };
+}
+
+/**
+ * Stop the automatic sync schedule
+ */
+export function stopSyncSchedule() {
+  if (syncIntervalId) {
+    clearInterval(syncIntervalId);
+    syncIntervalId = null;
+    return { success: true, message: 'Sync schedule stopped' };
+  }
+  
+  return { success: false, message: 'No sync schedule was active' };
+}
+
+/**
+ * Synchronize data from all platforms
+ * This is the main entry point for data synchronization
+ */
+export async function syncAll() {
+  let totalContacts = 0;
+  
+  try {
+    // Sync Close CRM
+    try {
+      syncStatus.startSync('close');
+      console.log('Starting Close CRM sync...');
+      
+      const closeSyncResult = await closeAPI.syncAllLeads();
+      
+      if (!closeSyncResult.success) {
+        throw new Error(`Close CRM sync failed: ${closeSyncResult.error}`);
+      }
+      
+      console.log(`Close CRM sync completed. Imported ${closeSyncResult.count} contacts`);
+    } catch (error: any) {
+      console.error('Close CRM sync error:', error);
+      syncStatus.setSyncError(`Close CRM sync error: ${error.message}`);
+      throw error;
+    }
+    
+    // Sync Calendly
+    try {
+      syncStatus.startSync('calendly');
+      console.log('Starting Calendly sync...');
+      
+      const calendlySyncResult = await calendlyAPI.syncAllEvents();
+      
+      if (!calendlySyncResult.success) {
+        throw new Error(`Calendly sync failed: ${calendlySyncResult.error}`);
+      }
+      
+      console.log(`Calendly sync completed. Imported ${calendlySyncResult.count} meetings`);
+    } catch (error: any) {
+      console.error('Calendly sync error:', error);
+      syncStatus.setSyncError(`Calendly sync error: ${error.message}`);
+      throw error;
+    }
+    
+    // Sync Typeform
+    try {
+      syncStatus.startSync('typeform');
+      console.log('Starting Typeform sync...');
+      
+      const typeformSyncResult = await typeformAPI.syncAllResponses();
+      
+      if (!typeformSyncResult.success) {
+        throw new Error(`Typeform sync failed: ${typeformSyncResult.error}`);
+      }
+      
+      console.log(`Typeform sync completed. Imported ${typeformSyncResult.syncedCount} form submissions`);
+    } catch (error: any) {
+      console.error('Typeform sync error:', error);
+      syncStatus.setSyncError(`Typeform sync error: ${error.message}`);
+      throw error;
+    }
+    
+    // Get the total contacts count after sync
+    const allContacts = await storage.getAllContacts();
+    totalContacts = allContacts.length;
+    
+    // Mark sync as complete
+    syncStatus.completeSync(totalContacts);
+    
+    return {
+      success: true,
+      message: 'Data sync completed successfully',
+      totalContacts
+    };
+    
+  } catch (error: any) {
+    console.error('Data sync error:', error);
+    
+    return {
+      success: false,
+      error: error.message || 'Unknown sync error',
+      totalContacts
+    };
+  }
+}
+
+/**
+ * Synchronize only Close CRM data
+ */
+export async function syncCloseCRM() {
+  try {
+    syncStatus.startSync('close');
+    console.log('Starting Close CRM sync...');
+    
+    const syncResult = await closeAPI.syncAllLeads();
+    
+    if (!syncResult.success) {
+      syncStatus.setSyncError(syncResult.error || 'Unknown Close CRM sync error');
+      return syncResult;
+    }
+    
+    const allContacts = await storage.getAllContacts();
+    syncStatus.completeSync(allContacts.length);
+    
+    return {
+      ...syncResult,
+      totalContacts: allContacts.length
+    };
+    
+  } catch (error: any) {
+    console.error('Close CRM sync error:', error);
+    syncStatus.setSyncError(error.message || 'Unknown Close CRM sync error');
+    
+    return {
+      success: false,
+      error: error.message || 'Unknown Close CRM sync error'
+    };
+  }
+}
+
+/**
+ * Synchronize only Calendly data
+ */
+export async function syncCalendly() {
+  try {
+    syncStatus.startSync('calendly');
+    console.log('Starting Calendly sync...');
+    
+    const syncResult = await calendlyAPI.syncAllEvents();
+    
+    if (!syncResult.success) {
+      syncStatus.setSyncError(syncResult.error || 'Unknown Calendly sync error');
+      return syncResult;
+    }
+    
+    const allContacts = await storage.getAllContacts();
+    syncStatus.completeSync(allContacts.length);
+    
+    return {
+      ...syncResult,
+      totalContacts: allContacts.length
+    };
+    
+  } catch (error: any) {
+    console.error('Calendly sync error:', error);
+    syncStatus.setSyncError(error.message || 'Unknown Calendly sync error');
+    
+    return {
+      success: false,
+      error: error.message || 'Unknown Calendly sync error'
+    };
+  }
+}
+
+/**
+ * Synchronize only Typeform data
+ */
+export async function syncTypeform() {
+  try {
+    syncStatus.startSync('typeform');
+    console.log('Starting Typeform sync...');
+    
+    const syncResult = await typeformAPI.syncAllResponses();
+    
+    if (!syncResult.success) {
+      syncStatus.setSyncError(syncResult.error || 'Unknown Typeform sync error');
+      return syncResult;
+    }
+    
+    const allContacts = await storage.getAllContacts();
+    syncStatus.completeSync(allContacts.length);
+    
+    return {
+      ...syncResult,
+      totalContacts: allContacts.length
+    };
+    
+  } catch (error: any) {
+    console.error('Typeform sync error:', error);
+    syncStatus.setSyncError(error.message || 'Unknown Typeform sync error');
+    
+    return {
+      success: false,
+      error: error.message || 'Unknown Typeform sync error'
+    };
+  }
 }
 
 export default {
-  syncAllData,
-  scheduleRegularSync
+  syncAll,
+  syncCloseCRM,
+  syncCalendly,
+  syncTypeform,
+  startSyncSchedule,
+  stopSyncSchedule
 };

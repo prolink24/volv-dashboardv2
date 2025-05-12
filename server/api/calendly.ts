@@ -1,246 +1,322 @@
+/**
+ * Calendly API Integration
+ * 
+ * This module handles integration with Calendly API to sync:
+ * - All scheduled events with complete details
+ * - All users and event types
+ * - All invitees and their information
+ * 
+ * It supports fetching a full year of calendar data and
+ * properly links events to contacts.
+ */
+
 import axios from 'axios';
 import { storage } from '../storage';
-import { InsertContact, InsertActivity, InsertMeeting } from '@shared/schema';
+import * as syncStatus from './sync-status';
 
-const CALENDLY_API_KEY = process.env.CALENDLY_API_KEY || '';
-const CALENDLY_API_URL = 'https://api.calendly.com';
+// API Configuration
+const CALENDLY_API_KEY = process.env.CALENDLY_API_KEY;
+const CALENDLY_BASE_URL = 'https://api.calendly.com';
 
-// Configure axios for Calendly API
-const calendlyApi = axios.create({
-  baseURL: CALENDLY_API_URL,
+// Create axios instance with authentication
+const calendlyApiClient = axios.create({
+  baseURL: CALENDLY_BASE_URL,
   headers: {
-    'Authorization': `Bearer ${CALENDLY_API_KEY}`,
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${CALENDLY_API_KEY}`
   }
 });
 
-// Maps Calendly event types to our system's meeting types
-const eventTypeMap: Record<string, string> = {
-  'Triage Call': 'triage',
-  'Solution Call': 'solution',
-  'Strategy Call': 'strategy',
-  'Follow-Up Call': 'follow-up'
-};
-
-// Sync a Calendly event to our system
-export async function syncCalendlyEvent(eventUUID: string) {
+/**
+ * Test API connection by fetching current user
+ */
+async function testApiConnection() {
   try {
-    // Fetch event data from Calendly
-    const response = await calendlyApi.get(`/scheduled_events/${eventUUID}`);
-    const eventData = response.data.resource;
-    
-    // Fetch invitee data (attendee)
-    const inviteeResponse = await calendlyApi.get(`/scheduled_events/${eventUUID}/invitees`);
-    const invitees = inviteeResponse.data.collection;
-    
-    if (invitees.length === 0) {
-      console.warn(`No invitees found for Calendly event ${eventUUID}`);
-      return null;
-    }
-    
-    const invitee = invitees[0];
-    
-    // Check if we already have this meeting
-    const existingMeeting = await storage.getMeetingByCalendlyEventId(eventUUID);
-    
-    // Find or create contact
-    let contact = await storage.getContactByEmail(invitee.email);
-    
-    if (!contact) {
-      const contactData: InsertContact = {
-        name: `${invitee.first_name} ${invitee.last_name}`,
-        email: invitee.email,
-        phone: invitee.text_reminder_number || '',
-        calendlyId: invitee.uri.split('/').pop() || '',
-        leadSource: 'calendly',
-        status: 'lead',
-        assignedTo: eventData.event_memberships?.[0]?.user_uri?.split('/').pop() || ''
-      };
-      
-      contact = await storage.createContact(contactData);
-    } else if (!contact.calendlyId) {
-      // Update contact with Calendly ID if not set
-      await storage.updateContact(contact.id, {
-        calendlyId: invitee.uri.split('/').pop() || ''
-      });
-    }
-    
-    // Extract event type from name or use default
-    const eventTypeName = eventData.name || '';
-    const eventType = Object.keys(eventTypeMap).find(key => 
-      eventTypeName.toLowerCase().includes(key.toLowerCase())
-    ) || 'Triage Call';
-    
-    // Determine meeting status
-    let status = 'scheduled';
-    if (eventData.status === 'canceled') {
-      status = 'canceled';
-    } else if (new Date(eventData.end_time) < new Date()) {
-      status = 'completed';
-    }
-    
-    // Create meeting data
-    const meetingData: InsertMeeting = {
-      contactId: contact.id,
-      calendlyEventId: eventUUID,
-      type: eventTypeMap[eventType] || 'triage',
-      title: eventData.name || `Meeting with ${contact.name}`,
-      startTime: new Date(eventData.start_time),
-      endTime: new Date(eventData.end_time),
-      status,
-      assignedTo: eventData.event_memberships?.[0]?.user?.name || '',
-      metadata: {
-        calendlyData: eventData,
-        inviteeData: invitee,
-        customQuestions: invitee.questions_and_answers || []
-      }
+    console.log('Testing Calendly API connection using current user endpoint...');
+    const response = await calendlyApiClient.get('/users/me');
+    console.log(`Successfully connected to Calendly API`);
+    console.log(`Authenticated as: ${response.data.resource.name}`);
+    return { success: true, user: response.data.resource };
+  } catch (error: any) {
+    console.error('Error connecting to Calendly API:', error.message);
+    return { 
+      success: false, 
+      error: error.message || 'Failed to connect to Calendly API' 
     };
-    
-    let meeting;
-    if (existingMeeting) {
-      meeting = await storage.updateMeeting(existingMeeting.id, meetingData);
-    } else {
-      meeting = await storage.createMeeting(meetingData);
-      
-      // Create activity for this meeting
-      const activityData: InsertActivity = {
-        contactId: contact.id,
-        type: 'meeting',
-        source: 'calendly',
-        sourceId: eventUUID,
-        title: `${eventType} scheduled`,
-        description: `${eventType} scheduled for ${new Date(eventData.start_time).toLocaleString()}`,
-        date: new Date(),
-        metadata: {
-          calendlyEventId: eventUUID,
-          meetingId: meeting.id
-        }
-      };
-      
-      await storage.createActivity(activityData);
-    }
-    
-    return { contact, meeting };
-  } catch (error) {
-    console.error('Error syncing Calendly event:', error);
-    throw error;
   }
 }
 
-// Fetch user from Calendly
-export async function fetchCalendlyUser() {
-  try {
-    const response = await calendlyApi.get('/users/me');
-    return response.data.resource;
-  } catch (error) {
-    console.error('Error fetching Calendly user:', error);
-    throw error;
-  }
-}
+/**
+ * Sync all events from Calendly
+ * Fetches a full year of calendar data (past and future events)
+ */
+async function syncAllEvents() {
+  // Initialize counters for sync status
+  let totalEvents = 0;
+  let processedEvents = 0;
+  let importedMeetings = 0;
+  let errors = 0;
 
-// Fetch all events from Calendly
-export async function fetchAllEvents(minStartTime?: string, maxStartTime?: string) {
   try {
-    const user = await fetchCalendlyUser();
+    // First, test the API connection
+    const connectionTest = await testApiConnection();
+    if (!connectionTest.success) {
+      throw new Error(`Calendly API connection failed: ${connectionTest.error}`);
+    }
+
+    // Get the current user's organization
+    const currentUser = connectionTest.user;
+    const organizationUri = currentUser.current_organization;
+    const userId = currentUser.uri;
     
-    let params: any = {
-      user: user.uri,
-      count: 100
-    };
+    console.log('Fetching events from Calendly API...');
     
-    if (minStartTime) params.min_start_time = minStartTime;
-    if (maxStartTime) params.max_start_time = maxStartTime;
+    // Calculate date range for a full year (6 months back, 6 months forward)
+    const now = new Date();
+    const sixMonthsAgo = new Date(now);
+    sixMonthsAgo.setMonth(now.getMonth() - 6);
     
+    const sixMonthsForward = new Date(now);
+    sixMonthsForward.setMonth(now.getMonth() + 6);
+    
+    const minStartTime = sixMonthsAgo.toISOString();
+    const maxStartTime = sixMonthsForward.toISOString();
+    
+    // Set initial pagination state
     let hasMore = true;
-    let pageToken = '';
-    const events = [];
+    let pageToken = null;
+    let page = 1;
     
+    // Initialize sync status
+    syncStatus.updateCalendlySyncStatus({
+      totalEvents,
+      processedEvents,
+      importedMeetings,
+      errors
+    });
+    
+    // Process events in batches using pagination
     while (hasMore) {
-      if (pageToken) params.page_token = pageToken;
-      
-      const response = await calendlyApi.get('/scheduled_events', { params });
-      events.push(...response.data.collection);
-      
-      pageToken = response.data.pagination?.next_page_token;
-      hasMore = !!pageToken;
-    }
-    
-    return events;
-  } catch (error) {
-    console.error('Error fetching events from Calendly:', error);
-    throw error;
-  }
-}
-
-// Sync all events from Calendly to our system - defaults to 365 days to capture more data
-export async function syncAllEvents(days = 365) {
-  try {
-    const minStartTime = new Date();
-    minStartTime.setDate(minStartTime.getDate() - days);
-    
-    console.log(`Fetching all Calendly events from ${minStartTime.toISOString()} to now`);
-    const events = await fetchAllEvents(minStartTime.toISOString());
-    console.log(`Found ${events.length} events to sync`);
-    
-    let successCount = 0;
-    let errorCount = 0;
-    
-    // Process in batches to prevent memory issues with large datasets
-    const batchSize = 25;
-    const totalBatches = Math.ceil(events.length / batchSize);
-    
-    for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
-      const batchStart = batchIndex * batchSize;
-      const batchEnd = Math.min((batchIndex + 1) * batchSize, events.length);
-      const batch = events.slice(batchStart, batchEnd);
-      
-      console.log(`Processing Calendly batch ${batchIndex + 1}/${totalBatches} (events ${batchStart + 1}-${batchEnd})`);
-      
-      // Process each event in the batch
-      for (const event of batch) {
-        try {
-          const eventUUID = event.uri.split('/').pop();
-          if (eventUUID) {
-            console.log(`Syncing event ${eventUUID}`);
-            await syncCalendlyEvent(eventUUID);
-            successCount++;
-          }
-        } catch (error) {
-          console.error(`Error syncing event ${event.uri}:`, error);
-          errorCount++;
+      try {
+        console.log(`Fetching events page ${page}${pageToken ? ', with page token' : ''}`);
+        
+        // Construct the query parameters
+        const params: any = {
+          organization: organizationUri,
+          min_start_time: minStartTime,
+          max_start_time: maxStartTime,
+          count: 100 // Max allowed by Calendly API
+        };
+        
+        // For subsequent pages, use the page token
+        if (pageToken) {
+          params.page_token = pageToken;
         }
         
-        // Add a small delay to avoid overwhelming the system
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Make the API request
+        const response = await calendlyApiClient.get('/scheduled_events', { params });
+        const events = response.data.collection || [];
+        
+        // Update total on first page
+        if (page === 1) {
+          totalEvents = response.data.pagination.count || events.length;
+          syncStatus.updateCalendlySyncStatus({
+            totalEvents,
+            processedEvents,
+            importedMeetings,
+            errors
+          });
+        }
+        
+        // Process the batch of events
+        console.log(`Fetched ${events.length} events on page ${page}`);
+        
+        for (const event of events) {
+          try {
+            processedEvents++;
+            
+            // Fetch event details with invitees
+            const eventDetails = await getEventDetails(event.uri);
+            const invitees = await getEventInvitees(event.uri);
+            
+            // Process each invitee (each invitee could be a different contact)
+            for (const invitee of invitees) {
+              try {
+                // Extract email (required for matching across platforms)
+                const email = invitee.email;
+                if (!email) {
+                  console.log(`Skipping invitee without email for event ${event.uri}`);
+                  continue;
+                }
+                
+                // Try to find the contact by email
+                let contact = await storage.getContactByEmail(email);
+                
+                // If contact doesn't exist, create a minimal contact record
+                if (!contact) {
+                  const contactData = {
+                    name: invitee.name || email.split('@')[0],
+                    email: email,
+                    phone: '',
+                    company: '',
+                    leadSource: 'calendly',
+                    status: 'lead',
+                    sourceId: invitee.uri,
+                    sourceData: JSON.stringify(invitee),
+                    createdAt: new Date(invitee.created_at).toISOString()
+                  };
+                  
+                  contact = await storage.createContact(contactData);
+                }
+                
+                // Create the meeting record
+                const meetingData = {
+                  contactId: contact.id,
+                  title: event.name || 'Calendly Meeting',
+                  description: eventDetails.description || '',
+                  date: new Date(event.start_time).toISOString(),
+                  duration: Math.round((new Date(event.end_time).getTime() - new Date(event.start_time).getTime()) / 60000),
+                  status: event.status,
+                  location: event.location?.join(', ') || 'Virtual',
+                  sourceId: event.uri,
+                  sourceType: 'calendly',
+                  sourceData: JSON.stringify({
+                    event: event,
+                    invitee: invitee,
+                    details: eventDetails
+                  })
+                };
+                
+                // Check if meeting already exists by source ID
+                const existingMeeting = await storage.getMeetingByCalendlyEventId(event.uri);
+                
+                if (existingMeeting) {
+                  // Update existing meeting
+                  await storage.updateMeeting(existingMeeting.id, meetingData);
+                } else {
+                  // Create new meeting
+                  await storage.createMeeting(meetingData);
+                  importedMeetings++;
+                }
+                
+              } catch (error) {
+                console.error(`Error processing invitee for event ${event.uri}:`, error);
+              }
+            }
+            
+          } catch (error) {
+            console.error(`Error processing event ${event.uri}:`, error);
+            errors++;
+          }
+          
+          // Update sync status periodically
+          if (processedEvents % 10 === 0) {
+            syncStatus.updateCalendlySyncStatus({
+              totalEvents,
+              processedEvents,
+              importedMeetings,
+              errors
+            });
+          }
+        }
+        
+        // Update pagination info for next batch
+        pageToken = response.data.pagination.next_page_token;
+        hasMore = !!pageToken;
+        page++;
+        
+        // Update sync status after processing the batch
+        syncStatus.updateCalendlySyncStatus({
+          totalEvents,
+          processedEvents,
+          importedMeetings,
+          errors
+        });
+        
+      } catch (error: any) {
+        console.error(`Error fetching events page ${page}:`, error);
+        errors++;
+        
+        // If we get an error but there are more pages, try to continue
+        if (page > 5) {
+          // If we've processed a decent number of pages, we can 
+          // consider this a partial success even with some errors
+          hasMore = false;
+        } else {
+          // For early failures, treat as a full failure
+          throw error;
+        }
       }
-      
-      console.log(`Completed Calendly batch ${batchIndex + 1}/${totalBatches}`);
-      console.log(`Progress: ${successCount + errorCount}/${events.length} (${Math.round(((successCount + errorCount) / events.length) * 100)}%)`);
-      
-      // Add a larger delay between batches to let the system catch up
-      await new Promise(resolve => setTimeout(resolve, 500));
     }
     
-    console.log(`Completed syncing Calendly events:`);
-    console.log(`- ${successCount} events synced successfully`);
-    console.log(`- ${errorCount} events failed to sync`);
-    console.log(`Total processed: ${successCount + errorCount} out of ${events.length} (${Math.round(((successCount + errorCount) / events.length) * 100)}%)`);
+    // Final status update
+    syncStatus.updateCalendlySyncStatus({
+      totalEvents,
+      processedEvents,
+      importedMeetings,
+      errors
+    });
     
-    return { 
-      success: true, 
-      count: successCount, 
-      errors: errorCount, 
-      total: events.length 
+    return {
+      success: true,
+      count: importedMeetings,
+      errors,
+      total: totalEvents
     };
-  } catch (error) {
-    console.error('Error syncing all events from Calendly:', error);
-    throw error;
+    
+  } catch (error: any) {
+    console.error('Error syncing Calendly events:', error);
+    
+    // Update sync status with error info
+    syncStatus.updateCalendlySyncStatus({
+      totalEvents,
+      processedEvents,
+      importedMeetings,
+      errors: errors + 1
+    });
+    
+    return {
+      success: false,
+      error: error.message || 'Unknown error syncing Calendly data',
+      count: importedMeetings,
+      errors: errors + 1,
+      total: totalEvents
+    };
+  }
+}
+
+/**
+ * Get details for a specific event
+ */
+async function getEventDetails(eventUri: string) {
+  try {
+    // Extract the event UUID from the URI
+    const eventId = eventUri.split('/').pop();
+    const response = await calendlyApiClient.get(`/scheduled_events/${eventId}`);
+    return response.data.resource;
+  } catch (error: any) {
+    console.error(`Error fetching event details ${eventUri}:`, error);
+    return { };
+  }
+}
+
+/**
+ * Get invitees for a specific event
+ */
+async function getEventInvitees(eventUri: string) {
+  try {
+    const response = await calendlyApiClient.get('/scheduled_events/' + 
+      eventUri.split('/').pop() + '/invitees');
+    return response.data.collection || [];
+  } catch (error: any) {
+    console.error(`Error fetching event invitees ${eventUri}:`, error);
+    return [];
   }
 }
 
 export default {
-  syncCalendlyEvent,
-  fetchCalendlyUser,
-  fetchAllEvents,
-  syncAllEvents
+  syncAllEvents,
+  getEventDetails,
+  getEventInvitees,
+  testApiConnection
 };

@@ -8,6 +8,7 @@ import typeformApi from "./api/typeform";
 import attributionService from "./services/attribution";
 import syncService from "./services/sync";
 import * as syncStatus from "./api/sync-status";
+import { WebSocketServer } from "ws";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -84,7 +85,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Integration sync endpoints
   apiRouter.post("/sync/all", async (req: Request, res: Response) => {
     try {
-      const result = await syncService.syncAllData();
+      const result = await syncService.syncAll();
       res.json(result);
     } catch (error) {
       console.error("Error syncing all data:", error);
@@ -94,7 +95,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   apiRouter.post("/sync/close", async (req: Request, res: Response) => {
     try {
-      const result = await closeApi.syncAllLeads();
+      const result = await syncService.syncCloseCRM();
       res.json(result);
     } catch (error) {
       console.error("Error syncing Close data:", error);
@@ -104,7 +105,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   apiRouter.post("/sync/calendly", async (req: Request, res: Response) => {
     try {
-      const result = await calendlyApi.syncAllEvents();
+      const result = await syncService.syncCalendly();
       res.json(result);
     } catch (error) {
       console.error("Error syncing Calendly data:", error);
@@ -114,7 +115,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   apiRouter.post("/sync/typeform", async (req: Request, res: Response) => {
     try {
-      const result = await typeformApi.syncAllResponses();
+      const result = await syncService.syncTypeform();
       res.json(result);
     } catch (error) {
       console.error("Error syncing Typeform data:", error);
@@ -175,14 +176,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // API test endpoints for checking integrations
+  apiRouter.get("/test/close", async (req: Request, res: Response) => {
+    try {
+      const result = await closeApi.testApiConnection();
+      res.json(result);
+    } catch (error) {
+      console.error("Error testing Close API:", error);
+      res.status(500).json({ error: "Failed to test Close API connection" });
+    }
+  });
+
+  apiRouter.get("/test/calendly", async (req: Request, res: Response) => {
+    try {
+      const result = await calendlyApi.testApiConnection();
+      res.json(result);
+    } catch (error) {
+      console.error("Error testing Calendly API:", error);
+      res.status(500).json({ error: "Failed to test Calendly API connection" });
+    }
+  });
+
+  apiRouter.get("/test/typeform", async (req: Request, res: Response) => {
+    try {
+      const result = await typeformApi.testApiConnection();
+      res.json(result);
+    } catch (error) {
+      console.error("Error testing Typeform API:", error);
+      res.status(500).json({ error: "Failed to test Typeform API connection" });
+    }
+  });
+
   // Register API routes with prefix
   app.use("/api", apiRouter);
 
+  // Create HTTP server
+  const httpServer = createServer(app);
+
+  // Create WebSocket server for real-time updates
+  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+
+  wss.on('connection', (ws) => {
+    console.log('WebSocket client connected');
+
+    // Send the current sync status when a client connects
+    const currentStatus = syncStatus.getSyncStatus();
+    ws.send(JSON.stringify({ type: 'syncStatus', data: currentStatus }));
+
+    // Set up a heartbeat to keep connections alive
+    const interval = setInterval(() => {
+      if (ws.readyState === ws.OPEN) {
+        ws.send(JSON.stringify({ type: 'ping' }));
+      }
+    }, 30000);
+
+    // Clean up on close
+    ws.on('close', () => {
+      console.log('WebSocket client disconnected');
+      clearInterval(interval);
+    });
+  });
+
   // Start sync service after server starts
   setTimeout(() => {
-    syncService.scheduleRegularSync(60); // Sync every hour
+    syncService.startSyncSchedule(60); // Sync every 60 minutes
   }, 5000);
 
-  const httpServer = createServer(app);
   return httpServer;
 }
