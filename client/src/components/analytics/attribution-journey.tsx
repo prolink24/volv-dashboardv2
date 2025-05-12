@@ -220,7 +220,7 @@ const AttributionJourney = () => {
                             </p>
                           </div>
                           
-                          {'value' in event && (
+                          {'value' in event && event.value !== undefined && (
                             <div className="mt-1 text-sm font-medium">
                               Value: ${event.value.toLocaleString()}
                             </div>
@@ -259,7 +259,7 @@ const AttributionJourney = () => {
                       </li>
                       <li className="flex items-center gap-2">
                         <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                        <span>Deal value: <span className="font-medium">${contact.journey.find(e => e.type === 'deal')?.value?.toLocaleString()}</span></span>
+                        <span>Deal value: <span className="font-medium">${contact.journey.find(e => e.type === 'deal' && 'value' in e)?.value?.toLocaleString() || 0}</span></span>
                       </li>
                     </>
                   )}

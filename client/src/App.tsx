@@ -15,6 +15,7 @@ import Forms from "@/pages/forms";
 import Analytics from "@/pages/analytics";
 import Settings from "@/pages/settings";
 import NotFound from "@/pages/not-found";
+import AttributionJourney from "@/pages/attribution-journey";
 
 function Router() {
   return (
@@ -29,6 +30,7 @@ function Router() {
           <Route path="/forms" component={Forms} />
           <Route path="/analytics" component={Analytics} />
           <Route path="/settings" component={Settings} />
+          <Route path="/attribution-journey" component={AttributionJourney} />
           <Route component={NotFound} />
         </Switch>
       </div>

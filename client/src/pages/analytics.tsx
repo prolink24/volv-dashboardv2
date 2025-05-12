@@ -6,6 +6,7 @@ import {
   CardTitle, 
   CardDescription 
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Select, 
@@ -178,63 +179,87 @@ const Analytics = () => {
         </TabsContent>
         
         <TabsContent value="attribution" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Lead Source Attribution</CardTitle>
-              <CardDescription>Where your leads are coming from</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[400px] flex justify-center">
-                <ResponsiveContainer width="80%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={sourceData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={150}
-                      fill="#8884d8"
-                      dataKey="value"
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Lead Source Attribution</CardTitle>
+                <CardDescription>Where your leads are coming from</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[400px] flex justify-center">
+                  <ResponsiveContainer width="90%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={sourceData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        outerRadius={150}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {sourceData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value) => [`${value}%`, "Percentage"]} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>First Touch Attribution</CardTitle>
+                <CardDescription>First interaction by channel for closed deals</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={[
+                        { name: "Form Submission", value: 40 },
+                        { name: "Direct Booking", value: 25 },
+                        { name: "Sales Outreach", value: 20 },
+                        { name: "Website", value: 15 },
+                      ]}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                     >
-                      {sourceData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value) => [`${value}%`, "Percentage"]} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="value" fill="#8884d8" name="Percentage" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
           
-          <Card>
-            <CardHeader>
-              <CardTitle>First Touch Attribution</CardTitle>
-              <CardDescription>First interaction by channel for closed deals</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={[
-                      { name: "Form Submission", value: 40 },
-                      { name: "Direct Booking", value: 25 },
-                      { name: "Sales Outreach", value: 20 },
-                      { name: "Website", value: 15 },
-                    ]}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+          {/* Add the Attribution Journey Component */}
+          <div className="mt-6">
+            <h3 className="text-lg font-semibold mb-4">Contact-Level Attribution Analysis</h3>
+            <Card>
+              <CardHeader>
+                <CardTitle>Customer Journey Visualization</CardTitle>
+                <CardDescription>Detailed analysis of individual contact touchpoints across platforms</CardDescription>
+              </CardHeader>
+              <CardContent className="p-6">
+                <p className="mb-4">View the complete customer journey from first interaction to conversion with our interactive visualization tool.</p>
+                <div className="flex justify-center">
+                  <Button 
+                    onClick={() => window.open('/attribution-journey', '_blank')}
+                    className="bg-primary text-primary-foreground hover:bg-primary/90"
                   >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="value" fill="#8884d8" name="Percentage" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
+                    Open Contact Journey Explorer
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
         
         <TabsContent value="conversion" className="space-y-6">
