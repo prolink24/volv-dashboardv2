@@ -1,0 +1,1099 @@
+Contact-Level Attribution Web App – Technical Architecture
+
+Overview: This document specifies the end-to-end architecture for a contact-level attribution web application. The system uses a Node.js backend and React frontend to integrate data from Close CRM, Calendly, and Typeform, producing unified lead records and detailed KPI dashboards. We describe all components needed for an AI or dev team to autonomously build the product, including API schemas, data merging logic, KPI formulas, cloud infrastructure, frontend structure, security, and operations.
+
+1. API Integrations and Data Schemas
+
+To aggregate contact and event data, the backend connects to external APIs for Close, Calendly, and Typeform. We detail how to authenticate with each service and the key payload schemas (with examples) for leads, contacts, meetings, and form submissions.
+
+1.1 Close CRM API (Leads, Contacts, Opportunities, Activities)
+
+Authentication: Close CRM provides API keys for authentication ￼. We’ll use a Close API Key (generated in Close’s settings) and send it via HTTP Basic Auth: the key is base64-encoded as the username (with an empty password) in the Authorization header ￼. For example:
+
+Authorization: Basic <BASE64_ENCODED_API_KEY:>
+Content-Type: application/json
+
+Endpoints & Data: We will pull full data sets of: Leads, Contacts, Opportunities, and Activities from Close. The Close REST API (v1) provides JSON payloads for these resources:
+	•	Leads: A Lead in Close represents an account or sales lead (often a company or an individual). Leads can include multiple contacts. Key fields include:
+	•	id (string, e.g. "lead_abc123"),
+	•	display_name or name (Lead name, often person or company),
+	•	status (e.g. New, Interested, Closed-Won, etc),
+	•	contacts (array of associated Contact objects, see below),
+	•	opportunities (array of Opportunity objects for deals on this lead),
+	•	created_by and timestamps (date_created, date_updated),
+	•	custom fields if any (appear as custom.<field_id> keys).
+	•	Contacts: Each Contact is an individual person under a Lead. Fields include:
+	•	id (e.g. "cont_DEF456"),
+	•	lead_id (the parent Lead’s ID),
+	•	name (full name of the contact),
+	•	emails (array of {email, type} objects; e.g. personal/work email addresses),
+	•	phones (array of {phone, type} objects),
+	•	title (job title, if any),
+	•	organization (if provided),
+	•	custom contact fields if used.
+	•	Opportunities: Opportunities represent potential or closed deals. Important fields:
+	•	id (e.g. "oppty_XYZ789"),
+	•	lead_id (the related Lead’s ID),
+	•	value (numeric deal value, e.g. contract amount),
+	•	status (e.g. open, won, lost, contract sent, etc.),
+	•	confidence or probability (if using weighted pipeline),
+	•	date_closed (when status became closed-won or lost),
+	•	any custom fields (like commission, etc).
+	•	Activities: Activities log interactions on a lead (calls, emails, notes). We will fetch call activities in particular to help determine if meetings took place (show vs no-show):
+	•	For example, a “Call” activity might have fields: id, lead_id, user_id (who made the call), date_created, note/description, duration, and possibly a result (like Completed, No Answer, No-show if tracked).
+	•	Email activities could include subject, status (sent/opened), etc., though less relevant to our KPIs.
+	•	Note: Close’s API returns activities separately from leads (using an /activity/ endpoint). We will retrieve relevant activities (especially call logs) and associate them to contacts via lead_id.
+
+Example – Close Lead with Contacts and Opportunity:
+
+{
+  "id": "lead_8o729d01ABcXyz", 
+  "display_name": "John Doe", 
+  "status": "Closed - Won",
+  "contacts": [
+    {
+      "id": "cont_Bc123XYZ",
+      "name": "John Doe",
+      "emails": [{ "email": "john.doe@example.com", "type": "office" }],
+      "phones": [{ "phone": "+15551234567", "type": "mobile" }]
+    }
+  ],
+  "opportunities": [
+    {
+      "id": "oppty_00112233",
+      "value": 50000,
+      "currency": "USD",
+      "status": "won",
+      "date_closed": "2025-03-15"
+    }
+  ],
+  "custom.cf_lead_source": "Google Ads",
+  "date_created": "2025-01-10T12:34:56Z",
+  "date_updated": "2025-03-15T09:20:00Z"
+}
+
+In this example, Close shows a Lead for John Doe with one contact (including email/phone) and one closed Opportunity of value $50k. A custom field lead_source indicates the marketing source. (Custom fields in Close appear with internal IDs like custom.cf_xxx.)
+
+Token Handling: The Close API key is long-lived and does not expire. We will store it securely (e.g. in AWS Secrets Manager, loaded into an env var CLOSE_API_KEY). No refresh flow is needed for API keys. Rate limiting for Close’s API should be handled by pacing our requests (e.g. if Close allows ~60 requests/minute, we ensure not to exceed that). We will implement retries with backoff for robustness on Close API calls.
+
+1.2 Calendly API (Scheduled Events & Invitees)
+
+Authentication: Calendly offers two auth methods – Personal Access Token (PAT) for internal use and OAuth 2.0 for multi-user apps ￼. Since our application is internal (integrating one organization’s Calendly), we will use a PAT for simplicity ￼. The PAT is provided as a Bearer token in the Authorization header:
+
+Authorization: Bearer <CALENDLY_PERSONAL_TOKEN>
+
+This token will be stored securely (as CALENDLY_API_TOKEN env variable). If multiple team members have separate Calendly accounts, we could obtain organization-wide events via an admin’s token or use OAuth per user. Here we assume one Calendly organization’s data.
+
+Data Retrieval: We will use Calendly’s v2 REST API to pull scheduled event data, specifically:
+	•	Events: Each scheduled meeting is an Event. We can list events via the /scheduled_events endpoint (optionally filtering by user or date range). Key fields in an Event payload:
+	•	id or uri (unique identifier, e.g. a UUID in the URI),
+	•	name or event_type (the meeting type name, e.g. “Triage Call” or “Solution Call”),
+	•	start_time and end_time (ISO timestamps),
+	•	status (e.g. active for scheduled, canceled if canceled),
+	•	location (e.g. Zoom link or phone dial-in),
+	•	invitees_counter (counts of how many invitees booked, typically 1 for one-on-one meetings),
+	•	created_at and updated_at.
+	•	Invitees: Each event has associated invitee records with details of the person who booked. We can retrieve invitees via /scheduled_events/<event_id>/invitees. Key invitee fields:
+	•	email (invitee’s email),
+	•	name (invitee’s name),
+	•	status (e.g. active if the meeting is scheduled, canceled if this invitee canceled),
+	•	canceled_at (if canceled),
+	•	questions_and_answers (array of any custom question responses from booking form),
+	•	tracking (object of tracking parameters like UTM tags, if scheduling link included them ￼),
+	•	created_at (booking time).
+
+Using the Calendly API, for each event we will join with its invitee to get the full picture (Calendly’s webhooks also deliver combined data; see Section 7 on webhooks). Notably, Calendly’s invitee tracking field can include UTM parameters (utm_source, utm_medium, etc.) if those were appended to the scheduling URL ￼. This helps attribute which campaign/source led to the scheduled meeting.
+
+Example – Calendly Event and Invitee JSON:
+
+{
+  "event": {
+    "id": "8a7b6cde-1234-5678-90ab-abcdef123456",
+    "name": "30-Minute Solution Call",
+    "start_time": "2025-03-05T15:00:00Z",
+    "end_time": "2025-03-05T15:30:00Z",
+    "status": "active",
+    "event_type": "One-on-One",
+    "location": "Zoom Meeting (auto-generated)",
+    "created_at": "2025-03-01T10:20:30Z",
+    "updated_at": "2025-03-02T08:15:00Z"
+  },
+  "invitee": {
+    "id": "INV-abcd1234efgh",
+    "name": "John Doe",
+    "email": "john.doe@example.com",
+    "status": "active",
+    "questions_and_answers": [
+      { "question": "Phone Number", "answer": "+15551234567" }
+    ],
+    "tracking": {
+      "utm_source": "google",
+      "utm_medium": "cpc",
+      "utm_campaign": "SpringSale"
+    },
+    "created_at": "2025-03-01T10:21:00Z",
+    "canceled_at": null
+  }
+}
+
+This JSON illustrates an active Calendly event for a “Solution Call” that John Doe scheduled. The invitee info includes John’s email, name, a collected phone number, and UTM parameters indicating he came via a Google CPC campaign. If John had canceled, status would be “canceled” and canceled_at would have a timestamp.
+
+Token Handling: The Calendly personal access token is long-lived (no built-in expiry). We will treat it like a secret and configure it as an environment variable. If using OAuth instead, we would implement the OAuth flow to obtain an access token and refresh token for each user. In that case, token persistence (in our database or a secure store) and periodic refresh (via Calendly’s token endpoint) would be needed. Since we use a PAT for one account, we avoid that complexity.
+
+Calendly’s API has rate limits (currently ~ 50 requests per 15-second interval for some endpoints). Our system will use efficient queries (listing events for a range, etc.) to minimize calls and use webhooks for real-time updates (Calendly can send a webhook on event creation/cancellation).
+
+1.3 Typeform API (Form Submissions with UTM Data)
+
+Authentication: Typeform provides a Personal Access Token for API access (or OAuth for multi-user apps). We will use a Typeform API token (Bearer token in Authorization header, e.g. Authorization: Bearer <TYPEFORM_TOKEN>). This token, stored as TYPEFORM_API_TOKEN, grants access to read form responses.
+
+Data Retrieval: We want to ingest full datasets of form submissions (survey/lead capture form), including any UTM parameters captured. There are two approaches:
+	•	Responses API: We can poll the Typeform Responses API for all submissions of a given form. For example, GET https://api.typeform.com/forms/{form_id}/responses returns a paginated list of response entries ￼.
+	•	Webhooks: Alternatively, we can set up a webhook on the form so Typeform will send a POST to our endpoint for each new submission (containing the response JSON). We will use webhooks for real-time data but can fall back to the Responses API for full historical sync or recovery.
+
+Response Schema: Each Typeform submission (response) includes:
+	•	landing_id / token: unique IDs for the response,
+	•	submitted_at: timestamp of submission,
+	•	hidden object: any Hidden Fields passed via the form URL. We will ensure the form uses hidden fields for UTM parameters (e.g. utm_source, utm_medium, utm_campaign, etc.). These will appear here if present.
+	•	answers: array of answers to each question on the form, each answer object includes a field (with id or ref to identify the question) and the answer in a type-specific field (e.g. text, email, boolean, etc. depending on question type).
+	•	calculated (optional): e.g. score or quiz calculations if any.
+
+Example – Typeform Response JSON:
+
+{
+  "landing_id": "21085286190ffad1248d17c4135ee56f",
+  "submitted_at": "2025-03-01T09:30:00Z",
+  "hidden": {
+    "utm_source": "google",
+    "utm_medium": "cpc",
+    "utm_campaign": "SpringSale"
+  },
+  "answers": [
+    {
+      "field": { "id": "Q1", "ref": "name_question" },
+      "type": "text",
+      "text": "John Doe"
+    },
+    {
+      "field": { "id": "Q2", "ref": "email_question" },
+      "type": "email",
+      "email": "john.doe@example.com"
+    },
+    {
+      "field": { "id": "Q3", "ref": "phone_question" },
+      "type": "text",
+      "text": "+15551234567"
+    }
+  ]
+}
+
+This represents John Doe submitting a lead form. His name, email, and phone were collected as answers. The hidden UTM fields indicate he came from the “SpringSale” campaign via Google CPC. If more questions (e.g. “Interested Product”) were on the form, those would appear in answers too.
+
+From such responses, we extract contact info (name, email, phone) and marketing attribution (UTMs). The Typeform response might also include metadata (user agent, referer) which we can log but UTMs give explicit source info so those are primary.
+
+Token Handling: The Typeform API token (PAT) is long-lived; we will securely store it (TYPEFORM_TOKEN). If we had multiple forms or needed to refresh, we could implement OAuth per form owner, but our case likely uses one token for one account’s forms.
+
+1.4 Summary of Auth Methods and Tokens
+	•	Close CRM: API Key (HTTP Basic auth). Stored as env var, no expiration ￼.
+	•	Calendly: Personal Access Token (Bearer token) ￼ for a single Calendly user/org. Stored as env var.
+	•	Typeform: Personal API Token (Bearer). Stored as env var.
+	•	OAuth Note: If expanding to a multi-client SaaS, we’d implement OAuth flows for Calendly and Typeform so each client authorizes our app. In that scenario, we’d handle storing refresh tokens and per-user tokens. For our single-tenant internal use, PATs suffice and simplify integration.
+
+Token and API Client Management: In the Node.js backend, we will create dedicated integration modules or services for each third-party:
+	•	e.g. a closeClient using Axios or Fetch with the API key pre-authenticated,
+	•	a calendlyClient with Bearer token,
+	•	a typeformClient with Bearer token.
+We will implement robust error handling and respecting rate limits (e.g. using retry-after headers or simple throttling). These clients will expose functions like fetchAllLeads(), fetchNewResponses() etc., used by sync routines or webhooks.
+
+2. Entity Resolution and Deduplication Logic
+
+One core backend function is deduplicating and merging leads across data sources. We need to recognize when a contact from Typeform, a Calendly invitee, and a Close lead refer to the same real person (so we treat them as one unified contact in our database). Here we define the rules for entity resolution, how to merge records, and how to decide the source of truth for each field. We also provide an example of a merged contact record.
+
+2.1 Deduplication Rules Across Sources
+
+We will use a multi-step matching strategy, leveraging reliable identifiers first:
+	•	Primary Key Match – Email: The contact’s email address is the top identifier. If a Typeform submission’s email matches a Calendly invitee email or a Close contact email (case-insensitive), we assume it’s the same person. Email is a unique personal identifier in most cases (especially work emails).
+	•	We will normalize emails (lowercase them) for comparison.
+	•	If multiple emails exist (e.g. a person uses different emails in different sources), we may attach both to one contact record but prefer one as primary.
+	•	Secondary Key – Phone Number: If email is missing or not matched, we use phone number. Many leads include a phone (Calendly Q&A or Typeform input, and Close contacts often have phones). We normalize phone numbers to E.164 format (digits only, plus country code) for comparison. An exact match on phone implies a likely same person.
+	•	We must be careful with phone matches (people can share a business line, etc.), but in our context, it’s a strong indicator, especially combined with name.
+	•	Tertiary – Name (Fuzzy): If neither email nor phone match, we consider the full name. We use this as a last resort and in conjunction with contextual info:
+	•	Exact full name match (case-insensitive) might indicate a duplicate if other data (like timing or UTM) suggests so. However, many people share common names, so we treat name-only matches cautiously.
+	•	We could apply a fuzzy matching algorithm (e.g. tokenized name similarity or edit distance) to catch slight spelling differences or nicknames (e.g. “Jon Doe” vs “John Doe”). But only if we have no better key.
+	•	If a fuzzy name match is found, we might require an additional confirmation (like both records came in around same dates or from same company domain, etc.) to merge, to avoid false merges.
+	•	Source-specific merges:
+	•	Calendly to Close: Often, if a meeting is scheduled, the sales team might create or update a Lead in Close. We expect that by the time a deal is closed, the person exists in Close. We will attempt to match Calendly invitees to Close leads by email immediately. If not found, we might create a new “lead” entry in our system for that person and later catch it if Close adds them.
+	•	Typeform to Close: Similarly, a form fill likely leads to a lead creation. We check email/phone against Close’s database of leads on ingestion.
+	•	Calendly to Typeform: If someone schedules directly (Calendly) without a prior form, we might not have Typeform data. And vice versa, some might fill form but never schedule. We still unify those as one contact if possible (e.g. if someone filled a form and also separately scheduled, using the same email, unify them).
+
+In implementation, when a new record comes in (new form submission, new Calendly event, etc.), we will:
+	1.	Search for existing contact in our database by email (or phone if email absent).
+	2.	If found, attach this new data to that contact’s record (update the contact with any new info).
+	3.	If not found, create a new contact entry.
+
+We will maintain indexes on email and phone in our DB for fast lookups. We may also keep a separate “aliases” table mapping alternate emails/phones to the unified contact ID, in case contacts use multiple emails.
+
+2.2 Merge Conflict Resolution and Source of Truth
+
+When merging data from multiple sources, conflicts can occur (e.g., different spelling of name, different phone number). We define a priority order for fields and a strategy to preserve data:
+	•	Names: If the full name from Close (CRM) is available, we trust it (sales team likely corrected or has official name). If Close has no name but Typeform does, use Typeform’s. If they differ (e.g. “Jonathan Doe” vs “John Doe”), we might store the Close name as primary and others as an alias. We can also split into first and last name fields if needed for easier comparison.
+	•	Email: In most cases, the same email will be used across sources. If a person submits a form with one email and schedules with a different email, that may actually be two identities unless we have evidence they’re same (could happen if someone uses personal vs work email). For now, we treat different emails as different contacts (since email is our primary key). If needed, an admin could manually merge them later by marking them same person, but automated merging on different emails is unsafe. Conclusion: We do not automatically merge on name + phone alone if emails differ (to avoid wrong merges).
+	•	Phone: Similar to email, if a contact has multiple phone numbers from different sources, we store them all linked to one contact. One can be marked primary (e.g. the latest or the one from CRM). We won’t discard a number; we’ll keep a list of phones for the contact.
+	•	Lead Source/UTM: This is a field not in Close by default (unless custom). We will capture marketing source from Typeform (UTM parameters) or Calendly tracking. If Close has a custom field for source and it’s filled, we compare it with our captured UTMs. Typically, Typeform UTMs are the first touch, so we’ll use them as the contact’s “Original Source”. If Close’s lead_source custom field exists and is different, perhaps the sales rep manually set something; we might prefer automated data but can log both. Our unified model can have fields like original_source (from first UTM) and close_source (if any) and even latest_source if multiple touches.
+	•	Opportunity Data: Close is the only source of deal status and revenue data (Close Opportunities). We consider Close the source of truth for deal outcomes (won/lost, values, close dates). Typeform/Calendly have no concept of “deal closed” – they just yield the events leading up to it. So for KPIs like close rate or revenue, we rely entirely on Close’s data.
+	•	Activities (Show/No-show): If sales reps mark a meeting outcome in Close (e.g. log a call as “Completed” or “No show”), that can override our assumption from Calendly. For example, Calendly might show an event was scheduled and not canceled (so we’d consider it a show), but if the rep later logs “No show” in Close, we should trust that and mark that meeting as not actually held. Therefore, if available, we’ll incorporate Close Activities:
+	•	e.g. if there’s a call activity at the scheduled time marked No Show, we flag that meeting as no-show despite no Calendly cancellation.
+	•	If no explicit activity, we default to Calendly’s data (no cancellation implies show).
+
+Merging Records: We maintain a single unified Contact record in our database that links to all source records. Fields might include:
+	•	contact_id (internal UUID),
+	•	name, email, phone (primary fields),
+	•	alt_emails (JSON array of other emails), alt_phones (array of other numbers),
+	•	close_lead_id (if matched to a Close lead),
+	•	close_contact_id (if we want to reference a specific contact record in Close, though one lead can have one or more contacts; if multiple contacts for same lead we’ll likely just treat lead as person in our context),
+	•	typeform_latest_submission_id (if any),
+	•	calendly_invitee_ids (could be multiple events; we might not store all IDs here but rather have a separate events table),
+	•	Attribution fields: e.g. utm_source, utm_medium, utm_campaign, first_submission_date (if from Typeform), first_meeting_date (if from Calendly scheduling), etc.,
+	•	last_activity_date (last interaction we recorded).
+
+We’ll also have related tables:
+	•	Event table: Each Calendly event (or sales call) as a record with foreign key to contact_id. Fields: event_id, contact_id, type (e.g. “Triage Call” or “Solution Call”), scheduled_time, attended (boolean if show or not), canceled (boolean), calendar_event_id (Calendly ID), etc.
+	•	Opportunity/Deal table: Each Close Opportunity linked to contact (through lead). Fields: opportunity_id, contact_id (or lead_id mapping to contact_id), status, value, close_date, etc.
+	•	We might also have a FormSubmission table storing raw form answers per contact (or we parse and only store relevant fields in contact table and drop the rest, depending on needs).
+
+Source of Truth Priority: In summary, Close data is trusted for sales outcome fields (deal info, final name if updated, etc.), Typeform/Calendly for initial marketing and scheduling info. Our merge logic will default to:
+	•	Use Close’s values if present (for name, etc.), else Typeform’s.
+	•	Never delete info; if conflict, prefer one but keep the other as secondary or in logs.
+	•	E.g. if Close has no phone but Typeform does, we add the phone. If both have phone but different, possibly the person gave a new number to sales – we store both and mark the latest or the one from Close as primary.
+
+2.3 Example of Merged Contact Data
+
+To illustrate, consider a user journey:
+	•	Jane Doe submits a Typeform on Jan 1 with email jane@acme.co, phone 222-333-4444, via utm_source=Facebook.
+	•	She later schedules a Calendly “Triage Call” on Jan 2 with the same email but provides a different phone or none.
+	•	A Close lead is created for Jane (maybe automatically via Zapier or manually by a rep) on Jan 3, and later an Opportunity is marked closed on Feb 1 with value $10,000.
+
+Our system would produce a single unified record for Jane:
+
+{
+  "contact_id": "UUID-1234-5678",
+  "name": "Jane Doe",
+  "emails": ["jane@acme.co"],
+  "phones": ["+12223334444"],
+  "utm_source": "facebook",
+  "utm_medium": "paid_social",
+  "utm_campaign": "BrandCampaign1",
+  "first_contact_date": "2025-01-01T12:00:00Z",       // from Typeform submitted_at
+  "lead_status": "Closed - Won",                      // from Close
+  "close_lead_id": "lead_AbC12345",
+  "opportunities": [
+    {
+      "opportunity_id": "oppty_XY123",
+      "status": "won",
+      "value": 10000,
+      "close_date": "2025-02-01T10:00:00Z"
+    }
+  ],
+  "meetings": [
+    {
+      "type": "Triage Call",
+      "scheduled_at": "2025-01-10T09:00:00Z",
+      "attended": true,
+      "calendly_event_id": "abcd-ef01-2345",
+      "calendar_status": "active"
+    },
+    {
+      "type": "Solution Call",
+      "scheduled_at": "2025-01-15T09:00:00Z",
+      "attended": true,
+      "calendly_event_id": "abcd-ef98-7654",
+      "calendar_status": "active"
+    }
+  ]
+}
+
+Explanation: Jane’s unified contact shows her single email and phone (normalized format). The UTMs from her first form are stored. We have an array of her meetings: a Triage Call and a Solution Call with attended = true (meaning she showed up). calendar_status came from Calendly (both “active”, i.e., not canceled). If she had missed a meeting, attended would be false (perhaps calendar_status “active” but we might set attended false if a Close activity said no-show). The Close segment indicates she’s Closed-Won with a $10k deal.
+
+Our contact record model thus aggregates:
+	•	Personal identifiers (name, contact info),
+	•	Marketing attribution (source),
+	•	Interaction history (meetings attended or missed),
+	•	Outcome (converted to deal or not, and if so, value).
+
+This unified data model allows calculating metrics per contact or aggregating across contacts.
+
+3. KPI Definitions and Formulas
+
+Using the unified data, the system computes attribution-based KPIs at various stages of the funnel. We define each key metric, how it’s calculated from event data, and give examples. These KPIs include rates (show rate, close rate), cost metrics (CPL, CPC, ROI), and efficiency metrics like EPC2. We’ll illustrate formulae and a sample timeline of events leading to KPI values.
+
+3.1 Lead and Funnel Metrics
+	•	Leads: A Lead in this context is a unique contact who entered the funnel (e.g. filled the Typeform). We count new leads as the number of unique contact entries in a given period (e.g. per month).
+	•	Example: 100 leads acquired in March via marketing efforts.
+	•	Bookings (Call Scheduled): This refers to how many meetings were booked. We will differentiate Triage Calls (first calls) and Solution Calls (second calls) as separate funnel stages:
+	•	Triage Call Booked: # of initial discovery/qualification calls scheduled (Calendly events of type “Triage”).
+	•	Solution Call Booked: # of follow-up sales calls scheduled (Calendly events of type “Solution” or demo call).
+	•	Show Rate: The percentage of scheduled calls that actually occurred (the prospect showed up). We compute separately for each call type:
+	•	Triage Show Rate = (Triage calls attended / Triage calls booked) × 100%.
+	•	Solution Call Show Rate = (Solution calls attended / Solution calls booked) × 100%.
+	•	Example: If 50 triage calls were booked in April and 40 were attended, Triage Show Rate = 40/50 = 80%.
+	•	Conversion/Booking Rates:
+	•	Triage to Solution Booking Rate: Of those who attend triage, how many go on to schedule a solution call. Formula: (Solution calls booked / Triage calls attended) × 100%. This reflects how well initial calls convert to next step.
+	•	Example: 30 triage attended, 18 solution calls booked → conversion = 18/30 = 60%.
+	•	Direct Booking Rate: Sometimes leads might skip triage and book a solution call directly (if that’s allowed). We can define Direct Booking Rate = (Leads who booked a Solution call directly / Total new leads) × 100%. E.g., if 10 out of 100 leads jumped straight to a solution call, 10% direct booking rate.
+	•	Close Rate: The percentage of prospects that ultimately close (win) at the end:
+	•	We often measure Close Rate as (Deals closed / Solution calls completed) × 100%, since a solution call is typically the sales meeting that can result in a sale. Alternatively, it can be deals closed vs. leads or vs. solution call attended.
+	•	We define Solution Call Close Rate = (Closed-Won deals / Solution calls attended) × 100%. Using attended (show) as denominator focuses on actual opportunities to sell.
+	•	Example: 10 solution calls attended, 3 deals won → close rate = 3/10 = 30%.
+	•	Another variant is Lead-to-Close Rate = deals closed / total leads. This gives an overall funnel conversion. E.g., 100 leads, 3 closed deals = 3% lead-to-sale conversion.
+	•	Cancel/No-show Rate: The complement of show rate:
+	•	e.g. Triage No-show Rate = 100% – Triage Show Rate. If Show Rate is 80%, No-show (or cancellation) is 20%.
+	•	We might separate Cancellation Rate (cancelled in advance via Calendly) vs actual No-show Rate (didn’t show up without canceling). If we have data to distinguish (like Calendly cancellation vs just not showing), we can define both. In many cases, we treat all non-attended as “no show” for simplicity.
+
+3.2 Financial and Efficiency Metrics
+	•	Cash Collected: The total revenue collected as cash in a period (e.g. upfront payments). This might differ from total contract value if deals are paid in installments. If Close tracks actual payments (or if integrated with a payment processor), we sum those. If not, we might equate cash collected to whatever portion of the deal is collected immediately. In our example dashboards, Cash Collected represents actual money in (perhaps initial payments or paid invoices).
+	•	Example: In March, $125,500 was collected from all new customers.
+	•	Revenue (Contracted Value): The total value of deals closed (could be contract value for the year, etc.). In the example, Revenue Generated was $210,000 for March (summing contract values of deals). This often exceeds cash collected if customers pay over time.
+	•	Cost Per Lead (CPL): Marketing cost efficiency metric = (Total marketing spend / # of leads). If we know how much was spent on ads or campaigns that brought those leads, we compute CPL.
+	•	Example: Spent $5,000 on ads in April, acquired 100 leads → CPL = $5000/100 = $50 per lead.
+	•	We’ll get spend data either manually input or from integrating ad platforms (not covered here, so likely manually configured per month or campaign).
+	•	Cost Per Call: We might measure cost per scheduled call. For instance:
+	•	Cost per Triage Call = Marketing spend / # triage calls booked.
+	•	Cost per Solution Call = Marketing spend / # solution calls booked.
+	•	These metrics show how much investment yields a call with a prospect.
+	•	Example: $5,000 spend and 25 solution calls booked → $200 per solution call.
+	•	Cash per Call: A measure of return: how much cash is collected on average per call.
+	•	Cash per Solution Call (booked) = Cash Collected / # solution calls booked. In the earlier dashboard snippet, $4,826.92 was cash per solution call booked, meaning for each scheduled call, on average $4.8k cash came in (likely because not all convert).
+	•	Cash per Solution Call (attended) = Cash Collected / # solution calls attended (we might call this Cash per sit). This number would be higher if some calls no-showed since denominator is smaller.
+	•	Example: $125,500 collected, 10 solution calls attended → $12,550 cash per attended solution call.
+	•	Earnings Per Call 2 (EPC2): This metric appears in the context of the second call (solution call). We interpret EPC2 as Earnings (revenue) per Call 2. Essentially, how much revenue is generated on average for each second-call held. Formula:
+	•	EPC2 = (Total Revenue from closed deals / # of Solution Calls attended).
+	•	Using revenue rather than cash (or possibly profit – we clarify profit separately).
+	•	From the example: if $210k revenue generated from 10 solution calls attended, EPC2 = $21,000 revenue per call2. (The dashboard table showed values per user; e.g. one rep had EPC2 $21k, likely reflecting that rep’s performance).
+	•	If we use cash collected instead of full contract, we might label it EPC2 (Cash) vs EPC2 (Revenue). The snippet showed EPC2S (Earning Per Call 2 Sit) $6,962.80 which might have been a different calculation. But our definition keeps it straightforward as above.
+	•	Profit and Efficiency Metrics: If we factor in costs (marketing spend or operational costs):
+	•	Profit = Revenue – Cost. We might have Profit per Solution Call = (Revenue per call – Cost per call) if we know cost per call.
+	•	The dashboard snippet had Profit Per Solution Call $2,678.00, likely meaning after subtracting costs (maybe commissions, etc.) per call.
+	•	CPC2S (Cost Per Call 2 Sit) was $1,264.13 – probably the cost incurred (ads + other) for each second call that actually happened.
+	•	EPC2S (Earning Per Call 2 Sit) $6,962.80 – likely revenue per attended call (maybe net of something).
+	•	Cash Efficiency and Profit Efficiency PC2 (EPC2/NPC2):
+	•	These appear to be ROI-like ratios. Possibly NPC2 stands for “Net Profit per Call 2” and EPC2 for “Earnings per Call 2”, so Profit Efficiency = (Net profit per call2 / cost per call2) and Cash Efficiency = (Revenue per call2 / cost per call2).
+	•	E.g., Cash Efficiency 301.60% suggests revenue per call is ~3x the cost per call. Profit Efficiency 0.37% seems off (likely 37% if a formatting issue). Ideally, profit efficiency (ROI) = (profit per call / cost per call) × 100%.
+	•	We will define ROI on Calls = (Revenue gained from calls / Cost of those calls) × 100%. So if it costs $1,000 in ads to get one call that yields $3,000 in revenue, ROI = 300%.
+	•	Avg Contract Value / Avg Cash Collected: Also from example:
+	•	AVG $ Rate or average deal size = Cash Collected / # deals, or Revenue / # deals. E.g. $125,500 over 4 deals = $31,375 avg cash per deal; $210k/4 = $52,500 avg contract value.
+	•	# of Calls to Close: How many calls on average to close a deal. The snippet had “Number of Calls to Close = 1” which might mean on average one solution call needed (perhaps because triage not counted or because closers often close on the first solution call). We can compute: (# total solution calls / # deals closed). If 14 solution calls led to 4 deals, that’s 3.5 calls per close on average. Maybe they counted only solution calls beyond a certain step.
+
+Timelines and Sample Calculation:
+
+Let’s walk through a hypothetical timeline for one lead to illustrate metric derivation:
+	•	Day 0: Lead arrives via Typeform (UTM: source=Google). New Leads = 1.
+	•	Day 1: Lead booked a Triage Call via Calendly. Triage Booked = 1.
+	•	Day 2: Lead attends Triage Call. Triage Show = 1, so Triage Show Rate = 100% for this tiny sample.
+	•	In the triage, the SDR (sales development rep or “setter”) qualifies the lead and schedules a Solution Call for Day 5. Solution Call Booked = 1 (for this lead).
+	•	Day 5: Lead attends Solution Call with a sales rep (Closer). Solution Show = 1 (Solution Show Rate = 100% here).
+	•	Day 6: The sales rep closes a deal with the lead. Deal closed = 1. Let’s say contract value $10,000, and they paid $5,000 upfront (cash).
+	•	At month end, how metrics compute:
+	•	New Leads = 1.
+	•	Triage Booked = 1, Triage Attended = 1 → Triage Show Rate = 1/1 = 100%.
+	•	Solution Booked = 1, Solution Attended = 1 → Solution Show Rate = 100%.
+	•	Solution Close Rate = deals closed / solution attended = 1/1 = 100% (in this trivial case).
+	•	Lead-to-Close = 1/1 = 100%.
+	•	Cash Collected = $5,000, Revenue = $10,000.
+	•	EPC2 (Revenue per call2) = $10,000 / 1 = $10,000.
+	•	If our ad spend for that lead’s campaign was, say, $200:
+	•	CPL = $200/1 = $200.
+	•	Cost per call (triage) = $200/1 = $200, per solution call = $200/1 = $200.
+	•	Cash per call2 = $5,000 / 1 = $5,000.
+	•	ROI (Cash Efficiency) = (Revenue $10k / Cost $200) *100% = 5000% (a big ROI due to one lead).
+	•	Normally metrics aggregate many leads; this just shows how one flows through.
+
+For a broader example: say in a month we had:
+	•	100 leads, cost $5,000 (so CPL $50).
+	•	80 triage calls booked (some leads never scheduled), of which 60 happened (show rate 75%, 20 canceled/no-show).
+	•	Out of 60 triage, 40 progressed to book solution calls (conversion 66.7%).
+	•	40 solution calls booked, 30 attended (show rate 75% again, 10 no-shows).
+	•	Out of 30, 10 deals closed (close rate 33% of attended).
+	•	Total revenue $200,000 (avg $20k each), cash collected $100,000 (perhaps half upfront).
+	•	Metrics:
+	•	New Leads = 100.
+	•	Triage Show Rate = 60/80 = 75%.
+	•	Solution Booking Rate = 40/60 = 66.7% (percentage of triage that lead to a solution call booking).
+	•	Solution Show Rate = 30/40 = 75%.
+	•	Close Rate = 10/30 = 33.3% (based on solution attended; lead-to-close = 10%).
+	•	Cash per Solution Call (attended) = $100k/30 = $3,333.
+	•	EPC2 = Revenue per call2 = $200k/30 ≈ $6,667.
+	•	CPL = $5,000/100 = $50.
+	•	Cost per Solution Call = $5,000/40 = $125.
+	•	Cash Efficiency (Revenue/Cost) = $200k/$5k = 4000%, Profit Efficiency (Profit/Cost) = (($200k-$5k)/$5k)*100% ≈ 3900%.
+
+These KPIs would be aggregated by month, campaign, or by sales rep as needed. The dashboard can show totals and breakdowns (e.g. by rep, see below).
+
+Sales Team Dashboard view showing key KPIs and charts by month and user. In this UI, users can filter the dashboard (top controls for month and user). Cards display aggregate metrics like Closed Deals, Cash Collected, Revenue, total calls, Call #1 and #2 taken, Closing Rate, etc. Graphs and tables break down performance by salesperson (bar chart of cash collected per rep, closing rate chart, and a table of metrics by rep).
+
+In the embedded Sales Team Dashboard example above, notice how the metrics correspond to our definitions:
+	•	“Closed Deals: 4” and “Closing Rate: 37.50%” (likely meaning 4 deals out of some base, possibly out of 8 opportunities or weighted by user metrics).
+	•	“Cash Collected: $125,500”, “Revenue: $210,000” (difference indicating not all revenue collected as cash yet).
+	•	“# of Call 1 Taken: 30, # of Call 2 Taken: 14” (these are counts of attended calls of each type in that month).
+	•	“Earning Per Call 2: $39,970.00” (this might be a total or average earnings per call2; if 14 call2 taken, perhaps total earnings $39,970 per call implies around $559k total – unclear, possibly misnamed; more likely it’s total revenue divided by deals times something. Our earlier definition of EPC2 was per call average, which would have been $15k in this scenario. So this $39,970 might be something like per closed call? It’s a bit unclear, but we’ll stick to our definition).
+	•	The table below shows each rep’s metrics: e.g., one rep closed 2 deals for $60k cash, $110k value, had 3 call2s → his Closing Rate 100%, EPC2 $21,000 (likely $21k revenue per call2).
+	•	“Admin Missing %” perhaps refers to missing admin tasks or data.
+
+The key is our system will compute all these from the unified database: counts of leads, calls, deals, sums of values, etc., sliced by timeframe and owner.
+
+We will implement functions or SQL queries to calculate these KPIs. For example:
+	•	Show Rate = COUNT(attended=true) / COUNT(total scheduled) for events in the period.
+	•	Close Rate = COUNT(deals_won) / COUNT(solution_calls_attended).
+	•	And so on, either precomputed or on-the-fly (discussed in Section 7).
+
+4. Cloud Infrastructure and Deployment (AWS)
+
+The application will be deployed on AWS with a scalable, secure architecture using ECS Fargate for containers, RDS for the database, and Redis for caching. All infrastructure will be defined as code using Terraform. We describe each component, environment configuration, and the CI/CD pipeline for automated deployment.
+
+4.1 Architecture Overview
+
+Infrastructure Components:
+	•	AWS ECS (Fargate): We use AWS Elastic Container Service with Fargate launch type to run our Node.js backend (and possibly the frontend if we containerize it, though front might be static). Fargate provides serverless container hosting – we don’t manage EC2 servers, and it scales automatically. An Application Load Balancer (ALB) will route HTTPS traffic to ECS tasks (the Node backend). The ALB provides a stable endpoint (e.g. api.mydomain.com) and handles SSL termination.
+	•	AWS RDS (PostgreSQL): The primary data store is a PostgreSQL database on Amazon RDS. This stores all unified data (contacts, events, opportunities, computed metrics if needed, user accounts for our app, etc.). We’ll configure RDS for high availability (multi-AZ) to ensure reliability of data.
+	•	AWS ElastiCache (Redis): We include Redis for caching and transient data:
+	•	Caching expensive queries (e.g. caching KPI results for a period so repeated dashboard views are fast).
+	•	Storing session data or rate limit counters.
+	•	Possibly as a queue/backlog for webhooks or background jobs (using Redis lists or a library like bullmq).
+	•	Redis will be in the same VPC for low latency. A small cluster or even one node (with backup) can suffice initially.
+	•	Static Frontend Hosting: The React app (after build) is a static bundle. We can deploy it to an S3 bucket with CloudFront CDN for scalability and performance. Alternatively, we can containerize a simple Node/NGINX to serve the static files via ECS as well. The simplest approach: use S3+CloudFront, which offloads serving static assets from our servers.
+	•	The React app will then interact with the API via the ALB endpoint. We’ll configure CORS or use same domain via a subdomain (e.g. app.mydomain.com for React, api.mydomain.com for API, or just serve API under the same domain path if using one domain).
+	•	VPC & Networking: All components reside in a dedicated VPC:
+	•	Private subnets for ECS tasks and RDS/Redis (not directly accessible from internet).
+	•	Public subnets for the ALB (to accept internet traffic).
+	•	ECS tasks (Fargate) will have security groups allowing outbound internet (for API calls to Close/Calendly/Typeform) and inbound only from ALB for the API port.
+	•	RDS security group allows inbound only from ECS tasks (and maybe a bastion or AWS SSM for migrations/maintenance).
+	•	Redis security group similarly restricted to ECS.
+	•	NAT Gateway: Fargate tasks in private subnets need outgoing internet access (to call third-party APIs), which will be via a NAT gateway in a public subnet (or using Fargate’s managed NAT if available).
+	•	If needed, a VPC Endpoint for Secrets Manager or CloudWatch can be set for secure access without public internet.
+	•	AWS Secrets Manager / Parameter Store: All sensitive config (API tokens, DB passwords, JWT secret) will be stored in AWS Secrets Manager (or SSM Parameter Store). ECS can fetch these and inject as environment variables into containers securely (either by referencing them in the task definition or using AWS SDK at runtime).
+	•	For example, Terraform will create secrets: /myapp/prod/DB_PASSWORD, /myapp/prod/CLOSE_API_KEY, etc. The ECS task definition can specify secrets with valueFrom pointing to these ARN values so that at runtime, the container gets them as env vars.
+	•	Monitoring & Logging: CloudWatch Logs will aggregate logs from ECS (the Node app’s console output and error logs) and can trigger alerts on certain log patterns or errors. We will also use CloudWatch Alarms for resource metrics (e.g. high CPU on tasks, low DB memory, etc.). If budget allows, we might integrate an APM (Application Performance Monitoring) like New Relic or Datadog, but CloudWatch covers basics. AWS CloudTrail logs API calls to infrastructure (for audit).
+	•	Domain & SSL: We’ll use Route 53 to manage DNS for our domain (e.g. example.com). We’ll create records for frontend (e.g. app.example.com) and API (e.g. api.example.com), both pointing to CloudFront/ALB as appropriate. AWS Certificate Manager (ACM) will provide an SSL certificate for these domains, attached to the CloudFront and ALB, so that both front and back are served securely via HTTPS.
+	•	Terraform IaC: All the above (VPC, ECS cluster, task definitions, ALB, RDS instance, ElastiCache, IAM roles, etc.) will be declared in Terraform configuration files. We will define separate modules or resources for:
+	•	VPC & networking (subnets, gateways).
+	•	ECS cluster and task definition:
+	•	e.g. aws_ecs_task_definition for the Node backend container (including CPU/memory, image, env vars, secrets injection).
+	•	aws_ecs_service to run tasks behind the ALB (with desired count, enabling auto-scaling perhaps).
+	•	aws_alb and aws_alb_target_group for directing traffic to the service, plus aws_alb_listener for port 443.
+	•	RDS instance via aws_db_instance (with engine postgres, allocated storage, etc.), and subnet group, parameter group if needed.
+	•	Elasticache via aws_elasticache_cluster or aws_elasticache_replication_group for Redis.
+	•	IAM roles:
+	•	Task Execution Role (for ECS to pull images and read secrets).
+	•	Task Role for the container (allowing it to e.g. access Secrets Manager if we fetch secrets at runtime, or CloudWatch).
+	•	Secrets Manager entries via aws_secretsmanager_secret and ..._version for values, or SSM parameters via aws_ssm_parameter.
+	•	S3 Bucket for frontend and CloudFront distribution (with ACM cert).
+	•	Security Groups definitions for ALB, ECS, RDS, Redis as discussed.
+
+Environment Configuration: We will have at least two environments: development (or staging) and production. Terraform will be parameterized by environment, possibly using workspaces or separate state. Environment-specific variables include:
+	•	VPC CIDRs, instance sizes (maybe smaller for dev).
+	•	Number of ECS tasks (maybe 1 in dev, 2+ in prod).
+	•	Domain names (prod uses real domain, dev might use a subdomain or AWS domain).
+	•	Secrets differ (especially third-party API keys might have test vs prod keys).
+
+We’ll structure environment variables in the code such that they can be easily configured:
+	•	Use a .env file for local development (with dummy/test keys).
+	•	Use Terraform to inject the real secrets in AWS. For example, our Node app might expect environment variables like:
+	•	CLOSE_API_KEY, CALENDLY_API_TOKEN, TYPEFORM_TOKEN (for third-party auth),
+	•	DB_HOST, DB_NAME, DB_USER, DB_PASS (for RDS, though if in same VPC, we might use host and credentials from secrets),
+	•	REDIS_HOST, REDIS_PASS (if needed),
+	•	JWT_SECRET (for signing auth tokens, see Security),
+	•	NODE_ENV=production (to enable production optimizations),
+	•	any feature flags or config toggles.
+
+Secrets such as API keys and DB passwords will not be hardcoded. For example, Terraform can set an ECS task container definition like:
+
+environment = [
+  { name = "NODE_ENV", value = "production" },
+  { name = "JWT_SECRET", value = var.jwt_secret }
+]
+secrets = [
+  {
+    name      = "CLOSE_API_KEY",
+    value_from = aws_secretsmanager_secret_version.close_api_key.arn
+  },
+  {
+    name      = "DB_PASSWORD",
+    value_from = aws_secretsmanager_secret_version.db_password.arn
+  }
+  // ... etc
+]
+
+This way, at runtime ECS retrieves the actual values securely ￼ ￼.
+
+Scaling & HA:
+	•	ECS Service can auto-scale based on CPU/memory or request count. We will start with a desired count (e.g. 2 tasks in prod for redundancy across AZs) and set up auto-scaling target (like keep CPU ~50%).
+	•	RDS will be Multi-AZ for failover. We can also scale its instance size if load grows. For read-heavy scenarios, add read replicas.
+	•	Redis can be clustered or have a replica for failover if needed.
+	•	ALB is highly available by nature (multi-AZ).
+	•	CloudFront+S3 for the frontend ensures global fast access and uptime.
+
+4.2 Deployment Pipeline (CI/CD with GitHub Actions)
+
+We will implement continuous integration and deployment using GitHub Actions. The repository will contain both frontend and backend code (and possibly Terraform configs, though sometimes infra is separate). Key aspects of the CI/CD pipeline:
+
+CI (Continuous Integration):
+	•	Triggered on pull requests and merges to main.
+	•	Build & Test: The pipeline will run unit tests for the Node backend (e.g. npm test) and possibly any frontend tests (e.g. using Jest or React Testing Library). We ensure the code passes linting and tests before deployment.
+	•	Lint/Format: We can add steps for ESLint, Prettier, etc., failing the build if code style issues (to maintain quality).
+
+CD (Continuous Deployment):
+	•	Triggered on merge to main (for production) or to a dev branch (for staging).
+	•	Build Docker Images: We will maintain Dockerfiles for backend and (if needed) for the frontend:
+	•	Backend Dockerfile: Starts from an official Node.js base image, installs dependencies, copies source, sets NODE_ENV=production and starts the server (likely via npm start or using a process manager).
+	•	We’ll multi-stage build to reduce image size (build stage then runtime stage).
+	•	Frontend Dockerfile (optional): If using S3/CloudFront for static, we don’t need to containerize front. Instead, we’ll just build the static files. If we did containerize (e.g. to serve via Nginx), we’d have a Dockerfile that copies the React build into a small Nginx image.
+	•	Publish Images: After building, the action will log in to AWS ECR (Elastic Container Registry) using AWS credentials (stored as GitHub secrets) and push the new images. We version the images by git commit SHA or by a tag (like latest for main, or staging tag for dev).
+	•	Example actions steps:
+	•	aws ecr get-login-password | docker login (to authenticate),
+	•	docker build -t myapp-backend:${GITHUB_SHA} ./backend,
+	•	docker push myapp-backend:${GITHUB_SHA} (and maybe also push :latest tag).
+	•	Migrations: If the backend update includes DB schema changes, we incorporate a migration step. E.g., run a migration tool (like Knex, Prisma, or Sequelize migrations) to apply DB changes. This could be done before deploying new code or as part of the new container startup. We might run a separate ECS task or AWS Lambda for migration. In CI, we can call npm run migrate against the RDS (ensuring the security group allows the CI runner or using GitHub Action self-hosted runner or connecting through an SSH tunnel). Alternatively, we apply migrations via a migration tool container run in ECS.
+	•	Deploy to ECS: We have two main strategies:
+	1.	Terraform Apply via CI: We can have Terraform configuration such that the container image tag is a variable. The pipeline could update that variable and run terraform apply to set the new image in the task definition. This ensures infrastructure and app deploy in one step. We’d need to securely handle Terraform state (likely in an S3 bucket with locking via DynamoDB) and provide AWS creds. This approach gives full infra-as-code deployment.
+	2.	Direct ECS Update: Alternatively, if infra hasn’t changed, we can use AWS CLI or SDK to update the ECS service with the new image. For example, use aws ecs update-service --cluster myCluster --service myService --force-new-deployment after pushing the new image (if the task definition uses :latest image or we register a new task def revision with the new image). We may prefer registering a new task definition revision with the new image SHA:
+	•	aws ecs register-task-definition --family myapp --container-definitions "[{... image: 'myrepo:SHA', ...}]"
+	•	then update-service to use that revision. This can be done via the AWS CLI or using the Terraform ECS deploy provider.
+	•	Using Terraform to deploy means CI runs terraform plan and apply. We should ensure this is done in an environment scoped way (maybe only on main branch).
+	•	Deploy Frontend: For the React app, if using S3:
+	•	The pipeline will run npm install && npm run build in the frontend directory, producing a build folder.
+	•	Then use AWS CLI (with credentials) to sync this to the S3 bucket:
+	•	e.g. aws s3 sync ./frontend/build s3://myapp-frontend-bucket/ --delete (the --delete removes old files).
+	•	Possibly invalidate CloudFront cache so new assets serve (e.g. aws cloudfront create-invalidation --distribution-id X --paths "/*").
+	•	If using container for front, then just push that container and update a service similarly.
+	•	Post-Deploy Notifications: Optionally, configure the action to post a Slack message or email on deploy success/failure.
+	•	GitHub Actions Workflow Example: (in pseudocode)
+
+on:
+  push:
+    branches: [ main ]
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - checkout
+      - setup-node (use Node 18)
+      - run: npm ci && npm run lint && npm test  # backend tests
+      - run: npm --prefix frontend ci && npm --prefix frontend run build  # build front
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with: 
+          name: frontend-build
+          path: frontend/build
+  deploy:
+    needs: build-test
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - checkout
+      - setup-node
+      - download-artifact: frontend-build
+      - setup AWS credentials (from secrets)
+      - run: |
+          docker build -t $ECR_BACKEND_REPO:latest -t $ECR_BACKEND_REPO:$GITHUB_SHA ./backend
+          docker push $ECR_BACKEND_REPO:$GITHUB_SHA
+          docker push $ECR_BACKEND_REPO:latest
+      - run: aws s3 sync frontend/build s3://myapp-frontend --delete
+      - run: aws cloudfront create-invalidation --distribution-id XYZ --paths "/*"
+      - run: aws ecs update-service --cluster myCluster --service myService --force-new-deployment
+      # (or terraform apply -auto-approve)
+
+This is a simplified outline. We’d include error checking and perhaps separate job for infra changes.
+
+	•	Terraform in CI: If we include Terraform, we might have a separate workflow for infra (triggered when terraform files change). Or we integrate it in deploy job:
+	•	Use hashicorp/setup-terraform action, then terraform init/plan/apply.
+	•	Ensure our GitHub Actions AWS user has permissions to manage the infra (which is powerful; some teams prefer manual Terraform apply to avoid mistakes on every push).
+	•	We will store Terraform state in an S3 bucket (with encryption and state locking using DynamoDB to avoid race conditions). These resources can be bootstrapped manually or via Terraform Cloud.
+
+Environment Variables & Secrets in CI: GitHub Actions secrets will store AWS credentials (Access key/secret for a user with limited permissions to ECR, S3, ECS deploy, CloudFront, etc.), and perhaps the JWT signing secret for test or others if needed. We avoid storing third-party API keys in CI; those are only in AWS Secrets, fetched at runtime by the app (so they don’t need to be known during build/deploy, which is good for security).
+
+4.3 AWS Resource Configuration and Optimization
+
+A brief note on sizing and configuration:
+	•	ECS Task Sizing: The Node backend container can be given e.g. 0.25 vCPU and 512MB RAM to start (depending on load). Fargate allows right-sizing and auto-scaling. We’ll monitor usage and adjust via Terraform if needed.
+	•	RDS Sizing: Start with a db.t3.small or medium for dev, maybe db.t3.medium for prod (depending on anticipated load). Enable auto-scaling storage. Use Postgres 14+.
+	•	Redis: A cache.t3.micro might be enough initially.
+	•	Terraform Workspaces or separate config for dev/prod ensure isolation.
+	•	We ensure all resources have proper tags (for cost tracking, etc.) via Terraform.
+	•	Logging: We set the ECS task definition to send logs to CloudWatch log group (e.g. /ecs/myapp-backend), and set retention (e.g. 30 days) to control costs. Similarly RDS logs can go to CloudWatch if needed (slow query logs, etc.).
+
+In summary, our AWS deployment is containerized and scalable. Terraform ensures that the infrastructure can be reliably recreated or updated by the AI agent as needed, with minimal manual steps.
+
+5. Frontend Architecture and Components (React)
+
+The frontend is a React single-page application that provides a dashboard and UI for users (sales team, admins) to view the attribution metrics. We will use shadcn/ui (a Tailwind CSS based component library) for consistent UI components, React Router for navigation, and state management libraries TanStack Query for data fetching and caching, and Zustand for client-side state (like filters). This section outlines the structure of the React app, important components, and how we implement features like filtering, charts, and authentication in the UI.
+
+5.1 Project Structure and Tech Stack
+	•	Build Tool: We’ll use Vite (or Create React App or Next.js, but a plain Vite + React is sufficient) for fast development and bundling. Vite will output static files for deployment.
+	•	Language: TypeScript for type safety across the app.
+	•	UI Library: shadcn/ui, which provides pre-built React components styled with Tailwind CSS and Radix primitives. We’ll integrate Tailwind CSS in the project for styling and utility classes.
+	•	Routing: Using React Router v6 to handle multiple pages/views in the SPA. Alternatively, if we used Next.js it’d handle routing via file system. Here we assume a classic CRA/Vite app, so React Router is appropriate.
+	•	State Management:
+	•	TanStack React Query (React Query): to fetch and cache data from our backend API. This handles async server state nicely (with loading states, caching, automatic refetch on interval or on focus, etc.).
+	•	Zustand: a lightweight state library for global UI state that doesn’t fit in React Query. We’ll use it for things like currently selected filters (month, user) and perhaps user login state (token storage), or toggling UI elements. Zustand allows creating a global store with minimal boilerplate.
+	•	Charts: For data visualization, we can use a library like Chart.js (with react-chartjs-2 wrapper) or Recharts, or even Visx/D3 for custom. Chart.js provides easy doughnut, line, bar charts that suit our dashboard. We can incorporate it in combination with Tailwind for styling. The example dashboards had bar charts and small number cards, which Chart.js or Recharts can handle well.
+
+5.2 UI Layout and Components
+
+The UI likely has these screens:
+	•	Login Page: A simple form for email/password (if not using SSO). After login, store JWT and redirect to dashboard.
+	•	Dashboard Page: The main view with metrics. Within the dashboard, potentially multiple sub-sections or tabs (e.g. “Setter Metrics” vs “Sales Team Metrics” as seen in images, or filter by role).
+	•	Possibly User Management page (for admins to add users, etc.) – not explicitly requested, but if we have Admin role, they might manage accounts.
+	•	Possibly a Lead Detail page if one wanted to drill into an individual contact’s timeline – not required by prompt, but could be a future extension.
+
+Dashboard Layout: We will implement a responsive dashboard layout:
+	•	A sidebar (as shown in the screenshot with icons) for navigation (e.g. links for Dashboard, perhaps other sections).
+	•	A top bar with filter controls (e.g. Month dropdown, User dropdown).
+	•	The main content showing metric cards, charts, tables.
+
+Using shadcn/ui, we have premade components:
+	•	: for the metric summary boxes (like “Closed Deals: 4” etc.).
+	•	: for the detailed metrics by user.
+	•	 or : for the filter selectors (month and user).
+	•	Layout components: maybe a  or  for the sidebar.
+	•	We will apply Tailwind utility classes for spacing, grid layout of cards, etc.
+
+Routing: Example routes with React Router:
+
+<BrowserRouter>
+  <Routes>
+    <Route path="/login" element={<LoginPage />} />
+    <Route path="/" element={<RequireAuth><DashboardLayout/></RequireAuth>}>
+       <Route index element={<DashboardHome />} />
+       {/* possibly nested routes for different views */}
+       <Route path="setter-metrics" element={<SetterMetricsPage />} />
+       <Route path="sales-metrics" element={<SalesMetricsPage />} />
+    </Route>
+  </Routes>
+</BrowserRouter>
+
+RequireAuth would be a component checking if user is logged in (if not, redirect to /login).
+
+We could also have a single Dashboard page that conditionally shows different sections for setter vs sales metrics, depending on user role or a toggle.
+
+Filter State: We maintain selected month and user filter in a global store using Zustand:
+
+// filtersStore.ts
+import { create } from 'zustand';
+interface FilterState {
+  month: string; // e.g. "2025-03"
+  user: string;  // user id or name filter, "All" or specific
+  setMonth: (m: string) => void;
+  setUser: (u: string) => void;
+}
+export const useFilterStore = create<FilterState>((set) => ({
+  month: "", 
+  user: "All",
+  setMonth: (m) => set({ month: m }),
+  setUser: (u) => set({ user: u })
+}));
+
+Components can use const {month, user, setMonth, setUser} = useFilterStore();.
+
+We will populate the month filter options (maybe last 12 months, plus “All time”) and user filter (list of sales reps or “All”) possibly from an API or a constants list.
+
+Data Fetching with React Query: For each data widget:
+	•	We will create API endpoints in the backend for needed data. Likely an endpoint like /api/metrics?month=2025-03&user=all that returns a JSON of all relevant metrics for that filter (to reduce number of API calls).
+	•	Alternatively, multiple endpoints: e.g. /api/metrics/summary, /api/metrics/by-user, etc. But one combined might be easier for one request per dashboard view.
+	•	We use useQuery hook to fetch metrics:
+
+const { month, user } = useFilterStore();
+const { data: metrics, error, isLoading, refetch } = useQuery(
+  ['metrics', month, user],
+  () => apiClient.get(`/metrics?month=${month}&user=${user}`).then(res => res.data),
+  { staleTime: 5 * 60 * 1000 } // cache for 5 minutes, for example
+);
+
+apiClient could be an Axios instance with baseURL set to our API.
+	•	While loading, we show spinners or shimmer UI on cards.
+	•	If error, maybe a toast or message (shadcn/ui has a  component we can use for notifications).
+
+Displaying Metrics: Once metrics data is loaded, we populate the UI components:
+	•	Metric Cards: e.g. a component <MetricCard label="Closed Deals" value={metrics.closedDeals} />.
+	•	We may format numbers (use a utility or library for currency, percentages).
+	•	Charts:
+	•	For example, a bar chart of Cash Collected by user: we can use Chart.js. Prepare data from metrics.perUserCash array. Use <Bar> component from react-chartjs-2, with options (like axes, colors).
+	•	A small bar or line chart for Closing Rate by user as in example.
+	•	We ensure to make charts responsive (Chart.js does this if container is responsive).
+	•	Tables: The example shows a table of users with many columns (calls, deals, rates, etc.). We can implement with an HTML table or a shadcn/ui table component that supports nice styling.
+	•	Potentially we use a data grid library if we wanted features like sorting, but given the fixed nature, static table is fine.
+
+Example – React component for metrics using TanStack Query:
+
+function SummaryCards() {
+  const { month, user } = useFilterStore();
+  const { data: metrics, isLoading } = useQuery(
+    ['metrics', month, user],
+    () => fetch(`/api/metrics?month=${month}&user=${user}`).then(res => res.json())
+  );
+  if (isLoading) return <SkeletonCards />; // show loading skeletons
+  if (!metrics) return <div>Error loading metrics</div>;
+
+  return (
+    <div className="grid grid-cols-3 gap-4">
+      <Card><h3>Closed Deals</h3><p>{metrics.closedDeals}</p></Card>
+      <Card><h3>Cash Collected</h3><p>${metrics.cashCollected.toLocaleString()}</p></Card>
+      <Card><h3>Revenue Generated</h3><p>${metrics.revenue.toLocaleString()}</p></Card>
+      {/* ... more cards */}
+    </div>
+  );
+}
+
+Filter Controls Component:
+We have a <MonthPicker> and <UserPicker>:
+	•	MonthPicker could be a dropdown listing options (we can generate last N months dynamically, e.g. using dayjs to format). When changed, call setMonth(newMonth) from Zustand.
+	•	UserPicker might fetch the list of users from /api/users or /api/metrics?month=... could include a list of active users for that month. Alternatively, we have it static or based on roles.
+	•	If user role is Sales (non-admin), we might default the user filter to themselves or even hide the user filter (so they only see their own metrics).
+	•	Admin and Viewer roles can pick any or “All”.
+
+Auth in Frontend:
+	•	We will have a context or hook for Auth. Possibly use React Context to store current user info and provide login/logout methods.
+	•	On login form submit, call POST /api/auth/login with credentials. If success, get JWT token and user data (including role).
+	•	We then store the JWT in memory (and optionally localStorage or a cookie for persistence).
+	•	For security, a HttpOnly cookie could be set by the server on login response (with the JWT). This way, the browser automatically sends it, and we avoid JS access. But since we have a single domain scenario, we could do that. We need to ensure the cookie flags (Secure, SameSite).
+	•	Simpler: store JWT in localStorage (but then susceptible to XSS if any vulnerability, though we will be careful).
+	•	The React Query apiClient will include the JWT in Authorization header for subsequent requests. We can set up an Axios interceptor or simply include it from context in fetch calls.
+	•	If a request returns 401 (token expired or invalid), we should redirect to login.
+
+Role-Based UI:
+	•	The JWT will encode the user’s role (e.g. in a claim or we call an API to get current user info). We use this to conditionally render:
+	•	If role is Sales, maybe restrict filter to their own name or hide certain overall metrics.
+	•	If Admin, show everything plus maybe user management.
+	•	We can create a component like <RequireRole role="Admin">...</RequireRole> to wrap elements that only admins should see.
+	•	The backend will also enforce RBAC on endpoints (discussed later), but frontend should also adjust the experience.
+
+Example – Using Zustand for Auth (Alternatively):
+We could also use Zustand to store auth state instead of Context:
+
+interface AuthState {
+  user: UserInfo | null;
+  token: string | null;
+  login: (credentials) => Promise<void>;
+  logout: () => void;
+}
+export const useAuthStore = create<AuthState>((set) => ({
+  user: null,
+  token: null,
+  login: async ({ email, password }) => {
+    const res = await fetch('/api/auth/login', { method:'POST', body: JSON.stringify({email,password})});
+    const data = await res.json();
+    // assume data has token and user
+    set({ token: data.token, user: data.user });
+  },
+  logout: () => set({ token: null, user: null })
+}));
+
+This allows any component to get auth state by const { user, token, logout } = useAuthStore();. We also might persist token in localStorage:
+	•	We can use a middleware (zustand persist) to auto-save token to localStorage and rehydrate on page load so that user stays logged in. Or we manually do localStorage in login/logout.
+
+Protecting Routes: If a user is not logged in, redirect to login. We can implement RequireAuth:
+
+function RequireAuth({ children }) {
+  const { token } = useAuthStore();
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+}
+
+Now the UI will be designed to be responsive (Tailwind helps with responsive utility classes). The cards can wrap on small screens, the sidebar can collapse to a menu for mobile, etc. Shadcn’s components like Navbar/Drawer can assist for mobile.
+
+5.3 Example UI Elements
+	•	Metric Card Component:
+
+function MetricCard({ title, value, description }) {
+  return (
+    <Card className="p-4">
+      <h4 className="text-sm font-medium text-muted-foreground">{title}</h4>
+      <div className="text-2xl font-bold">{value}</div>
+      {description && <div className="text-xs text-muted-foreground mt-1">{description}</div>}
+    </Card>
+  );
+}
+
+We can use this for each KPI. For example:
+
+<MetricCard title="Triage Show Rate" value={`${metrics.triageShowRate.toFixed(2)}%`} description="(Attended/Booked)" />
+
+	•	Charts: Suppose using Chart.js, define data:
+
+const closingRateData = {
+  labels: metrics.perUser.map(u => u.name),
+  datasets: [{
+    label: 'Closing Rate',
+    data: metrics.perUser.map(u => u.closingRate * 100),
+    backgroundColor: '#4c51bf'
+  }]
+};
+
+Then:
+
+<Bar data={closingRateData} options={{ scales: { y: { max: 100, title: { display:true, text:'%' }}}}} />
+
+(This yields a bar chart of closing rates by user.)
+	•	Tables: For per-user breakdown (like the one shown with columns: Closed, Cash, Contracted, #calls, etc.), we create an array of headers and map rows:
+
+<table className="min-w-full text-sm">
+  <thead className="bg-gray-50">
+    <tr>
+      <th className="px-2 py-1 text-left">User</th>
+      <th className="px-2 py-1 text-right">Closed</th>
+      <th className="px-2 py-1 text-right">Cash Collected</th>
+      ...
+    </tr>
+  </thead>
+  <tbody>
+    {metrics.perUser.map(userMetric => (
+      <tr key={userMetric.userId} className="border-b">
+        <td className="px-2 py-1">{userMetric.name}</td>
+        <td className="px-2 py-1 text-right">{userMetric.closedDeals}</td>
+        <td className="px-2 py-1 text-right">${userMetric.cashCollected.toLocaleString()}</td>
+        ...
+        <td className="px-2 py-1 text-right">{(userMetric.adminMissing * 100).toFixed(2)}%</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+We style it via Tailwind classes or shadcn’s table classes.
+
+shadcn/ui integration: We use shadcn for:
+	•	Buttons (for any actions, e.g. a refresh or export button).
+	•	Dialogs (maybe if viewing details).
+	•	Forms (login form fields).
+	•	Dropdown menu for maybe profile menu or more actions.
+	•	The overall aesthetic is defined by Tailwind theme, which we can customize via config if needed (shadcn provides default theme which is nice and neutral).
+	•	Icons: shadcn often uses Lucide icons, which we can import for things like a user icon, filter icon, etc.
+
+5.4 Frontend Security Considerations
+	•	We will ensure to escape or sanitize any data displayed (though most data comes from our API and should be clean numeric/text).
+	•	Use HTTPS for all API calls (if same domain and served over https, fetch will be secure).
+	•	The JWT token, if stored in localStorage, could be a target if XSS vulnerability – so we will be vigilant about not injecting unsafe HTML or using any dangerouslySetInnerHTML without sanitization. Alternatively, using an HttpOnly cookie for JWT mitigates XSS risk at cost of a bit more complexity (we’d need CSRF protection if using cookies, which could be done via sameSite=strict and using only same-domain requests).
+	•	Content Security Policy can be set on our static site to restrict allowed scripts (only our domain).
+	•	Dependency updates: We’ll keep libraries updated to get security fixes (via Dependabot or similar, integrated in CI).
+	•	The frontend will not expose any secrets; all API keys are stored in backend. Frontend only has the URLs and relies on user auth to get data.
+
+In summary, the React frontend provides a dynamic, interactive dashboard that fetches data via secure APIs and updates the UI. By using proven libraries for data fetching and state, we ensure reliable updates. The user experience will allow filtering metrics by time and person, and viewing performance at a glance through responsive cards, charts, and tables.
+
+6. Security and Authentication
+
+Security is critical since we handle potentially sensitive lead data and user accounts. We outline our authentication scheme (JWT based), role-based access control, data protection measures, and compliance with privacy regulations (GDPR).
+
+6.1 User Authentication (JWT)
+
+We implement a JWT (JSON Web Token) authentication system for users of our web app:
+	•	User Accounts: We maintain a users table in our database with fields: id, email, password_hash, name, role, etc. Roles can be Admin, Sales, or Viewer as specified. We will seed an initial admin user.
+	•	Password Storage: Passwords are hashed using a strong algorithm (e.g. bcrypt) with a salt. On user creation, we bcrypt.hash(plainPassword) and store the hash.
+	•	Login Process:
+	•	Endpoint POST /api/auth/login expects email and password. The backend will:
+	1.	Find user by email.
+	2.	Use bcrypt to compare provided password with stored hash.
+	3.	If match, generate a JWT. The JWT will be signed with our JWT_SECRET (an environment secret, at least 256-bit for HS256 or we could use RS256 with a key pair).
+	4.	JWT payload includes user identification and role. For example:
+
+{
+  "sub": "<user_id>",
+  "role": "Sales",
+  "name": "John Doe",
+  "iat": 1670000000,
+  "exp": 1670003600
+}
+
+We include exp (expiration) to enforce token expiry (e.g. 1 hour or 8 hours).
+
+	5.	Return the token to the client (in JSON response or set as HttpOnly cookie).
+
+	•	If credentials fail, respond with 401 Unauthorized.
+
+	•	Token Usage: The React frontend will include the JWT in Authorization: Bearer header for API requests to protected endpoints. The backend Express (for example) will have a middleware to verify the JWT on each request:
+	•	It will check the signature (using JWT_SECRET).
+	•	If valid, attach the token payload (user id, role) to the request context (e.g. req.user = {id, role}).
+	•	If invalid or expired, respond 401.
+	•	Token Refresh: We can implement refresh tokens if we want long-lived sessions without re-login. Simpler approach: set JWT lifespan reasonably (e.g. 8 hours workday). If expired, user must login again. For improved UX, we might add a refresh token cookie that lasts longer and an endpoint to refresh. This is an enhancement; initially we might not implement refresh tokens to keep it simple.
+	•	Logout: On client, just removing the token (and on server if using cookies, instructing browser to clear cookie). We can also keep a token blacklist or rotation if needed, but with short expiry, logout is mostly client-side.
+	•	RBAC (Role-Based Access Control): We define roles:
+	•	Admin: Can do everything – view all metrics, manage users, possibly manage configuration.
+	•	Sales: (Sales rep or closer) – Can view metrics, but possibly only their own or team’s. We may restrict sales role to only see personal performance or summary, not other reps’ detailed performance. (In practice, sales might see team too depending on org culture, but we have the capability to restrict).
+	•	Viewer: Perhaps a manager or external stakeholder who has read-only access to dashboards (like Admin but cannot modify anything). If our app allowed editing data (not likely in this scenario, since data mostly read-only from sources), viewer is basically same as admin but no write actions.
+	•	The backend will enforce access rules:
+	•	e.g. GET /api/metrics?user=all might only be allowed for Admin/Viewer. If a Sales tries user=all, we override to their user or deny.
+	•	GET /api/users (if exists) only for Admin.
+	•	POST /api/users (to create users) only Admin.
+	•	etc.
+	•	Implementation: after JWT middleware sets req.user.role, subsequent route handlers check:
+
+if (requiredRole === 'Admin' && req.user.role !== 'Admin') {
+   return res.status(403).json({ error: 'Forbidden' });
+}
+
+Or use a declarative middleware, e.g. authorizeRoles('Admin','Viewer') attached to routes.
+
+	•	Password Policies: We’ll enforce a reasonable password policy on user accounts (min length 8, etc.) and possibly allow Admin to reset passwords. We could also integrate with SSO/Google login for convenience, but not required.
+	•	Secure Storage: JWT secret and DB credentials are in env as described. On the client, token is stored either in memory or cookie to mitigate risk.
+
+6.2 GDPR Compliance
+
+To comply with GDPR and similar privacy laws, we implement:
+	•	Right to Erasure (Right to be Forgotten): An endpoint to delete a contact’s personal data.
+	•	DELETE /api/contacts/:id/forget (or POST /api/gdpr/forget with identifying info). Only Admin can call this (likely after receiving a verified request from the person).
+	•	Implementation: When called for a specific person:
+	•	Remove or anonymize that person’s data in our database. For instance, find contact by id or by email. Delete their contact record and any associated events, form submissions, etc. Alternatively, blank out personal fields (name/email/phone -> “Deleted”) and keep aggregate stats. However, since we aggregate metrics, losing one contact’s data could slightly alter counts – this is expected in GDPR.
+	•	Also, propagate deletion to external systems if needed. E.g., if the user requests to be forgotten, ideally the data should also be removed from Close CRM (which likely the company would handle through Close’s tools, but we could assist by calling Close API to delete or anonymize the lead if their API supports it). Similarly for Typeform submissions (Typeform has a deletion API ￼ for responses) – we can optionally call Typeform’s delete response endpoint ￼ for that response. Calendly events likely not deletable via API (and those are past events anyway).
+	•	We log these deletions (for audit).
+	•	Our endpoint will return confirmation. Due to potentially heavy impact, we might do soft-delete asynchronously and respond with “scheduled” if needed, but small scale can handle synchronously.
+	•	Right to Data Portability (Export): An endpoint to export all data we have on a person:
+	•	GET /api/contacts/:id/export (or /api/gdpr/export?email=...). Also admin-only (or the user themselves if we had a way to authenticate them – but since contacts are not users of our system typically, probably an admin will handle their request).
+	•	Implementation: Gather all info about that contact from our DB: contact info, events (calls) with dates, any associated UTMs/answers, deal info, etc., and either:
+	•	Return as JSON payload directly (the API response is the machine-readable data).
+	•	Or generate a file (CSV or PDF) – JSON is easiest for machine readability, but a nicely formatted PDF/HTML could be easier for a human. Possibly we do JSON and let admin copy it.
+	•	If the contact exists in multiple systems, our data is aggregated. The user could also request raw export from Close etc., but our system gives a unified view.
+	•	Data Minimization & Anonymization: We ensure to only store data needed for attribution:
+	•	e.g. If Typeform had extra personal answers that are not needed, we might avoid storing them or store in a separate secure table. Only what’s needed for metrics (name, contact, and relevant answers like qualifying questions) is stored.
+	•	If a contact is deleted, we either delete events tied to them or keep them with no personal reference. For example, we could decrement aggregated counts so that metrics stay consistent with actual current data. Alternatively, since metrics typically are aggregated at anonymous level, removing one contact’s data slightly changes the numbers but that’s accurate since their data is gone.
+	•	Consent and Tracking: Ensure if any tracking in UI (we likely won’t have third-party analytics on this internal tool, but if we did, we’d need cookie consent etc. – not needed here).
+	•	Secure Transmission & Storage: All data in transit is encrypted (HTTPS). At rest:
+	•	RDS can have encryption enabled (AES-256).
+	•	Backups of RDS similarly encrypted.
+	•	S3 (for any logs or exports) with encryption.
+	•	We enforce password complexity and perhaps 2FA for admin logins (could integrate later).
+	•	Audit Logging: We may keep an audit log table of key actions: login attempts, data exports, deletions, etc., with timestamp and user who did it. This helps with compliance and security audits.
+
+6.3 Other Security Measures
+	•	Webhooks Security: When we receive webhooks from Calendly/Typeform, we will verify they truly come from those services. E.g., Calendly webhooks include a signature header which we can verify using our signing key from Calendly. We’ll implement that check to avoid spoofed data injection.
+	•	Rate limiting / Throttling: The API could be abused (though mostly internal use). We can implement basic rate limit on login attempts to prevent brute force (e.g. no more than 5 login tries per minute per IP). Also on any expensive endpoints, but our user count is small (internal team) so not a big vector.
+	•	SQL Injection & XSS: We will use parameterized queries or an ORM for the database to avoid SQL injection. We will carefully validate any query parameters. The frontend output is mainly numeric or safe strings, and we won’t eval any user input into HTML without escaping. Also, our backend is not returning raw HTML, only JSON, reducing XSS risk to mostly the frontend domain (which we control).
+	•	CORS: We configure the backend to only allow requests from our frontend’s origin (e.g. https://app.example.com). This prevents other sites from attempting to use the API with a user’s token. If we use cookie auth, we also use SameSite strict.
+	•	Session Expiry/Logout: We might implement automatic logout in the frontend after a period of inactivity or if token is near expiration and refresh isn’t used.
+	•	Backup and Recovery: Not directly security, but related – regular backups of the RDS database (via automated snapshots) to prevent data loss, which in a security incident is important.
+
+By implementing JWT auth with RBAC and GDPR endpoints, we ensure that only authorized users access the system and that individuals’ data rights are respected.
+
+7. Operational Considerations (Webhooks, Cron Jobs, Observability)
+
+Finally, we cover how the system will operate in production: handling real-time updates via webhooks, periodic jobs for data consistency, monitoring, and error handling to ensure reliability.
+
+7.1 Webhook Handling and Reliability
+
+Webhooks from Third Parties: We will register webhooks for:
+	•	Calendly: events for invitee created (meeting scheduled) and invitee canceled. Calendly’s webhook will send event and invitee info when a meeting is booked or canceled ￼. We’ll set up an endpoint /api/webhooks/calendly to receive these.
+	•	Typeform: a webhook on form submission. Typeform will send the response payload to our /api/webhooks/typeform endpoint for each new submission.
+	•	Close: We may consider using Close’s webhooks (Close can send webhooks on lead creation, status change, etc.), though in many cases we might rely on polling. If available, we could register a webhook for “Opportunity status changed” to catch deals closing. However, using Close webhooks requires a reachable endpoint and may not cover all data. For completeness, we might skip Close webhooks and instead do periodic full sync of Close data (since number of leads might not be huge and it ensures consistency).
+
+Design for Reliability:
+	•	Idempotency: Webhooks can sometimes be delivered more than once. We will design our webhook handlers to be idempotent – meaning the outcome is the same if the same webhook is processed multiple times. We can achieve this by:
+	•	Checking a unique event ID in the payload. Calendly has event URIs/IDs, Typeform has a response token. We can store a log of processed webhook IDs (or use the DB records uniqueness to ignore duplicates).
+	•	If an event is already in DB, skip processing.
+	•	Acknowledgment: We will respond quickly (HTTP 200 OK) to webhook calls after queuing the work internally. The external services typically have a short timeout (e.g. 5 seconds). So the handler will:
+	•	Parse and basic-validate the request (and verify signature if provided).
+	•	Push the work to an internal queue or job (for example, using a message queue or even an async operation).
+	•	Return 200 immediately.
+	•	The queued job then processes the data (e.g. saving to DB).
+	•	If we don’t use an external queue service, we could use an in-memory queue or spawn a background task (in Node, maybe just fire and forget a promise, but a more robust approach is better to not lose data on crash – maybe writing to a local persistent queue table or use Redis as a queue).
+	•	Retries from Source: Calendly and Typeform will typically retry webhooks a few times if they get a non-2xx or no response. By responding quickly, we reduce the chance of a retry. If our service is down, they will retry later. We ensure idempotency so even if they retry, it doesn’t double count.
+	•	Manual Recovery: In case our service is down long enough that webhooks are missed (they usually give up after certain attempts), we have fallback: periodic sync jobs (see next section) that will catch up on any data missed.
+	•	Security (again): We’ll verify webhooks:
+	•	Calendly sends a signature header (Calendly-Webhook-Signature). We have a verification key from Calendly when setting up the webhook. We’ll compute HMAC of payload to verify.
+	•	Typeform includes a secret if we set one when registering webhook; we can verify similarly.
+	•	We’ll also restrict the routes to only accept requests from the IP ranges of those services if possible (Calendly’s IP range could vary since it might use cloud providers; verifying signature is usually sufficient).
+
+Data Deduplication on Ingest: When processing a webhook:
+	•	For Typeform: On receiving a submission, we run through deduplication logic (Section 2) to merge into contact.
+	•	For Calendly: On invitee created -> find or create contact then create an event record. On invitee canceled -> update the event record’s status to canceled and mark that as a no-show (if before event time) or if after event time maybe it was actually canceled last minute.
+	•	If Close had webhook (say a deal closed), we’d update the contact’s opportunity info accordingly.
+
+We ensure these operations are transactional where needed – e.g. updating multiple tables for one event – to keep data consistent.
+
+7.2 Scheduled Sync & Aggregation Jobs
+
+Daily CRON Sync: Even with webhooks, we implement a daily (or nightly) sync job to reconcile data:
+	•	Connect to Close API to pull the latest full list of leads/opportunities. This can catch any changes not delivered via webhook (e.g., if a field was updated manually, or if webhooks were not used for Close).
+	•	Pull Typeform responses as backup (though those should all be captured via webhooks, but if our service was down, there could be some missing).
+	•	Pull recent Calendly events (Calendly has list events by date range) to ensure no events are missed or incorrectly recorded (e.g. a late cancellation scenario).
+	•	This job can run at off-peak (e.g. every night 2am). It could be implemented as:
+	•	A separate Node script or function that runs via a cron (perhaps using the Linux cron on ECS is tricky since container is always running; simpler is to use AWS EventBridge (CloudWatch Events) to trigger a scheduled ECS Task or AWS Lambda).
+	•	We might create a Lambda just for sync, or spin up a new Fargate task on schedule (benefit: doesn’t burden the always-running container).
+	•	Alternatively, since one ECS service is always on, we could use node-cron inside it to trigger tasks. But using AWS scheduler is cleaner separation.
+	•	The sync job will log what it did (e.g. “X leads updated, Y new leads added, Z opportunities updated”).
+
+Aggregation of KPIs:
+We have two approaches to computing KPIs for the dashboard:
+	•	On-demand calculation: When a user opens the dashboard or changes filters, the backend queries raw tables (contacts, events, deals) to compute metrics on the fly (with SQL COUNTs, SUMs, etc.). This ensures up-to-the-minute data, but if data volume is large, this could be slow. We can mitigate with good indexing and perhaps caching.
+	•	Pre-aggregation (batch): Compute daily/monthly aggregates in advance and store them, making reads fast.
+	•	For example, every night compute metrics for the day or update month-to-date counters. Or maintain a rolling table of metrics per month per user.
+	•	Because our metrics often involve counting events and deals per month, we can maintain a table metrics_monthly with columns like: month, user_id (or “all”), leads, triage_booked, triage_show, solution_booked, solution_show, closed_deals, cash, revenue, etc.
+	•	This table can be updated incrementally: e.g. when a new deal closes, increment closed_deals for that user’s current month. However, doing it in real-time could be complex; easier is to wipe and recalc daily.
+	•	Alternatively, each morning we recalc the previous month and the current month up to yesterday, and store. For real-time, we might still need on-demand for today’s data (since today’s partial data matters).
+	•	Hybrid: Possibly compute up to last day and then add today’s incremental metrics from raw data. But given our user count and data likely not extremely large, on-demand might be fine initially, with caching to avoid repeated heavy calculations.
+
+Implementation of on-demand KPIs:
+	•	If performance is okay, we do queries like:
+
+SELECT 
+  COUNT(DISTINCT contact_id) as leads,
+  SUM(CASE WHEN type='Triage' THEN 1 ELSE 0 END) as triage_booked,
+  SUM(CASE WHEN type='Triage' AND attended=true THEN 1 ELSE 0 END) as triage_show,
+  ... 
+FROM contacts c
+LEFT JOIN events e ON c.id = e.contact_id
+LEFT JOIN opportunities o ON c.id = o.contact_id
+WHERE c.created_at BETWEEN '2025-03-01' AND '2025-03-31' 
+  AND (user filter conditions)
+GROUP BY some dimension;
+
+Or more simply, break into multiple queries for clarity (one for counts, one for sums).
+
+	•	If needed, create SQL views for these calculations or use an ORM with .count, etc.
+
+We should also consider how to get per-user breakdown: join with user table or store owner of lead. Actually, in our data model, who is the “user” associated with a contact? Possibly:
+	•	The sales rep/closer responsible could be derived from Close (Close Opportunity has a “user_id” for the owner). We should store that in our opportunity or contact record. That’s how we map contact outcomes to a particular salesperson.
+	•	For setter metrics, we might need to attribute triage calls to the setter who handled them. That info may not be in Calendly unless each setter has their own Calendly or the event is assigned to someone. Possibly each Calendly event link is user-specific or at least the host is known. If multiple team members (setters) have scheduling pages, we can get the organizer info from Calendly (the webhook payload includes user info who owns the event type, possibly).
+	•	For closers, the solution call likely the host is the closer themselves, so Calendly event might indicate which user’s calendar it was on. Alternatively, rely on Opportunity owner in Close (which should be the closer).
+	•	So to break metrics by user, we ensure to capture either from Calendly which user hosted the event or from CRM which user closed the deal.
+	•	We’ll have a mapping of external user IDs to our app’s user IDs (like matching Calendly user email to our user email, or Close user id to app user).
+	•	The metrics queries then filter or group by that user id.
+
+Observability & Monitoring:
+	•	Logging: As mentioned, all requests and important events (like a webhook processed, a cron run summary, errors) will be logged to CloudWatch. We will implement structured logging in backend (e.g. JSON logs including request ID, timestamps, etc.).
+	•	Error Tracking: Integrate a tool like Sentry for the Node backend and possibly for the React frontend to catch exceptions and UI crashes. Sentry will give stack traces and context. We include the DSN as an env for backend and front (non-secret for front).
+	•	Performance Monitoring: We can log response times for key endpoints. Also CloudWatch can track metrics like CPU, memory of containers. We can set up CloudWatch Alarms:
+	•	If CPU > 80% for 5 minutes, alert.
+	•	If memory > 90%, alert (to consider scaling up).
+	•	If RDS CPU > 70% or connections near limit, alert.
+	•	If available storage < X, alert.
+	•	Uptime Monitoring: AWS ALB health checks will ensure ECS replaces any unhealthy task. Additionally, we might use an external service (or Route 53 health check) to monitor the API endpoint’s availability. AWS can integrate with SNS or email on alarms.
+	•	Alerts: Use Amazon SNS or an email integration to send alerts from CloudWatch alarms to the dev team (or in AI context, maybe log for autonomous action).
+	•	Scaling events: If our auto-scaling triggers new tasks, that should be transparent. We might still log scale up/down events.
+
+Job Failures:
+	•	If the nightly sync fails (exception or API outage), we should catch and log it, and possibly alert. We could also implement a simple retry or partial retry for that job. Perhaps keep a state what last sync time was, and try again later if failed.
+	•	For metrics aggregation jobs, if one fails, no immediate user impact (since previous data still there or on-demand covers it). But we’d want to know and fix.
+
+Data Integrity:
+	•	We will periodically verify counts consistency (maybe a monthly sanity check: the number of closed deals in our DB vs what Close reports, etc., to catch any discrepancies).
+	•	Use transactions in our code when updating multiple tables related to one event to avoid partial updates.
+
+Backups and Disaster Recovery:
+	•	RDS automated backups daily with retention (say 7 days). Also enable point-in-time recovery.
+	•	For the data from external sources, since source of truth largely in those external systems too, worst case we can re-pull most of it. But our internal DB would have mappings and maybe some computed fields, so backups still important.
+	•	The Terraform state as well (so we can recover infra).
+	•	Code is in version control (GitHub), not lost.
+
+Maintenance:
+	•	We may containerize a migration or admin CLI container that can be run ad-hoc (for tasks like recompute metrics for all historical data if needed).
+	•	Rolling deployments via ECS means zero-downtime (ALB will drain connections from old tasks while new start up).
+	•	If we need to take system down (e.g. DB maintenance), we’d schedule off-hours and notify users.
+
+Cron vs On-Demand Trade-off Recap:
+	•	Using on-demand metric computation means the data is always fresh (a new lead or deal is instantly in the numbers). If we only updated daily, numbers might lag.
+	•	We likely want at least daily refresh for things like revenue, but new leads and calls could be near real-time.
+	•	So a hybrid: for cumulative metrics like revenue which changes only when deals close, daily update might suffice (or small incremental on that event anyway). For counts of today’s calls/leads, on-demand is fine.
+	•	We will implement caching: e.g. if a user opens the dashboard repeatedly, React Query’s staleTime will prevent re-fetch within 5 minutes unless explicitly refreshed. We can allow a manual “refresh” button if they want latest.
+	•	Also, we can set up the backend endpoints to use in-memory cache or Redis cache for expensive queries. For example, cache the “current month metrics” for each user and refresh it when relevant events occur (cache invalidation triggers: e.g. after processing a webhook of a new call or deal, we could clear cache for that month).
+
+In conclusion, the operational plan ensures the system stays up-to-date (via webhooks and periodic checks), is observable and resilient. Alerts allow quick response to any failures, and data integrity processes keep the analytics accurate over time.
+
+⸻
+
+With this comprehensive specification covering API integrations, data logic, calculations, infrastructure, frontend, security, and operations, a developer or AI agent should be able to build and deploy the contact-level attribution web app from scratch with minimal ambiguity. Each component has defined schemas, examples, and clear responsibilities, ensuring a robust and maintainable system.
