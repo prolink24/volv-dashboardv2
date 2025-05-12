@@ -11,6 +11,9 @@ const closeApi = axios.create({
   auth: {
     username: CLOSE_API_KEY,
     password: ''
+  },
+  headers: {
+    'Content-Type': 'application/json'
   }
 });
 
@@ -140,20 +143,49 @@ export async function syncCloseOpportunities(leadId: string, contactId: number) 
 // Fetch all leads from Close 
 export async function fetchAllLeads() {
   try {
+    console.log('Fetching leads from Close API...');
     let hasMore = true;
     let cursor = '';
     const leads = [];
     
-    while (hasMore) {
-      const url = cursor ? `/lead/?cursor=${cursor}` : '/lead/';
-      const response = await closeApi.get(url);
-      
-      leads.push(...response.data.data);
-      
-      hasMore = response.data.has_more;
-      cursor = response.data.cursor;
+    // First, test API connection with a simple request
+    try {
+      console.log('Testing Close API connection...');
+      const testResponse = await closeApi.get('/me');
+      console.log('Close API connection successful, user:', testResponse.data.first_name, testResponse.data.last_name);
+    } catch (error: any) {
+      console.error('Error testing Close API connection:', error.message);
+      if (error.response) {
+        console.error('Response status:', error.response.status);
+        console.error('Response data:', error.response.data);
+      }
+      throw new Error('Close API connection test failed');
     }
     
+    // Proceed with fetching leads
+    while (hasMore) {
+      console.log('Fetching leads page, cursor:', cursor || 'initial');
+      const url = cursor ? `/lead/?cursor=${cursor}` : '/lead/';
+      
+      try {
+        const response = await closeApi.get(url);
+        console.log(`Fetched ${response.data.data.length} leads`);
+        
+        leads.push(...response.data.data);
+        
+        hasMore = response.data.has_more;
+        cursor = response.data.cursor;
+      } catch (error: any) {
+        console.error('Error fetching leads page:', error.message);
+        if (error.response) {
+          console.error('Response status:', error.response.status);
+          console.error('Response data:', error.response.data);
+        }
+        hasMore = false;
+      }
+    }
+    
+    console.log(`Total leads fetched: ${leads.length}`);
     return leads;
   } catch (error) {
     console.error('Error fetching leads from Close:', error);
