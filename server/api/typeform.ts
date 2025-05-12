@@ -2,14 +2,14 @@ import axios from 'axios';
 import { storage } from '../storage';
 import { InsertContact, InsertActivity, InsertForm } from '@shared/schema';
 
-const TYPEFORM_API_TOKEN = process.env.TYPEFORM_API_TOKEN || '';
+const TYPEFORM_API_KEY = process.env.TYPEFORM_API_KEY || '';
 const TYPEFORM_API_URL = 'https://api.typeform.com';
 
 // Configure axios for Typeform API
 const typeformApi = axios.create({
   baseURL: TYPEFORM_API_URL,
   headers: {
-    'Authorization': `Bearer ${TYPEFORM_API_TOKEN}`,
+    'Authorization': `Bearer ${TYPEFORM_API_KEY}`,
     'Content-Type': 'application/json'
   }
 });

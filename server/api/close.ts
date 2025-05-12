@@ -5,15 +5,14 @@ import { InsertContact, InsertActivity, InsertDeal } from '@shared/schema';
 const CLOSE_API_KEY = process.env.CLOSE_API_KEY || '';
 const CLOSE_API_URL = 'https://api.close.com/api/v1';
 
-// Configure axios for Close API
+// Configure axios for Close API - using the API key as per Close documentation
+// https://developer.close.com/#authentication
 const closeApi = axios.create({
   baseURL: CLOSE_API_URL,
-  auth: {
-    username: CLOSE_API_KEY,
-    password: ''
-  },
   headers: {
-    'Content-Type': 'application/json'
+    'Authorization': `Basic ${Buffer.from(CLOSE_API_KEY + ':').toString('base64')}`,
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
   }
 });
 
@@ -120,7 +119,7 @@ export async function syncCloseOpportunities(leadId: string, contactId: number) 
         title: opportunity.note || 'Opportunity from Close',
         value: opportunity.value,
         status: opportunity.status_label.toLowerCase(),
-        closeDate: opportunity.date_won ? new Date(opportunity.date_won) : undefined,
+        closeDate: opportunity.date_won || null,
         closeId: opportunity.id,
         assignedTo: opportunity.assigned_to,
         metadata: {
@@ -140,48 +139,91 @@ export async function syncCloseOpportunities(leadId: string, contactId: number) 
   }
 }
 
+// Test Close API connectivity and authentication
+async function testCloseApiConnection() {
+  try {
+    // Try different endpoints to maximize our chances of connecting successfully
+    const endpoints = [
+      { path: '/me', name: 'user profile' },
+      { path: '/organization', name: 'organization' },
+      { path: '/lead', name: 'leads' },
+      { path: '/status/lead', name: 'lead statuses' },
+      { path: '/activity', name: 'activities' }
+    ];
+    
+    for (const endpoint of endpoints) {
+      try {
+        console.log(`Testing Close API connection using ${endpoint.name} endpoint...`);
+        const response = await closeApi.get(endpoint.path);
+        console.log(`Successfully connected to Close API via ${endpoint.name} endpoint`);
+        
+        if (endpoint.path === '/me') {
+          console.log(`Authenticated as: ${response.data.first_name} ${response.data.last_name}`);
+        }
+        
+        return true;
+      } catch (error: any) {
+        console.warn(`Failed to connect to ${endpoint.name} endpoint: ${error.message}`);
+        if (error.response) {
+          console.warn(`Status: ${error.response.status}, Data:`, error.response.data);
+        }
+        // Continue trying other endpoints
+      }
+    }
+    
+    // If we get here, all endpoints failed
+    throw new Error('All Close API endpoints failed');
+  } catch (error) {
+    console.error('Error testing Close API connection:', error);
+    throw error;
+  }
+}
+
 // Fetch all leads from Close 
 export async function fetchAllLeads() {
   try {
     console.log('Fetching leads from Close API...');
+    
+    // First, verify the API connection
+    await testCloseApiConnection();
+    
     let hasMore = true;
     let cursor = '';
     const leads = [];
+    let page = 1;
     
-    // First, test API connection with a simple request
-    try {
-      console.log('Testing Close API connection...');
-      const testResponse = await closeApi.get('/me');
-      console.log('Close API connection successful, user:', testResponse.data.first_name, testResponse.data.last_name);
-    } catch (error: any) {
-      console.error('Error testing Close API connection:', error.message);
-      if (error.response) {
-        console.error('Response status:', error.response.status);
-        console.error('Response data:', error.response.data);
-      }
-      throw new Error('Close API connection test failed');
-    }
-    
-    // Proceed with fetching leads
+    // Fetch all leads using pagination
     while (hasMore) {
-      console.log('Fetching leads page, cursor:', cursor || 'initial');
+      console.log(`Fetching leads page ${page}, cursor: ${cursor || 'initial'}`);
       const url = cursor ? `/lead/?cursor=${cursor}` : '/lead/';
       
       try {
         const response = await closeApi.get(url);
-        console.log(`Fetched ${response.data.data.length} leads`);
+        const pageLeads = response.data.data || [];
+        console.log(`Fetched ${pageLeads.length} leads on page ${page}`);
         
-        leads.push(...response.data.data);
+        leads.push(...pageLeads);
         
         hasMore = response.data.has_more;
         cursor = response.data.cursor;
+        page++;
+        
+        // Add a small delay to avoid rate limits
+        await new Promise(resolve => setTimeout(resolve, 100));
       } catch (error: any) {
-        console.error('Error fetching leads page:', error.message);
+        console.error(`Error fetching leads page ${page}:`, error.message);
         if (error.response) {
           console.error('Response status:', error.response.status);
           console.error('Response data:', error.response.data);
         }
-        hasMore = false;
+        
+        // If we have some leads already, return them instead of failing completely
+        if (leads.length > 0) {
+          console.log(`Returning ${leads.length} leads that were successfully fetched before the error`);
+          return leads;
+        }
+        
+        throw error;
       }
     }
     
@@ -197,12 +239,35 @@ export async function fetchAllLeads() {
 export async function syncAllLeads() {
   try {
     const leads = await fetchAllLeads();
+    console.log(`Starting to sync ${leads.length} leads to contacts`);
+    
+    let successCount = 0;
+    let errorCount = 0;
     
     for (const lead of leads) {
-      await syncCloseLeadToContact(lead.id);
+      try {
+        // Check if the lead has valid contact information
+        const hasEmail = lead.contacts?.some(c => c.emails?.length > 0);
+        
+        if (hasEmail) {
+          console.log(`Syncing lead ${lead.id}: ${lead.display_name || 'Unnamed Lead'}`);
+          await syncCloseLeadToContact(lead.id);
+          successCount++;
+        } else {
+          console.log(`Skipping lead ${lead.id}: ${lead.display_name || 'Unnamed Lead'} - no email address found`);
+        }
+      } catch (error) {
+        console.error(`Error syncing lead ${lead.id}:`, error);
+        errorCount++;
+      }
+      
+      // Add a small delay to avoid overwhelming the system
+      await new Promise(resolve => setTimeout(resolve, 50));
     }
     
-    return { success: true, count: leads.length };
+    console.log(`Completed syncing leads: ${successCount} successful, ${errorCount} errors, ${leads.length - successCount - errorCount} skipped`);
+    
+    return { success: true, count: successCount, errors: errorCount, total: leads.length };
   } catch (error) {
     console.error('Error syncing all leads from Close:', error);
     throw error;

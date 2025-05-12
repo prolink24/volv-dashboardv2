@@ -2,14 +2,14 @@ import axios from 'axios';
 import { storage } from '../storage';
 import { InsertContact, InsertActivity, InsertMeeting } from '@shared/schema';
 
-const CALENDLY_API_TOKEN = process.env.CALENDLY_API_TOKEN || '';
+const CALENDLY_API_KEY = process.env.CALENDLY_API_KEY || '';
 const CALENDLY_API_URL = 'https://api.calendly.com';
 
 // Configure axios for Calendly API
 const calendlyApi = axios.create({
   baseURL: CALENDLY_API_URL,
   headers: {
-    'Authorization': `Bearer ${CALENDLY_API_TOKEN}`,
+    'Authorization': `Bearer ${CALENDLY_API_KEY}`,
     'Content-Type': 'application/json'
   }
 });
