@@ -101,8 +101,8 @@ async function syncAllLeads(resetMode: boolean = false) {
           _limit: 100, // Max allowed by Close API
         };
         
-        // For subsequent pages, use the cursor
-        if (cursor && cursor !== 'initial') {
+        // For subsequent pages, use the cursor if we have a valid one
+        if (cursor && cursor !== '' && cursor !== 'initial') {
           params._cursor = cursor;
         } 
         // If we don't have a cursor but we're past page 1, try to use skip
@@ -257,9 +257,10 @@ async function syncAllLeads(resetMode: boolean = false) {
         console.log(`Progress: ${processedLeads}/${totalLeads} leads processed, ${importedContacts} contacts imported`);
         
         // Handle the case when cursor is empty but hasMore is true
-        if (hasMore && !cursor && page > 1) {
+        if (hasMore && cursor === '' && page > 1) {
           console.log(`No cursor provided for next page, using skip-based pagination for page ${page+1}`);
-          cursor = null; // Ensure cursor is null for skip-based pagination
+          // We'll keep using empty string for cursor to indicate we need skip-based pagination
+          // Don't set to null as it causes type errors
         }
         
         page++;
@@ -280,7 +281,7 @@ async function syncAllLeads(resetMode: boolean = false) {
         console.error(`Error on page ${page}, but continuing the sync...`);
         
         // If cursor is null but we have more pages, try setting a new cursor
-        if (!cursor && hasMore && page > 1) {
+        if (cursor === '' && hasMore && page > 1) {
           console.log(`Lost cursor on page ${page}, attempting to continue with offset...`);
           // When cursor is lost, use _skip parameter to continue pagination
           // Set page to continue from the current count
