@@ -713,6 +713,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Register API routes with prefix
   app.use("/api", apiRouter);
+  
+  // Mount the metrics router
+  app.use("/api/metrics", metricsRouter);
 
   // Create HTTP server
   const httpServer = createServer(app);

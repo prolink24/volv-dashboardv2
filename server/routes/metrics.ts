@@ -9,7 +9,7 @@ import { validateLiveData } from '../../validate-live-data-accuracy';
 import { Request, Response, Router } from 'express';
 import { storage } from '../storage';
 import { db } from '../db';
-import { contacts, calendlyEvents } from '../../shared/schema';
+import { contacts, meetings } from '../../shared/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import fs from 'fs';
 import path from 'path';
@@ -30,13 +30,13 @@ metricsRouter.get('/system-health', async (req: Request, res: Response) => {
     }
     
     // If no metrics file exists, generate basic metrics
-    const totalContacts = await storage.getContactCount();
+    const totalContacts = await storage.getContactsCount();
     
     const totalCalendlyEvents = await db
       .select({
         count: sql<number>`count(*)`
       })
-      .from(calendlyEvents);
+      .from(meetings);
     
     // Count contacts with email (key for matching)
     const contactsWithEmail = await db

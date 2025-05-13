@@ -14,7 +14,9 @@ import { storage } from './server/storage';
 import { MatchConfidence, findBestMatchingContact, normalizeEmail } from './server/services/contact-matcher';
 import { db } from './server/db';
 import { eq, and, or, like, desc, sql } from 'drizzle-orm';
-import { contacts, calendlyEvents } from './shared/schema';
+import { contacts, meetings } from './shared/schema';
+import * as fs from 'fs';
+import * as path from 'path';
 
 // Configuration
 const SAMPLE_SIZE = 100; // Number of contacts to validate (increase for higher confidence)
@@ -54,15 +56,15 @@ async function validateCalendlyImport() {
         count: sql<number>`count(DISTINCT ${contacts.id})`
       })
       .from(contacts)
-      .innerJoin(calendlyEvents, eq(contacts.id, calendlyEvents.contactId));
+      .innerJoin(meetings, eq(contacts.id, meetings.contactId));
     
     const totalCalendlyEvents = await db
       .select({
         count: sql<number>`count(*)`
       })
-      .from(calendlyEvents);
+      .from(meetings);
     
-    const totalContacts = await storage.getContactCount();
+    const totalContacts = await storage.getContactsCount();
     
     // Calculate the percentage of contacts with Calendly data
     const percentWithCalendly = (contactsWithCalendly[0]?.count || 0) / totalContacts * 100;
@@ -76,8 +78,8 @@ async function validateCalendlyImport() {
       .select({
         count: sql<number>`count(*)`
       })
-      .from(calendlyEvents)
-      .leftJoin(contacts, eq(contacts.id, calendlyEvents.contactId))
+      .from(meetings)
+      .leftJoin(contacts, eq(contacts.id, meetings.contactId))
       .where(sql`${contacts.id} IS NULL`);
     
     console.log(`Orphaned Calendly events: ${orphanedEvents[0]?.count || 0}`);
@@ -231,7 +233,7 @@ async function validateAttributionCertainty() {
         email: contacts.email
       })
       .from(contacts)
-      .innerJoin(calendlyEvents, eq(contacts.id, calendlyEvents.contactId))
+      .innerJoin(meetings, eq(contacts.id, meetings.contactId))
       .limit(SAMPLE_SIZE);
     
     if (contactsWithMultiPlatformData.length === 0) {
@@ -300,13 +302,13 @@ async function generateSystemHealthReport() {
   
   try {
     // Get counts of critical data
-    const totalContacts = await storage.getContactCount();
+    const totalContacts = await storage.getContactsCount();
     
     const totalCalendlyEvents = await db
       .select({
         count: sql<number>`count(*)`
       })
-      .from(calendlyEvents);
+      .from(meetings);
     
     // Count contacts with email (key for matching)
     const contactsWithEmail = await db
@@ -412,8 +414,7 @@ async function generateSystemHealthReport() {
  * Exports health metrics to a JSON file for dashboard integration
  */
 async function exportHealthMetricsToFile(metrics: any) {
-  const fs = require('fs');
-  const path = require('path');
+  // fs and path are imported at the top of the file
   
   try {
     // Create the metrics directory if it doesn't exist
@@ -492,7 +493,9 @@ function formatPhoneDifferently(phone: string | null): string | null {
 }
 
 // Run the validation if executed directly
-if (require.main === module) {
+// ES module pattern to check if file is being run directly
+const isMainModule = import.meta.url === `file://${process.argv[1]}`;
+if (isMainModule) {
   validateLiveData()
     .then(() => {
       console.log('\nLive data validation complete!');
