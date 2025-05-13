@@ -174,13 +174,44 @@ async function syncAllLeads() {
                 existingContact = await storage.getContactByEmail(contactData.email);
               }
               
-              if (existingContact) {
-                // Update existing contact
-                await storage.updateContact(existingContact.id, contactData);
-              } else {
-                // Create new contact
-                await storage.createContact(contactData);
-                importedContacts++;
+              try {
+                if (existingContact) {
+                  // Update existing contact
+                  const updatedContact = await storage.updateContact(existingContact.id, contactData);
+                  console.log(`Updated existing contact: ${contactData.name} (${contactData.email})`);
+                } else {
+                  // Check if contact data is valid
+                  if (!contactData.name || !contactData.email) {
+                    console.error(`Skipping contact with invalid data: ${JSON.stringify(contactData)}`);
+                    continue;
+                  }
+                  
+                  // Try to create new contact
+                  try {
+                    const newContact = await storage.createContact(contactData);
+                    console.log(`Created new contact #${newContact.id}: ${newContact.name} (${newContact.email})`);
+                    importedContacts++;
+                  } catch (error) {
+                    const createError = error as Error;
+                    console.error(`Error creating contact ${contactData.name} (${contactData.email}):`, createError);
+                    
+                    // Check if it's a duplicate email constraint violation
+                    if (createError.message && createError.message.includes('duplicate key value violates unique constraint')) {
+                      console.log(`Contact with email ${contactData.email} already exists. Trying to find and update.`);
+                      const existingByEmail = await storage.getContactByEmail(contactData.email);
+                      if (existingByEmail) {
+                        await storage.updateContact(existingByEmail.id, contactData);
+                        console.log(`Updated existing contact via email fallback: ${contactData.name} (${contactData.email})`);
+                      }
+                    } else {
+                      // Re-throw other errors
+                      throw createError;
+                    }
+                  }
+                }
+              } catch (contactError) {
+                console.error(`Error processing contact ${contactData.name}:`, contactError);
+                errors++;
               }
               
               // TODO: Process related data (opportunities, activities, etc.)
@@ -214,6 +245,12 @@ async function syncAllLeads() {
         // Log pagination details
         console.log(`Page ${page} complete. hasMore: ${hasMore}, cursor: ${cursor ? 'exists' : 'null'}`);
         console.log(`Progress: ${processedLeads}/${totalLeads} leads processed, ${importedContacts} contacts imported`);
+        
+        // Handle the case when cursor is null but hasMore is true
+        if (hasMore && !cursor && page > 1) {
+          console.log(`No cursor provided for next page, using skip-based pagination for page ${page+1}`);
+          cursor = null; // Ensure cursor is null for skip-based pagination
+        }
         
         page++;
         
