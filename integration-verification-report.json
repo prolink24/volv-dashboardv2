@@ -1,0 +1,425 @@
+{
+  "totalContacts": 50,
+  "contactsWithDealCount": 13,
+  "contactsWithActivityCount": 40,
+  "contactsWithMeetingCount": 1,
+  "multiSourceContactCount": 0,
+  "dealCount": 13,
+  "activityCount": 178,
+  "meetingCount": 3,
+  "overallScore": 36,
+  "contactsWithIncompleteData": [
+    {
+      "id": 11496,
+      "name": "Jen Williams",
+      "email": "jennifer.williams.test1747138888030@gmail.com",
+      "missingFields": [
+        "meetings"
+      ]
+    },
+    {
+      "id": 11492,
+      "name": "Michael Thompson",
+      "email": "michael.thompson.test1747138827730@gmail.com",
+      "missingFields": [
+        "meetings"
+      ]
+    },
+    {
+      "id": 1,
+      "name": "Test Contact",
+      "email": "test@example.com",
+      "missingFields": [
+        "meetings"
+      ]
+    },
+    {
+      "id": 543,
+      "name": "joe no",
+      "email": "wagma.samim55@gmail.com",
+      "missingFields": [
+        "deals",
+        "company",
+        "title"
+      ]
+    },
+    {
+      "id": 2125,
+      "name": "Daniel Test",
+      "email": "daniel.test@hyros.com",
+      "missingFields": [
+        "deals",
+        "company",
+        "title"
+      ]
+    },
+    {
+      "id": 344,
+      "name": "Dexter Yvens",
+      "email": "dabelinvestments@gmail.com",
+      "missingFields": [
+        "company",
+        "title"
+      ]
+    },
+    {
+      "id": 2157,
+      "name": "Daniel Kh",
+      "email": "dkhijniak@gmail.com",
+      "missingFields": [
+        "deals",
+        "company",
+        "title"
+      ]
+    },
+    {
+      "id": 371,
+      "name": "Antony.Cabal Balac",
+      "email": "basslad99@gmail.com",
+      "missingFields": [
+        "company",
+        "title"
+      ]
+    },
+    {
+      "id": 2178,
+      "name": "Charles Adebayo",
+      "email": "yomeks001@yahoo.co.uk",
+      "missingFields": [
+        "deals",
+        "company",
+        "title"
+      ]
+    },
+    {
+      "id": 354,
+      "name": "Joejohn Gotit",
+      "email": "velascojosej88@gmail.com",
+      "missingFields": [
+        "company",
+        "title"
+      ]
+    },
+    {
+      "id": 2141,
+      "name": "Aryan Arys Carrafa",
+      "email": "capoarys@gmail.com",
+      "missingFields": [
+        "deals",
+        "company",
+        "title"
+      ]
+    },
+    {
+      "id": 228,
+      "name": "Lil Sunny Money",
+      "email": "blkcarservices444@gmail.com",
+      "missingFields": [
+        "company",
+        "title"
+      ]
+    },
+    {
+      "id": 322,
+      "name": "Mark Fera",
+      "email": "markpfera@gmail.com",
+      "missingFields": [
+        "company",
+        "title"
+      ]
+    },
+    {
+      "id": 2097,
+      "name": "Lek Rosales",
+      "email": "lekbir.rosales@hotmail.com",
+      "missingFields": [
+        "deals",
+        "company",
+        "title"
+      ]
+    },
+    {
+      "id": 2133,
+      "name": "Tomos",
+      "email": "tomos.mughan@sourcecodeals.com",
+      "missingFields": [
+        "deals",
+        "company",
+        "title"
+      ]
+    },
+    {
+      "id": 328,
+      "name": "Tomos Mughan",
+      "email": "tommughan@gmail.com",
+      "missingFields": [
+        "company",
+        "title"
+      ]
+    },
+    {
+      "id": 326,
+      "name": "Robert Dickersom",
+      "email": "fullsendcaddie@gmail.com",
+      "missingFields": [
+        "company",
+        "title"
+      ]
+    },
+    {
+      "id": 1045,
+      "name": "Caleb Willis",
+      "email": "croquemore05@gmail.com",
+      "missingFields": [
+        "deals",
+        "company",
+        "title"
+      ]
+    },
+    {
+      "id": 1030,
+      "name": "Nick",
+      "email": "2psgroup@gmail.com",
+      "missingFields": [
+        "deals",
+        "company",
+        "title"
+      ]
+    },
+    {
+      "id": 124,
+      "name": "Brandon Valdes",
+      "email": "branval2016@gmail.com",
+      "missingFields": [
+        "company",
+        "title"
+      ]
+    },
+    {
+      "id": 757,
+      "name": "N P",
+      "email": "npshopping12@gmail.com",
+      "missingFields": [
+        "deals",
+        "company",
+        "title"
+      ]
+    },
+    {
+      "id": 704,
+      "name": "Bruce Lj",
+      "email": "lilylife2437@gmail.com",
+      "missingFields": [
+        "deals",
+        "company",
+        "title"
+      ]
+    },
+    {
+      "id": 285,
+      "name": "Onyedi Oledibemma",
+      "email": "onyedi.oledibemma@gmail.com",
+      "missingFields": [
+        "company",
+        "title"
+      ]
+    },
+    {
+      "id": 288,
+      "name": "Erik Quintana",
+      "email": "erikq2210@gmail.com",
+      "missingFields": [
+        "company",
+        "title"
+      ]
+    },
+    {
+      "id": 2384,
+      "name": "Dick Hogan",
+      "email": "nicholashogan707@gmail.com",
+      "missingFields": [
+        "deals",
+        "company",
+        "title"
+      ]
+    },
+    {
+      "id": 67,
+      "name": "Melissa Reeves",
+      "email": "melissalawson1@gmail.com",
+      "missingFields": [
+        "company",
+        "title"
+      ]
+    },
+    {
+      "id": 2172,
+      "name": "AK Mack",
+      "email": "ak2547@gmail.com",
+      "missingFields": [
+        "deals",
+        "company",
+        "title"
+      ]
+    },
+    {
+      "id": 2422,
+      "name": "Mike Falzone",
+      "email": "michaelwynn777@gmail.com",
+      "missingFields": [
+        "deals",
+        "company",
+        "title"
+      ]
+    },
+    {
+      "id": 2511,
+      "name": "Portia Bag",
+      "email": "bailey.nadah@gmail.com",
+      "missingFields": [
+        "deals",
+        "company",
+        "title"
+      ]
+    },
+    {
+      "id": 2161,
+      "name": "Marcus Baek",
+      "email": "baekstarnet1@gmail.com",
+      "missingFields": [
+        "deals",
+        "company",
+        "title"
+      ]
+    },
+    {
+      "id": 287,
+      "name": "Erich Kestner",
+      "email": "erichkestner25@gmail.com",
+      "missingFields": [
+        "company",
+        "title"
+      ]
+    },
+    {
+      "id": 987,
+      "name": "Myles Nathaniel",
+      "email": "mylesnb31@gmail.com",
+      "missingFields": [
+        "deals",
+        "company",
+        "title"
+      ]
+    },
+    {
+      "id": 2390,
+      "name": "Garoz Louis",
+      "email": "asset.billions@gmail.com",
+      "missingFields": [
+        "deals",
+        "company",
+        "title"
+      ]
+    },
+    {
+      "id": 2399,
+      "name": "Anz Nelson",
+      "email": "support@revsinc10.com",
+      "missingFields": [
+        "deals",
+        "company",
+        "title"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "James Samuel",
+      "email": "jlsamuel@smu.edu",
+      "missingFields": [
+        "company",
+        "title"
+      ]
+    },
+    {
+      "id": 2145,
+      "name": "Charles Legacy",
+      "email": "charlesplegacy@gmail.com",
+      "missingFields": [
+        "deals",
+        "company",
+        "title"
+      ]
+    },
+    {
+      "id": 1998,
+      "name": "Marvin Olagbegi",
+      "email": "marvinolagbegi@gmail.com",
+      "missingFields": [
+        "deals",
+        "company",
+        "title"
+      ]
+    },
+    {
+      "id": 2081,
+      "name": "Nick Pandey",
+      "email": "anuchit7@gmail.com",
+      "missingFields": [
+        "deals",
+        "company",
+        "title"
+      ]
+    },
+    {
+      "id": 2768,
+      "name": "John Harris",
+      "email": "johnstanleyharris@gmail.com",
+      "missingFields": [
+        "deals",
+        "company",
+        "title"
+      ]
+    },
+    {
+      "id": 2684,
+      "name": "Amańi Aw",
+      "email": "almaniaw8@gmail.com",
+      "missingFields": [
+        "deals",
+        "company",
+        "title"
+      ]
+    },
+    {
+      "id": 3069,
+      "name": "Ali Nanji",
+      "email": "alirazananji@gmail.com",
+      "missingFields": [
+        "deals",
+        "company",
+        "title"
+      ]
+    },
+    {
+      "id": 2430,
+      "name": "Prakash Somosundram",
+      "email": "prakash@enjinstarter.com",
+      "missingFields": [
+        "deals",
+        "company",
+        "title"
+      ]
+    },
+    {
+      "id": 2077,
+      "name": "jake Jack",
+      "email": "facai484848@gmail.com",
+      "missingFields": [
+        "deals",
+        "company",
+        "title"
+      ]
+    }
+  ],
+  "createdAt": "2025-05-13T13:52:53.571Z"
+}
