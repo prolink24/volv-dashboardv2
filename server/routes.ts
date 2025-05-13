@@ -199,6 +199,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Get contacts for a specific Close user
+  apiRouter.get("/close-users/:id/contacts", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const user = await storage.getCloseUser(id);
+      
+      if (!user) {
+        return res.status(404).json({ error: "Close user not found" });
+      }
+      
+      // Get all contacts assigned to this user
+      const contacts = await storage.getContactsByCloseUserId(id);
+      const totalCount = contacts.length;
+      
+      res.json({
+        closeUser: user,
+        contacts,
+        totalCount
+      });
+    } catch (error) {
+      console.error(`Error fetching contacts for Close user ${req.params.id}:`, error);
+      res.status(500).json({ error: "Failed to fetch contacts for Close user" });
+    }
+  });
+  
+  // Get deals for a specific Close user
+  apiRouter.get("/close-users/:id/deals", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const user = await storage.getCloseUser(id);
+      
+      if (!user) {
+        return res.status(404).json({ error: "Close user not found" });
+      }
+      
+      // Get all deals assigned to this user
+      const deals = await storage.getDealsByCloseUserId(id);
+      const totalCount = deals.length;
+      
+      res.json({
+        closeUser: user,
+        deals,
+        totalCount
+      });
+    } catch (error) {
+      console.error(`Error fetching deals for Close user ${req.params.id}:`, error);
+      res.status(500).json({ error: "Failed to fetch deals for Close user" });
+    }
+  });
+  
   // Integration sync endpoints
   apiRouter.post("/sync/all", async (req: Request, res: Response) => {
     try {
