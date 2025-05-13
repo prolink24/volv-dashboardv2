@@ -7,7 +7,7 @@
  */
 
 import { storage } from '../storage';
-import { Contact, Deal, Meeting, Activity } from '../../shared/schema';
+import { Contact, Deal, Meeting, Activity, Form } from '../../shared/schema';
 
 // Define time windows for attribution (in milliseconds)
 const ATTRIBUTION_WINDOW = {
