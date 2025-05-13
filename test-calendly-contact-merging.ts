@@ -38,10 +38,13 @@ async function testEmailMatching() {
   console.log('Test 1: Email Matching');
   console.log('---------------------');
 
+  // Generate a unique email with timestamp to avoid conflicts
+  const timestamp = Date.now();
+  
   // Setup test data
   const closeContact: InsertContact = {
     name: 'John Smith',
-    email: 'john.smith@gmail.com',
+    email: `john.smith.test${timestamp}@gmail.com`,
     phone: '555-123-4567',
     company: 'ABC Corp',
     leadSource: 'close'
@@ -54,7 +57,7 @@ async function testEmailMatching() {
   // Create test Calendly contact data with same email but different formatting
   const calendlyContactData: InsertContact = {
     name: 'Johnny Smith',
-    email: 'johnsmith@gmail.com', // No dots, should match with normalization
+    email: `johnsmith.test${timestamp}@gmail.com`, // No dots in username, should match with normalization
     phone: '5551234567',
     company: 'ABC Corporation',
     leadSource: 'calendly'
@@ -89,10 +92,13 @@ async function testPhoneMatching() {
   console.log('\nTest 2: Phone Matching');
   console.log('---------------------');
 
+  // Generate a unique email with timestamp to avoid conflicts
+  const timestamp = Date.now();
+  
   // Setup test data
   const closeContact: InsertContact = {
     name: 'Bob Johnson',
-    email: 'bob@company.com',
+    email: `bob.test${timestamp}@company.com`,
     phone: '(800) 555-1234',
     company: 'XYZ Inc',
     leadSource: 'close'
@@ -105,7 +111,7 @@ async function testPhoneMatching() {
   // Create test Calendly contact data with different email but same phone
   const calendlyContactData: InsertContact = {
     name: 'Robert Johnson',
-    email: 'robert.johnson@gmail.com', // Different email
+    email: `robert.johnson.test${timestamp}@gmail.com`, // Different email
     phone: '8005551234', // Same phone but different format
     company: 'XYZ Incorporated',
     leadSource: 'calendly'
@@ -141,10 +147,13 @@ async function testNameFuzzyMatching() {
   console.log('\nTest 3: Fuzzy Name Matching');
   console.log('--------------------------');
 
+  // Generate a unique email with timestamp to avoid conflicts
+  const timestamp = Date.now();
+
   // Setup test data with similar names but slightly different
   const closeContact: InsertContact = {
     name: 'Jennifer L. Williams',
-    email: 'jwilliams@company.com',
+    email: `jwilliams.test${timestamp}@company.com`,
     phone: '555-987-6543',
     company: 'Acme Corp',
     leadSource: 'close'
@@ -157,7 +166,7 @@ async function testNameFuzzyMatching() {
   // Create test Calendly contact data with different email/phone but similar name
   const calendlyContactData: InsertContact = {
     name: 'Jen Williams', // Shortened first name, same last name
-    email: 'jennifer.williams@gmail.com', // Different email
+    email: `jennifer.williams.test${timestamp}@gmail.com`, // Different email
     phone: '5559876543', // Similar phone without formatting
     company: 'Acme Corporation',
     leadSource: 'calendly'
@@ -192,10 +201,13 @@ async function testSmartFieldMerging() {
   console.log('\nTest 4: Smart Field Merging');
   console.log('-------------------------');
 
+  // Generate a unique email with timestamp to avoid conflicts
+  const timestamp = Date.now();
+
   // Setup test data with partial info
   const closeContact: InsertContact = {
     name: 'M. Thompson',
-    email: 'mthompson@work.com',
+    email: `mthompson.test${timestamp}@work.com`,
     phone: '', // Missing phone
     company: 'Global Industries',
     leadSource: 'close',
@@ -210,7 +222,7 @@ async function testSmartFieldMerging() {
   // Create test Calendly contact data with complementary info
   const calendlyContactData: InsertContact = {
     name: 'Michael Thompson', // More complete name
-    email: 'michael.thompson@gmail.com', // Personal email
+    email: `michael.thompson.test${timestamp}@gmail.com`, // Personal email
     phone: '555-333-9876', // Has phone
     company: '', // Missing company
     leadSource: 'calendly',
