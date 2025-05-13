@@ -289,11 +289,10 @@ async function runTests() {
     {
       name: "Name + Company match",
       contact: { 
-        name: john.name,
-        company: john.company,
-        email: "different@example.com"
+        name: david.name,
+        company: david.company
       },
-      expectedContactId: john.id,
+      expectedContactId: david.id,
       expectedConfidence: MatchConfidence.MEDIUM
     }
   ];
