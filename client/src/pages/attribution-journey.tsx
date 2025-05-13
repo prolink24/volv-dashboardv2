@@ -96,7 +96,7 @@ const AttributionJourneyPage = () => {
     error: attributionError,
     refetch: refetchAttribution
   } = useQuery<EnhancedAttributionResponse>({
-    queryKey: [`/api/attribution/journey/${contactId}`],
+    queryKey: [`/api/attribution/enhanced/${contactId}`],
     enabled: !!contactId,
   });
   

@@ -743,6 +743,120 @@ const enhancedAttributionService = {
         error: `Failed to attribute all contacts: ${error}`
       };
     }
+  },
+
+  /**
+   * Get attribution statistics for all contacts
+   * Provides metrics about attribution quality, platform coverage, and field mapping
+   */
+  async getAttributionStats() {
+    try {
+      // Get sample of contacts to analyze (for performance reasons)
+      const contactsLimit = 100;
+      const contacts = await storage.getAllContacts(contactsLimit);
+      
+      if (!contacts || contacts.length === 0) {
+        return {
+          success: false,
+          error: "No contacts found to analyze"
+        };
+      }
+
+      // Calculate attribution accuracy based on quality metrics
+      let totalCertainty = 0;
+      let highCertaintyContacts = 0;
+      let multiSourceContacts = 0;
+      let dealsWithAttribution = 0;
+      let totalDeals = 0;
+      let fieldMappingSuccess = 0;
+      
+      // Process contacts to calculate metrics
+      for (const contact of contacts) {
+        // Check for multi-source contacts (data from multiple platforms)
+        const hasCloseData = contact.closeId !== null;
+        const hasCalendlyData = contact.calendlyId !== null || (contact.meetings && contact.meetings.length > 0);
+        const hasTypeformData = contact.typeformId !== null || (contact.forms && contact.forms.length > 0);
+        
+        if ((hasCloseData && hasCalendlyData) || 
+            (hasCloseData && hasTypeformData) || 
+            (hasCalendlyData && hasTypeformData)) {
+          multiSourceContacts++;
+        }
+        
+        // Check field mapping completeness
+        if (contact.name && contact.email && contact.status) {
+          fieldMappingSuccess++;
+        }
+        
+        // Get deals for this contact
+        const deals = await storage.getDealsByContactId(contact.id);
+        if (deals && deals.length > 0) {
+          totalDeals += deals.length;
+          
+          // Check if deals have attribution data
+          for (const deal of deals) {
+            // A deal has attribution if it has source information
+            if (deal.metadata && 
+                (deal.metadata.attributionSource || 
+                 deal.metadata.attributionModel || 
+                 deal.metadata.touchpoints)) {
+              dealsWithAttribution++;
+            }
+          }
+        }
+        
+        // Calculate attribution certainty if we have the enhanced attribution service
+        try {
+          const attribution = await this.attributeContact(contact.id);
+          if (attribution.success && attribution.attributionCertainty) {
+            totalCertainty += attribution.attributionCertainty;
+            if (attribution.attributionCertainty >= 0.9) {
+              highCertaintyContacts++;
+            }
+          }
+        } catch (err) {
+          console.warn(`Error getting attribution for contact ${contact.id}:`, err);
+          // Continue with other contacts
+        }
+      }
+      
+      // Calculate final metrics
+      const attributionAccuracy = contacts.length > 0 ? 
+        (totalCertainty / contacts.length) * 100 : 0;
+      
+      const multiSourceRate = contacts.length > 0 ? 
+        (multiSourceContacts / contacts.length) * 100 : 0;
+      
+      const dealAttributionRate = totalDeals > 0 ? 
+        (dealsWithAttribution / totalDeals) * 100 : 0;
+      
+      const fieldCoverage = contacts.length > 0 ? 
+        (fieldMappingSuccess / contacts.length) * 100 : 0;
+      
+      // Prepare response with detailed stats
+      return {
+        success: true,
+        attributionAccuracy,
+        stats: {
+          totalContacts: contacts.length,
+          contactsAnalyzed: contacts.length,
+          highCertaintyContacts,
+          multiSourceContacts,
+          multiSourceRate,
+          totalDeals,
+          dealsWithAttribution,
+          dealAttributionRate,
+          fieldMappingSuccess,
+          fieldCoverage
+        }
+      };
+    } catch (error) {
+      console.error('Error generating attribution stats:', error);
+      return {
+        success: false,
+        error: `Failed to generate attribution stats: ${error}`
+      };
+    }
   }
 };
 
