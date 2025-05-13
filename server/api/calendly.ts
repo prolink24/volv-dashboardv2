@@ -156,8 +156,8 @@ async function syncAllEvents() {
               try {
                 const result = await contactMatcher.createOrUpdateContact(
                   contactData, 
-                  true, // Use high match confidence threshold
-                  true  // Update existing contacts
+                  true, // Update existing contacts
+                  contactMatcher.MatchConfidence.MEDIUM // Use medium confidence for better matching rates
                 );
                 
                 contact = result.contact;
