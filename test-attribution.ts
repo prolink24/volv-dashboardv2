@@ -1,13 +1,14 @@
 /**
  * Multi-Platform Attribution Test Script
  * 
- * This script tests the integration and attribution between Close CRM, Calendly, 
- * and Typeform by verifying API connections and testing the attribution service.
+ * This script tests the integration and attribution between Close CRM and Calendly
+ * by verifying API connections and testing the attribution service.
+ * Note: Typeform integration has been temporarily disabled.
  */
 
 import closeApi from './server/api/close';
 import calendlyApi from './server/api/calendly';
-import typeformApi from './server/api/typeform';
+// import typeformApi from './server/api/typeform'; // Temporarily disabled
 import attributionService from './server/services/attribution';
 import { storage } from './server/storage';
 
@@ -50,16 +51,9 @@ async function runTests() {
     console.log('  Please check your CALENDLY_API_KEY environment variable');
   }
   
-  // Test Typeform API
-  console.log(`\n${colors.cyan}Testing Typeform API connection...${colors.reset}`);
-  const typeformResult = await typeformApi.testApiConnection();
-  if (typeformResult.success) {
-    console.log(`${colors.green}✓ Typeform API connection successful!${colors.reset}`);
-    console.log(`  Authenticated as: ${typeformResult.user.alias || typeformResult.user.email}`);
-  } else {
-    console.log(`${colors.red}✗ Typeform API connection failed: ${typeformResult.error}${colors.reset}`);
-    console.log('  Please check your TYPEFORM_API_KEY environment variable');
-  }
+  // Typeform API test skipped
+  console.log(`\n${colors.cyan}Skipping Typeform API test as requested${colors.reset}`);
+  const typeformResult = { success: false, skipped: true };
 
   // Test 2: Verify data retrieval and contact creation
   console.log(`\n${colors.blue}[TEST 2] Testing data retrieval${colors.reset}`);
@@ -95,20 +89,8 @@ async function runTests() {
     }
   }
   
-  if (typeformResult.success) {
-    console.log(`\n${colors.cyan}Retrieving sample form responses from Typeform...${colors.reset}`);
-    try {
-      const responses = await typeformApi.fetchResponses(1);
-      if (responses && responses.length > 0) {
-        console.log(`${colors.green}✓ Successfully retrieved ${responses.length} response(s) from Typeform${colors.reset}`);
-        console.log(`  Response submitted at: ${new Date(responses[0].submittedAt).toLocaleString()}`);
-      } else {
-        console.log(`${colors.yellow}⚠ No form responses found in Typeform${colors.reset}`);
-      }
-    } catch (error) {
-      console.log(`${colors.red}✗ Error retrieving form responses from Typeform: ${error.message}${colors.reset}`);
-    }
-  }
+  // Skip Typeform response retrieval
+  console.log(`\n${colors.cyan}Skipping Typeform response retrieval as requested${colors.reset}`);
 
   // Test 3: Verify attribution functionality
   console.log(`\n${colors.blue}[TEST 3] Testing attribution functionality${colors.reset}`);
@@ -177,20 +159,25 @@ async function runTests() {
       
       if (attributionResult.success) {
         console.log(`${colors.green}✓ Attribution successful!${colors.reset}`);
-        console.log(`  Timeline events: ${attributionResult.timeline.length}`);
-        console.log(`  First touch: ${attributionResult.firstTouch ? new Date(attributionResult.firstTouch.date).toLocaleString() + ' via ' + attributionResult.firstTouch.source : 'None'}`);
-        console.log(`  Last touch: ${attributionResult.lastTouch ? new Date(attributionResult.lastTouch.date).toLocaleString() + ' via ' + attributionResult.lastTouch.source : 'None'}`);
         
-        // Display timeline summary by platform
-        const platformCounts = attributionResult.timeline.reduce((acc, event) => {
-          acc[event.source] = (acc[event.source] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>);
-        
-        console.log('\n  Timeline summary by platform:');
-        Object.entries(platformCounts).forEach(([platform, count]) => {
-          console.log(`    - ${platform}: ${count} event(s)`);
-        });
+        if (attributionResult.timeline && attributionResult.timeline.length > 0) {
+          console.log(`  Timeline events: ${attributionResult.timeline.length}`);
+          console.log(`  First touch: ${attributionResult.firstTouch ? new Date(attributionResult.firstTouch.date).toLocaleString() + ' via ' + attributionResult.firstTouch.source : 'None'}`);
+          console.log(`  Last touch: ${attributionResult.lastTouch ? new Date(attributionResult.lastTouch.date).toLocaleString() + ' via ' + attributionResult.lastTouch.source : 'None'}`);
+          
+          // Display timeline summary by platform
+          const platformCounts = attributionResult.timeline.reduce((acc, event) => {
+            acc[event.source] = (acc[event.source] || 0) + 1;
+            return acc;
+          }, {} as Record<string, number>);
+          
+          console.log('\n  Timeline summary by platform:');
+          Object.entries(platformCounts).forEach(([platform, count]) => {
+            console.log(`    - ${platform}: ${count} event(s)`);
+          });
+        } else {
+          console.log(`  No timeline events found`);
+        }
       } else {
         console.log(`${colors.red}✗ Attribution failed: ${attributionResult.error}${colors.reset}`);
       }
