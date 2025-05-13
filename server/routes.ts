@@ -6,6 +6,7 @@ import closeApi from "./api/close";
 import calendlyApi from "./api/calendly";
 import typeformApi from "./api/typeform";
 import attributionService from "./services/attribution";
+import enhancedAttributionService from "./services/enhanced-attribution";
 import syncService from "./services/sync";
 import * as syncStatus from "./api/sync-status";
 import { WebSocketServer } from "ws";
