@@ -546,10 +546,19 @@ export async function createOrUpdateContact(
       // Assignment - preserve existing assignment
       mergedData.assignedTo = existingContact.assignedTo || contactData.assignedTo;
       
-      // Notes - concatenate notes if both exist
+      // Notes - concatenate notes from both sources with a separator if both exist
       if (existingContact.notes && contactData.notes) {
-        mergedData.notes = `${existingContact.notes}\n---\n${contactData.notes}`;
+        // Check if one note contains the other to avoid duplication
+        if (existingContact.notes.includes(contactData.notes)) {
+          mergedData.notes = existingContact.notes;
+        } else if (contactData.notes.includes(existingContact.notes)) {
+          mergedData.notes = contactData.notes;
+        } else {
+          // Both have unique notes, combine them
+          mergedData.notes = `${existingContact.notes}\n---\n${contactData.notes}`;
+        }
       } else {
+        // One or both notes are empty, use the non-empty one
         mergedData.notes = existingContact.notes || contactData.notes;
       }
       
