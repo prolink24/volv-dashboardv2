@@ -10,7 +10,7 @@ import {
   ContactUserAssignment, InsertContactUserAssignment, contactToUserAssignments,
   DealUserAssignment, InsertDealUserAssignment, dealToUserAssignments
 } from "@shared/schema";
-import { eq, like, and, or, desc, asc, sql } from "drizzle-orm";
+import { eq, like, and, or, desc, asc, sql, count, inArray } from "drizzle-orm";
 import { db } from "./db";
 
 // Storage interface
@@ -454,11 +454,68 @@ export class MemStorage implements IStorage {
   }
 
   async getAllCloseUsers(limit?: number, offset = 0): Promise<CloseUser[]> {
-    const allUsers = Array.from(this.closeUsersData.values());
+    const allUsers = Array.from(this.closeUsersData.values())
+      .sort((a, b) => {
+        // Sort by updatedAt in descending order
+        const aDate = a.updatedAt || new Date(0);
+        const bDate = b.updatedAt || new Date(0);
+        return bDate.getTime() - aDate.getTime();
+      });
+      
     if (limit) {
       return allUsers.slice(offset, offset + limit);
     }
     return allUsers;
+  }
+  
+  async getCloseUsersCount(): Promise<number> {
+    return this.closeUsersData.size;
+  }
+  
+  async getContactsByCloseUserId(closeUserId: number): Promise<Contact[]> {
+    // Find all contact-user assignments for this closeUserId
+    const assignments = Array.from(this.contactUserAssignments.values())
+      .filter(assignment => assignment.closeUserId === closeUserId);
+    
+    // Extract all contactIds
+    const contactIds = assignments.map(assignment => assignment.contactId);
+    
+    if (contactIds.length === 0) {
+      return [];
+    }
+    
+    // Find all contacts with those IDs
+    return Array.from(this.contacts.values())
+      .filter(contact => contactIds.includes(contact.id))
+      .sort((a, b) => {
+        // Sort by lastActivityDate in descending order
+        const aDate = a.lastActivityDate || new Date(0);
+        const bDate = b.lastActivityDate || new Date(0);
+        return bDate.getTime() - aDate.getTime();
+      });
+  }
+  
+  async getDealsByCloseUserId(closeUserId: number): Promise<Deal[]> {
+    // Find all deal-user assignments for this closeUserId
+    const assignments = Array.from(this.dealUserAssignments.values())
+      .filter(assignment => assignment.closeUserId === closeUserId);
+    
+    // Extract all dealIds
+    const dealIds = assignments.map(assignment => assignment.dealId);
+    
+    if (dealIds.length === 0) {
+      return [];
+    }
+    
+    // Find all deals with those IDs
+    return Array.from(this.deals.values())
+      .filter(deal => dealIds.includes(deal.id))
+      .sort((a, b) => {
+        // Sort by createdAt in descending order
+        const aDate = a.createdAt || new Date(0);
+        const bDate = b.createdAt || new Date(0);
+        return bDate.getTime() - aDate.getTime();
+      });
   }
 
   async createCloseUser(user: InsertCloseUser): Promise<CloseUser> {
