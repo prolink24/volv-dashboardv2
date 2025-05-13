@@ -29,7 +29,20 @@ async function checkOpportunityCoverage() {
     
     for (const opportunity of allOpportunities) {
       contactsWithOpportunities.add(opportunity.contactId);
-      totalDealValue += opportunity.value || 0;
+      // Handle string values for the opportunity value
+      let dealValue = 0;
+      if (opportunity.value) {
+        if (typeof opportunity.value === 'number') {
+          dealValue = opportunity.value;
+        } else if (typeof opportunity.value === 'string') {
+          // Try to convert string to number, handle currency symbols like $
+          const numericValue = parseFloat(opportunity.value.replace(/[^0-9.-]+/g, ''));
+          if (!isNaN(numericValue)) {
+            dealValue = numericValue;
+          }
+        }
+      }
+      totalDealValue += dealValue;
       
       // Check custom fields
       if (opportunity.metadata) {
@@ -65,7 +78,7 @@ async function checkOpportunityCoverage() {
     const opportunityCoverageRate = (contactsWithOpportunities.size / allContacts.length) * 100;
     console.log(`Contacts with opportunities: ${contactsWithOpportunities.size}`);
     console.log(`Opportunity coverage rate: ${opportunityCoverageRate.toFixed(2)}%`);
-    console.log(`Total deal value: $${totalDealValue.toFixed(2)}`);
+    console.log(`Total deal value: $${typeof totalDealValue === 'number' ? totalDealValue.toFixed(2) : '0.00'}`);
     console.log(`Opportunities with custom fields: ${opportunitiesWithCustomFields}`);
     console.log(`Opportunities missing custom fields: ${missingCustomFieldsCount}`);
     

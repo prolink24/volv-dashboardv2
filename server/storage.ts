@@ -313,6 +313,12 @@ export class MemStorage implements IStorage {
       (meeting) => meeting.contactId === contactId
     );
   }
+  
+  async getAllMeetings(limit: number = 1000, offset: number = 0): Promise<Meeting[]> {
+    return Array.from(this.meetings.values())
+      .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
+      .slice(offset, offset + limit);
+  }
 
   async getMeetingByCalendlyEventId(eventId: string): Promise<Meeting | undefined> {
     return Array.from(this.meetings.values()).find(
@@ -765,6 +771,15 @@ export class DatabaseStorage implements IStorage {
       .from(deals)
       .where(eq(deals.contactId, contactId))
       .orderBy(desc(deals.createdAt));
+  }
+  
+  async getAllOpportunities(limit: number = 1000, offset: number = 0): Promise<Deal[]> {
+    return db
+      .select()
+      .from(deals)
+      .orderBy(desc(deals.createdAt))
+      .limit(limit)
+      .offset(offset);
   }
   
   async getDealBySourceId(source: string, id: string): Promise<Deal | undefined> {
