@@ -99,6 +99,11 @@ async function syncAllLeads() {
         // For subsequent pages, use the cursor
         if (cursor && cursor !== 'initial') {
           params._cursor = cursor;
+        } 
+        // If we don't have a cursor but we're past page 1, try to use skip
+        else if (page > 1 && cursor !== 'initial') {
+          // Use _skip as an alternative to cursor-based pagination
+          params._skip = (page - 1) * 100;
         }
         
         // Make the API request
@@ -205,6 +210,11 @@ async function syncAllLeads() {
         // Update pagination info for next batch
         hasMore = response.data.has_more || false;
         cursor = response.data.cursor || null;
+        
+        // Log pagination details
+        console.log(`Page ${page} complete. hasMore: ${hasMore}, cursor: ${cursor ? 'exists' : 'null'}`);
+        console.log(`Progress: ${processedLeads}/${totalLeads} leads processed, ${importedContacts} contacts imported`);
+        
         page++;
         
         // Update sync status after processing the batch
@@ -221,9 +231,18 @@ async function syncAllLeads() {
         
         // If we get an error, log it but try to continue - we want all 5000+ contacts
         console.error(`Error on page ${page}, but continuing the sync...`);
-        // Try to continue with the next page
-        page++;
-        // Don't stop the sync process due to errors
+        
+        // If cursor is null but we have more pages, try setting a new cursor
+        if (!cursor && hasMore && page > 1) {
+          console.log(`Lost cursor on page ${page}, attempting to continue with offset...`);
+          // When cursor is lost, use _skip parameter to continue pagination
+          // Set page to continue from the current count
+          page++;
+          hasMore = true; // Force continuation
+        } else {
+          // Try to continue with the next page
+          page++;
+        }
       }
     }
     
