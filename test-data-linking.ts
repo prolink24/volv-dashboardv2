@@ -21,7 +21,16 @@ async function testDataLinking() {
     
     // Count contacts with multiple lead sources
     const multiSourceContacts = contacts.filter(contact => {
-      const sourceData = contact.sourceData ? JSON.parse(contact.sourceData) : {};
+      let sourceData = {};
+      try {
+        // Could be a string or already an object
+        sourceData = typeof contact.sourceData === 'string' 
+          ? JSON.parse(contact.sourceData) 
+          : contact.sourceData || {};
+      } catch (error) {
+        console.log(`Error parsing sourceData for contact ${contact.id} (${contact.name}): ${error}`);
+        return false;
+      }
       return sourceData.close && sourceData.calendly;
     });
     
@@ -32,10 +41,10 @@ async function testDataLinking() {
     let totalOpportunities = 0;
     
     for (const contact of contacts) {
-      const opportunities = await storage.getOpportunitiesByContactId(contact.id);
-      if (opportunities && opportunities.length > 0) {
+      const deals = await storage.getDealsByContactId(contact.id);
+      if (deals && deals.length > 0) {
         contactsWithOpportunities++;
-        totalOpportunities += opportunities.length;
+        totalOpportunities += deals.length;
       }
     }
     
@@ -91,10 +100,10 @@ async function testDataLinking() {
     // Sample a contact with opportunities
     if (contactsWithOpportunities > 0) {
       for (const contact of contacts) {
-        const opportunities = await storage.getOpportunitiesByContactId(contact.id);
-        if (opportunities && opportunities.length > 0) {
+        const deals = await storage.getDealsByContactId(contact.id);
+        if (deals && deals.length > 0) {
           console.log(`\nSample contact with opportunities: ${contact.name} (${contact.email})`);
-          console.log(`Sample opportunity: ${opportunities[0].title}, Value: ${opportunities[0].value}, Status: ${opportunities[0].status}`);
+          console.log(`Sample opportunity: ${deals[0].title}, Value: ${deals[0].value}, Status: ${deals[0].status}`);
           break;
         }
       }

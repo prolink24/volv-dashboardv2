@@ -773,36 +773,21 @@ export class DatabaseStorage implements IStorage {
 
   async createDeal(deal: InsertDeal): Promise<Deal> {
     try {
-      // Use our custom SQL function for safer value handling
-      const query = `
-        SELECT * FROM insert_deal_with_text_value(
-          $1, $2, $3, $4, $5, $6, $7, $8
-        ) LIMIT 1
-      `;
-      
-      // Extract date from ISO string if it exists
-      let closeDate = null;
-      if (deal.closeDate) {
-        closeDate = new Date(deal.closeDate);
+      // Convert value from currency format if needed
+      let dealValue = deal.value;
+      if (typeof dealValue === 'string' && dealValue.includes('$')) {
+        // Remove currency symbols and commas for database storage
+        dealValue = dealValue.replace(/[^0-9.-]+/g, '');
       }
       
-      const result = await db.execute(query, [
-        deal.contactId,
-        deal.title,
-        deal.value || null,
-        deal.status,
-        closeDate,
-        deal.assignedTo || null,
-        deal.closeId || null,
-        deal.metadata || null
-      ]);
+      // Create a new deal object with potentially modified values
+      const dealData = {
+        ...deal,
+        value: dealValue
+      };
       
-      if (result.length > 0) {
-        return result[0] as Deal;
-      }
-      
-      // Fallback to regular insert if function fails
-      const [newDeal] = await db.insert(deals).values(deal).returning();
+      // Use standard insert approach
+      const [newDeal] = await db.insert(deals).values(dealData).returning();
       return newDeal;
     } catch (error) {
       console.error('Error creating deal:', error);
