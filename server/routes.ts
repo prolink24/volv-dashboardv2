@@ -390,7 +390,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         success: true,
         attributionAccuracy: attributionData.attributionAccuracy,
-        stats: attributionData.detailedAnalytics || {}
+        stats: attributionData.stats || {}
       });
     } catch (error) {
       console.error("Error generating enhanced attribution stats:", error);
@@ -422,7 +422,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await enhancedAttributionService.getAttributionTimeline(id);
       
       if (!result.success) {
-        return res.status(404).json({ error: result.error || "Contact not found or attribution failed" });
+        return res.status(404).json({ error: "Contact not found or attribution failed" });
       }
       
       // Format the timeline data for visualization
