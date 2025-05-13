@@ -488,11 +488,10 @@ async function syncLeadOpportunities(leadId: string, contactId: number) {
           contactId,
           title: opportunity.opportunity_name || 'Unnamed Deal',
           status: opportunity.status_type || 'active',
-          value: opportunity.value_formatted || String(opportunity.value) || null,
+          value: opportunity.value_formatted || String(opportunity.value || 0),
           closeDate: opportunity.date_won ? new Date(opportunity.date_won).toISOString() : null,
           assignedTo: opportunity.assigned_to_name || null,
           closeId: opportunity.id,
-          createdAt: new Date(opportunity.date_created),
           metadata: JSON.stringify({
             status_label: opportunity.status_label,
             value_currency: opportunity.value_currency,

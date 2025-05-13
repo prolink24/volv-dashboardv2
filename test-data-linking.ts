@@ -21,17 +21,26 @@ async function testDataLinking() {
     
     // Count contacts with multiple lead sources
     const multiSourceContacts = contacts.filter(contact => {
-      let sourceData = {};
+      // Safely parse source data
+      let sourceData: any = {};
       try {
-        // Could be a string or already an object
-        sourceData = typeof contact.sourceData === 'string' 
-          ? JSON.parse(contact.sourceData) 
-          : contact.sourceData || {};
+        if (typeof contact.sourceData === 'string') {
+          sourceData = JSON.parse(contact.sourceData);
+        } else if (contact.sourceData) {
+          sourceData = contact.sourceData;
+        }
       } catch (error) {
         console.log(`Error parsing sourceData for contact ${contact.id} (${contact.name}): ${error}`);
         return false;
       }
-      return sourceData.close && sourceData.calendly;
+      
+      // Check if this contact has data from both sources
+      return (
+        sourceData && 
+        typeof sourceData === 'object' && 
+        sourceData.close && 
+        sourceData.calendly
+      );
     });
     
     console.log(`Contacts with multiple sources: ${multiSourceContacts.length} (${(multiSourceContacts.length / contacts.length * 100).toFixed(2)}%)`);
