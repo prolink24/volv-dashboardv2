@@ -140,7 +140,7 @@ async function runTests() {
     {
       name: "Phone match with different name format",
       contact: {
-        name: jane.name.split(' ')[0] + '. ' + jane.name.split(' ')[1],
+        name: jane.name.split(' ')[0].charAt(0) + '. ' + jane.name.split(' ')[1],
         email: "different.email@example.com",
         phone: jane.phone
       },

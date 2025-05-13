@@ -221,6 +221,55 @@ export async function findBestMatchingContact(contactData: Partial<InsertContact
     );
     
     if (phoneMatches.length > 0) {
+      // First, check for initial format matches
+      // For example "J. Doe" should match "Jane Doe" if phones match
+      const initialFormatMatches = phoneMatches.filter(contact => {
+        // Extract last names from both
+        const contactNameParts = contact.name.toLowerCase().trim().split(' ');
+        const dataNameParts = contactData.name.toLowerCase().trim().split(' ');
+        
+        // Check if both have at least last name
+        if (contactNameParts.length >= 1 && dataNameParts.length >= 1) {
+          const contactLastName = contactNameParts[contactNameParts.length - 1];
+          const dataLastName = dataNameParts[dataNameParts.length - 1];
+          
+          // If last names match
+          if (contactLastName === dataLastName) {
+            // Get first part of names
+            const contactFirstPart = contactNameParts[0];
+            const dataFirstPart = dataNameParts[0];
+            
+            // Check if either is an initial (e.g., "J." or "J")
+            const isContactInitial = 
+              contactFirstPart.length === 1 || 
+              (contactFirstPart.length === 2 && contactFirstPart.endsWith('.'));
+              
+            const isDataInitial = 
+              dataFirstPart.length === 1 || 
+              (dataFirstPart.length === 2 && dataFirstPart.endsWith('.'));
+            
+            // Check if initial matches first letter of the other name
+            if (isContactInitial && dataFirstPart.startsWith(contactFirstPart.charAt(0))) {
+              return true;
+            }
+            
+            if (isDataInitial && contactFirstPart.startsWith(dataFirstPart.charAt(0))) {
+              return true;
+            }
+          }
+        }
+        return false;
+      });
+      
+      // If we found an initial format match with phone, return high confidence
+      if (initialFormatMatches.length > 0) {
+        return createResult(
+          initialFormatMatches[0],
+          MatchConfidence.HIGH,
+          'Initial format name + Phone match'
+        );
+      }
+      
       // Find the contact with the most similar name
       let bestMatch = null;
       let bestSimilarity = 0;
