@@ -9,6 +9,9 @@ import { CloseUser, InsertCloseUser, InsertContactUserAssignment, InsertDealUser
 import closeAPI from '../api/close';
 import { storage } from '../storage';
 
+// Import axios to create our own instance if needed
+import axios from 'axios';
+
 // Track the last sync time for users
 let lastUserSyncTime: Date | null = null;
 
@@ -93,11 +96,30 @@ export async function syncCloseUsers(): Promise<{ success: boolean; count: numbe
  */
 async function fetchCloseUsers(): Promise<any[]> {
   try {
-    // Check if closeApiClient exists on closeAPI, otherwise access it directly
-    const apiClient = typeof closeAPI.closeApiClient !== 'undefined' 
-      ? closeAPI.closeApiClient 
-      : closeAPI;
+    // Create our own API client since closeApiClient isn't exported
+    const CLOSE_API_KEY = process.env.CLOSE_API_KEY;
+    const CLOSE_BASE_URL = 'https://api.close.com/api/v1';
+    
+    // Create our own axios instance
+    const apiClient = axios.create({
+      baseURL: CLOSE_BASE_URL,
+      auth: {
+        username: CLOSE_API_KEY || '',
+        password: ''
+      },
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }
+    });
       
+    // First test the API connection
+    const testResponse = await closeAPI.testApiConnection();
+    if (!testResponse.success) {
+      throw new Error(`Failed to connect to Close API: ${testResponse.error}`);
+    }
+    
+    // Then fetch users
     const response = await apiClient.get('/user/');
     return response.data.data || [];
   } catch (error) {
@@ -227,10 +249,13 @@ export async function syncDealUserAssignments(forceSync: boolean = false): Promi
           continue;
         }
         
-        const metadata = deal.metadata;
+        // Safely handle metadata which could be a string or object
+        const metadata = typeof deal.metadata === 'string'
+          ? JSON.parse(deal.metadata as string)
+          : deal.metadata;
         
         // Extract assigned_to information
-        const assignedToId = deal.assignedTo || metadata.assigned_to || metadata.assigned_to_id;
+        const assignedToId = deal.assignedTo || metadata?.assigned_to || metadata?.assigned_to_id;
         
         if (!assignedToId) {
           continue; // No assignment
