@@ -269,12 +269,12 @@ export async function syncCalendly() {
                 startTime: new Date(event.startTime),
                 endTime: new Date(event.endTime),
                 assignedTo: null,
-                metadata: {
+                metadata: JSON.stringify({
                   location: typeof event.location === 'string' ? event.location : 
                            Array.isArray(event.location) ? event.location.join(', ') : 'Virtual',
                   invitee: invitee,
                   event: event
-                }
+                })
               };
               
               // Check if meeting exists
@@ -316,12 +316,12 @@ export async function syncCalendly() {
                 startTime: new Date(event.startTime),
                 endTime: new Date(event.endTime),
                 assignedTo: null,
-                metadata: {
+                metadata: JSON.stringify({
                   location: typeof event.location === 'string' ? event.location : 
                            Array.isArray(event.location) ? event.location.join(', ') : 'Virtual',
                   invitee: invitee,
                   event: event
-                }
+                })
               };
               
               const newMeeting = await storage.createMeeting(meetingData);
