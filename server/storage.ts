@@ -5,7 +5,10 @@ import {
   Deal, InsertDeal, deals,
   Meeting, InsertMeeting, meetings,
   Form, InsertForm, forms,
-  Metrics, InsertMetrics, metrics
+  Metrics, InsertMetrics, metrics,
+  CloseUser, InsertCloseUser, closeUsers,
+  ContactUserAssignment, InsertContactUserAssignment, contactToUserAssignments,
+  DealUserAssignment, InsertDealUserAssignment, dealToUserAssignments
 } from "@shared/schema";
 import { eq, like, and, or, desc, asc, sql } from "drizzle-orm";
 import { db } from "./db";
@@ -17,6 +20,31 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
 
+  // Close CRM User operations
+  getCloseUser(id: number): Promise<CloseUser | undefined>;
+  getCloseUserByCloseId(closeId: string): Promise<CloseUser | undefined>;
+  getCloseUserByEmail(email: string): Promise<CloseUser | undefined>;
+  getAllCloseUsers(limit?: number, offset?: number): Promise<CloseUser[]>;
+  createCloseUser(user: InsertCloseUser): Promise<CloseUser>;
+  updateCloseUser(id: number, user: Partial<InsertCloseUser>): Promise<CloseUser | undefined>;
+  deleteCloseUser(id: number): Promise<boolean>;
+  
+  // Contact-User Assignment operations
+  getContactUserAssignment(id: number): Promise<ContactUserAssignment | undefined>;
+  getContactUserAssignmentsByContactId(contactId: number): Promise<ContactUserAssignment[]>;
+  getContactUserAssignmentsByCloseUserId(closeUserId: number): Promise<ContactUserAssignment[]>;
+  createContactUserAssignment(assignment: InsertContactUserAssignment): Promise<ContactUserAssignment>;
+  updateContactUserAssignment(id: number, assignment: Partial<InsertContactUserAssignment>): Promise<ContactUserAssignment | undefined>;
+  deleteContactUserAssignment(id: number): Promise<boolean>;
+  
+  // Deal-User Assignment operations
+  getDealUserAssignment(id: number): Promise<DealUserAssignment | undefined>;
+  getDealUserAssignmentsByDealId(dealId: number): Promise<DealUserAssignment[]>;
+  getDealUserAssignmentsByCloseUserId(closeUserId: number): Promise<DealUserAssignment[]>;
+  createDealUserAssignment(assignment: InsertDealUserAssignment): Promise<DealUserAssignment>;
+  updateDealUserAssignment(id: number, assignment: Partial<InsertDealUserAssignment>): Promise<DealUserAssignment | undefined>;
+  deleteDealUserAssignment(id: number): Promise<boolean>;
+  
   // Contact operations
   getContact(id: number): Promise<Contact | undefined>;
   getContactByEmail(email: string): Promise<Contact | undefined>;
@@ -76,6 +104,9 @@ export class MemStorage implements IStorage {
   private meetings: Map<number, Meeting>;
   private forms: Map<number, Form>;
   private metricsData: Map<number, Metrics>;
+  private closeUsersData: Map<number, CloseUser>;
+  private contactUserAssignments: Map<number, ContactUserAssignment>;
+  private dealUserAssignments: Map<number, DealUserAssignment>;
   
   private userCurrentId: number;
   private contactCurrentId: number;
@@ -84,6 +115,9 @@ export class MemStorage implements IStorage {
   private meetingCurrentId: number;
   private formCurrentId: number;
   private metricsCurrentId: number;
+  private closeUserCurrentId: number;
+  private contactUserAssignmentCurrentId: number;
+  private dealUserAssignmentCurrentId: number;
 
   constructor() {
     this.users = new Map();
@@ -93,6 +127,9 @@ export class MemStorage implements IStorage {
     this.meetings = new Map();
     this.forms = new Map();
     this.metricsData = new Map();
+    this.closeUsersData = new Map();
+    this.contactUserAssignments = new Map();
+    this.dealUserAssignments = new Map();
     
     this.userCurrentId = 1;
     this.contactCurrentId = 1;
@@ -101,6 +138,9 @@ export class MemStorage implements IStorage {
     this.meetingCurrentId = 1;
     this.formCurrentId = 1;
     this.metricsCurrentId = 1;
+    this.closeUserCurrentId = 1;
+    this.contactUserAssignmentCurrentId = 1;
+    this.dealUserAssignmentCurrentId = 1;
 
     // Initialize with sample data
     this.initializeSampleData();
@@ -391,6 +431,128 @@ export class MemStorage implements IStorage {
         metric.date.toISOString().split('T')[0] === formattedDate && 
         (!userId || metric.userId === userId)
     );
+  }
+
+  // Close CRM User operations
+  async getCloseUser(id: number): Promise<CloseUser | undefined> {
+    return this.closeUsersData.get(id);
+  }
+
+  async getCloseUserByCloseId(closeId: string): Promise<CloseUser | undefined> {
+    return Array.from(this.closeUsersData.values()).find(
+      (user) => user.closeId === closeId
+    );
+  }
+
+  async getCloseUserByEmail(email: string): Promise<CloseUser | undefined> {
+    return Array.from(this.closeUsersData.values()).find(
+      (user) => user.email.toLowerCase() === email.toLowerCase()
+    );
+  }
+
+  async getAllCloseUsers(limit?: number, offset = 0): Promise<CloseUser[]> {
+    const allUsers = Array.from(this.closeUsersData.values());
+    if (limit) {
+      return allUsers.slice(offset, offset + limit);
+    }
+    return allUsers;
+  }
+
+  async createCloseUser(user: InsertCloseUser): Promise<CloseUser> {
+    const id = this.closeUserCurrentId++;
+    const createdAt = new Date();
+    const updatedAt = new Date();
+    const newUser: CloseUser = { ...user, id, createdAt, updatedAt };
+    this.closeUsersData.set(id, newUser);
+    return newUser;
+  }
+
+  async updateCloseUser(id: number, user: Partial<InsertCloseUser>): Promise<CloseUser | undefined> {
+    const existingUser = this.closeUsersData.get(id);
+    if (!existingUser) return undefined;
+    
+    const updatedAt = new Date();
+    const updatedUser = { ...existingUser, ...user, updatedAt };
+    this.closeUsersData.set(id, updatedUser);
+    return updatedUser;
+  }
+
+  async deleteCloseUser(id: number): Promise<boolean> {
+    return this.closeUsersData.delete(id);
+  }
+  
+  // Contact-User Assignment operations
+  async getContactUserAssignment(id: number): Promise<ContactUserAssignment | undefined> {
+    return this.contactUserAssignments.get(id);
+  }
+
+  async getContactUserAssignmentsByContactId(contactId: number): Promise<ContactUserAssignment[]> {
+    return Array.from(this.contactUserAssignments.values()).filter(
+      (assignment) => assignment.contactId === contactId
+    );
+  }
+
+  async getContactUserAssignmentsByCloseUserId(closeUserId: number): Promise<ContactUserAssignment[]> {
+    return Array.from(this.contactUserAssignments.values()).filter(
+      (assignment) => assignment.closeUserId === closeUserId
+    );
+  }
+
+  async createContactUserAssignment(assignment: InsertContactUserAssignment): Promise<ContactUserAssignment> {
+    const id = this.contactUserAssignmentCurrentId++;
+    const newAssignment: ContactUserAssignment = { ...assignment, id };
+    this.contactUserAssignments.set(id, newAssignment);
+    return newAssignment;
+  }
+
+  async updateContactUserAssignment(id: number, assignment: Partial<InsertContactUserAssignment>): Promise<ContactUserAssignment | undefined> {
+    const existingAssignment = this.contactUserAssignments.get(id);
+    if (!existingAssignment) return undefined;
+    
+    const updatedAssignment = { ...existingAssignment, ...assignment };
+    this.contactUserAssignments.set(id, updatedAssignment);
+    return updatedAssignment;
+  }
+
+  async deleteContactUserAssignment(id: number): Promise<boolean> {
+    return this.contactUserAssignments.delete(id);
+  }
+  
+  // Deal-User Assignment operations
+  async getDealUserAssignment(id: number): Promise<DealUserAssignment | undefined> {
+    return this.dealUserAssignments.get(id);
+  }
+
+  async getDealUserAssignmentsByDealId(dealId: number): Promise<DealUserAssignment[]> {
+    return Array.from(this.dealUserAssignments.values()).filter(
+      (assignment) => assignment.dealId === dealId
+    );
+  }
+
+  async getDealUserAssignmentsByCloseUserId(closeUserId: number): Promise<DealUserAssignment[]> {
+    return Array.from(this.dealUserAssignments.values()).filter(
+      (assignment) => assignment.closeUserId === closeUserId
+    );
+  }
+
+  async createDealUserAssignment(assignment: InsertDealUserAssignment): Promise<DealUserAssignment> {
+    const id = this.dealUserAssignmentCurrentId++;
+    const newAssignment: DealUserAssignment = { ...assignment, id };
+    this.dealUserAssignments.set(id, newAssignment);
+    return newAssignment;
+  }
+
+  async updateDealUserAssignment(id: number, assignment: Partial<InsertDealUserAssignment>): Promise<DealUserAssignment | undefined> {
+    const existingAssignment = this.dealUserAssignments.get(id);
+    if (!existingAssignment) return undefined;
+    
+    const updatedAssignment = { ...existingAssignment, ...assignment };
+    this.dealUserAssignments.set(id, updatedAssignment);
+    return updatedAssignment;
+  }
+
+  async deleteDealUserAssignment(id: number): Promise<boolean> {
+    return this.dealUserAssignments.delete(id);
   }
 
   async createMetrics(metrics: InsertMetrics): Promise<Metrics> {
