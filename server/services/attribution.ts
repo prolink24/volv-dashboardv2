@@ -47,8 +47,8 @@ export async function attributeContact(contactId: number) {
       })),
       ...meetings.map(m => ({
         type: 'meeting',
-        date: m.date,
-        sourceId: m.sourceId,
+        date: m.startTime, // Use startTime instead of date for meetings
+        sourceId: m.calendlyEventId, // Use calendlyEventId as sourceId
         source: 'calendly',
         data: m
       })),

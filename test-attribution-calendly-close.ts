@@ -54,7 +54,15 @@ async function runTest() {
   console.log(`Total contacts in database: ${contacts.length}`);
   
   // Track cross-platform contacts
-  const crossPlatformContacts = [];
+  type CrossPlatformContact = {
+    id: number;
+    name: string;
+    email: string;
+    closeActivities: number;
+    calendlyMeetings: number;
+  };
+  
+  const crossPlatformContacts: CrossPlatformContact[] = [];
   
   for (const contact of contacts) {
     // Get activities and meetings for this contact
