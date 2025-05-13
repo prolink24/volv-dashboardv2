@@ -795,12 +795,26 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateDeal(id: number, deal: Partial<InsertDeal>): Promise<Deal | undefined> {
-    const [updatedDeal] = await db
-      .update(deals)
-      .set(deal)
-      .where(eq(deals.id, id))
-      .returning();
-    return updatedDeal || undefined;
+    try {
+      // Handle currency formatting in the value field
+      let updateData = {...deal};
+      
+      // Convert value from currency format if needed
+      if (typeof updateData.value === 'string' && updateData.value.includes('$')) {
+        // Remove currency symbols and commas for database storage
+        updateData.value = updateData.value.replace(/[^0-9.-]+/g, '');
+      }
+      
+      const [updatedDeal] = await db
+        .update(deals)
+        .set(updateData)
+        .where(eq(deals.id, id))
+        .returning();
+      return updatedDeal || undefined;
+    } catch (error) {
+      console.error('Error updating deal:', error);
+      throw error;
+    }
   }
 
   async deleteDeal(id: number): Promise<boolean> {
