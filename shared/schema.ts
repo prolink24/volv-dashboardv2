@@ -308,6 +308,32 @@ export type DashboardData = {
       callDateTime: string;
     }[];
   }[];
+  attribution?: {
+    accuracy: number;
+    contactsWithMultipleSources: number;
+    totalContacts: number;
+    multiSourceRate: number;
+    channelDistribution: {
+      name: string;
+      value: number;
+    }[];
+    contactsBySource: {
+      source: string;
+      count: number;
+      percentage: number;
+    }[];
+    contactsWithMissingData: number;
+    fieldCoverage: number;
+    insights: {
+      title: string;
+      description: string;
+      icon?: React.ReactNode;
+      badge?: {
+        text: string;
+        variant: "default" | "destructive" | "secondary" | "outline";
+      };
+    }[];
+  };
 };
 
 export type ContactsData = {
