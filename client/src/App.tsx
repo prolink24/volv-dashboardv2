@@ -17,6 +17,13 @@ import Settings from "@/pages/settings";
 import NotFound from "@/pages/not-found";
 import AttributionJourney from "@/pages/attribution-journey";
 
+// Specialized dashboard views
+import SalesDashboard from "@/pages/dashboard/sales";
+import SetterDashboard from "@/pages/dashboard/setter";
+import MarketingDashboard from "@/pages/dashboard/marketing";
+import AdminDashboard from "@/pages/dashboard/admin";
+import ComplianceDashboard from "@/pages/dashboard/compliance";
+
 function Router() {
   return (
     <div className="flex h-screen overflow-hidden">
@@ -25,6 +32,11 @@ function Router() {
         <Header />
         <Switch>
           <Route path="/" component={Dashboard} />
+          <Route path="/dashboard/sales" component={SalesDashboard} />
+          <Route path="/dashboard/setter" component={SetterDashboard} />
+          <Route path="/dashboard/marketing" component={MarketingDashboard} />
+          <Route path="/dashboard/admin" component={AdminDashboard} />
+          <Route path="/dashboard/compliance" component={ComplianceDashboard} />
           <Route path="/contacts" component={Contacts} />
           <Route path="/meetings" component={Meetings} />
           <Route path="/forms" component={Forms} />

@@ -54,7 +54,12 @@ const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const sidebarItems = [
-    { icon: LayoutDashboard, label: "Dashboard", href: "/" },
+    { icon: LayoutDashboard, label: "Overview", href: "/" },
+    { icon: LayoutDashboard, label: "Sales Dashboard", href: "/dashboard/sales" },
+    { icon: LayoutDashboard, label: "Setter Dashboard", href: "/dashboard/setter" },
+    { icon: LayoutDashboard, label: "Marketing Dashboard", href: "/dashboard/marketing" },
+    { icon: LayoutDashboard, label: "Admin Dashboard", href: "/dashboard/admin" },
+    { icon: LayoutDashboard, label: "Compliance Dashboard", href: "/dashboard/compliance" },
     { icon: Users, label: "Contacts", href: "/contacts" },
     { icon: Calendar, label: "Meetings", href: "/meetings" },
     { icon: FileText, label: "Forms", href: "/forms" },
