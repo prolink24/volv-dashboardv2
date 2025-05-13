@@ -483,6 +483,7 @@ async function syncLeadOpportunities(leadId: string, contactId: number) {
     for (const opportunity of opportunities) {
       try {
         // Extract relevant deal data
+        // Store original formatted value as-is since we changed the DB schema to text
         const dealData = {
           contactId,
           title: opportunity.opportunity_name || 'Unnamed Deal',
@@ -492,14 +493,14 @@ async function syncLeadOpportunities(leadId: string, contactId: number) {
           assignedTo: opportunity.assigned_to_name || null,
           closeId: opportunity.id,
           createdAt: new Date(opportunity.date_created),
-          metadata: {
+          metadata: JSON.stringify({
             status_label: opportunity.status_label,
             value_currency: opportunity.value_currency,
             value_period: opportunity.value_period,
             confidence: opportunity.confidence,
             lead_name: opportunity.lead_name,
             opportunity_data: opportunity
-          }
+          })
         };
         
         // Check if deal exists by external ID

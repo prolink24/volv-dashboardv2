@@ -65,7 +65,7 @@ export const deals = pgTable("deals", {
   id: serial("id").primaryKey(),
   contactId: integer("contact_id").notNull(),
   title: text("title").notNull(),
-  value: numeric("value"),
+  value: text("value"), // Store as text to handle any format including currency symbols
   status: text("status").notNull(), // open, won, lost
   closeDate: date("close_date"),
   createdAt: timestamp("created_at").defaultNow(),
