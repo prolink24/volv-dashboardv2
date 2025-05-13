@@ -165,7 +165,8 @@ async function syncAllEvents() {
                 endTime: new Date(event.end_time),
                 assignedTo: null,
                 metadata: JSON.stringify({
-                  location: event.location?.join(', ') || 'Virtual',
+                  location: typeof event.location === 'string' ? event.location : 
+                           Array.isArray(event.location) ? event.location.join(', ') : 'Virtual',
                   description: eventDetails.description || '',
                   invitee: invitee
                 })

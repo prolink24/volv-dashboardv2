@@ -270,6 +270,8 @@ export async function syncCalendly() {
                 endTime: new Date(event.endTime),
                 assignedTo: null,
                 metadata: JSON.stringify({
+                  location: typeof event.location === 'string' ? event.location : 
+                           Array.isArray(event.location) ? event.location.join(', ') : 'Virtual',
                   invitee: invitee,
                   event: event
                 })
@@ -315,6 +317,8 @@ export async function syncCalendly() {
                 endTime: new Date(event.endTime),
                 assignedTo: null,
                 metadata: JSON.stringify({
+                  location: typeof event.location === 'string' ? event.location : 
+                           Array.isArray(event.location) ? event.location.join(', ') : 'Virtual',
                   invitee: invitee,
                   event: event
                 })
