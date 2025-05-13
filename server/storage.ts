@@ -1503,61 +1503,34 @@ export class DatabaseStorage implements IStorage {
       };
     }
       
-    // If no real data is available, use sample data
-    return {
-      kpis: {
-        closedDeals: 4,
-        cashCollected: 125500,
-        revenueGenerated: 195000,
-        totalCalls: 38,
-        call1Taken: 25,
-        call2Taken: 13,
-        closingRate: 31,
-        avgCashCollected: 31375,
-        solutionCallShowRate: 87,
-        earningPerCall2: 9654
-      },
-      salesTeam: [
-          {
-            name: "Josh Sweetnam",
-            id: "user_1",
-            closed: 2,
-            cashCollected: 72000,
-            contractedValue: 110000,
-            calls: 12,
-            call1: 8,
-            call2: 4,
-            call2Sits: 6,
-            closingRate: 50,
-            adminMissingPercent: 10
-          },
-          {
-            name: "Mazin Gazar",
-            id: "user_2",
-            closed: 1,
-            cashCollected: 28500,
-            contractedValue: 45000,
-            calls: 15,
-            call1: 10,
-            call2: 5,
-            call2Sits: 5,
-            closingRate: 20,
-            adminMissingPercent: 5
-          },
-          {
-            name: "Bryann Cabral",
-            id: "user_3",
-            closed: 1,
-            cashCollected: 25000,
-            contractedValue: 40000,
-            calls: 11,
-            call1: 7,
-            call2: 4,
-            call2Sits: 4,
-            closingRate: 25,
-            adminMissingPercent: 15
-          }
-        ],
+    // Use the metrics data if available, or calculate from sales data
+    if (metricsData) {
+      const metricsJson = metricsData.metadata ? 
+        (typeof metricsData.metadata === 'string' ? 
+          JSON.parse(metricsData.metadata as string) : 
+          metricsData.metadata) : null;
+          
+      if (metricsJson && metricsJson.dashboardData) {
+        return metricsJson.dashboardData;
+      }
+    }
+    
+    // If no real data is available, use sample data with real sales team members
+    if (salesTeamData && salesTeamData.length > 0) {
+      return {
+        kpis: {
+          closedDeals: 4,
+          cashCollected: 125500,
+          revenueGenerated: 195000,
+          totalCalls: 38,
+          call1Taken: 25,
+          call2Taken: 13,
+          closingRate: 31,
+          avgCashCollected: 31375,
+          solutionCallShowRate: 87,
+          earningPerCall2: 9654
+        },
+        salesTeam: salesTeamData,
         triageMetrics: {
           booked: Math.round(38 * 0.8),
           sits: Math.round(38 * 0.7),
@@ -1584,7 +1557,7 @@ export class DatabaseStorage implements IStorage {
         },
         missingAdmins: [
           {
-            assignedTo: "Josh Sweetnam",
+            assignedTo: salesTeamData[0] ? salesTeamData[0].name : "Unknown",
             count: 2,
             contacts: [
               {
@@ -1604,7 +1577,7 @@ export class DatabaseStorage implements IStorage {
             ]
           },
           {
-            assignedTo: "Mazin Gazar",
+            assignedTo: salesTeamData[1] ? salesTeamData[1].name : "Unknown",
             count: 1,
             contacts: [
               {
@@ -1618,18 +1591,6 @@ export class DatabaseStorage implements IStorage {
           }
         ]
       };
-    }
-    
-    // Use the metrics data if available, or calculate from sales data
-    if (metricsData) {
-      const metricsJson = metricsData.metadata ? 
-        (typeof metricsData.metadata === 'string' ? 
-          JSON.parse(metricsData.metadata as string) : 
-          metricsData.metadata) : null;
-          
-      if (metricsJson && metricsJson.dashboardData) {
-        return metricsJson.dashboardData;
-      }
     }
     
     // Return an empty result if all else fails
@@ -1656,6 +1617,20 @@ export class DatabaseStorage implements IStorage {
         outboundTriagesSet: 0,
         totalDirectBookings: 0,
         directBookingRate: 0
+      },
+      leadMetrics: {
+        newLeads: 0,
+        disqualified: 0,
+        totalDials: 0,
+        pickUpRate: "0%"
+      },
+      advancedMetrics: {
+        costPerClosedWon: 0,
+        closerSlotUtilization: 0,
+        solutionCallCloseRate: 0,
+        salesCycle: 0,
+        callsToClose: 0,
+        profitPerSolutionCall: 0
       }
     };
   }
