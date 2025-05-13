@@ -153,6 +153,7 @@ async function syncAllEvents() {
               };
               
               // Use advanced contact matcher to find or create the contact
+              let contact;
               try {
                 const result = await contactMatcher.createOrUpdateContact(
                   contactData, 
@@ -160,7 +161,7 @@ async function syncAllEvents() {
                   true    // Update existing contacts
                 );
                 
-                const contact = result.contact;
+                contact = result.contact;
                 
                 if (result.created) {
                   console.log(`Created new contact for Calendly invitee: ${contact.name} (${contact.email})`);
@@ -170,7 +171,7 @@ async function syncAllEvents() {
               } catch (error) {
                 console.error(`Error matching contact for Calendly invitee: ${email}`, error);
                 // Fallback to simple lookup by email
-                let contact = await storage.getContactByEmail(email);
+                contact = await storage.getContactByEmail(email);
                 if (!contact) {
                   // Create minimal contact as fallback
                   contact = await storage.createContact(contactData);
@@ -433,6 +434,66 @@ async function syncAllEvents() {
       total: totalEvents
     };
   }
+}
+
+/**
+ * Helper function to extract phone number from Calendly invitee data
+ * Checks custom questions and other fields for phone information
+ */
+function extractPhoneFromInvitee(invitee: any): string {
+  if (!invitee) return '';
+  
+  // Check if there are custom questions that might contain phone info
+  if (invitee.questions_and_answers && Array.isArray(invitee.questions_and_answers)) {
+    // Look for phone-related questions
+    for (const qa of invitee.questions_and_answers) {
+      // Common phone-related keywords
+      const phoneKeywords = ['phone', 'cell', 'mobile', 'contact number', 'telephone'];
+      
+      if (qa.question && phoneKeywords.some(keyword => 
+          qa.question.toLowerCase().includes(keyword)) && qa.answer) {
+        return qa.answer.trim();
+      }
+    }
+  }
+  
+  // Check if phone is directly in the invitee object
+  if (invitee.phone) {
+    return invitee.phone;
+  }
+  
+  // No phone found
+  return '';
+}
+
+/**
+ * Helper function to extract company information from Calendly invitee data
+ * Checks custom questions and other fields for company information
+ */
+function extractCompanyFromInvitee(invitee: any): string {
+  if (!invitee) return '';
+  
+  // Check if there are custom questions that might contain company info
+  if (invitee.questions_and_answers && Array.isArray(invitee.questions_and_answers)) {
+    // Look for company-related questions
+    for (const qa of invitee.questions_and_answers) {
+      // Common company-related keywords
+      const companyKeywords = ['company', 'organization', 'business', 'employer', 'firm'];
+      
+      if (qa.question && companyKeywords.some(keyword => 
+          qa.question.toLowerCase().includes(keyword)) && qa.answer) {
+        return qa.answer.trim();
+      }
+    }
+  }
+  
+  // Check if company is directly in the invitee object
+  if (invitee.company) {
+    return invitee.company;
+  }
+  
+  // No company found
+  return '';
 }
 
 /**

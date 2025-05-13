@@ -347,7 +347,7 @@ export async function createOrUpdateContact(
             continue;
           }
           
-          updatedData[key] = contactData[key];
+          updatedData[key] = contactData[key] as any;
           hasChanges = true;
         }
       }
