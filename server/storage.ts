@@ -43,6 +43,7 @@ export interface IStorage {
   // Meeting operations
   getMeeting(id: number): Promise<Meeting | undefined>;
   getMeetingsByContactId(contactId: number): Promise<Meeting[]>;
+  getAllMeetings(limit?: number, offset?: number): Promise<Meeting[]>;
   getMeetingByCalendlyEventId(eventId: string): Promise<Meeting | undefined>;
   createMeeting(meeting: InsertMeeting): Promise<Meeting>;
   updateMeeting(id: number, meeting: Partial<InsertMeeting>): Promise<Meeting | undefined>;
@@ -833,6 +834,20 @@ export class DatabaseStorage implements IStorage {
       .from(meetings)
       .where(eq(meetings.contactId, contactId))
       .orderBy(asc(meetings.startTime));
+  }
+  
+  async getAllMeetings(limit: number = 1000, offset: number = 0): Promise<Meeting[]> {
+    try {
+      return db
+        .select()
+        .from(meetings)
+        .limit(limit)
+        .offset(offset)
+        .orderBy(asc(meetings.startTime));
+    } catch (error) {
+      console.error('Error fetching all meetings:', error);
+      return [];
+    }
   }
 
   async getMeetingByCalendlyEventId(eventId: string): Promise<Meeting | undefined> {
