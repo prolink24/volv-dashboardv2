@@ -36,6 +36,7 @@ export interface IStorage {
   // Deal operations
   getDeal(id: number): Promise<Deal | undefined>;
   getDealsByContactId(contactId: number): Promise<Deal[]>;
+  getAllOpportunities(limit?: number, offset?: number): Promise<Deal[]>;
   createDeal(deal: InsertDeal): Promise<Deal>;
   updateDeal(id: number, deal: Partial<InsertDeal>): Promise<Deal | undefined>;
   deleteDeal(id: number): Promise<boolean>;
@@ -273,6 +274,12 @@ export class MemStorage implements IStorage {
     return Array.from(this.deals.values()).filter(
       (deal) => deal.contactId === contactId
     );
+  }
+  
+  async getAllOpportunities(limit: number = 1000, offset: number = 0): Promise<Deal[]> {
+    return Array.from(this.deals.values())
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(offset, offset + limit);
   }
 
   async createDeal(deal: InsertDeal): Promise<Deal> {
