@@ -214,6 +214,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to attribute contact" });
     }
   });
+  
+  // Contact journey timeline visualization
+  apiRouter.get("/attribution/timeline/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const result = await attributionService.attributeContact(id);
+      
+      if (!result.success) {
+        return res.status(404).json({ error: "Contact not found or attribution failed" });
+      }
+      
+      // Format the timeline data for visualization
+      const formattedTimeline = result.timeline.map(event => {
+        const date = new Date(event.date);
+        
+        return {
+          id: `${event.type}_${event.sourceId || Math.random().toString(36).substr(2, 9)}`,
+          date: date.toISOString(),
+          formattedDate: date.toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          }),
+          type: event.type,
+          source: event.source,
+          title: event.type === 'activity' ? event.data.title : 
+                event.type === 'meeting' ? event.data.title :
+                event.type === 'form' ? event.data.formName :
+                event.type === 'deal' ? event.data.title : 'Untitled',
+          description: event.type === 'activity' ? event.data.description || '' : 
+                      event.type === 'meeting' ? `${event.data.type} Meeting` :
+                      event.type === 'form' ? 'Form Submission' :
+                      event.type === 'deal' ? `$${event.data.value || 0} - ${event.data.status}` : '',
+          data: event.data
+        };
+      });
+      
+      // Add attribution markers
+      const attributionInsights = {
+        firstTouch: result.firstTouch ? {
+          id: `${result.firstTouch.type}_${result.firstTouch.sourceId || 'first'}`,
+          label: 'First Touch'
+        } : null,
+        lastTouch: result.lastTouch ? {
+          id: `${result.lastTouch.type}_${result.lastTouch.sourceId || 'last'}`,
+          label: 'Last Touch'
+        } : null,
+        conversionPoint: result.conversionPoint ? {
+          date: new Date(result.conversionPoint.date).toISOString(),
+          type: result.conversionPoint.type,
+          value: result.conversionPoint.value
+        } : null,
+        channelAttribution: result.channelBreakdown
+      };
+      
+      res.json({
+        contact: result.contact,
+        timeline: formattedTimeline,
+        attributionInsights,
+        // Include the attribution chains for any deals
+        attributionChains: result.attributionChains?.map(chain => ({
+          dealId: chain.dealId,
+          dealValue: chain.dealValue,
+          dealStatus: chain.dealStatus,
+          attributionModel: chain.attributionModel,
+          meetingInfluence: chain.meetingInfluence,
+          totalTouchpoints: chain.totalTouchpoints,
+          daysBetweenFirstTouchAndConversion: chain.firstTouch && result.conversionPoint ? 
+            Math.floor((new Date(result.conversionPoint.date).getTime() - new Date(chain.firstTouch.date).getTime()) / (1000 * 60 * 60 * 24)) :
+            null
+        }))
+      });
+    } catch (error) {
+      console.error(`Error getting timeline for contact ${req.params.id}:`, error);
+      res.status(500).json({ error: "Failed to get contact timeline" });
+    }
+  });
 
   // Metrics for a specific date
   apiRouter.get("/metrics", async (req: Request, res: Response) => {
