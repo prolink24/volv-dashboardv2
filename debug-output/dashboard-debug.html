@@ -1,0 +1,339 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Debug</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.5;
+      padding: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    pre {
+      background-color: #f5f5f5;
+      padding: 15px;
+      border-radius: 4px;
+      overflow: auto;
+    }
+    .section {
+      margin-bottom: 20px;
+      padding: 15px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .section h2 {
+      margin-top: 0;
+    }
+    .error {
+      color: red;
+      font-weight: bold;
+    }
+    .warning {
+      color: orange;
+      font-weight: bold;
+    }
+    .success {
+      color: green;
+      font-weight: bold;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 8px;
+      text-align: left;
+      border: 1px solid #ddd;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+  </style>
+</head>
+<body>
+  <h1>Dashboard Debug Information</h1>
+  
+  <div class="section">
+    <h2>Dashboard Data Overview</h2>
+    <p>Top-level keys: kpis, salesTeam, triageMetrics, leadMetrics, advancedMetrics, missingAdmins</p>
+  </div>
+  
+  <div class="section">
+    <h2>KPIs Section</h2>
+    <div id="kpis-debug"></div>
+    <script>
+      const kpis = {"closedDeals":4,"cashCollected":125500,"revenueGenerated":195000,"totalCalls":38,"call1Taken":25,"call2Taken":13,"closingRate":31,"avgCashCollected":31375,"solutionCallShowRate":87,"earningPerCall2":9654};
+      const kpisDebug = document.getElementById('kpis-debug');
+      
+      let kpisHtml = '<table><tr><th>KPI</th><th>Value</th><th>Type</th><th>Status</th></tr>';
+      
+      for (const [key, value] of Object.entries(kpis)) {
+        let status = '';
+        let statusClass = '';
+        
+        if (value === undefined) {
+          status = 'UNDEFINED - UI Error!';
+          statusClass = 'error';
+        } else if (value === null) {
+          status = 'NULL - Potential UI Error';
+          statusClass = 'warning';
+        } else if (value === 0) {
+          status = 'Zero value';
+          statusClass = '';
+        } else if (typeof value === 'number' && isNaN(value)) {
+          status = 'NaN - UI Error!';
+          statusClass = 'error';
+        } else {
+          status = 'OK';
+          statusClass = 'success';
+        }
+        
+        kpisHtml += `
+          <tr>
+            <td>${key}</td>
+            <td>${value}</td>
+            <td>${typeof value}</td>
+            <td class="${statusClass}">${status}</td>
+          </tr>
+        `;
+      }
+      
+      kpisHtml += '</table>';
+      kpisDebug.innerHTML = kpisHtml;
+    </script>
+  </div>
+  
+  <div class="section">
+    <h2>Sales Team Section</h2>
+    <div id="salesteam-debug"></div>
+    <script>
+      const salesTeam = [{"name":"Josh Sweetnam","id":"user_1","closed":2,"cashCollected":72000,"contractedValue":110000,"calls":12,"call1":8,"call2":4,"call2Sits":6,"closingRate":50,"adminMissingPercent":10},{"name":"Mazin Gazar","id":"user_2","closed":1,"cashCollected":28500,"contractedValue":45000,"calls":15,"call1":10,"call2":5,"call2Sits":5,"closingRate":20,"adminMissingPercent":5},{"name":"Bryann Cabral","id":"user_3","closed":1,"cashCollected":25000,"contractedValue":40000,"calls":11,"call1":7,"call2":4,"call2Sits":4,"closingRate":25,"adminMissingPercent":15}];
+      const salesTeamDebug = document.getElementById('salesteam-debug');
+      
+      if (salesTeam.length === 0) {
+        salesTeamDebug.innerHTML = '<p class="warning">No sales team data available. This could cause UI errors.</p>';
+      } else {
+        let html = `<p>Found ${salesTeam.length} sales team entries</p>`;
+        
+        // Check first entry
+        const firstEntry = salesTeam[0];
+        const keys = Object.keys(firstEntry);
+        
+        html += '<p>First entry keys: ' + keys.join(', ') + '</p>';
+        
+        // Check for problematic values in all entries
+        const requiredKeys = ['name', 'id', 'closed', 'cashCollected', 'contractedValue', 'calls', 'closingRate'];
+        let hasErrors = false;
+        
+        html += '<h3>Potential Issues:</h3><ul>';
+        
+        for (const entry of salesTeam) {
+          for (const key of requiredKeys) {
+            if (!(key in entry)) {
+              html += `<li class="error">Missing required key ${key} in entry for ${entry.name || 'unnamed'}</li>`;
+              hasErrors = true;
+            } else if (entry[key] === undefined) {
+              html += `<li class="error">Undefined value for ${key} in entry for ${entry.name || 'unnamed'}</li>`;
+              hasErrors = true;
+            } else if (typeof entry[key] === 'number' && isNaN(entry[key])) {
+              html += `<li class="error">NaN value for ${key} in entry for ${entry.name || 'unnamed'}</li>`;
+              hasErrors = true;
+            }
+          }
+        }
+        
+        if (!hasErrors) {
+          html += '<li class="success">No obvious issues detected in sales team data</li>';
+        }
+        
+        html += '</ul>';
+        
+        salesTeamDebug.innerHTML = html;
+      }
+    </script>
+  </div>
+  
+  <div class="section">
+    <h2>Other Metrics Sections</h2>
+    <div id="other-metrics-debug"></div>
+    <script>
+      const sections = {
+        'triageMetrics': {"booked":48,"sits":42,"showRate":87.5,"solutionBookingRate":35,"cancelRate":12.5,"outboundTriagesSet":18,"totalDirectBookings":12,"directBookingRate":25},
+        'leadMetrics': {"newLeads":75,"disqualified":12,"totalDials":120,"pickUpRate":"35%"},
+        'advancedMetrics': {"costPerClosedWon":1250,"closerSlotUtilization":85,"solutionCallCloseRate":42,"salesCycle":14,"callsToClose":3.5,"profitPerSolutionCall":4200}
+      };
+      
+      const otherMetricsDebug = document.getElementById('other-metrics-debug');
+      let html = '';
+      
+      for (const [section, data] of Object.entries(sections)) {
+        html += `<h3>${section}</h3>`;
+        
+        if (Object.keys(data).length === 0) {
+          html += `<p class="warning">No data available for ${section}. This could cause UI errors.</p>`;
+          continue;
+        }
+        
+        html += '<table><tr><th>Metric</th><th>Value</th><th>Type</th><th>Status</th></tr>';
+        
+        for (const [key, value] of Object.entries(data)) {
+          let status = '';
+          let statusClass = '';
+          
+          if (value === undefined) {
+            status = 'UNDEFINED - UI Error!';
+            statusClass = 'error';
+          } else if (value === null) {
+            status = 'NULL - Potential UI Error';
+            statusClass = 'warning';
+          } else if (value === 0) {
+            status = 'Zero value';
+            statusClass = '';
+          } else if (typeof value === 'number' && isNaN(value)) {
+            status = 'NaN - UI Error!';
+            statusClass = 'error';
+          } else {
+            status = 'OK';
+            statusClass = 'success';
+          }
+          
+          html += `
+            <tr>
+              <td>${key}</td>
+              <td>${value}</td>
+              <td>${typeof value}</td>
+              <td class="${statusClass}">${status}</td>
+            </tr>
+          `;
+        }
+        
+        html += '</table>';
+      }
+      
+      otherMetricsDebug.innerHTML = html;
+    </script>
+  </div>
+  
+  <div class="section">
+    <h2>Raw Dashboard Data</h2>
+    <pre>{
+  "kpis": {
+    "closedDeals": 4,
+    "cashCollected": 125500,
+    "revenueGenerated": 195000,
+    "totalCalls": 38,
+    "call1Taken": 25,
+    "call2Taken": 13,
+    "closingRate": 31,
+    "avgCashCollected": 31375,
+    "solutionCallShowRate": 87,
+    "earningPerCall2": 9654
+  },
+  "salesTeam": [
+    {
+      "name": "Josh Sweetnam",
+      "id": "user_1",
+      "closed": 2,
+      "cashCollected": 72000,
+      "contractedValue": 110000,
+      "calls": 12,
+      "call1": 8,
+      "call2": 4,
+      "call2Sits": 6,
+      "closingRate": 50,
+      "adminMissingPercent": 10
+    },
+    {
+      "name": "Mazin Gazar",
+      "id": "user_2",
+      "closed": 1,
+      "cashCollected": 28500,
+      "contractedValue": 45000,
+      "calls": 15,
+      "call1": 10,
+      "call2": 5,
+      "call2Sits": 5,
+      "closingRate": 20,
+      "adminMissingPercent": 5
+    },
+    {
+      "name": "Bryann Cabral",
+      "id": "user_3",
+      "closed": 1,
+      "cashCollected": 25000,
+      "contractedValue": 40000,
+      "calls": 11,
+      "call1": 7,
+      "call2": 4,
+      "call2Sits": 4,
+      "closingRate": 25,
+      "adminMissingPercent": 15
+    }
+  ],
+  "triageMetrics": {
+    "booked": 48,
+    "sits": 42,
+    "showRate": 87.5,
+    "solutionBookingRate": 35,
+    "cancelRate": 12.5,
+    "outboundTriagesSet": 18,
+    "totalDirectBookings": 12,
+    "directBookingRate": 25
+  },
+  "leadMetrics": {
+    "newLeads": 75,
+    "disqualified": 12,
+    "totalDials": 120,
+    "pickUpRate": "35%"
+  },
+  "advancedMetrics": {
+    "costPerClosedWon": 1250,
+    "closerSlotUtilization": 85,
+    "solutionCallCloseRate": 42,
+    "salesCycle": 14,
+    "callsToClose": 3.5,
+    "profitPerSolutionCall": 4200
+  },
+  "missingAdmins": [
+    {
+      "assignedTo": "Josh Sweetnam",
+      "count": 2,
+      "contacts": [
+        {
+          "id": 101,
+          "name": "Alice Johnson",
+          "email": "alice@example.com",
+          "eventType": "Solution Call",
+          "callDateTime": "2025-03-15T10:00:00"
+        },
+        {
+          "id": 102,
+          "name": "Bob Smith",
+          "email": "bob@example.com",
+          "eventType": "Triage Call",
+          "callDateTime": "2025-03-16T11:30:00"
+        }
+      ]
+    },
+    {
+      "assignedTo": "Mazin Gazar",
+      "count": 1,
+      "contacts": [
+        {
+          "id": 103,
+          "name": "Carol White",
+          "email": "carol@example.com",
+          "eventType": "Solution Call",
+          "callDateTime": "2025-03-18T14:00:00"
+        }
+      ]
+    }
+  ]
+}</pre>
+  </div>
+</body>
+</html>
