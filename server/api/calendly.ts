@@ -13,6 +13,7 @@
 import axios from 'axios';
 import { storage } from '../storage';
 import * as syncStatus from './sync-status';
+import contactMatcher from '../services/contact-matcher';
 
 // API Configuration
 const CALENDLY_API_KEY = process.env.CALENDLY_API_KEY;
@@ -135,9 +136,7 @@ async function syncAllEvents() {
                 continue;
               }
               
-              // Import contact matcher service
-              const contactMatcher = require('../services/contact-matcher').default;
-              
+              // Use the imported contact matcher
               // Prepare contact data from Calendly invitee
               const contactData = {
                 name: invitee.name || email.split('@')[0],

@@ -31,12 +31,18 @@ async function testSyncSpecificLead() {
           const leads = response.data.data;
           console.log(`Found ${leads.length} leads`);
           
-          // Find first lead with email
+          // Find first lead with contacts that have emails
           for (const lead of leads) {
-            const hasEmail = lead.contacts?.some(c => c.emails?.length > 0);
-            if (hasEmail) {
-              foundLead = lead;
-              break;
+            if (lead.contacts && lead.contacts.length > 0) {
+              // Log each contact
+              console.log(`Lead ${lead.id} has ${lead.contacts.length} contacts`);
+              const contactsWithEmail = lead.contacts.filter(c => c.emails && c.emails.length > 0);
+              
+              if (contactsWithEmail.length > 0) {
+                console.log(`Found lead with ${contactsWithEmail.length} contacts with email`);
+                foundLead = lead;
+                break;
+              }
             }
           }
           
