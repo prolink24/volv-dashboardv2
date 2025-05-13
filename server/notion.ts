@@ -235,17 +235,48 @@ export async function setupAttributionDatabase() {
         Email: {
             email: {}
         },
-        Source: {
+        Company: {
+            rich_text: {}
+        },
+        Status: {
             select: {
                 options: [
-                    { name: "Close CRM", color: "blue" },
-                    { name: "Calendly", color: "green" },
+                    { name: "Lead", color: "blue" },
+                    { name: "Opportunity", color: "yellow" },
+                    { name: "Customer", color: "green" },
+                    { name: "Churned", color: "red" }
+                ]
+            }
+        },
+        AttributionCertainty: {
+            number: {
+                format: "percent"
+            }
+        },
+        FirstTouchChannel: {
+            select: {
+                options: [
+                    { name: "Calendly", color: "blue" },
+                    { name: "Close", color: "green" },
+                    { name: "Typeform", color: "orange" },
+                    { name: "Unknown", color: "gray" }
+                ]
+            }
+        },
+        LastTouchChannel: {
+            select: {
+                options: [
+                    { name: "Calendly", color: "blue" },
+                    { name: "Close", color: "green" },
                     { name: "Typeform", color: "orange" },
                     { name: "Unknown", color: "gray" }
                 ]
             }
         },
         "Total Touchpoints": {
+            number: {}
+        },
+        "Key Touchpoints": {
             number: {}
         },
         "First Touch": {
@@ -256,8 +287,159 @@ export async function setupAttributionDatabase() {
         },
         "Last Updated": {
             date: {}
+        },
+        "Attribution Model": {
+            rich_text: {}
         }
     };
     
-    return await createDatabaseIfNotExists("Contact Attribution", databaseProperties);
+    return await createDatabaseIfNotExists("Enhanced Attribution", databaseProperties);
+}
+
+/**
+ * Stores enhanced attribution data for a contact in Notion
+ * @param contact The contact information
+ * @param attributionData The enhanced attribution data
+ * @returns {Promise<{id: string}>} The created page ID
+ */
+export async function storeEnhancedAttributionData(contact: any, attributionData: any) {
+    if (!NOTION_PAGE_ID) {
+        throw new Error("NOTION_PAGE_URL environment variable not set");
+    }
+
+    try {
+        // First, ensure we have the attribution database
+        const database = await setupAttributionDatabase();
+        
+        // Check if we already have a page for this contact
+        const response = await notion.databases.query({
+            database_id: database.id,
+            filter: {
+                property: "Email",
+                email: {
+                    equals: contact.email
+                }
+            }
+        });
+
+        // Build the properties object
+        const properties: any = {
+            Name: {
+                title: [
+                    {
+                        text: {
+                            content: contact.name
+                        }
+                    }
+                ]
+            },
+            Email: {
+                email: contact.email
+            },
+            Company: {
+                rich_text: [
+                    {
+                        text: {
+                            content: contact.company || ""
+                        }
+                    }
+                ]
+            },
+            Status: {
+                select: {
+                    name: contact.status || "Lead"
+                }
+            },
+            AttributionCertainty: {
+                number: attributionData.attributionCertainty || 0
+            },
+            "Total Touchpoints": {
+                number: attributionData.timeline?.length || 0
+            },
+            "Key Touchpoints": {
+                number: attributionData.timeline?.filter((e: any) => e.isKeyTouchpoint)?.length || 0
+            },
+            "Last Updated": {
+                date: {
+                    start: new Date().toISOString()
+                }
+            }
+        };
+
+        // Add first touch data if available
+        if (attributionData.firstTouch) {
+            properties.FirstTouchChannel = {
+                select: {
+                    name: attributionData.firstTouch.source === "close" ? "Close" : 
+                         attributionData.firstTouch.source === "calendly" ? "Calendly" :
+                         attributionData.firstTouch.source === "typeform" ? "Typeform" : "Unknown"
+                }
+            };
+            properties["First Touch"] = {
+                rich_text: [
+                    {
+                        text: {
+                            content: `${attributionData.firstTouch.title} (${new Date(attributionData.firstTouch.date).toLocaleDateString()})`
+                        }
+                    }
+                ]
+            };
+        }
+
+        // Add last touch data if available
+        if (attributionData.lastTouch) {
+            properties.LastTouchChannel = {
+                select: {
+                    name: attributionData.lastTouch.source === "close" ? "Close" : 
+                         attributionData.lastTouch.source === "calendly" ? "Calendly" :
+                         attributionData.lastTouch.source === "typeform" ? "Typeform" : "Unknown"
+                }
+            };
+            properties["Last Touch"] = {
+                rich_text: [
+                    {
+                        text: {
+                            content: `${attributionData.lastTouch.title} (${new Date(attributionData.lastTouch.date).toLocaleDateString()})`
+                        }
+                    }
+                ]
+            };
+        }
+
+        // Add attribution model info if available
+        if (attributionData.attributionChains && attributionData.attributionChains.length > 0) {
+            const primaryModel = attributionData.attributionChains[0];
+            properties["Attribution Model"] = {
+                rich_text: [
+                    {
+                        text: {
+                            content: `${primaryModel.modelName} (${Math.round(primaryModel.weight * 100)}%)`
+                        }
+                    }
+                ]
+            };
+        }
+
+        // Update existing page or create a new one
+        if (response.results.length > 0) {
+            // Update existing page
+            await notion.pages.update({
+                page_id: response.results[0].id,
+                properties
+            });
+            return response.results[0];
+        } else {
+            // Create new page
+            const newPage = await notion.pages.create({
+                parent: {
+                    database_id: database.id
+                },
+                properties
+            });
+            return newPage;
+        }
+    } catch (error) {
+        console.error("Error storing enhanced attribution data:", error);
+        throw error;
+    }
 }

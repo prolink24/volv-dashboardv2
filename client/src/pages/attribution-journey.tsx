@@ -181,13 +181,21 @@ const AttributionJourneyPage = () => {
             
             <TabsContent value="journey" className="space-y-6">
               <AttributionJourney 
-                contact={data.contact} 
-                events={allEvents} 
+                contact={(attributionData?.contact || contactData?.contact)!}
+                events={allEvents}
+                attributionCertainty={attributionData?.attributionCertainty}
+                firstTouch={attributionData?.firstTouch}
+                lastTouch={attributionData?.lastTouch}
+                attributionChains={attributionData?.attributionChains}
+                channelBreakdown={attributionData?.channelBreakdown}
               />
             </TabsContent>
             
             <TabsContent value="sync" className="space-y-6">
-              <SyncStatus onRefreshData={() => refetch()} />
+              <SyncStatus onRefreshData={() => {
+                refetchContact();
+                refetchAttribution();
+              }} />
             </TabsContent>
           </Tabs>
         </div>
