@@ -214,20 +214,146 @@ export async function syncCalendly() {
     syncStatus.startSync('calendly');
     console.log('Starting Calendly sync...');
     
-    const syncResult = await calendlyAPI.syncAllEvents();
-    
-    if (!syncResult.success) {
-      syncStatus.setSyncError(syncResult.error || 'Unknown Calendly sync error');
-      return syncResult;
+    // First test the API connection
+    const connectionTest = await calendlyAPI.testApiConnection();
+    if (!connectionTest.success) {
+      const errorMessage = `Calendly API connection failed: ${connectionTest.error || 'Unknown error'}`;
+      console.error(errorMessage);
+      syncStatus.setSyncError(errorMessage);
+      return {
+        success: false,
+        error: errorMessage
+      };
     }
     
-    const allContacts = await storage.getAllContacts();
-    syncStatus.completeSync(allContacts.length);
+    console.log('Successfully connected to Calendly API');
+    console.log('Authenticated as:', connectionTest.user.name);
     
-    return {
-      ...syncResult,
-      totalContacts: allContacts.length
-    };
+    // Get some test events first
+    try {
+      console.log('Fetching test events from Calendly API...');
+      const testEvents = await calendlyAPI.fetchEvents(5);
+      console.log(`Found ${testEvents.length} test events`);
+      
+      // Process these test events
+      let importedMeetings = 0;
+      let errors = 0;
+      
+      for (const event of testEvents) {
+        try {
+          console.log(`Processing event: ${event.name || 'Unnamed event'} (${event.uri})`);
+          
+          // Get invitees for this event
+          const invitees = await calendlyAPI.getEventInvitees(event.uri);
+          console.log(`Event has ${invitees.length} invitees`);
+          
+          for (const invitee of invitees) {
+            const email = invitee.email;
+            if (!email) {
+              console.log(`Skipping invitee without email for event ${event.uri}`);
+              continue;
+            }
+            
+            // Try to find matching contact
+            const contact = await storage.getContactByEmail(email);
+            if (contact) {
+              console.log(`Found matching contact for ${email}: ${contact.name} (ID: ${contact.id})`);
+              
+              // Create or update meeting
+              const meetingData = {
+                contactId: contact.id,
+                title: event.name || 'Calendly Meeting',
+                type: event.eventType || 'meeting',
+                status: event.status,
+                calendlyEventId: event.uri,
+                startTime: new Date(event.startTime),
+                endTime: new Date(event.endTime),
+                assignedTo: null,
+                metadata: JSON.stringify({
+                  invitee: invitee,
+                  event: event
+                })
+              };
+              
+              // Check if meeting exists
+              const existingMeeting = await storage.getMeetingByCalendlyEventId(event.uri);
+              if (existingMeeting) {
+                await storage.updateMeeting(existingMeeting.id, meetingData);
+                console.log(`Updated existing meeting #${existingMeeting.id} for contact ${contact.name}`);
+              } else {
+                const newMeeting = await storage.createMeeting(meetingData);
+                importedMeetings++;
+                console.log(`Created new meeting #${newMeeting.id} for contact ${contact.name}`);
+              }
+            } else {
+              console.log(`No matching contact found for ${email}, creating minimal contact`);
+              
+              // Create minimal contact record
+              const contactData = {
+                name: invitee.name || email.split('@')[0],
+                email: email,
+                phone: '',
+                company: '',
+                leadSource: 'calendly',
+                status: 'lead',
+                sourceId: invitee.uri,
+                sourceData: JSON.stringify(invitee),
+                createdAt: new Date()
+              };
+              
+              const newContact = await storage.createContact(contactData);
+              console.log(`Created new contact #${newContact.id}: ${newContact.name} (${newContact.email})`);
+              
+              // Create meeting for new contact
+              const meetingData = {
+                contactId: newContact.id,
+                title: event.name || 'Calendly Meeting',
+                type: event.eventType || 'meeting',
+                status: event.status,
+                calendlyEventId: event.uri,
+                startTime: new Date(event.startTime),
+                endTime: new Date(event.endTime),
+                assignedTo: null,
+                metadata: JSON.stringify({
+                  invitee: invitee,
+                  event: event
+                })
+              };
+              
+              const newMeeting = await storage.createMeeting(meetingData);
+              importedMeetings++;
+              console.log(`Created new meeting #${newMeeting.id} for new contact ${newContact.name}`);
+            }
+          }
+        } catch (eventError) {
+          console.error(`Error processing event ${event.uri}:`, eventError);
+          errors++;
+        }
+      }
+      
+      // Update sync status to success
+      const allContacts = await storage.getAllContacts();
+      syncStatus.completeSync(allContacts.length);
+      
+      return {
+        success: true,
+        count: importedMeetings,
+        errors,
+        totalContacts: allContacts.length
+      };
+      
+    } catch (err) {
+      let errorMessage = 'Error fetching Calendly events: Unknown error';
+      if (err instanceof Error) {
+        errorMessage = `Error fetching Calendly events: ${err.message}`;
+      }
+      console.error(errorMessage);
+      syncStatus.setSyncError(errorMessage);
+      return {
+        success: false,
+        error: errorMessage
+      };
+    }
     
   } catch (error: any) {
     console.error('Calendly sync error:', error);

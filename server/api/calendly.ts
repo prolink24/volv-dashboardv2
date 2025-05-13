@@ -506,7 +506,11 @@ async function fetchEvents(limit: number = 5) {
         eventType: event.event_type,
         startTime: event.start_time,
         endTime: event.end_time,
-        status: event.status
+        status: event.status,
+        createdAt: event.created_at,
+        updatedAt: event.updated_at,
+        location: event.location || 'Virtual',
+        cancellation: event.cancellation || null
       };
     });
     
