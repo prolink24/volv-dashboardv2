@@ -74,7 +74,14 @@ const Contacts = () => {
     <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-background">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Contacts</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold tracking-tight">Contacts</h1>
+            {data && (
+              <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
+                {data.totalCount.toLocaleString()} total
+              </div>
+            )}
+          </div>
           <p className="text-muted-foreground">
             View and manage your contacts across all integrated systems
           </p>
@@ -212,6 +219,16 @@ const Contacts = () => {
               </div>
               
               <div className="py-4 px-2">
+                {data && (
+                  <div className="flex justify-between items-center mb-4">
+                    <div className="text-sm text-muted-foreground">
+                      Showing {(page - 1) * limit + 1}-{Math.min(page * limit, data.totalCount)} of {data.totalCount.toLocaleString()} contacts
+                    </div>
+                    <div className="text-sm">
+                      Page {page} of {totalPages}
+                    </div>
+                  </div>
+                )}
                 <Pagination>
                   <PaginationContent>
                     <PaginationItem>
