@@ -158,6 +158,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Close CRM Users endpoints
+  apiRouter.get("/close-users", async (req: Request, res: Response) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+      
+      const users = await storage.getAllCloseUsers(limit, offset);
+      const totalCount = await storage.getCloseUsersCount();
+      
+      res.json({ users, totalCount });
+    } catch (error) {
+      console.error("Error fetching Close users:", error);
+      res.status(500).json({ error: "Failed to fetch Close users" });
+    }
+  });
+  
+  apiRouter.get("/close-users/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const user = await storage.getCloseUser(id);
+      
+      if (!user) {
+        return res.status(404).json({ error: "Close user not found" });
+      }
+      
+      // Get all contacts assigned to this user
+      const assignedContacts = await storage.getContactsByCloseUserId(id);
+      // Get all deals assigned to this user
+      const assignedDeals = await storage.getDealsByCloseUserId(id);
+      
+      res.json({
+        user,
+        contacts: assignedContacts,
+        deals: assignedDeals
+      });
+    } catch (error) {
+      console.error(`Error fetching Close user ${req.params.id}:`, error);
+      res.status(500).json({ error: "Failed to fetch Close user details" });
+    }
+  });
+  
   // Integration sync endpoints
   apiRouter.post("/sync/all", async (req: Request, res: Response) => {
     try {
@@ -180,6 +221,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error syncing Close data:", error);
       res.status(500).json({ error: "Failed to sync Close data" });
+    }
+  });
+  
+  // Sync endpoint for Close users
+  apiRouter.post("/sync/close-users", async (req: Request, res: Response) => {
+    try {
+      const { syncContacts, syncDeals } = req.body || {};
+      
+      // Start the sync process for Close users in the background
+      import('./services/close-users').then(closeUsersService => {
+        // First sync users
+        closeUsersService.syncCloseUsers()
+          .then(result => {
+            console.log(`Synced ${result.count} Close users`);
+            
+            // Then sync contact assignments if requested
+            if (syncContacts) {
+              return closeUsersService.syncContactUserAssignments();
+            }
+            return { success: true, count: 0 };
+          })
+          .then(result => {
+            console.log(`Synced ${result.count} contact-user assignments`);
+            
+            // Then sync deal assignments if requested
+            if (syncDeals) {
+              return closeUsersService.syncDealUserAssignments();
+            }
+            return { success: true, count: 0 };
+          })
+          .then(result => {
+            console.log(`Synced ${result.count} deal-user assignments`);
+          })
+          .catch(error => {
+            console.error("Error in background Close users sync:", error);
+          });
+      });
+      
+      res.json({ 
+        success: true, 
+        message: "Close users sync started",
+        syncContacts: Boolean(syncContacts),
+        syncDeals: Boolean(syncDeals)
+      });
+    } catch (error) {
+      console.error("Error starting Close users sync:", error);
+      res.status(500).json({ error: "Failed to start Close users sync" });
     }
   });
 

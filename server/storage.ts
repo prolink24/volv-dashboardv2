@@ -25,9 +25,12 @@ export interface IStorage {
   getCloseUserByCloseId(closeId: string): Promise<CloseUser | undefined>;
   getCloseUserByEmail(email: string): Promise<CloseUser | undefined>;
   getAllCloseUsers(limit?: number, offset?: number): Promise<CloseUser[]>;
+  getCloseUsersCount(): Promise<number>;
   createCloseUser(user: InsertCloseUser): Promise<CloseUser>;
   updateCloseUser(id: number, user: Partial<InsertCloseUser>): Promise<CloseUser | undefined>;
   deleteCloseUser(id: number): Promise<boolean>;
+  getContactsByCloseUserId(closeUserId: number): Promise<Contact[]>;
+  getDealsByCloseUserId(closeUserId: number): Promise<Deal[]>;
   
   // Contact-User Assignment operations
   getContactUserAssignment(id: number): Promise<ContactUserAssignment | undefined>;
@@ -825,13 +828,62 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllCloseUsers(limit?: number, offset = 0): Promise<CloseUser[]> {
-    let query = db.select().from(closeUsers).orderBy(asc(closeUsers.name));
+    let query = db.select().from(closeUsers).orderBy(desc(closeUsers.updatedAt));
     
     if (limit) {
       query = query.limit(limit).offset(offset);
     }
     
     return await query;
+  }
+  
+  async getCloseUsersCount(): Promise<number> {
+    const result = await db.select({ count: count() }).from(closeUsers);
+    return result[0].count;
+  }
+  
+  async getContactsByCloseUserId(closeUserId: number): Promise<Contact[]> {
+    // Find all contactUserAssignments for the given Close user
+    const assignments = await db
+      .select()
+      .from(contactToUserAssignments)
+      .where(eq(contactToUserAssignments.closeUserId, closeUserId));
+    
+    // Extract all contactIds
+    const contactIds = assignments.map(assignment => assignment.contactId);
+    
+    if (contactIds.length === 0) {
+      return [];
+    }
+    
+    // Fetch all contacts with those IDs
+    return await db
+      .select()
+      .from(contacts)
+      .where(inArray(contacts.id, contactIds))
+      .orderBy(desc(contacts.lastActivityDate));
+  }
+  
+  async getDealsByCloseUserId(closeUserId: number): Promise<Deal[]> {
+    // Find all dealUserAssignments for the given Close user
+    const assignments = await db
+      .select()
+      .from(dealToUserAssignments)
+      .where(eq(dealToUserAssignments.closeUserId, closeUserId));
+    
+    // Extract all dealIds
+    const dealIds = assignments.map(assignment => assignment.dealId);
+    
+    if (dealIds.length === 0) {
+      return [];
+    }
+    
+    // Fetch all deals with those IDs
+    return await db
+      .select()
+      .from(deals)
+      .where(inArray(deals.id, dealIds))
+      .orderBy(desc(deals.createdAt));
   }
 
   async createCloseUser(insertCloseUser: InsertCloseUser): Promise<CloseUser> {
