@@ -19,14 +19,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const dateStr = req.query.date as string || new Date().toISOString();
       const userId = req.query.userId as string;
+      const useCache = req.query.cache !== "false"; // Default to using cache
       
       const date = new Date(dateStr);
       const dashboardData = await storage.getDashboardData(date, userId);
+      
+      // Get real-time attribution data if cache is disabled
+      if (!useCache) {
+        try {
+          // Run a quick attribution on a sample of contacts to get latest insights
+          const attributionData = await attributionService.attributeAllContacts();
+          
+          if (attributionData.success) {
+            // Add attribution data to the dashboard
+            dashboardData.attribution = {
+              contactStats: attributionData.detailedAnalytics?.contactStats,
+              channelStats: attributionData.detailedAnalytics?.channelStats,
+              touchpointStats: attributionData.detailedAnalytics?.touchpointStats,
+              dealStats: attributionData.detailedAnalytics?.dealStats,
+              insights: attributionData.detailedAnalytics?.insights
+            };
+          }
+        } catch (attributionError) {
+          console.error("Error generating attribution data:", attributionError);
+          // Don't fail the whole request, just continue without attribution data
+          dashboardData.attribution = { error: "Attribution data unavailable" };
+        }
+      }
       
       res.json(dashboardData);
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
       res.status(500).json({ error: "Failed to fetch dashboard data" });
+    }
+  });
+  
+  // Enhanced dashboard with full attribution data
+  apiRouter.get("/enhanced-dashboard", async (req: Request, res: Response) => {
+    try {
+      const dateStr = req.query.date as string || new Date().toISOString();
+      const userId = req.query.userId as string;
+      
+      const date = new Date(dateStr);
+      
+      // 1. Get basic dashboard data
+      const dashboardData = await storage.getDashboardData(date, userId);
+      
+      // 2. Get attribution data
+      const attributionData = await attributionService.attributeAllContacts();
+      
+      // 3. Combine the data
+      const enhancedDashboard = {
+        ...dashboardData,
+        attribution: {
+          summary: {
+            totalContacts: attributionData.detailedAnalytics?.contactStats.totalContacts || 0,
+            contactsWithDeals: attributionData.detailedAnalytics?.contactStats.contactsWithDeals || 0,
+            totalTouchpoints: attributionData.detailedAnalytics?.touchpointStats.totalTouchpoints || 0,
+            conversionRate: attributionData.detailedAnalytics?.contactStats.conversionRate || 0,
+            mostEffectiveChannel: attributionData.detailedAnalytics?.insights.mostEffectiveChannel || 'unknown'
+          },
+          contactStats: attributionData.detailedAnalytics?.contactStats || {},
+          channelStats: attributionData.detailedAnalytics?.channelStats || {},
+          touchpointStats: attributionData.detailedAnalytics?.touchpointStats || {},
+          dealStats: attributionData.detailedAnalytics?.dealStats || {},
+          insights: attributionData.detailedAnalytics?.insights || {},
+          modelStats: attributionData.detailedAnalytics?.modelStats || {}
+        }
+      };
+      
+      res.json(enhancedDashboard);
+    } catch (error) {
+      console.error("Error fetching enhanced dashboard data:", error);
+      res.status(500).json({ error: "Failed to fetch enhanced dashboard data" });
     }
   });
 

@@ -105,7 +105,7 @@ export async function attributeContact(contactId: number) {
       // Create attribution chain
       const attributionChain = {
         dealId: deal.id,
-        dealValue: deal.value,
+        dealValue: typeof deal.value === 'string' ? parseFloat(deal.value) : (deal.value || 0),
         dealStatus: deal.status,
         events: eventsPriorToDeal,
         // Attribution model: Last touch gets 100% credit if it's a meeting
@@ -150,7 +150,7 @@ export async function attributeContact(contactId: number) {
       conversionPoint: deals.length > 0 ? {
         type: 'deal',
         date: deals[0].createdAt || new Date(),
-        value: deals[0].value
+        value: typeof deals[0].value === 'string' ? parseFloat(deals[0].value) : (deals[0].value || 0)
       } : null,
       // Channel statistics
       channelBreakdown: {
@@ -260,8 +260,9 @@ export async function attributeAllContacts() {
               
               for (const chain of attribution.attributionChains) {
                 dealStats.total++;
-                dealStats.totalValue += chain.dealValue || 0;
-                dealStats.totalTouchpoints += chain.totalTouchpoints || 0;
+                const dealValue = typeof chain.dealValue === 'string' ? parseFloat(chain.dealValue) : (chain.dealValue || 0);
+                dealStats.totalValue += dealValue;
+                dealStats.totalTouchpoints += chain.totalTouchpoints ? Number(chain.totalTouchpoints) : 0;
                 
                 if (chain.attributionModel === 'last-touch') {
                   modelStats.lastTouch++;
