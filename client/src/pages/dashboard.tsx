@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useDashboard } from "@/providers/dashboard-provider";
-import { useDashboardData, syncData, invalidateDashboardData } from "@/hooks/use-dashboard-data";
+import { useDashboardData, syncData, invalidateDashboardData, useAttributionStats } from "@/hooks/use-dashboard-data";
 import { useToast } from "@/hooks/use-toast";
 
 import KpiCard from "@/components/dashboard/kpi-card";
@@ -11,6 +11,9 @@ import AdminList from "@/components/dashboard/admin-list";
 import ProgressBar from "@/components/dashboard/progress-bar";
 import DashboardTabs from "@/components/dashboard/dashboard-tabs";
 import DashboardFilters from "@/components/dashboard/dashboard-filters";
+import AttributionStats from "@/components/dashboard/attribution-stats";
+import AttributionChannels from "@/components/dashboard/attribution-channels";
+import AttributionInsights from "@/components/dashboard/attribution-insights";
 
 import { formatCurrency } from "@/lib/utils";
 
@@ -22,7 +25,7 @@ const Dashboard = () => {
   // Convert dateFilter to API format
   const apiDate = new Date(dateFilter.split('|')[0].trim().replace('-', '/') + '/01');
   
-  // Fetch dashboard data
+  // Fetch dashboard data with enhanced attribution
   const { 
     data: dashboardData, 
     isLoading, 
@@ -30,8 +33,12 @@ const Dashboard = () => {
     error 
   } = useDashboardData({ 
     date: apiDate.toISOString(), 
-    userId: userFilter !== "All Users" ? userFilter : undefined 
+    userId: userFilter !== "All Users" ? userFilter : undefined,
+    useEnhanced: true
   });
+
+  // Get attribution stats separately
+  const { data: attributionStatsData } = useAttributionStats();
 
   useEffect(() => {
     if (isInitialLoad && dashboardData) {
@@ -112,6 +119,49 @@ const Dashboard = () => {
     color: person.closingRate > 0 ? "var(--primary)" : "var(--muted)"
   }));
 
+  // Prepare attribution channel data if available
+  const channelData = dashboardData.attribution?.channelStats 
+    ? {
+        channels: Object.entries(dashboardData.attribution.channelStats)
+          .map(([name, stats]) => ({
+            name,
+            value: stats.count || 0,
+            percentage: stats.percentage || (stats.count / dashboardData.attribution.contactStats.totalContacts * 100) || 0,
+            color: name === 'calendly' ? '#FF8A65' : 
+                  name === 'close' ? '#4CAF50' : 
+                  name === 'typeform' ? '#AB47BC' : 
+                  name === 'email' ? '#42A5F5' : 
+                  name === 'call' ? '#FFA726' : '#78909C'
+          })),
+        title: "Channel Attribution",
+        description: "Contact attribution by source channel"
+      }
+    : undefined;
+
+  // Prepare attribution insights if available
+  const attributionInsights = dashboardData.attribution?.insights 
+    ? Object.entries(dashboardData.attribution.insights).map(([key, value]) => {
+        let icon;
+        let badge;
+        
+        if (key === 'mostEffectiveChannel') {
+          icon = <span className="i-lucide-mail text-blue-500" />;
+          badge = { text: "Top Channel", variant: "secondary" };
+        } else if (key === 'averageTouchpoints') {
+          icon = <span className="i-lucide-activity text-green-500" />;
+        } else if (key === 'salesCycleDuration') {
+          icon = <span className="i-lucide-clock text-orange-500" />;
+        }
+
+        return {
+          title: key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
+          description: value.toString(),
+          icon,
+          badge
+        };
+      })
+    : undefined;
+
   return (
     <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-background">
       {/* Filters */}
@@ -157,6 +207,13 @@ const Dashboard = () => {
         </div>
       </div>
       
+      {/* Attribution Summary */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+        <AttributionStats />
+        <AttributionChannels data={channelData} />
+        <AttributionInsights insights={attributionInsights} />
+      </div>
+      
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         <KpiCard 
@@ -199,10 +256,38 @@ const Dashboard = () => {
       
       {/* Secondary KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <KpiCard title="Closing Rate" value={`${dashboardData.kpis.closingRate}%`} />
-        <KpiCard title="Avg Cash Collected" value={formatCurrency(dashboardData.kpis.avgCashCollected)} />
-        <KpiCard title="Solution Call Show Rate" value={`${dashboardData.kpis.solutionCallShowRate}%`} />
-        <KpiCard title="Earning Per Call 2" value={formatCurrency(dashboardData.kpis.earningPerCall2)} />
+        <KpiCard 
+          title="Closing Rate" 
+          value={`${dashboardData.kpis.closingRate}%`} 
+          trend={dashboardData.attribution?.modelStats?.modelAccuracy ? {
+            value: Math.round(dashboardData.attribution.modelStats.modelAccuracy),
+            label: "attribution certainty"
+          } : undefined}
+        />
+        <KpiCard 
+          title="Avg Cash Collected" 
+          value={formatCurrency(dashboardData.kpis.avgCashCollected)}
+          trend={dashboardData.attribution?.dealStats?.avgDealValue ? {
+            value: Math.round((dashboardData.kpis.avgCashCollected / dashboardData.attribution.dealStats.avgDealValue - 1) * 100),
+            label: "vs. predicted"
+          } : undefined}
+        />
+        <KpiCard 
+          title="Solution Call Show Rate" 
+          value={`${dashboardData.kpis.solutionCallShowRate}%`}
+          trend={dashboardData.attribution?.touchpointStats?.calendlyShowRate ? {
+            value: Math.round(dashboardData.attribution.touchpointStats.calendlyShowRate - dashboardData.kpis.solutionCallShowRate),
+            label: "vs. all meetings"
+          } : undefined}
+        />
+        <KpiCard 
+          title="Earning Per Call 2" 
+          value={formatCurrency(dashboardData.kpis.earningPerCall2)}
+          trend={dashboardData.attribution?.dealStats?.revenuePerTouchpoint ? {
+            value: Math.round((dashboardData.kpis.earningPerCall2 / dashboardData.attribution.dealStats.revenuePerTouchpoint - 1) * 100),
+            label: "vs. avg touchpoint"
+          } : undefined}
+        />
       </div>
       
       {/* Charts */}
@@ -258,13 +343,13 @@ const Dashboard = () => {
           },
           { 
             label: "Sales Cycle", 
-            value: dashboardData.advancedMetrics.salesCycle, 
-            description: "LEAD -> Close (Days)",
+            value: dashboardData.attribution?.insights?.salesCycleDuration || dashboardData.advancedMetrics.salesCycle, 
+            description: "First Touch -> Close (Days)",
           },
           { 
-            label: "Number of Calls To Close", 
-            value: dashboardData.advancedMetrics.callsToClose, 
-            description: "CHANGE*",
+            label: "Touchpoints To Close", 
+            value: dashboardData.attribution?.insights?.averageTouchpoints || dashboardData.advancedMetrics.callsToClose, 
+            description: "Avg interactions before conversion",
           },
           { 
             label: "Profit Per Solution Call", 
