@@ -133,6 +133,59 @@ function areNamesSimilar(name1: string, name2: string): {
     return { areSimilar: true, similarity: 0.9, isFuzzyMatch: true };
   }
   
+  // Check for nickname matches (e.g., "Jen" vs "Jennifer")
+  const nicknameMap: Record<string, string[]> = {
+    'jennifer': ['jen', 'jenny'],
+    'robert': ['rob', 'bob', 'bobby'],
+    'michael': ['mike', 'mikey'],
+    'william': ['will', 'bill', 'billy'],
+    'richard': ['rick', 'rich', 'dick'],
+    'elizabeth': ['liz', 'beth', 'betty'],
+    'katherine': ['kate', 'kathy', 'katie'],
+    'christopher': ['chris', 'topher'],
+    'nicholas': ['nick', 'nicky'],
+    'alexander': ['alex', 'al'],
+    'matthew': ['matt', 'matty'],
+    'joseph': ['joe', 'joey'],
+    'daniel': ['dan', 'danny'],
+    'samuel': ['sam', 'sammy'],
+    'jonathan': ['jon', 'jonny']
+  };
+  
+  // Extract first names
+  const firstName1 = normalizedName1.split(' ')[0];
+  const firstName2 = normalizedName2.split(' ')[0];
+  
+  // Check for matching nicknames
+  const matchesNickname = Object.entries(nicknameMap).some(([fullName, nicknames]) => {
+    // Full name to nickname
+    if (firstName1 === fullName && nicknames.includes(firstName2)) {
+      return true;
+    }
+    // Nickname to full name
+    if (firstName2 === fullName && nicknames.includes(firstName1)) {
+      return true;
+    }
+    // Nickname to nickname (same full name)
+    if (nicknames.includes(firstName1) && nicknames.includes(firstName2)) {
+      return true;
+    }
+    return false;
+  });
+  
+  if (matchesNickname) {
+    // If last names also match, this is a strong match
+    const lastName1 = normalizedName1.split(' ').slice(-1)[0];
+    const lastName2 = normalizedName2.split(' ').slice(-1)[0];
+    
+    if (lastName1 && lastName2 && lastName1 === lastName2) {
+      return { areSimilar: true, similarity: 0.95, isFuzzyMatch: true };
+    }
+    
+    // Even with just the first name nickname match, it's pretty good
+    return { areSimilar: true, similarity: 0.8, isFuzzyMatch: true };
+  }
+  
   // Handle initial format (e.g., "J. Doe" vs "John Doe")
   const nameParts1 = normalizedName1.split(' ');
   const nameParts2 = normalizedName2.split(' ');
@@ -406,12 +459,30 @@ export async function createOrUpdateContact(
       const mergedData: Partial<InsertContact> = {};
       
       // Merge fields with smart logic
-      // Name - prefer the longer/more complete name
-      if (contactData.name && (!existingContact.name || 
-          (contactData.name.length > existingContact.name.length && !existingContact.name.includes(' ')))) {
-        mergedData.name = contactData.name;
+      // Name - implement smarter name merging
+      if (contactData.name && existingContact.name) {
+        // Rule 1: Full name (first + last with space) is better than partial name
+        const existingHasFullName = existingContact.name.includes(' ');
+        const newHasFullName = contactData.name.includes(' ');
+        
+        if (newHasFullName && !existingHasFullName) {
+          // New contact has full name but existing doesn't
+          mergedData.name = contactData.name;
+        } else if (!newHasFullName && existingHasFullName) {
+          // Existing contact has full name but new doesn't
+          mergedData.name = existingContact.name;
+        } else if (newHasFullName && existingHasFullName) {
+          // Both have full names, prefer the longer one as it may have middle names or suffixes
+          mergedData.name = contactData.name.length > existingContact.name.length ? 
+                            contactData.name : existingContact.name;
+        } else {
+          // Neither has full name, prefer the longer one as it may have more letters in a nickname
+          mergedData.name = contactData.name.length > existingContact.name.length ? 
+                            contactData.name : existingContact.name;
+        }
       } else {
-        mergedData.name = existingContact.name;
+        // One or both names are empty, use the non-empty one
+        mergedData.name = contactData.name || existingContact.name;
       }
       
       // Email - prefer the existing one unless empty

@@ -167,8 +167,8 @@ async function testNameFuzzyMatching() {
   const calendlyContactData: InsertContact = {
     name: 'Jen Williams', // Shortened first name, same last name
     email: `jennifer.williams.test${timestamp}@gmail.com`, // Different email
-    phone: '5559876543', // Similar phone without formatting
-    company: 'Acme Corporation',
+    phone: '999-555-1234', // Completely different phone to force name matching
+    company: 'Acme Corp', // Same company for name+company matching
     leadSource: 'calendly'
   };
   
@@ -203,12 +203,13 @@ async function testSmartFieldMerging() {
 
   // Generate a unique email with timestamp to avoid conflicts
   const timestamp = Date.now();
+  const uniquePhoneNumber = `555-123-${timestamp.toString().slice(-4)}`;
 
   // Setup test data with partial info
   const closeContact: InsertContact = {
     name: 'M. Thompson',
     email: `mthompson.test${timestamp}@work.com`,
-    phone: '', // Missing phone
+    phone: uniquePhoneNumber, // Use a unique phone number that can be matched
     company: 'Global Industries',
     leadSource: 'close',
     title: '',
@@ -219,11 +220,11 @@ async function testSmartFieldMerging() {
   const contact = await storage.createContact(closeContact);
   console.log(`Created test Close contact with partial data: ${contact.name}`);
   
-  // Create test Calendly contact data with complementary info
+  // Create test Calendly contact data with complementary info 
   const calendlyContactData: InsertContact = {
     name: 'Michael Thompson', // More complete name
     email: `michael.thompson.test${timestamp}@gmail.com`, // Personal email
-    phone: '555-333-9876', // Has phone
+    phone: uniquePhoneNumber, // Same phone number as the original contact to ensure matching
     company: '', // Missing company
     leadSource: 'calendly',
     title: 'VP of Sales', // Has title
