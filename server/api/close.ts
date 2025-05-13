@@ -492,14 +492,14 @@ async function syncLeadOpportunities(leadId: string, contactId: number) {
           closeDate: opportunity.date_won ? new Date(opportunity.date_won).toISOString() : null,
           assignedTo: opportunity.assigned_to_name || null,
           closeId: opportunity.id,
-          metadata: JSON.stringify({
+          metadata: {
             status_label: opportunity.status_label,
             value_currency: opportunity.value_currency,
             value_period: opportunity.value_period,
             confidence: opportunity.confidence,
             lead_name: opportunity.lead_name,
             opportunity_data: opportunity
-          })
+          }
         };
         
         // Check if deal exists by external ID

@@ -189,7 +189,7 @@ async function syncAllEvents() {
                 endTime: new Date(event.end_time),
                 assignedTo: null,
                 // Include all event and invitee data for complete attribution
-                metadata: JSON.stringify({
+                metadata: {
                   location: typeof event.location === 'string' ? event.location : 
                            Array.isArray(event.location) ? event.location.join(', ') : 'Virtual',
                   description: eventDetails.description || '',
@@ -203,7 +203,7 @@ async function syncAllEvents() {
                     contactId: contact.id,
                     timestamp: new Date().toISOString()
                   }
-                })
+                }
               };
               
               // Check if meeting already exists
