@@ -327,33 +327,33 @@ const Dashboard = () => {
         metrics={[
           { 
             label: "Cost Per Closed Won", 
-            value: dashboardData.advancedMetrics.costPerClosedWon, 
+            value: dashboardData.advancedMetrics?.costPerClosedWon || 0, 
             description: "Cash collected - Commission / Closed",
             format: "currency" 
           },
           { 
             label: "Closer Slot Utilization", 
-            value: dashboardData.advancedMetrics.closerSlotUtilization, 
+            value: dashboardData.advancedMetrics?.closerSlotUtilization || 0, 
             format: "percentage" 
           },
           { 
             label: "Solution Call Close Rate", 
-            value: dashboardData.advancedMetrics.solutionCallCloseRate, 
+            value: dashboardData.advancedMetrics?.solutionCallCloseRate || 0, 
             format: "percentage" 
           },
           { 
             label: "Sales Cycle", 
-            value: dashboardData.attribution?.insights?.salesCycleDuration || dashboardData.advancedMetrics.salesCycle, 
+            value: dashboardData.attribution?.insights?.salesCycleDuration || dashboardData.advancedMetrics?.salesCycle || 0, 
             description: "First Touch -> Close (Days)",
           },
           { 
             label: "Touchpoints To Close", 
-            value: dashboardData.attribution?.insights?.averageTouchpoints || dashboardData.advancedMetrics.callsToClose, 
+            value: dashboardData.attribution?.insights?.averageTouchpoints || dashboardData.advancedMetrics?.callsToClose || 0, 
             description: "Avg interactions before conversion",
           },
           { 
             label: "Profit Per Solution Call", 
-            value: dashboardData.advancedMetrics.profitPerSolutionCall, 
+            value: dashboardData.advancedMetrics?.profitPerSolutionCall || 0, 
             format: "currency" 
           },
         ]}
