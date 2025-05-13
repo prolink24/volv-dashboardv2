@@ -19,7 +19,7 @@ async function addOpportunitiesToContacts() {
   // Hardcode the list of contact IDs that we know need opportunities based on our diagnostic script
   // Using the list from the latest diagnostic output
   const contactIdsWithoutOpportunities = [
-    2125, 2157, 2178, 2141, 2097, 2133, 1045, 1030, 2384, 2172
+    2684, 3069, 2430, 2077
   ];
   
   console.log(`Processing ${contactIdsWithoutOpportunities.length} contacts without opportunities`);
