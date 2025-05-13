@@ -38,6 +38,8 @@ export function useDashboardData({
   return useQuery<DashboardData>({
     queryKey: [endpoint],
     staleTime: 1000 * 60 * 5, // 5 minutes
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
   });
 }
 
@@ -50,6 +52,8 @@ export function useAttributionStats() {
   }>({
     queryKey: ['/api/attribution/enhanced-stats'],
     staleTime: 1000 * 60 * 15, // 15 minutes
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
   });
 }
 
