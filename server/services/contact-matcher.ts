@@ -96,7 +96,7 @@ function calculateStringSimilarity(str1: string, str2: string): number {
   const bBigrams = createBigrams(b);
   
   let intersection = 0;
-  for (const bigram of aBigrams) {
+  for (const bigram of Array.from(aBigrams)) {
     if (bBigrams.has(bigram)) {
       intersection++;
     }
@@ -212,6 +212,7 @@ export async function findBestMatchingContact(contactData: Partial<InsertContact
   // 2. Try phone + name matching (high confidence)
   if (contactData.phone && contactData.name) {
     const normalizedPhone = normalizePhone(contactData.phone);
+    const contactName = contactData.name; // Store in a local variable to avoid TypeScript issues
     
     // Get all contacts with this phone
     const allContacts = await storage.getAllContacts();
@@ -226,7 +227,7 @@ export async function findBestMatchingContact(contactData: Partial<InsertContact
       const initialFormatMatches = phoneMatches.filter(contact => {
         // Extract last names from both
         const contactNameParts = contact.name.toLowerCase().trim().split(' ');
-        const dataNameParts = contactData.name.toLowerCase().trim().split(' ');
+        const dataNameParts = contactName.toLowerCase().trim().split(' ');
         
         // Check if both have at least last name
         if (contactNameParts.length >= 1 && dataNameParts.length >= 1) {
@@ -277,7 +278,7 @@ export async function findBestMatchingContact(contactData: Partial<InsertContact
       for (const contact of phoneMatches) {
         const { similarity, areSimilar } = areNamesSimilar(
           contact.name,
-          contactData.name
+          contactName
         );
         
         if (areSimilar && similarity > bestSimilarity) {

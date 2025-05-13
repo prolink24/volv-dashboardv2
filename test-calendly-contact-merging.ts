@@ -268,17 +268,15 @@ if (!storage.deleteContact) {
   };
 }
 
-// Run the tests if this script is executed directly
-if (require.main === module) {
-  runContactMergingTests()
-    .then(() => {
-      console.log('Tests completed');
-      process.exit(0);
-    })
-    .catch(err => {
-      console.error('Error running tests:', err);
-      process.exit(1);
-    });
-}
+// Run the tests when this module is executed directly
+runContactMergingTests()
+  .then(() => {
+    console.log('Tests completed');
+    process.exit(0);
+  })
+  .catch(err => {
+    console.error('Error running tests:', err);
+    process.exit(1);
+  });
 
 export default runContactMergingTests;
