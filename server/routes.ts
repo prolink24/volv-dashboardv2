@@ -12,6 +12,14 @@ import * as syncStatus from "./api/sync-status";
 import { WebSocketServer } from "ws";
 import { z } from "zod";
 
+// Enhanced attribution response types
+interface AttributionStatsResponse {
+  success: boolean;
+  attributionAccuracy?: number;
+  stats?: any;
+  error?: string;
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   const apiRouter = express.Router();
 
@@ -381,17 +389,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Enhanced attribution stats with accuracy metrics
   apiRouter.get("/attribution/enhanced-stats", async (req: Request, res: Response) => {
     try {
-      const attributionData = await enhancedAttributionService.getAttributionStats();
+      const attributionData = await enhancedAttributionService.getAttributionStats() as AttributionStatsResponse;
       
       if (!attributionData.success) {
         return res.status(500).json({ error: "Failed to generate enhanced attribution stats" });
       }
       
-      res.json({
-        success: true,
-        attributionAccuracy: attributionData.attributionAccuracy,
-        stats: attributionData.detailedAnalytics || {}
-      });
+      // Simply pass through the service result which is already formatted correctly
+      res.json(attributionData);
     } catch (error) {
       console.error("Error generating enhanced attribution stats:", error);
       res.status(500).json({ error: "Failed to generate enhanced attribution stats" });
