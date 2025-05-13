@@ -69,23 +69,95 @@ export async function attributeContact(contactId: number) {
     ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     
     // Perform attribution logic
-    // This would involve analyzing the timeline to establish attribution chains
-    // For example, determining if a form submission led to a meeting,
-    // which then led to a deal, etc.
+    // Analyze the timeline to establish attribution chains
+    // Determining if a form submission led to a meeting, which then led to a deal, etc.
     
-    // For now, we'll just return the timeline
+    // Build attribution chains - sequence of events that led to deals
+    const attributionChains = [];
+    
+    // If we have deals, build an attribution chain for each one
+    for (const deal of deals) {
+      // Get events that happened before the deal was created
+      const dealCreatedAt = deal.createdAt || new Date();
+      const eventsPriorToDeal = timeline.filter(
+        event => new Date(event.date) <= dealCreatedAt && event.type !== 'deal'
+      );
+      
+      // Get the most recent meeting before the deal
+      const lastMeetingBeforeDeal = [...eventsPriorToDeal]
+        .filter(event => event.type === 'meeting')
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+      
+      // Get the most recent form submission before the deal
+      const lastFormBeforeDeal = [...eventsPriorToDeal]
+        .filter(event => event.type === 'form')
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+      
+      // Get the most recent activity before the deal
+      const lastActivityBeforeDeal = [...eventsPriorToDeal]
+        .filter(event => event.type === 'activity')
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+      
+      // Calculate time between touchpoints
+      const timeToConversion = lastMeetingBeforeDeal ? 
+        dealCreatedAt.getTime() - new Date(lastMeetingBeforeDeal.date).getTime() : null;
+      
+      // Create attribution chain
+      const attributionChain = {
+        dealId: deal.id,
+        dealValue: deal.value,
+        dealStatus: deal.status,
+        events: eventsPriorToDeal,
+        // Attribution model: Last touch gets 100% credit if it's a meeting
+        // Otherwise credit is distributed: 40% first touch, 40% last touch, 20% middle touches
+        attributionModel: lastMeetingBeforeDeal ? 'last-touch' : 'multi-touch',
+        firstTouch: eventsPriorToDeal[0] || null,
+        lastTouchBeforeDeal: eventsPriorToDeal.length > 0 ? eventsPriorToDeal[eventsPriorToDeal.length - 1] : null,
+        conversionPoint: {
+          type: 'deal',
+          date: dealCreatedAt,
+          value: deal.value
+        },
+        meetingInfluence: lastMeetingBeforeDeal ? {
+          meeting: lastMeetingBeforeDeal,
+          daysToConversion: timeToConversion ? Math.floor(timeToConversion / (1000 * 60 * 60 * 24)) : null
+        } : null,
+        formInfluence: lastFormBeforeDeal ? {
+          form: lastFormBeforeDeal
+        } : null,
+        activityInfluence: lastActivityBeforeDeal ? {
+          activity: lastActivityBeforeDeal
+        } : null,
+        totalTouchpoints: eventsPriorToDeal.length,
+        channelAttribution: {
+          calendly: eventsPriorToDeal.filter(e => e.source === 'calendly').length,
+          close: eventsPriorToDeal.filter(e => e.source === 'close').length,
+          typeform: eventsPriorToDeal.filter(e => e.source === 'typeform').length
+        }
+      };
+      
+      attributionChains.push(attributionChain);
+    }
+    
     return {
       success: true,
       contact,
       timeline,
-      attributionChains: [],
-      firstTouch: timeline[0] || null,
-      lastTouch: timeline[timeline.length - 1] || null,
+      attributionChains,
+      touchpointCount: timeline.length,
+      firstTouch: timeline.length > 0 ? timeline[0] : null,
+      lastTouch: timeline.length > 0 ? timeline[timeline.length - 1] : null,
       conversionPoint: deals.length > 0 ? {
         type: 'deal',
         date: deals[0].createdAt || new Date(),
         value: deals[0].value
-      } : null
+      } : null,
+      // Channel statistics
+      channelBreakdown: {
+        calendly: timeline.filter(e => e.source === 'calendly').length,
+        close: timeline.filter(e => e.source === 'close').length,
+        typeform: timeline.filter(e => e.source === 'typeform').length
+      }
     };
   } catch (error) {
     console.error(`Error attributing contact ${contactId}:`, error);
@@ -97,19 +169,54 @@ export async function attributeContact(contactId: number) {
 }
 
 /**
- * Attribute all contacts in the system
- * This is used for bulk attribution processing
+ * Attribute all contacts in the system and collect analytics
+ * This is used for bulk attribution processing and generating insights
  */
 export async function attributeAllContacts() {
   try {
     const contacts = await storage.getAllContacts();
     
+    // Basic processing results
     const results = {
       total: contacts.length,
       processed: 0,
       attributed: 0,
       errors: 0
     };
+    
+    // Advanced analytics containers
+    const channelStats = {
+      calendly: 0,
+      close: 0,
+      typeform: 0
+    };
+    
+    const modelStats = {
+      lastTouch: 0,
+      multiTouch: 0,
+      noAttribution: 0
+    };
+    
+    const dealStats = {
+      total: 0,
+      withMeeting: 0,
+      withForm: 0,
+      withActivity: 0,
+      averageValue: 0,
+      totalValue: 0,
+      averageTouchpoints: 0,
+      totalTouchpoints: 0,
+      averageDaysToConversion: 0
+    };
+    
+    let contactsWithDeals = 0;
+    let contactsWithMeetings = 0;
+    let contactsWithForms = 0;
+    let totalTouchpoints = 0;
+    let totalMeetings = 0;
+    let totalActivities = 0;
+    let totalForms = 0;
+    let daysToConversionValues = [];
     
     // Process contacts in batches to avoid memory issues
     const batchSize = 50;
@@ -119,11 +226,67 @@ export async function attributeAllContacts() {
       // Process each contact in the batch
       for (const contact of batch) {
         try {
-          const result = await attributeContact(contact.id);
+          const attribution = await attributeContact(contact.id);
           results.processed++;
           
-          if (result.success) {
+          if (attribution.success) {
             results.attributed++;
+            totalTouchpoints += attribution.touchpointCount || 0;
+            
+            // Channel stats
+            if (attribution.channelBreakdown) {
+              channelStats.calendly += attribution.channelBreakdown.calendly || 0;
+              channelStats.close += attribution.channelBreakdown.close || 0;
+              channelStats.typeform += attribution.channelBreakdown.typeform || 0;
+              
+              if (attribution.channelBreakdown.calendly > 0) {
+                contactsWithMeetings++;
+                totalMeetings += attribution.channelBreakdown.calendly;
+              }
+              
+              if (attribution.channelBreakdown.typeform > 0) {
+                contactsWithForms++;
+                totalForms += attribution.channelBreakdown.typeform;
+              }
+              
+              if (attribution.channelBreakdown.close > 0) {
+                totalActivities += attribution.channelBreakdown.close;
+              }
+            }
+            
+            // Deal attribution stats
+            if (attribution.attributionChains && attribution.attributionChains.length > 0) {
+              contactsWithDeals++;
+              
+              for (const chain of attribution.attributionChains) {
+                dealStats.total++;
+                dealStats.totalValue += chain.dealValue || 0;
+                dealStats.totalTouchpoints += chain.totalTouchpoints || 0;
+                
+                if (chain.attributionModel === 'last-touch') {
+                  modelStats.lastTouch++;
+                } else if (chain.attributionModel === 'multi-touch') {
+                  modelStats.multiTouch++;
+                } else {
+                  modelStats.noAttribution++;
+                }
+                
+                if (chain.meetingInfluence) {
+                  dealStats.withMeeting++;
+                  if (chain.meetingInfluence.daysToConversion) {
+                    daysToConversionValues.push(chain.meetingInfluence.daysToConversion);
+                  }
+                }
+                
+                if (chain.formInfluence) {
+                  dealStats.withForm++;
+                }
+                
+                if (chain.activityInfluence) {
+                  dealStats.withActivity++;
+                }
+              }
+            }
           } else {
             results.errors++;
           }
@@ -135,9 +298,48 @@ export async function attributeAllContacts() {
       }
     }
     
+    // Calculate averages and percentages
+    if (dealStats.total > 0) {
+      dealStats.averageValue = Math.round(dealStats.totalValue / dealStats.total);
+      dealStats.averageTouchpoints = Math.round((dealStats.totalTouchpoints / dealStats.total) * 100) / 100;
+    }
+    
+    if (daysToConversionValues.length > 0) {
+      dealStats.averageDaysToConversion = Math.round(
+        (daysToConversionValues.reduce((sum, val) => sum + val, 0) / daysToConversionValues.length) * 10
+      ) / 10;
+    }
+    
     return {
       success: true,
-      results
+      baseResults: results,
+      detailedAnalytics: {
+        contactStats: {
+          totalContacts: contacts.length,
+          contactsWithDeals,
+          contactsWithMeetings,
+          contactsWithForms,
+          conversionRate: Math.round((contactsWithDeals / Math.max(contacts.length, 1)) * 1000) / 10 // percentage with 1 decimal
+        },
+        touchpointStats: {
+          totalTouchpoints,
+          totalMeetings,
+          totalActivities,
+          totalForms,
+          averageTouchpointsPerContact: Math.round((totalTouchpoints / Math.max(results.attributed, 1)) * 10) / 10
+        },
+        channelStats,
+        modelStats,
+        dealStats,
+        insights: {
+          meetingConversionRate: dealStats.withMeeting > 0 && totalMeetings > 0 ? 
+            Math.round((dealStats.withMeeting / totalMeetings) * 1000) / 10 : 0, // percentage
+          averageSalesCycle: dealStats.averageDaysToConversion || 0,
+          mostEffectiveChannel: channelStats.calendly >= channelStats.close && channelStats.calendly >= channelStats.typeform ? 
+            'calendly' : channelStats.close >= channelStats.typeform ? 'close' : 'typeform',
+          averageDealValue: dealStats.averageValue || 0
+        }
+      }
     };
   } catch (error) {
     console.error("Error attributing all contacts:", error);
