@@ -127,7 +127,7 @@ export const AttributionStats = () => {
           </div>
 
           {/* Multi-source contact rate */}
-          {stats?.multiSourceRate && (
+          {stats?.multiSourceRate !== undefined && (
             <div className="border-t pt-3">
               <div className="flex justify-between mb-1">
                 <div className="flex items-center">
@@ -155,7 +155,7 @@ export const AttributionStats = () => {
           )}
 
           {/* Deal Attribution Rate */}
-          {stats?.dealAttributionRate && (
+          {stats?.dealAttributionRate !== undefined && (
             <div className="border-t pt-3">
               <div className="flex justify-between mb-1">
                 <div className="flex items-center">
@@ -182,7 +182,7 @@ export const AttributionStats = () => {
           )}
           
           {/* Field Coverage */}
-          {stats?.fieldCoverage && (
+          {stats?.fieldCoverage !== undefined && (
             <div className="border-t pt-3">
               <div className="flex justify-between mb-1">
                 <div className="flex items-center">
