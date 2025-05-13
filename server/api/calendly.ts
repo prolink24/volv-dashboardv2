@@ -67,6 +67,7 @@ async function syncAllEvents() {
     // Get the current user's organization
     const currentUser = connectionTest.user;
     const organizationUri = currentUser.current_organization;
+    const organizationUUID = organizationUri.split('/').pop(); // Extract UUID part only
     const userId = currentUser.uri;
     
     console.log('Fetching events from Calendly API...');
@@ -101,8 +102,9 @@ async function syncAllEvents() {
         console.log(`Fetching events page ${page}${pageToken ? ', with page token' : ''}`);
         
         // Construct the query parameters
+        // Using organization UUID instead of full URI to avoid encoding issues
         const params: any = {
-          organization: organizationUri,
+          organization: organizationUUID,
           min_start_time: minStartTime,
           max_start_time: maxStartTime,
           count: 100 // Max allowed by Calendly API
@@ -112,6 +114,8 @@ async function syncAllEvents() {
         if (pageToken) {
           params.page_token = pageToken;
         }
+        
+        console.log('Requesting Calendly events with params:', JSON.stringify(params));
         
         // Make the API request
         const response = await calendlyApiClient.get('/scheduled_events', { params });
@@ -296,10 +300,16 @@ async function getEventDetails(eventUri: string) {
   try {
     // Extract the event UUID from the URI
     const eventId = eventUri.split('/').pop();
+    if (!eventId) {
+      console.error(`Invalid event URI: ${eventUri}`);
+      return {};
+    }
+    
+    console.log(`Fetching details for event with ID: ${eventId}`);
     const response = await calendlyApiClient.get(`/scheduled_events/${eventId}`);
     return response.data.resource;
   } catch (error: any) {
-    console.error(`Error fetching event details ${eventUri}:`, error);
+    console.error(`Error fetching event details ${eventUri}:`, error.message || error);
     return { };
   }
 }
@@ -309,11 +319,17 @@ async function getEventDetails(eventUri: string) {
  */
 async function getEventInvitees(eventUri: string) {
   try {
-    const response = await calendlyApiClient.get('/scheduled_events/' + 
-      eventUri.split('/').pop() + '/invitees');
+    const eventId = eventUri.split('/').pop();
+    if (!eventId) {
+      console.error(`Invalid event URI: ${eventUri}`);
+      return [];
+    }
+    
+    console.log(`Fetching invitees for event with ID: ${eventId}`);
+    const response = await calendlyApiClient.get(`/scheduled_events/${eventId}/invitees`);
     return response.data.collection || [];
   } catch (error: any) {
-    console.error(`Error fetching event invitees ${eventUri}:`, error);
+    console.error(`Error fetching event invitees ${eventUri}:`, error.message || error);
     return [];
   }
 }
@@ -333,6 +349,7 @@ async function fetchEvents(limit: number = 5) {
     // Get the current user's organization
     const currentUser = connectionTest.user;
     const organizationUri = currentUser.current_organization;
+    const organizationUUID = organizationUri.split('/').pop(); // Extract UUID only
     const userId = currentUser.uri;
     
     console.log(`Fetching up to ${limit} events from Calendly API for testing...`);
@@ -344,7 +361,7 @@ async function fetchEvents(limit: number = 5) {
     
     const response = await calendlyApiClient.get('/scheduled_events', {
       params: {
-        organization: organizationUri,
+        organization: organizationUUID,
         count: limit,
         min_start_time: threeMonthsAgo.toISOString(),
         max_start_time: now.toISOString(),
