@@ -1425,8 +1425,8 @@ export class DatabaseStorage implements IStorage {
         // Calculate KPIs for this user
         const closedDeals = deals.filter(deal => deal.status === 'won').length;
         const cashCollected = deals.filter(deal => deal.status === 'won')
-          .reduce((sum, deal) => sum + (deal.value || 0), 0);
-        const contractedValue = deals.reduce((sum, deal) => sum + (deal.value || 0), 0);
+          .reduce((sum, deal) => sum + (deal.value ? parseInt(deal.value) : 0), 0);
+        const contractedValue = deals.reduce((sum, deal) => sum + (deal.value ? parseInt(deal.value) : 0), 0);
         
         // Placeholder for call data - in a real app would be fetched from activities
         const calls = Math.round(5 + Math.random() * 15);
@@ -1438,7 +1438,8 @@ export class DatabaseStorage implements IStorage {
           : Math.round(Math.random() * 50);
         
         return {
-          name: user.name,
+          // Construct full name from first_name and last_name
+          name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email,
           id: user.id.toString(),
           closed: closedDeals,
           cashCollected: cashCollected,
@@ -1453,7 +1454,7 @@ export class DatabaseStorage implements IStorage {
       }));
     }
     
-    if (!metricsData || !metricsData.dashboardData || salesTeamData.length === 0) {
+    if (!metricsData || salesTeamData.length === 0) {
       // Return improved sample data
       return {
         kpis: {
