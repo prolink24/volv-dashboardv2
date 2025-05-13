@@ -31,7 +31,7 @@ export interface MatchResult {
  * - Remove common aliases (e.g., + suffix in Gmail)
  * - Handle common typos and variations
  */
-function normalizeEmail(email: string): string {
+export function normalizeEmail(email: string): string {
   if (!email) return '';
   
   // Convert to lowercase
@@ -79,7 +79,7 @@ function normalizeEmail(email: string): string {
  * - Remove whitespace, punctuation, suffixes
  * - Extract first and last name for partial matching
  */
-function normalizeName(name: string): { 
+export function normalizeName(name: string): { 
   normalized: string, 
   first: string, 
   last: string,

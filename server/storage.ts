@@ -172,9 +172,17 @@ export class MemStorage implements IStorage {
   }
 
   async getContactByEmail(email: string): Promise<Contact | undefined> {
-    return Array.from(this.contacts.values()).find(
-      (contact) => contact.email === email
-    );
+    // Import the normalizeEmail function
+    const { normalizeEmail } = await import('./services/contact-matcher');
+    
+    // Normalize the lookup email
+    const normalizedEmail = normalizeEmail(email);
+    
+    // Look for a contact with a matching normalized email
+    return Array.from(this.contacts.values()).find(contact => {
+      const contactNormalizedEmail = normalizeEmail(contact.email);
+      return contactNormalizedEmail === normalizedEmail;
+    });
   }
 
   async getContactByExternalId(source: string, id: string): Promise<Contact | undefined> {
