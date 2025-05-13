@@ -108,6 +108,7 @@ async function syncAllLeads() {
         // Update total on first page
         if (page === 1) {
           totalLeads = response.data.total_results || leads.length;
+          console.log(`Total leads in Close CRM: ${totalLeads}`);
           syncStatus.updateCloseSyncStatus({
             totalLeads,
             processedLeads,
@@ -218,15 +219,11 @@ async function syncAllLeads() {
         console.error(`Error fetching leads page ${page}:`, error);
         errors++;
         
-        // If we get an error but there are more pages, try to continue
-        if (page > 10) {
-          // If we've processed a decent number of pages, we can 
-          // consider this a partial success even with some errors
-          hasMore = false;
-        } else {
-          // For early failures, treat as a full failure
-          throw error;
-        }
+        // If we get an error, log it but try to continue - we want all 5000+ contacts
+        console.error(`Error on page ${page}, but continuing the sync...`);
+        // Try to continue with the next page
+        page++;
+        // Don't stop the sync process due to errors
       }
     }
     
