@@ -171,24 +171,40 @@ async function syncAllLeads(resetMode: boolean = false) {
             if (contactData.email) {
               withEmail++;
               
-              // In reset mode, we skip checking for existing contacts and create new ones
+              // Even in reset mode, we need to check for existing contacts because of email uniqueness constraint
               let existingContact = null;
               
-              if (!resetMode) {
-                // Check if contact exists by external ID
-                existingContact = await storage.getContactByExternalId('close', lead.id);
-                
-                // If not found by ID, try email as a fallback
-                if (!existingContact && contactData.email) {
-                  existingContact = await storage.getContactByEmail(contactData.email);
-                }
+              // Check if contact exists by external ID
+              existingContact = await storage.getContactByExternalId('close', lead.id);
+              
+              // If not found by ID, try email as a fallback
+              if (!existingContact && contactData.email) {
+                existingContact = await storage.getContactByEmail(contactData.email);
               }
               
               try {
-                if (existingContact && !resetMode) {
-                  // Update existing contact (only in normal mode)
-                  const updatedContact = await storage.updateContact(existingContact.id, contactData);
-                  console.log(`Updated existing contact: ${contactData.name} (${contactData.email})`);
+                if (existingContact) {
+                  if (resetMode) {
+                    // In reset mode, update with new data but mark it specially
+                    contactData.sourceData = JSON.stringify({...JSON.parse(contactData.sourceData), reset_mode: true});
+                    const updatedContact = await storage.updateContact(existingContact.id, contactData);
+                    importedContacts++; // Count as imported since it's reset mode
+                    console.log(`Reset mode: Updated contact: ${contactData.name} (${contactData.email})`);
+                    
+                    // Update sync status after each batch of 10 contacts in reset mode
+                    if (importedContacts % 10 === 0) {
+                      syncStatus.updateCloseSyncStatus({
+                        totalLeads,
+                        processedLeads,
+                        importedContacts,
+                        errors
+                      });
+                    }
+                  } else {
+                    // Normal mode - just update
+                    const updatedContact = await storage.updateContact(existingContact.id, contactData);
+                    console.log(`Updated existing contact: ${contactData.name} (${contactData.email})`);
+                  }
                 } else {
                   // Check if contact data is valid
                   if (!contactData.name || !contactData.email) {
@@ -210,7 +226,23 @@ async function syncAllLeads(resetMode: boolean = false) {
                       console.log(`Contact with email ${contactData.email} already exists. Trying to find and update.`);
                       const existingByEmail = await storage.getContactByEmail(contactData.email);
                       if (existingByEmail) {
+                        if (resetMode) {
+                          // In reset mode, mark the update specially
+                          contactData.sourceData = JSON.stringify({...JSON.parse(contactData.sourceData), reset_mode: true});
+                        }
                         await storage.updateContact(existingByEmail.id, contactData);
+                        if (resetMode) {
+                          importedContacts++; // Count as imported in reset mode
+                          // Update sync status after each batch of 10 contacts
+                          if (importedContacts % 10 === 0) {
+                            syncStatus.updateCloseSyncStatus({
+                              totalLeads,
+                              processedLeads,
+                              importedContacts,
+                              errors
+                            });
+                          }
+                        }
                         console.log(`Updated existing contact via email fallback: ${contactData.name} (${contactData.email})`);
                       }
                     } else {
