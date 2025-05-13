@@ -24,7 +24,9 @@ import {
   Award,
   Zap,
   PieChart,
-  Clock
+  Clock,
+  ArrowRight,
+  Calendar
 } from "lucide-react";
 
 interface TimelineEvent {
@@ -119,14 +121,16 @@ export function AttributionJourney({
   }, {} as Record<string, number>);
   
   // Format date for display
-  const formatDate = (dateStr: string) => {
+  const formatDate = (dateStr: string, showTime: boolean = false) => {
     const date = new Date(dateStr);
     return new Intl.DateTimeFormat('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      ...(showTime && {
+        hour: '2-digit',
+        minute: '2-digit'
+      })
     }).format(date);
   };
   
@@ -723,6 +727,151 @@ export function AttributionJourney({
                     </div>
                   </CardContent>
                 </Card>
+                
+                {/* Attribution Chains Visualization */}
+                {attributionChains && attributionChains.length > 0 && (
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-lg">Attribution Chains</CardTitle>
+                      <CardDescription>
+                        Multi-touch attribution models used to determine touchpoint importance
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {attributionChains.map((chain, index) => (
+                          <div key={index} className="border rounded-lg overflow-hidden">
+                            <div className="p-3 bg-muted/20 border-b flex justify-between items-center">
+                              <div>
+                                <h4 className="font-medium">{chain.modelName}</h4>
+                                <p className="text-xs text-muted-foreground">{chain.description}</p>
+                              </div>
+                              <Badge variant={index === 0 ? "default" : "outline"} className="ml-2">
+                                {Math.round(chain.weight * 100)}% Weight
+                              </Badge>
+                            </div>
+                            <div className="p-3">
+                              <div className="flex flex-wrap gap-3 items-center mb-2">
+                                {chain.touchpoints.map((touchpointId, idx) => {
+                                  const touchpoint = events.find(e => e.id === touchpointId);
+                                  if (!touchpoint) return null;
+                                  
+                                  return (
+                                    <React.Fragment key={touchpointId}>
+                                      <div className={`relative group ${idx === 0 ? 'order-first' : ''}`}>
+                                        <div className={`flex flex-col items-center ${idx === 0 ? 'scale-110' : ''}`}>
+                                          <div className={`h-10 w-10 rounded-full flex items-center justify-center border ${idx === 0 ? 'bg-primary/10 border-primary' : 'bg-background'}`}>
+                                            {getEventIcon(touchpoint.type, touchpoint.source)}
+                                          </div>
+                                          <div className="text-xs text-center mt-1 max-w-[80px] truncate" title={touchpoint.title}>
+                                            {touchpoint.title.length > 10 ? touchpoint.title.substring(0, 10) + '...' : touchpoint.title}
+                                          </div>
+                                          <div className="text-xs text-muted-foreground">
+                                            {formatDate(touchpoint.date)}
+                                          </div>
+                                        </div>
+                                        
+                                        <HoverCard>
+                                          <HoverCardTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="absolute -top-2 -right-2 h-5 w-5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                                              <Info className="h-3 w-3" />
+                                            </Button>
+                                          </HoverCardTrigger>
+                                          <HoverCardContent side="top">
+                                            <div className="space-y-2">
+                                              <div className="flex items-center gap-2">
+                                                <div className="h-6 w-6 rounded-full flex items-center justify-center border">
+                                                  {getEventIcon(touchpoint.type, touchpoint.source)}
+                                                </div>
+                                                <h4 className="font-medium">{touchpoint.title}</h4>
+                                              </div>
+                                              <div className="text-xs">
+                                                <div className="flex items-center gap-1">
+                                                  <CalendarIcon className="h-3 w-3" />
+                                                  <span>{formatDate(touchpoint.date, true)}</span>
+                                                </div>
+                                              </div>
+                                              {touchpoint.description && (
+                                                <p className="text-xs text-muted-foreground">{touchpoint.description}</p>
+                                              )}
+                                              {idx === 0 && (
+                                                <div className="text-xs bg-primary/10 p-1 rounded border border-primary/20 mt-1">
+                                                  Primary touchpoint in this attribution model
+                                                </div>
+                                              )}
+                                            </div>
+                                          </HoverCardContent>
+                                        </HoverCard>
+                                      </div>
+                                      
+                                      {idx < chain.touchpoints.length - 1 && (
+                                        <div className="h-px w-4 bg-gray-200 flex-grow max-w-[40px]" />
+                                      )}
+                                    </React.Fragment>
+                                  );
+                                })}
+                              </div>
+                              
+                              <div className="text-xs text-muted-foreground bg-muted/10 p-2 rounded mt-3">
+                                {index === 0 ? (
+                                  <div className="flex items-center">
+                                    <Award className="h-3 w-3 mr-1 text-primary" />
+                                    <span className="font-medium">Primary Attribution Model</span>
+                                    <span className="ml-1">- This model has the highest influence on the final attribution certainty</span>
+                                  </div>
+                                ) : (
+                                  <div>Supporting attribution model - contributes to overall certainty score</div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+                
+                {/* Channel Breakdown */}
+                {channelBreakdown && Object.keys(channelBreakdown).length > 0 && (
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-lg">Channel Influence Analysis</CardTitle>
+                      <CardDescription>
+                        Attribution breakdown by marketing channels and platforms
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {Object.entries(channelBreakdown).map(([channel, data]) => (
+                          <Card key={channel} className="overflow-hidden border-0 shadow-sm">
+                            <CardHeader className="py-3 px-4 bg-muted/20 border-b">
+                              <CardTitle className="text-base font-medium capitalize">{channel}</CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-4">
+                              <div className="flex justify-between items-center">
+                                <div>
+                                  <div className="text-2xl font-bold">{data.count}</div>
+                                  <div className="text-sm text-muted-foreground">Touchpoints</div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-2xl font-bold">{Math.round(data.influence * 100)}%</div>
+                                  <div className="text-sm text-muted-foreground">Influence</div>
+                                </div>
+                              </div>
+                              <div className="mt-3">
+                                <div className="flex justify-between text-xs mb-1">
+                                  <span>Influence</span>
+                                  <span className="font-medium">{Math.round(data.influence * 100)}%</span>
+                                </div>
+                                <Progress value={data.influence * 100} className="h-2" />
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
             )}
           </TabsContent>
