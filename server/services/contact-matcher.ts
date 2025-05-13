@@ -235,8 +235,9 @@ export async function findBestMatchingContact(
       
       // If we already have a HIGH confidence email match, name match makes it even stronger
       if (confidence === MatchConfidence.HIGH && nameScore > 0.5) {
+        let newConfidence = MatchConfidence.EXACT;
         return {
-          confidence: MatchConfidence.EXACT, 
+          confidence: newConfidence, 
           contact,
           reason: 'Normalized email match + Strong name similarity',
           score: 0.98
@@ -272,7 +273,7 @@ export async function findBestMatchingContact(
         confidence = MatchConfidence.HIGH;
         score += 0.15;
         reason += ' + Phone match';
-      } else if (confidence !== MatchConfidence.EXACT && confidence !== MatchConfidence.NONE) {
+      } else if (confidence === MatchConfidence.HIGH) {
         score += 0.1;
         reason += ' + Phone match';
       }

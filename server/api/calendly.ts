@@ -612,5 +612,7 @@ export default {
   getEventDetails,
   getEventInvitees,
   testApiConnection,
-  fetchEvents
+  fetchEvents,
+  extractPhoneFromInvitee,
+  extractCompanyFromInvitee
 };
