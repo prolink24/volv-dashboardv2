@@ -165,6 +165,17 @@ async function runContactMergingTests() {
         createdAt: new Date()
       };
       
+      // Debug email normalization
+      const normalizedCalendlyEmail = contactMatcher.normalizeEmail(calendlyContactData.email);
+      const normalizedCloseEmail = contactMatcher.normalizeEmail(closeContactData.email);
+      console.log(`  Normalized emails:
+    - Calendly: ${calendlyContactData.email} -> ${normalizedCalendlyEmail}
+    - Close:    ${closeContactData.email} -> ${normalizedCloseEmail}
+    - Match:    ${normalizedCalendlyEmail === normalizedCloseEmail ? 'YES' : 'NO'}`);
+      
+      // Create a Close contact to test against
+      const closeContact = await storage.createContact(closeContactData);
+      
       // Test the contact matcher
       const matchResult = await contactMatcher.findBestMatchingContact(calendlyContactData);
       

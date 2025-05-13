@@ -37,8 +37,15 @@ function normalizeEmail(email: string): string {
   // Convert to lowercase
   let normalized = email.toLowerCase().trim();
   
-  // Remove Gmail aliases (everything after + before @)
-  normalized = normalized.replace(/(\+[^@]+)(?=@gmail\.com)/g, '');
+  // Remove aliases (everything after + before @) for all email providers
+  normalized = normalized.replace(/(\+[^@]+)(?=@)/g, '');
+  
+  // Remove dots from Gmail addresses (e.g., user.name@gmail.com -> username@gmail.com)
+  if (normalized.includes('@gmail.com')) {
+    const [localPart, domain] = normalized.split('@');
+    const localPartWithoutDots = localPart.replace(/\./g, '');
+    normalized = `${localPartWithoutDots}@${domain}`;
+  }
   
   // Handle common domain typos
   const domainFixes: Record<string, string> = {
@@ -218,11 +225,23 @@ export async function findBestMatchingContact(
         };
       }
       
-      // Normalized email match is very high confidence
+      // Normalized email match is very high confidence or exact match for emails after normalization
       const normalizedProvidedEmail = normalizeEmail(contactData.email);
       const normalizedContactEmail = normalizeEmail(contact.email);
       
       if (normalizedProvidedEmail === normalizedContactEmail) {
+        // If it's a Gmail address and we've normalized it, consider it an exact match
+        // since Gmail ignores dots and + aliases
+        if (normalizedProvidedEmail.includes('@gmail.com')) {
+          return {
+            confidence: MatchConfidence.EXACT,
+            contact,
+            reason: 'Normalized Gmail match (ignoring dots and aliases)',
+            score: 1
+          };
+        }
+        
+        // For other providers, it's still a high confidence match
         confidence = MatchConfidence.HIGH;
         score = 0.95;
         reason = 'Normalized email match';
