@@ -12,33 +12,36 @@ import { Contact, Deal, InsertDeal } from './shared/schema';
 async function addOpportunitiesToContacts() {
   console.log('Adding opportunities to contacts that don\'t have any...');
   
-  // Get all contacts
-  const allContacts = await storage.getAllContacts(1000);
-  console.log(`Total contacts: ${allContacts.length}`);
+  // Focus on the contacts from the check-opportunity-coverage.ts script
+  // Get contacts we know don't have opportunities
+  console.log('Getting contact IDs that need opportunities...');
   
-  // Keep track of contacts with and without opportunities
-  const contactsWithoutOpportunities: Contact[] = [];
+  // Hardcode the list of contact IDs that we know need opportunities based on our diagnostic script
+  // Using the list from the latest diagnostic output
+  const contactIdsWithoutOpportunities = [
+    2125, 2157, 2178, 2141, 2097, 2133, 1045, 1030, 2384, 2172
+  ];
   
-  // Check which contacts don't have opportunities
-  for (const contact of allContacts) {
-    const deals = await storage.getDealsByContactId(contact.id);
-    
-    if (deals.length === 0) {
-      contactsWithoutOpportunities.push(contact);
-    }
-  }
+  console.log(`Processing ${contactIdsWithoutOpportunities.length} contacts without opportunities`);
   
-  console.log(`Contacts without opportunities: ${contactsWithoutOpportunities.length}`);
-  
-  if (contactsWithoutOpportunities.length === 0) {
-    console.log('All contacts have opportunities. Nothing to do.');
-    return;
-  }
-  
-  // Add opportunities to contacts without any
+  // Add opportunities to each contact without any
   let opportunitiesAdded = 0;
   
-  for (const contact of contactsWithoutOpportunities) {
+  for (const contactId of contactIdsWithoutOpportunities) {
+    const contact = await storage.getContact(contactId);
+    
+    if (!contact) {
+      console.log(`Contact ID ${contactId} not found, skipping`);
+      continue;
+    }
+    
+    // Check if the contact still doesn't have any opportunities (double-check)
+    const existingDeals = await storage.getDealsByContactId(contactId);
+    if (existingDeals.length > 0) {
+      console.log(`Contact ${contact.name} (ID: ${contactId}) already has ${existingDeals.length} opportunities, skipping`);
+      continue;
+    }
+    
     // Default opportunity data with all custom fields
     const opportunity: InsertDeal = {
       title: `Opportunity for ${contact.name}`,
@@ -66,7 +69,7 @@ async function addOpportunitiesToContacts() {
     
     // Log progress
     if (opportunitiesAdded % 10 === 0) {
-      console.log(`Progress: ${opportunitiesAdded}/${contactsWithoutOpportunities.length} opportunities added`);
+      console.log(`Progress: ${opportunitiesAdded}/${contactIdsWithoutOpportunities.length} opportunities added`);
     }
   }
   
