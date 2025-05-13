@@ -6,7 +6,26 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { CalendarIcon, FormInput, Phone, Mail, Activity, FileText, TrendingUp, CircleDollarSign, ExternalLink, Info, ChevronDown, BarChart, ListFilter } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { 
+  CalendarIcon, 
+  FormInput, 
+  Phone, 
+  Mail, 
+  Activity, 
+  FileText, 
+  TrendingUp, 
+  CircleDollarSign, 
+  ExternalLink, 
+  Info, 
+  ChevronDown, 
+  BarChart, 
+  ListFilter,
+  Award,
+  Zap,
+  PieChart,
+  Clock
+} from "lucide-react";
 
 interface TimelineEvent {
   id: number;
@@ -16,6 +35,25 @@ interface TimelineEvent {
   description?: string;
   source: "typeform" | "calendly" | "close";
   metadata?: Record<string, any>;
+  // Enhanced attribution properties
+  weight?: number;
+  attributionScore?: number;
+  influence?: number;
+  isKeyTouchpoint?: boolean;
+}
+
+interface AttributionChain {
+  modelName: string;
+  touchpoints: number[];
+  weight: number;
+  description: string;
+}
+
+interface ChannelBreakdown {
+  [key: string]: {
+    count: number;
+    influence: number;
+  };
 }
 
 interface Contact {
@@ -32,14 +70,29 @@ interface Contact {
 interface AttributionJourneyProps {
   contact: Contact;
   events: TimelineEvent[];
+  // Enhanced attribution data
+  attributionCertainty?: number;
+  firstTouch?: TimelineEvent;
+  lastTouch?: TimelineEvent;
+  attributionChains?: AttributionChain[];
+  channelBreakdown?: ChannelBreakdown;
 }
 
-export function AttributionJourney({ contact, events }: AttributionJourneyProps) {
+export function AttributionJourney({ 
+  contact, 
+  events, 
+  attributionCertainty = 0,
+  firstTouch,
+  lastTouch,
+  attributionChains = [],
+  channelBreakdown = {}
+}: AttributionJourneyProps) {
   const [activeTab, setActiveTab] = useState("timeline");
   const [selectedEventType, setSelectedEventType] = useState<string | null>(null);
   const [selectedSource, setSelectedSource] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<TimelineEvent | null>(null);
+  const [selectedAttributionModel, setSelectedAttributionModel] = useState<string | null>(null);
   
   // Sort events by date
   const sortedEvents = [...events].sort((a, b) => 
@@ -153,77 +206,158 @@ export function AttributionJourney({ contact, events }: AttributionJourneyProps)
       ? Math.round(totalJourneyDays / (sortedEvents.length - 1)) 
       : 0;
     
-    const firstTouch = sortedEvents.length > 0 
-      ? { type: sortedEvents[0].type, source: sortedEvents[0].source }
-      : null;
+    const firstTouchData = firstTouch || (sortedEvents.length > 0 
+      ? sortedEvents[0]
+      : null);
     
-    const lastTouch = sortedEvents.length > 0 
-      ? { type: sortedEvents[sortedEvents.length - 1].type, source: sortedEvents[sortedEvents.length - 1].source }
-      : null;
+    const lastTouchData = lastTouch || (sortedEvents.length > 0 
+      ? sortedEvents[sortedEvents.length - 1]
+      : null);
       
     return (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Card>
+        <Card className="relative overflow-hidden">
+          <div className={`absolute top-0 right-0 w-1 h-full ${attributionCertainty >= 90 ? 'bg-green-500' : attributionCertainty >= 70 ? 'bg-yellow-500' : 'bg-red-500'}`}></div>
           <CardHeader className="py-4 px-5">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Journey Duration</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              <div className="flex items-center">
+                <Award className="h-4 w-4 mr-2 text-primary" />
+                Attribution Certainty
+              </div>
+            </CardTitle>
           </CardHeader>
           <CardContent className="py-2 px-5">
-            <div className="text-2xl font-bold">{totalJourneyDays} days</div>
-            <p className="text-xs text-muted-foreground">From first to last touchpoint</p>
+            <div className="flex items-center">
+              <div className="text-2xl font-bold">{Math.round(attributionCertainty)}%</div>
+              <HoverCard>
+                <HoverCardTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-5 w-5 ml-1">
+                    <Info className="h-4 w-4" />
+                  </Button>
+                </HoverCardTrigger>
+                <HoverCardContent className="w-80">
+                  <div className="space-y-2">
+                    <h4 className="font-medium">About Attribution Certainty</h4>
+                    <p className="text-sm text-muted-foreground">
+                      This metric shows our confidence level in accurately attributing this contact's journey across platforms.
+                      The improved algorithm uses multi-touch and weighted-position methods to achieve {'>'}90% certainty.
+                    </p>
+                  </div>
+                </HoverCardContent>
+              </HoverCard>
+            </div>
+            <div className="mt-2">
+              <Progress value={attributionCertainty} className="h-2" />
+            </div>
           </CardContent>
         </Card>
         
         <Card>
           <CardHeader className="py-4 px-5">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Touchpoints</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              <div className="flex items-center">
+                <PieChart className="h-4 w-4 mr-2 text-primary" />
+                Journey Metrics
+              </div>
+            </CardTitle>
           </CardHeader>
           <CardContent className="py-2 px-5">
-            <div className="text-2xl font-bold">{touchpoints}</div>
-            <p className="text-xs text-muted-foreground">
-              Avg. {avgTimeBetweenEvents} days between events
-            </p>
+            <div className="flex justify-between items-center">
+              <div>
+                <div className="text-2xl font-bold">{touchpoints}</div>
+                <p className="text-xs text-muted-foreground">Touchpoints</p>
+              </div>
+              <div className="h-8 border-r mx-2"></div>
+              <div>
+                <div className="text-xl font-bold">{totalJourneyDays}</div>
+                <p className="text-xs text-muted-foreground">Days</p>
+              </div>
+              <div className="h-8 border-r mx-2"></div>
+              <div>
+                <div className="text-xl font-bold">{avgTimeBetweenEvents}</div>
+                <p className="text-xs text-muted-foreground">Days/Touch</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
         
         <Card>
           <CardHeader className="py-4 px-5">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Journey Path</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              <div className="flex items-center">
+                <Clock className="h-4 w-4 mr-2 text-primary" />
+                Attribution Path
+              </div>
+            </CardTitle>
           </CardHeader>
           <CardContent className="py-2 px-5">
             <div className="flex items-center gap-1">
-              {firstTouch && (
+              {firstTouchData && (
                 <HoverCard>
                   <HoverCardTrigger asChild>
                     <div className="flex items-center">
-                      <Badge variant="outline" className="mr-1">First</Badge>
-                      {getEventIcon(firstTouch.type, firstTouch.source)}
+                      <Badge variant="outline" className="mr-1 bg-blue-50 text-blue-700 border-blue-200">First</Badge>
+                      {getEventIcon(firstTouchData.type, firstTouchData.source)}
                     </div>
                   </HoverCardTrigger>
-                  <HoverCardContent className="w-48">
+                  <HoverCardContent className="w-60">
                     <p className="text-sm">
-                      First touchpoint: <span className="font-semibold capitalize">{firstTouch.type}</span>
+                      <span className="font-semibold text-blue-600">First touchpoint</span>: {firstTouchData.title || `${firstTouchData.type} (${firstTouchData.source})`}
                       <br />
-                      Source: <span className="font-semibold">{firstTouch.source}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {firstTouchData.date ? formatDate(firstTouchData.date) : "No date available"}
+                      </span>
+                      {firstTouchData.attributionScore && (
+                        <div className="mt-1">
+                          <span className="text-xs font-medium">Attribution value: {Math.round(firstTouchData.attributionScore * 100)}%</span>
+                        </div>
+                      )}
                     </p>
                   </HoverCardContent>
                 </HoverCard>
               )}
               
-              <ChevronDown className="h-4 w-4 mx-2" />
+              <div className="flex-1 h-0.5 bg-gray-100 mx-2 relative">
+                {attributionChains && attributionChains.length > 0 && (
+                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                    <HoverCard>
+                      <HoverCardTrigger asChild>
+                        <Badge variant="outline" className="cursor-pointer bg-amber-50 border-amber-200 text-amber-700">
+                          {attributionChains[0].modelName}
+                        </Badge>
+                      </HoverCardTrigger>
+                      <HoverCardContent className="w-72">
+                        <h4 className="font-medium">{attributionChains[0].modelName} Attribution</h4>
+                        <p className="text-sm text-muted-foreground my-1">{attributionChains[0].description}</p>
+                        <div className="text-xs mt-2">
+                          <span className="font-medium">Weight:</span> {Math.round(attributionChains[0].weight * 100)}%
+                        </div>
+                      </HoverCardContent>
+                    </HoverCard>
+                  </div>
+                )}
+              </div>
               
-              {lastTouch && (
+              {lastTouchData && (
                 <HoverCard>
                   <HoverCardTrigger asChild>
                     <div className="flex items-center">
-                      <Badge variant="outline" className="mr-1">Last</Badge>
-                      {getEventIcon(lastTouch.type, lastTouch.source)}
+                      <Badge variant="outline" className="mr-1 bg-green-50 text-green-700 border-green-200">Last</Badge>
+                      {getEventIcon(lastTouchData.type, lastTouchData.source)}
                     </div>
                   </HoverCardTrigger>
-                  <HoverCardContent className="w-48">
+                  <HoverCardContent className="w-60">
                     <p className="text-sm">
-                      Last touchpoint: <span className="font-semibold capitalize">{lastTouch.type}</span>
+                      <span className="font-semibold text-green-600">Last touchpoint</span>: {lastTouchData.title || `${lastTouchData.type} (${lastTouchData.source})`}
                       <br />
-                      Source: <span className="font-semibold">{lastTouch.source}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {lastTouchData.date ? formatDate(lastTouchData.date) : "No date available"}
+                      </span>
+                      {lastTouchData.attributionScore && (
+                        <div className="mt-1">
+                          <span className="text-xs font-medium">Attribution value: {Math.round(lastTouchData.attributionScore * 100)}%</span>
+                        </div>
+                      )}
                     </p>
                   </HoverCardContent>
                 </HoverCard>
@@ -396,14 +530,34 @@ export function AttributionJourney({ contact, events }: AttributionJourneyProps)
                     return (
                       <div key={event.id} className="relative -left-10">
                         <div className="absolute -left-1 w-8 flex items-center justify-center">
-                          <div className="h-9 w-9 rounded-full flex items-center justify-center bg-white border">
+                          <div className={`h-9 w-9 rounded-full flex items-center justify-center bg-white border
+                            ${event.isKeyTouchpoint ? 'border-2 border-primary shadow-sm' : ''}
+                            ${event.influence && event.influence > 0.5 ? 'ring-2 ring-amber-300 ring-offset-2' : ''}
+                          `}>
                             {getEventIcon(event.type, event.source)}
                           </div>
                         </div>
                         
                         <div className="ml-10 bg-white p-4 rounded-lg border shadow-sm">
                           <div className="flex justify-between items-start mb-1">
-                            <span className="font-medium">{event.title}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{event.title}</span>
+                              {event.isKeyTouchpoint && (
+                                <HoverCard>
+                                  <HoverCardTrigger asChild>
+                                    <Badge variant="outline" className="bg-primary-50 text-primary border-primary-200 text-xs">
+                                      <Zap className="h-3 w-3 mr-1" />
+                                      Key Touchpoint
+                                    </Badge>
+                                  </HoverCardTrigger>
+                                  <HoverCardContent className="w-60">
+                                    <p className="text-sm">
+                                      This is identified as a key touchpoint in the customer journey with significant attribution impact.
+                                    </p>
+                                  </HoverCardContent>
+                                </HoverCard>
+                              )}
+                            </div>
                             {getSourceBadge(event.source)}
                           </div>
                           
@@ -416,6 +570,21 @@ export function AttributionJourney({ contact, events }: AttributionJourneyProps)
                             )}
                           </div>
                           
+                          {typeof event.attributionScore === 'number' && (
+                            <div className="mt-2 mb-3">
+                              <div className="flex justify-between text-xs mb-1">
+                                <span className="font-medium">Attribution Influence</span>
+                                <span className="font-bold text-primary">{Math.round(event.attributionScore * 100)}%</span>
+                              </div>
+                              <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
+                                <div 
+                                  className="h-full bg-primary" 
+                                  style={{ width: `${Math.round(event.attributionScore * 100)}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          )}
+                          
                           {event.description && (
                             <p className="text-sm mt-1">{event.description}</p>
                           )}
@@ -426,14 +595,31 @@ export function AttributionJourney({ contact, events }: AttributionJourneyProps)
                             </Badge>
                           )}
                           
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="mt-2 text-xs h-7"
-                            onClick={() => openEventDetails(event)}
-                          >
-                            <Info className="h-3 w-3 mr-1" /> Details
-                          </Button>
+                          <div className="flex justify-between mt-2">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-xs h-7"
+                              onClick={() => openEventDetails(event)}
+                            >
+                              <Info className="h-3 w-3 mr-1" /> Details
+                            </Button>
+                            
+                            {event.weight && (
+                              <HoverCard>
+                                <HoverCardTrigger asChild>
+                                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                                    Weight: {Math.round(event.weight * 100)}%
+                                  </Badge>
+                                </HoverCardTrigger>
+                                <HoverCardContent className="w-60">
+                                  <p className="text-sm">
+                                    This represents the calculated attribution weight of this touchpoint in the customer journey.
+                                  </p>
+                                </HoverCardContent>
+                              </HoverCard>
+                            )}
+                          </div>
                         </div>
                       </div>
                     );
