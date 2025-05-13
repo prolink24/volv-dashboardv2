@@ -296,24 +296,37 @@ async function syncAllEvents() {
                   continue;
                 }
                 
-                // Try to find the contact by email
-                let contact = await storage.getContactByEmail(email);
+                // Extract additional data from invitee to help with matching
+                const phone = extractPhoneFromInvitee(invitee);
+                const company = extractCompanyFromInvitee(invitee);
                 
-                // If contact doesn't exist, create a minimal contact record
-                if (!contact) {
-                  const contactData = {
-                    name: invitee.name || email.split('@')[0],
-                    email: email,
-                    phone: '',
-                    company: '',
-                    leadSource: 'calendly',
-                    status: 'lead',
-                    sourceId: invitee.uri,
-                    sourceData: JSON.stringify(invitee),
-                    createdAt: new Date(invitee.created_at)
-                  };
-                  
-                  contact = await storage.createContact(contactData);
+                // Import the contact matcher service
+                const contactMatcher = await import('../services/contact-matcher');
+                
+                // Prepare contact data for matching/creation
+                const contactData = {
+                  name: invitee.name || email.split('@')[0],
+                  email: email,
+                  phone: phone || '',
+                  company: company || '',
+                  leadSource: 'calendly',
+                  status: 'lead',
+                  sourceId: invitee.uri,
+                  sourceData: JSON.stringify(invitee),
+                  createdAt: new Date(invitee.created_at)
+                };
+                
+                // Use the enhanced contact matcher to find or create contact
+                const { contact, created, reason } = await contactMatcher.createOrUpdateContact(
+                  contactData,
+                  true, // update if found
+                  contactMatcher.MatchConfidence.MEDIUM // accept medium confidence and above
+                );
+                
+                if (created) {
+                  console.log(`Created new contact from Calendly: ${contact.name} (${contact.email})`);
+                } else {
+                  console.log(`Using existing contact for Calendly invitee: ${contact.name} (${contact.email}) - ${reason}`);
                 }
                 
                 // Create the meeting record
