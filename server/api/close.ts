@@ -210,6 +210,33 @@ async function syncAllLeads(resetMode: boolean = false) {
                     // Normal mode - just update
                     const updatedContact = await storage.updateContact(existingContact.id, contactData);
                     console.log(`Updated existing contact: ${contactData.name} (${contactData.email})`);
+                    
+                    // Import opportunities and activities for this contact
+                    try {
+                      // Sync opportunities in background
+                      syncLeadOpportunities(lead.id, existingContact.id)
+                        .then(result => {
+                          if (result.count > 0) {
+                            console.log(`Imported ${result.count} opportunities for contact ${existingContact.id}`);
+                          }
+                        })
+                        .catch(err => {
+                          console.error(`Error importing opportunities for contact ${existingContact.id}:`, err);
+                        });
+                      
+                      // Sync activities in background
+                      syncLeadActivities(lead.id, existingContact.id)
+                        .then(result => {
+                          if (result.count > 0) {
+                            console.log(`Imported ${result.count} activities for contact ${existingContact.id}`);
+                          }
+                        })
+                        .catch(err => {
+                          console.error(`Error importing activities for contact ${existingContact.id}:`, err);
+                        });
+                    } catch (err) {
+                      console.error(`Error syncing related data for contact ${existingContact.id}:`, err);
+                    }
                   }
                 } else {
                   // Check if contact data is valid
@@ -223,6 +250,33 @@ async function syncAllLeads(resetMode: boolean = false) {
                     const newContact = await storage.createContact(contactData);
                     console.log(`Created new contact #${newContact.id}: ${newContact.name} (${newContact.email})`);
                     importedContacts++;
+                    
+                    // Import opportunities and activities for this contact
+                    try {
+                      // Sync opportunities in background
+                      syncLeadOpportunities(lead.id, newContact.id)
+                        .then(result => {
+                          if (result.count > 0) {
+                            console.log(`Imported ${result.count} opportunities for new contact ${newContact.id}`);
+                          }
+                        })
+                        .catch(err => {
+                          console.error(`Error importing opportunities for new contact ${newContact.id}:`, err);
+                        });
+                      
+                      // Sync activities in background
+                      syncLeadActivities(lead.id, newContact.id)
+                        .then(result => {
+                          if (result.count > 0) {
+                            console.log(`Imported ${result.count} activities for new contact ${newContact.id}`);
+                          }
+                        })
+                        .catch(err => {
+                          console.error(`Error importing activities for new contact ${newContact.id}:`, err);
+                        });
+                    } catch (err) {
+                      console.error(`Error syncing related data for new contact ${newContact.id}:`, err);
+                    }
                   } catch (error) {
                     const createError = error as Error;
                     console.error(`Error creating contact ${contactData.name} (${contactData.email}):`, createError);

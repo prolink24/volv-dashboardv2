@@ -156,8 +156,8 @@ async function syncAllEvents() {
               try {
                 const result = await contactMatcher.createOrUpdateContact(
                   contactData, 
-                  'HIGH', // Match confidence threshold
-                  true    // Update existing contacts
+                  true, // Use high match confidence threshold
+                  true  // Update existing contacts
                 );
                 
                 contact = result.contact;
@@ -178,7 +178,7 @@ async function syncAllEvents() {
                 }
               }
               
-              // Create a meeting record
+              // Create a meeting record with comprehensive data for attribution
               const meetingData = {
                 contactId: contact.id,
                 title: event.name || 'Calendly Meeting',
@@ -188,11 +188,21 @@ async function syncAllEvents() {
                 startTime: new Date(event.start_time),
                 endTime: new Date(event.end_time),
                 assignedTo: null,
+                // Include all event and invitee data for complete attribution
                 metadata: JSON.stringify({
                   location: typeof event.location === 'string' ? event.location : 
                            Array.isArray(event.location) ? event.location.join(', ') : 'Virtual',
                   description: eventDetails.description || '',
-                  invitee: invitee
+                  invitee: invitee,
+                  event: event,
+                  eventDetails: eventDetails,
+                  attribution: {
+                    platform: 'calendly',
+                    eventType: event.event_type,
+                    scheduledBy: invitee.name,
+                    contactId: contact.id,
+                    timestamp: new Date().toISOString()
+                  }
                 })
               };
               
@@ -201,10 +211,46 @@ async function syncAllEvents() {
               if (existingMeeting) {
                 await storage.updateMeeting(existingMeeting.id, meetingData);
                 console.log(`Updated existing meeting for contact ${contact.name}`);
+                
+                // Update contact with activity info to ensure proper attribution
+                try {
+                  // Ensure the contact record reflects this activity
+                  const contactUpdateData = {
+                    lastActivityDate: new Date(),
+                    lastActivityType: 'calendly_meeting',
+                    // Append meeting info to notes if needed
+                    notes: contact.notes ? 
+                      `${contact.notes}\n\nCalendly Meeting: ${event.name} on ${new Date(event.start_time).toLocaleDateString()}` : 
+                      `Calendly Meeting: ${event.name} on ${new Date(event.start_time).toLocaleDateString()}`
+                  };
+                  
+                  await storage.updateContact(contact.id, contactUpdateData);
+                  console.log(`Updated contact ${contact.name} with meeting activity`);
+                } catch (err) {
+                  console.error(`Error updating contact with meeting activity: ${err.message}`);
+                }
               } else {
                 await storage.createMeeting(meetingData);
                 importedMeetings++;
                 console.log(`Created new meeting for contact ${contact.name}`);
+                
+                // Update contact with activity info to ensure proper attribution
+                try {
+                  // Ensure the contact record reflects this activity
+                  const contactUpdateData = {
+                    lastActivityDate: new Date(),
+                    lastActivityType: 'calendly_meeting',
+                    // Append meeting info to notes if needed
+                    notes: contact.notes ? 
+                      `${contact.notes}\n\nCalendly Meeting: ${event.name} on ${new Date(event.start_time).toLocaleDateString()}` : 
+                      `Calendly Meeting: ${event.name} on ${new Date(event.start_time).toLocaleDateString()}`
+                  };
+                  
+                  await storage.updateContact(contact.id, contactUpdateData);
+                  console.log(`Updated contact ${contact.name} with meeting activity`);
+                } catch (err) {
+                  console.error(`Error updating contact with meeting activity: ${err.message}`);
+                }
               }
             }
           } catch (error) {
