@@ -67,21 +67,22 @@ async function syncAllEvents() {
     // Get the current user's organization
     const currentUser = connectionTest.user;
     const organizationUri = currentUser.current_organization;
-    const organizationUUID = organizationUri.split('/').pop(); // Extract UUID part only
     const userId = currentUser.uri;
     
     console.log('Fetching events from Calendly API...');
+    console.log('Current user organization URI:', organizationUri);
+    console.log('Current user ID:', userId);
     
-    // Calculate date range for a full year (6 months back, 6 months forward)
+    // Calculate date range for a full year (3 months back, 3 months forward)
     const now = new Date();
-    const sixMonthsAgo = new Date(now);
-    sixMonthsAgo.setMonth(now.getMonth() - 6);
+    const threeMonthsAgo = new Date(now);
+    threeMonthsAgo.setMonth(now.getMonth() - 3);
     
-    const sixMonthsForward = new Date(now);
-    sixMonthsForward.setMonth(now.getMonth() + 6);
+    const threeMonthsForward = new Date(now);
+    threeMonthsForward.setMonth(now.getMonth() + 3);
     
-    const minStartTime = sixMonthsAgo.toISOString();
-    const maxStartTime = sixMonthsForward.toISOString();
+    const minStartTime = threeMonthsAgo.toISOString();
+    const maxStartTime = threeMonthsForward.toISOString();
     
     // Set initial pagination state
     let hasMore = true;
@@ -96,15 +97,131 @@ async function syncAllEvents() {
       errors
     });
     
+    // First, try a simpler approach with user events
+    try {
+      console.log('Trying to fetch events directly from user endpoint...');
+      const userEventsResponse = await calendlyApiClient.get('/scheduled_events', {
+        params: {
+          user: userId,
+          min_start_time: minStartTime,
+          max_start_time: maxStartTime,
+          count: 10 // Start with a small number to test
+        }
+      });
+      
+      const userEvents = userEventsResponse.data.collection || [];
+      console.log(`Found ${userEvents.length} events for the user directly`);
+      
+      // If we got events, process them
+      if (userEvents.length > 0) {
+        totalEvents = userEventsResponse.data.pagination.count || userEvents.length;
+        
+        // Process these events
+        for (const event of userEvents) {
+          processedEvents++;
+          console.log('Processing event:', event.uri);
+          
+          try {
+            // Fetch event details with invitees
+            const eventDetails = await getEventDetails(event.uri);
+            const invitees = await getEventInvitees(event.uri);
+            
+            console.log(`Event has ${invitees.length} invitees`);
+            
+            for (const invitee of invitees) {
+              const email = invitee.email;
+              if (!email) {
+                console.log(`Skipping invitee without email for event ${event.uri}`);
+                continue;
+              }
+              
+              let contact = await storage.getContactByEmail(email);
+              if (!contact) {
+                // Create minimal contact
+                const contactData = {
+                  name: invitee.name || email.split('@')[0],
+                  email: email,
+                  phone: '',
+                  company: '',
+                  leadSource: 'calendly',
+                  status: 'lead',
+                  sourceId: invitee.uri,
+                  sourceData: JSON.stringify(invitee),
+                  createdAt: new Date(invitee.created_at)
+                };
+                
+                contact = await storage.createContact(contactData);
+                console.log(`Created new contact for Calendly invitee: ${contactData.name} (${contactData.email})`);
+              }
+              
+              // Create a meeting record
+              const meetingData = {
+                contactId: contact.id,
+                title: event.name || 'Calendly Meeting',
+                type: event.event_type || 'meeting',
+                status: event.status,
+                calendlyEventId: event.uri,
+                startTime: new Date(event.start_time),
+                endTime: new Date(event.end_time),
+                assignedTo: null,
+                metadata: JSON.stringify({
+                  location: event.location?.join(', ') || 'Virtual',
+                  description: eventDetails.description || '',
+                  invitee: invitee
+                })
+              };
+              
+              // Check if meeting already exists
+              const existingMeeting = await storage.getMeetingByCalendlyEventId(event.uri);
+              if (existingMeeting) {
+                await storage.updateMeeting(existingMeeting.id, meetingData);
+                console.log(`Updated existing meeting for contact ${contact.name}`);
+              } else {
+                await storage.createMeeting(meetingData);
+                importedMeetings++;
+                console.log(`Created new meeting for contact ${contact.name}`);
+              }
+            }
+          } catch (error) {
+            console.error(`Error processing event ${event.uri}:`, error);
+            errors++;
+          }
+        }
+        
+        // Let's skip the organization-wide fetch if we've succeeded with user events
+        console.log('Successfully processed events via user endpoint, skipping organization-wide fetch');
+        
+        // Final status update
+        syncStatus.updateCalendlySyncStatus({
+          totalEvents,
+          processedEvents,
+          importedMeetings,
+          errors
+        });
+        
+        return {
+          success: true,
+          count: importedMeetings,
+          errors,
+          total: totalEvents
+        };
+      }
+      
+    } catch (error) {
+      console.error('Error fetching user events, falling back to organization events:', error);
+    }
+    
+    // Fallback to organization-wide fetch
+    console.log('Falling back to organization-wide fetch...');
+    
     // Process events in batches using pagination
     while (hasMore) {
       try {
         console.log(`Fetching events page ${page}${pageToken ? ', with page token' : ''}`);
         
         // Construct the query parameters
-        // Using organization UUID instead of full URI to avoid encoding issues
         const params: any = {
-          organization: organizationUUID,
+          organization: organizationUri,
           min_start_time: minStartTime,
           max_start_time: maxStartTime,
           count: 100 // Max allowed by Calendly API
@@ -307,8 +424,14 @@ async function getEventDetails(eventUri: string) {
     
     console.log(`Fetching details for event with ID: ${eventId}`);
     const response = await calendlyApiClient.get(`/scheduled_events/${eventId}`);
-    return response.data.resource;
+    return response.data.resource || {};
   } catch (error: any) {
+    // If we get a 404, just return an empty object
+    if (error.response && error.response.status === 404) {
+      console.log(`Event ${eventUri} not found, may have been deleted`);
+      return { };
+    }
+    
     console.error(`Error fetching event details ${eventUri}:`, error.message || error);
     return { };
   }
@@ -329,6 +452,12 @@ async function getEventInvitees(eventUri: string) {
     const response = await calendlyApiClient.get(`/scheduled_events/${eventId}/invitees`);
     return response.data.collection || [];
   } catch (error: any) {
+    // If we get a 404, just return an empty array
+    if (error.response && error.response.status === 404) {
+      console.log(`Invitees for event ${eventUri} not found, may have been deleted`);
+      return [];
+    }
+    
     console.error(`Error fetching event invitees ${eventUri}:`, error.message || error);
     return [];
   }
@@ -348,11 +477,10 @@ async function fetchEvents(limit: number = 5) {
     
     // Get the current user's organization
     const currentUser = connectionTest.user;
-    const organizationUri = currentUser.current_organization;
-    const organizationUUID = organizationUri.split('/').pop(); // Extract UUID only
     const userId = currentUser.uri;
     
     console.log(`Fetching up to ${limit} events from Calendly API for testing...`);
+    console.log('User ID:', userId);
     
     // Calculate date range for recent events (last 3 months)
     const now = new Date();
@@ -361,7 +489,7 @@ async function fetchEvents(limit: number = 5) {
     
     const response = await calendlyApiClient.get('/scheduled_events', {
       params: {
-        organization: organizationUUID,
+        user: userId, // Use user parameter instead of organization
         count: limit,
         min_start_time: threeMonthsAgo.toISOString(),
         max_start_time: now.toISOString(),
