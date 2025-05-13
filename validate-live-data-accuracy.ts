@@ -418,7 +418,8 @@ async function exportHealthMetricsToFile(metrics: any) {
   
   try {
     // Create the metrics directory if it doesn't exist
-    const metricsDir = path.join(__dirname, 'metrics');
+    // Use absolute path for ESM compatibility instead of __dirname
+    const metricsDir = '/home/runner/workspace/metrics';
     if (!fs.existsSync(metricsDir)) {
       fs.mkdirSync(metricsDir);
     }
