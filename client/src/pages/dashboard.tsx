@@ -378,35 +378,35 @@ const Dashboard = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="flex flex-col">
               <span className="text-sm text-muted-foreground">Triage Booked</span>
-              <span className="text-xl font-bold">{dashboardData.triageMetrics.booked}</span>
+              <span className="text-xl font-bold">{dashboardData.triageMetrics?.booked || 0}</span>
             </div>
             <div className="flex flex-col">
               <span className="text-sm text-muted-foreground">Triage Sits</span>
-              <span className="text-xl font-bold">{dashboardData.triageMetrics.sits}</span>
+              <span className="text-xl font-bold">{dashboardData.triageMetrics?.sits || 0}</span>
             </div>
             <div className="flex flex-col">
               <span className="text-sm text-muted-foreground">Triage Show Rate</span>
-              <span className="text-xl font-bold">{dashboardData.triageMetrics.showRate}%</span>
+              <span className="text-xl font-bold">{dashboardData.triageMetrics?.showRate || 0}%</span>
             </div>
             <div className="flex flex-col">
               <span className="text-sm text-muted-foreground">Solution Booking Rate</span>
-              <span className="text-xl font-bold">{dashboardData.triageMetrics.solutionBookingRate}%</span>
+              <span className="text-xl font-bold">{dashboardData.triageMetrics?.solutionBookingRate || 0}%</span>
             </div>
             <div className="flex flex-col">
               <span className="text-sm text-muted-foreground">Cancel Rate</span>
-              <span className="text-xl font-bold">{dashboardData.triageMetrics.cancelRate}%</span>
+              <span className="text-xl font-bold">{dashboardData.triageMetrics?.cancelRate || 0}%</span>
             </div>
             <div className="flex flex-col">
               <span className="text-sm text-muted-foreground">Outbound Triages Set</span>
-              <span className="text-xl font-bold">{dashboardData.triageMetrics.outboundTriagesSet}</span>
+              <span className="text-xl font-bold">{dashboardData.triageMetrics?.outboundTriagesSet || 0}</span>
             </div>
             <div className="flex flex-col">
               <span className="text-sm text-muted-foreground">Total Direct Bookings</span>
-              <span className="text-xl font-bold">{dashboardData.triageMetrics.totalDirectBookings}</span>
+              <span className="text-xl font-bold">{dashboardData.triageMetrics?.totalDirectBookings || 0}</span>
             </div>
             <div className="flex flex-col">
               <span className="text-sm text-muted-foreground">Direct Booking Rate</span>
-              <span className="text-xl font-bold">{dashboardData.triageMetrics.directBookingRate}%</span>
+              <span className="text-xl font-bold">{dashboardData.triageMetrics?.directBookingRate || 0}%</span>
             </div>
           </div>
         </div>
@@ -416,19 +416,19 @@ const Dashboard = () => {
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col">
               <span className="text-sm text-muted-foreground">New Leads</span>
-              <span className="text-xl font-bold">{dashboardData.leadMetrics.newLeads}</span>
+              <span className="text-xl font-bold">{dashboardData.leadMetrics?.newLeads || 0}</span>
             </div>
             <div className="flex flex-col">
               <span className="text-sm text-muted-foreground">Leads Disqualified</span>
-              <span className="text-xl font-bold">{dashboardData.leadMetrics.disqualified}</span>
+              <span className="text-xl font-bold">{dashboardData.leadMetrics?.disqualified || 0}</span>
             </div>
             <div className="flex flex-col">
               <span className="text-sm text-muted-foreground">Total Dials</span>
-              <span className="text-xl font-bold">{dashboardData.leadMetrics.totalDials}</span>
+              <span className="text-xl font-bold">{dashboardData.leadMetrics?.totalDials || 0}</span>
             </div>
             <div className="flex flex-col">
               <span className="text-sm text-muted-foreground">Pick Up Rate</span>
-              <span className="text-xl font-bold">{dashboardData.leadMetrics.pickUpRate}</span>
+              <span className="text-xl font-bold">{dashboardData.leadMetrics?.pickUpRate || 0}%</span>
             </div>
           </div>
         </div>
