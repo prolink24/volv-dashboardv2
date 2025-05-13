@@ -536,10 +536,16 @@ export async function createOrUpdateContact(
       }
       
       // Lead source - track both sources if different
-      if (existingContact.leadSource && contactData.leadSource && 
-          existingContact.leadSource !== contactData.leadSource) {
-        mergedData.leadSource = `${existingContact.leadSource},${contactData.leadSource}`;
+      if (existingContact.leadSource && contactData.leadSource) {
+        // Check if the existing leadSource already contains the new source
+        if (!existingContact.leadSource.includes(contactData.leadSource)) {
+          mergedData.leadSource = `${existingContact.leadSource},${contactData.leadSource}`;
+        } else {
+          // Keep existing if it already contains the new source
+          mergedData.leadSource = existingContact.leadSource;
+        }
       } else {
+        // Use whichever is not null/undefined
         mergedData.leadSource = existingContact.leadSource || contactData.leadSource;
       }
       

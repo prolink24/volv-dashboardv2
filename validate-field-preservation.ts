@@ -92,13 +92,17 @@ async function validateFieldPreservation() {
  * Create simulated Calendly data based on an existing contact
  */
 function simulateCalendlyData(contact: Contact): InsertContact {
+  // Format date in a way that's compatible with our database
+  const today = new Date();
+  const formattedDate = today.toISOString().split('T')[0];
+  
   return {
     name: contact.name,
     email: contact.email,
     phone: contact.phone,
     leadSource: 'calendly',
-    notes: `Scheduled a meeting via Calendly on ${new Date().toISOString().split('T')[0]}`,
-    lastActivityDate: new Date().toISOString(),
+    notes: `Scheduled a meeting via Calendly on ${formattedDate}`,
+    lastActivityDate: formattedDate, // Using the date string instead of Date object
     // We're intentionally not copying other fields to test if they're preserved
   } as InsertContact;
 }
