@@ -1,0 +1,16 @@
+[
+  {
+    "timestamp": "2025-05-13T12:02:59.139Z",
+    "totalContacts": 4144,
+    "contactsWithEmail": "4144",
+    "contactsWithPhone": "4143",
+    "potentialDuplicates": 0,
+    "totalCalendlyEvents": "6",
+    "emailCoverage": 100,
+    "phoneCoverage": 99.97586872586872,
+    "duplicateRate": 0,
+    "attributionCertainty": 91.6,
+    "healthScore": 98.31517374517375,
+    "healthStatus": "EXCELLENT"
+  }
+]

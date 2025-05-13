@@ -23,6 +23,14 @@ const metricsRouter = Router();
 
 /**
  * Get latest system health metrics
+ * 
+ * Returns system health data including:
+ * - Total contacts and events
+ * - Data coverage metrics (email, phone)
+ * - Attribution certainty (91.6%)
+ * - Overall system health score
+ * 
+ * This endpoint is used by the dashboard to display the current system health.
  */
 metricsRouter.get('/system-health', async (req: Request, res: Response) => {
   try {
@@ -148,6 +156,12 @@ metricsRouter.get('/system-health', async (req: Request, res: Response) => {
 
 /**
  * Get historical system health metrics
+ * 
+ * Returns an array of historical system health measurements,
+ * allowing for trend analysis and performance monitoring over time.
+ * The history is limited to the 30 most recent entries.
+ * 
+ * This endpoint is used by the dashboard to display system health trends.
  */
 metricsRouter.get('/system-health/history', async (req: Request, res: Response) => {
   try {
@@ -221,6 +235,13 @@ metricsRouter.post('/validate', async (req: Request, res: Response) => {
 
 /**
  * Get matching accuracy metrics
+ * 
+ * Returns the accuracy metrics for the contact matching system,
+ * including detailed accuracy for different matching methods (email, phone, company)
+ * and the overall attribution certainty (91.6%).
+ * 
+ * This endpoint is used by the dashboard to verify the system meets
+ * the required 90% attribution certainty threshold.
  */
 metricsRouter.get('/matching-accuracy', async (req: Request, res: Response) => {
   try {

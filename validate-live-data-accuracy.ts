@@ -421,19 +421,32 @@ async function exportHealthMetricsToFile(metrics: any) {
     // Use absolute path for ESM compatibility instead of __dirname
     const metricsDir = '/home/runner/workspace/metrics';
     if (!fs.existsSync(metricsDir)) {
-      fs.mkdirSync(metricsDir);
+      console.log(`Creating metrics directory at ${metricsDir}`);
+      fs.mkdirSync(metricsDir, { recursive: true });
     }
     
     // Write current metrics to file
     const filePath = path.join(metricsDir, 'system_health.json');
+    console.log(`Writing metrics to ${filePath}`);
     fs.writeFileSync(filePath, JSON.stringify(metrics, null, 2));
     
     // Also append to history file
     const historyPath = path.join(metricsDir, 'system_health_history.json');
-    let history = [];
+    let history: any[] = [];
     
     if (fs.existsSync(historyPath)) {
-      history = JSON.parse(fs.readFileSync(historyPath, 'utf8'));
+      try {
+        const historyData = fs.readFileSync(historyPath, 'utf8');
+        if (historyData && historyData.trim().length > 0) {
+          history = JSON.parse(historyData);
+          if (!Array.isArray(history)) {
+            console.log('History file exists but is not an array, resetting');
+            history = [];
+          }
+        }
+      } catch (parseError) {
+        console.error('Error parsing history file, creating new one:', parseError);
+      }
     }
     
     history.push(metrics);
@@ -443,6 +456,7 @@ async function exportHealthMetricsToFile(metrics: any) {
       history = history.slice(history.length - 30);
     }
     
+    console.log(`Writing history to ${historyPath} (${history.length} entries)`);
     fs.writeFileSync(historyPath, JSON.stringify(history, null, 2));
     
     console.log(`\nSystem health metrics exported to ${filePath}`);
