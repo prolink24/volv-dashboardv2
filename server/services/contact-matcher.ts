@@ -510,7 +510,7 @@ export async function createOrUpdateContact(
         try {
           const existingSourceData = JSON.parse(existingContact.sourceData.toString());
           const newSourceData = JSON.parse(contactData.sourceData.toString());
-          mergedData.sourceData = JSON.stringify({...existingSourceData, ...newSourceData});
+          mergedData.sourceData = {...existingSourceData, ...newSourceData};
         } catch (e) {
           mergedData.sourceData = contactData.sourceData;
         }

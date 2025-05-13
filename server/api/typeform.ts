@@ -136,7 +136,7 @@ async function syncAllResponses() {
                 leadSource: 'typeform',
                 status: 'lead',
                 sourceId: response.token,
-                sourceData: JSON.stringify(response),
+                sourceData: response,
                 createdAt: new Date(response.submitted_at)
               };
               

@@ -149,7 +149,7 @@ async function syncAllLeads(resetMode: boolean = false) {
               leadSource: 'close',
               status: lead.status_label || 'unknown',
               sourceId: lead.id,
-              sourceData: JSON.stringify(lead),
+              sourceData: lead,
               createdAt: new Date(lead.date_created) // Pass Date object, not ISO string
             };
             
@@ -648,7 +648,7 @@ async function syncCloseLeadToContact(leadId: string) {
       },
       createdAt: new Date(leadDetails.date_created),
       lastActivityDate: leadDetails.date_updated ? new Date(leadDetails.date_updated) : null,
-      sourceData: JSON.stringify(leadDetails)
+      sourceData: leadDetails
     };
     
     // Check if contact already exists

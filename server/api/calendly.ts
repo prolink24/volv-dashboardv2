@@ -147,7 +147,7 @@ async function syncAllEvents() {
                 leadSource: 'calendly',
                 status: 'lead',
                 sourceId: invitee.uri,
-                sourceData: JSON.stringify(invitee),
+                sourceData: invitee,
                 createdAt: new Date(invitee.created_at)
               };
               
@@ -357,7 +357,7 @@ async function syncAllEvents() {
                   leadSource: 'calendly',
                   status: 'lead',
                   sourceId: invitee.uri,
-                  sourceData: JSON.stringify(invitee),
+                  sourceData: invitee,
                   createdAt: new Date(invitee.created_at)
                 };
                 
