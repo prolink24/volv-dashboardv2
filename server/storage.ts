@@ -7,7 +7,7 @@ import {
   Form, InsertForm, forms,
   Metrics, InsertMetrics, metrics
 } from "@shared/schema";
-import { eq, like, and, or, desc, asc } from "drizzle-orm";
+import { eq, like, and, or, desc, asc, sql } from "drizzle-orm";
 import { db } from "./db";
 
 // Storage interface
@@ -654,6 +654,11 @@ export class DatabaseStorage implements IStorage {
 
   async getAllContacts(limit: number = 50, offset: number = 0): Promise<Contact[]> {
     return db.select().from(contacts).limit(limit).offset(offset).orderBy(desc(contacts.createdAt));
+  }
+  
+  async getContactsCount(): Promise<number> {
+    const result = await db.select({ count: sql`count(*)` }).from(contacts);
+    return Number(result[0].count);
   }
 
   async createContact(contact: InsertContact): Promise<Contact> {

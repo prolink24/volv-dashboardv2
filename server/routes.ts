@@ -37,7 +37,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const offset = parseInt(req.query.offset as string) || 0;
       
       const contacts = await storage.getAllContacts(limit, offset);
-      const totalCount = (await storage.getAllContacts()).length;
+      const totalCount = await storage.getContactsCount();
       
       // Add empty activities array to match ContactsData type
       res.json({ contacts, totalCount, activities: [] });
