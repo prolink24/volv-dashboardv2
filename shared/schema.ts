@@ -1,4 +1,5 @@
 import { pgTable, text, serial, integer, boolean, timestamp, jsonb, date, real, numeric } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -18,6 +19,54 @@ export const insertUserSchema = createInsertSchema(users).pick({
   name: true,
   email: true,
   role: true,
+});
+
+// Close CRM User schema
+export const closeUsers = pgTable("close_users", {
+  id: serial("id").primaryKey(),
+  closeId: text("close_id").notNull().unique(),
+  first_name: text("first_name"),
+  last_name: text("last_name"),
+  email: text("email").notNull(),
+  role: text("role"),
+  status: text("status"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  sourceData: jsonb("source_data"),
+});
+
+export const insertCloseUserSchema = createInsertSchema(closeUsers).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+// User assignments for contacts
+export const contactToUserAssignments = pgTable("contact_user_assignments", {
+  id: serial("id").primaryKey(),
+  contactId: integer("contact_id").notNull(),
+  closeUserId: integer("close_user_id").notNull(),
+  assignmentDate: timestamp("assignment_date").defaultNow(),
+  assignmentType: text("assignment_type").default("primary"), // primary, secondary, etc.
+  sourceData: jsonb("source_data"),
+});
+
+export const insertContactUserAssignmentSchema = createInsertSchema(contactToUserAssignments).omit({
+  id: true,
+});
+
+// User assignments for deals
+export const dealToUserAssignments = pgTable("deal_user_assignments", {
+  id: serial("id").primaryKey(),
+  dealId: integer("deal_id").notNull(),
+  closeUserId: integer("close_user_id").notNull(),
+  assignmentDate: timestamp("assignment_date").defaultNow(),
+  assignmentType: text("assignment_type").default("primary"), // primary, secondary, etc.
+  sourceData: jsonb("source_data"),
+});
+
+export const insertDealUserAssignmentSchema = createInsertSchema(dealToUserAssignments).omit({
+  id: true,
 });
 
 // Contact schema - core entity that links across systems
@@ -133,9 +182,51 @@ export const insertMetricsSchema = createInsertSchema(metrics).omit({
   id: true,
 });
 
+// Define relations
+export const usersRelations = relations(users, ({ many }: { many: any }) => ({
+  closeUsers: many(closeUsers)
+}));
+
+export const closeUsersRelations = relations(closeUsers, ({ many }: { many: any }) => ({
+  contactAssignments: many(contactToUserAssignments),
+  dealAssignments: many(dealToUserAssignments)
+}));
+
+export const contactsRelations = relations(contacts, ({ many }: { many: any }) => ({
+  userAssignments: many(contactToUserAssignments),
+  activities: many(activities),
+  deals: many(deals),
+  meetings: many(meetings),
+  forms: many(forms)
+}));
+
+export const dealsRelations = relations(deals, ({ many, one }: { many: any, one: any }) => ({
+  contact: one(contacts, { fields: [deals.contactId], references: [contacts.id] }),
+  userAssignments: many(dealToUserAssignments)
+}));
+
+export const contactToUserAssignmentsRelations = relations(contactToUserAssignments, ({ one }: { one: any }) => ({
+  contact: one(contacts, { fields: [contactToUserAssignments.contactId], references: [contacts.id] }),
+  user: one(closeUsers, { fields: [contactToUserAssignments.closeUserId], references: [closeUsers.id] })
+}));
+
+export const dealToUserAssignmentsRelations = relations(dealToUserAssignments, ({ one }: { one: any }) => ({
+  deal: one(deals, { fields: [dealToUserAssignments.dealId], references: [deals.id] }),
+  user: one(closeUsers, { fields: [dealToUserAssignments.closeUserId], references: [closeUsers.id] })
+}));
+
 // Type exports
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+
+export type InsertCloseUser = z.infer<typeof insertCloseUserSchema>;
+export type CloseUser = typeof closeUsers.$inferSelect;
+
+export type InsertContactUserAssignment = z.infer<typeof insertContactUserAssignmentSchema>;
+export type ContactUserAssignment = typeof contactToUserAssignments.$inferSelect;
+
+export type InsertDealUserAssignment = z.infer<typeof insertDealUserAssignmentSchema>;
+export type DealUserAssignment = typeof dealToUserAssignments.$inferSelect;
 
 export type InsertContact = z.infer<typeof insertContactSchema>;
 export type Contact = typeof contacts.$inferSelect;
