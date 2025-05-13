@@ -13,6 +13,11 @@ import { contacts, meetings } from '../../shared/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+// ESM equivalent for __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const metricsRouter = Router();
 
@@ -23,46 +28,86 @@ metricsRouter.get('/system-health', async (req: Request, res: Response) => {
   try {
     // Try to read from metrics file if it exists
     const metricsPath = path.join(__dirname, '../../metrics/system_health.json');
+    console.log("Looking for metrics file at:", metricsPath);
     
     if (fs.existsSync(metricsPath)) {
+      console.log("Metrics file found, reading content");
       const metrics = JSON.parse(fs.readFileSync(metricsPath, 'utf8'));
       return res.json({ success: true, metrics });
+    } else {
+      console.log("Metrics file not found, generating basic metrics");
     }
     
-    // If no metrics file exists, generate basic metrics
-    const totalContacts = await storage.getContactsCount();
-    
-    const totalCalendlyEvents = await db
-      .select({
-        count: sql<number>`count(*)`
-      })
-      .from(meetings);
-    
-    // Count contacts with email (key for matching)
-    const contactsWithEmail = await db
-      .select({
-        count: sql<number>`count(*)`
-      })
-      .from(contacts)
-      .where(sql`${contacts.email} IS NOT NULL`);
-    
-    // Basic metrics
-    const metrics = {
-      timestamp: new Date().toISOString(),
-      totalContacts,
-      contactsWithEmail: contactsWithEmail[0]?.count || 0,
-      totalCalendlyEvents: totalCalendlyEvents[0]?.count || 0,
-      emailCoverage: ((contactsWithEmail[0]?.count || 0) / totalContacts) * 100,
-      attributionCertainty: 91.6, // Our verified attribution certainty
-      healthStatus: 'GOOD'
-    };
-    
-    return res.json({ success: true, metrics });
+    try {
+      // If no metrics file exists, generate basic metrics
+      console.log("Getting contact count");
+      const totalContacts = await storage.getContactsCount();
+      console.log("Total contacts:", totalContacts);
+      
+      console.log("Getting Calendly events count");
+      const totalCalendlyEvents = await db
+        .select({
+          count: sql<number>`count(*)`
+        })
+        .from(meetings);
+      console.log("Total Calendly events:", totalCalendlyEvents);
+      
+      console.log("Getting contacts with email count");
+      // Count contacts with email (key for matching)
+      const contactsWithEmail = await db
+        .select({
+          count: sql<number>`count(*)`
+        })
+        .from(contacts)
+        .where(sql`${contacts.email} IS NOT NULL`);
+      console.log("Contacts with email:", contactsWithEmail);
+      
+      // Basic metrics
+      const metrics = {
+        timestamp: new Date().toISOString(),
+        totalContacts,
+        contactsWithEmail: contactsWithEmail[0]?.count || 0,
+        totalCalendlyEvents: totalCalendlyEvents[0]?.count || 0,
+        emailCoverage: ((contactsWithEmail[0]?.count || 0) / totalContacts) * 100,
+        attributionCertainty: 91.6, // Our verified attribution certainty
+        healthStatus: 'GOOD'
+      };
+      console.log("Generated metrics:", metrics);
+      
+      // Create metrics directory if it doesn't exist
+      const metricsDir = path.dirname(metricsPath);
+      if (!fs.existsSync(metricsDir)) {
+        console.log("Creating metrics directory");
+        fs.mkdirSync(metricsDir, { recursive: true });
+      }
+      
+      // Save metrics to file for future use
+      console.log("Saving metrics to file");
+      fs.writeFileSync(metricsPath, JSON.stringify(metrics, null, 2));
+      
+      return res.json({ success: true, metrics });
+    } catch (dbError) {
+      console.error('Database error while getting metrics:', dbError);
+      // Even if we can't get real metrics, return something basic
+      const fallbackMetrics = {
+        timestamp: new Date().toISOString(),
+        totalContacts: 0,
+        contactsWithEmail: 0,
+        totalCalendlyEvents: 0,
+        emailCoverage: 0,
+        attributionCertainty: 91.6, // Our verified attribution certainty
+        healthStatus: 'ERROR',
+        error: 'Database error while getting metrics'
+      };
+      
+      return res.json({ success: true, metrics: fallbackMetrics });
+    }
   } catch (error) {
     console.error('Error getting system health metrics:', error);
     return res.status(500).json({ 
       success: false, 
-      error: 'Failed to retrieve system health metrics' 
+      error: 'Failed to retrieve system health metrics',
+      details: error instanceof Error ? error.message : String(error)
     });
   }
 });
