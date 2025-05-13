@@ -542,6 +542,93 @@ async function syncLeadActivities(leadId: string, contactId: number) {
 }
 
 /**
+ * Sync a specific Close CRM lead to a contact
+ * This imports all data including opportunities and activities
+ * @param leadId ID of the Close CRM lead to sync
+ */
+async function syncCloseLeadToContact(leadId: string) {
+  try {
+    console.log(`Syncing lead ${leadId} from Close CRM...`);
+    
+    // Get lead details from Close
+    const leadDetails = await getLeadDetails(leadId);
+    
+    if (!leadDetails) {
+      throw new Error(`Failed to get lead details for ${leadId}`);
+    }
+    
+    // Check if lead has at least one contact
+    if (!leadDetails.contacts || leadDetails.contacts.length === 0) {
+      throw new Error(`Lead ${leadId} has no contacts`);
+    }
+    
+    // Get the primary contact from the lead
+    const primaryContact = leadDetails.contacts[0];
+    
+    // Extract email address
+    const email = primaryContact.emails && primaryContact.emails.length > 0
+      ? primaryContact.emails[0].email 
+      : null;
+      
+    if (!email) {
+      throw new Error(`Lead contact in ${leadId} has no email address`);
+    }
+    
+    // Extract phone number
+    const phone = primaryContact.phones && primaryContact.phones.length > 0
+      ? primaryContact.phones[0].phone
+      : null;
+      
+    // Prepare contact data
+    const contactData = {
+      name: primaryContact.name || leadDetails.display_name,
+      email: email,
+      phone: phone,
+      status: leadDetails.status_label || 'New',
+      leadSource: 'close',
+      notes: `Imported from Close CRM lead: ${leadDetails.display_name}`,
+      metadata: {
+        closeId: leadId,
+        closeUrl: `https://app.close.com/lead/${leadId}/`,
+        importedAt: new Date().toISOString()
+      },
+      createdAt: new Date(leadDetails.date_created),
+      lastActivityDate: leadDetails.date_updated ? new Date(leadDetails.date_updated) : null,
+      sourceData: JSON.stringify(leadDetails)
+    };
+    
+    // Check if contact already exists
+    let contact = await storage.getContactByEmail(email);
+    
+    if (contact) {
+      // Update existing contact
+      console.log(`Contact with email ${email} already exists (ID: ${contact.id}). Updating...`);
+      contact = await storage.updateContact(contact.id, contactData);
+      console.log(`Updated contact: ${contact.name} (${contact.email})`);
+    } else {
+      // Create new contact
+      contact = await storage.createContact(contactData);
+      console.log(`Created new contact: ${contact.name} (${contact.email})`);
+    }
+    
+    // Now sync opportunities for this lead
+    console.log(`Syncing opportunities for lead ${leadId}...`);
+    const opportunitiesResult = await syncLeadOpportunities(leadId, contact.id);
+    console.log(`Synced ${opportunitiesResult.count} opportunities for lead ${leadId}`);
+    
+    // Sync activities for this lead
+    console.log(`Syncing activities for lead ${leadId}...`);
+    const activitiesResult = await syncLeadActivities(leadId, contact.id);
+    console.log(`Synced ${activitiesResult.count} activities for lead ${leadId}`);
+    
+    return contact;
+  } catch (error: any) {
+    console.error(`Failed to sync lead ${leadId}:`, error);
+    throw error;
+  }
+}
+
+/**
  * Fetch a limited number of leads for testing purposes
  * @param limit Maximum number of leads to fetch
  */
@@ -573,5 +660,6 @@ export default {
   syncLeadOpportunities,
   syncLeadActivities,
   testApiConnection,
-  fetchLeads
+  fetchLeads,
+  syncCloseLeadToContact
 };
