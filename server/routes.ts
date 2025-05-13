@@ -39,7 +39,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const contacts = await storage.getAllContacts(limit, offset);
       const totalCount = (await storage.getAllContacts()).length;
       
-      res.json({ contacts, totalCount });
+      // Add empty activities array to match ContactsData type
+      res.json({ contacts, totalCount, activities: [] });
     } catch (error) {
       console.error("Error fetching contacts:", error);
       res.status(500).json({ error: "Failed to fetch contacts" });
@@ -54,7 +55,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const contacts = await storage.searchContacts(query);
-      res.json({ contacts, totalCount: contacts.length });
+      res.json({ contacts, totalCount: contacts.length, activities: [] });
     } catch (error) {
       console.error("Error searching contacts:", error);
       res.status(500).json({ error: "Failed to search contacts" });
