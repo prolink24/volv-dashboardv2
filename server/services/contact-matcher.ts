@@ -40,6 +40,12 @@ export function normalizeEmail(email: string): string {
   // Convert to lowercase
   let normalized = email.toLowerCase();
   
+  // Handle invalid emails with multiple @ symbols
+  const atSymbolCount = (normalized.match(/@/g) || []).length;
+  if (atSymbolCount !== 1) {
+    return normalized; // Return as-is for invalid emails
+  }
+  
   // Handle Gmail-specific normalization
   if (normalized.endsWith('@gmail.com')) {
     // Remove dots from username part for Gmail (johnd.oe@gmail.com === johndo.e@gmail.com)
@@ -125,6 +131,33 @@ function areNamesSimilar(name1: string, name2: string): {
   // (e.g., "John Doe" vs "John" or "John D.")
   if (normalizedName1.includes(normalizedName2) || normalizedName2.includes(normalizedName1)) {
     return { areSimilar: true, similarity: 0.9, isFuzzyMatch: true };
+  }
+  
+  // Handle initial format (e.g., "J. Doe" vs "John Doe")
+  const nameParts1 = normalizedName1.split(' ');
+  const nameParts2 = normalizedName2.split(' ');
+  
+  // Check if last names match and first initial matches
+  if (nameParts1.length >= 2 && nameParts2.length >= 2) {
+    const lastName1 = nameParts1[nameParts1.length - 1];
+    const lastName2 = nameParts2[nameParts2.length - 1];
+    
+    // If last names match exactly
+    if (lastName1 === lastName2) {
+      const firstPart1 = nameParts1[0];
+      const firstPart2 = nameParts2[0];
+      
+      // Check for initial format like "J." or "J"
+      if ((firstPart1.length === 1 || (firstPart1.length === 2 && firstPart1.endsWith('.'))) && 
+          firstPart2.startsWith(firstPart1.charAt(0))) {
+        return { areSimilar: true, similarity: 0.85, isFuzzyMatch: true };
+      }
+      
+      if ((firstPart2.length === 1 || (firstPart2.length === 2 && firstPart2.endsWith('.'))) && 
+          firstPart1.startsWith(firstPart2.charAt(0))) {
+        return { areSimilar: true, similarity: 0.85, isFuzzyMatch: true };
+      }
+    }
   }
   
   // Calculate similarity score
