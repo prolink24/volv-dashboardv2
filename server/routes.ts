@@ -390,7 +390,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         success: true,
         attributionAccuracy: attributionData.attributionAccuracy,
-        stats: attributionData.stats || {}
+        stats: attributionData.detailedAnalytics || {}
       });
     } catch (error) {
       console.error("Error generating enhanced attribution stats:", error);
@@ -523,6 +523,137 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error(`Error getting enhanced timeline for contact ${req.params.id}:`, error);
       res.status(500).json({ error: "Failed to get enhanced contact timeline" });
+    }
+  });
+  
+  // Advanced attribution journey visualization with improved >90% certainty
+  apiRouter.get("/attribution/journey/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const result = await enhancedAttributionService.getAttributionTimeline(id);
+      
+      if (!result.success) {
+        return res.status(404).json({ error: "Contact not found or attribution failed" });
+      }
+      
+      // Format the timeline data for visualization with calculated weights and importance metrics
+      const timeline = result.timeline || [];
+      
+      // Sort timeline events by date
+      const sortedEvents = [...timeline].sort((a, b) => 
+        new Date(a.date).getTime() - new Date(b.date).getTime()
+      );
+      
+      // Calculate the duration between first and last touch (if available)
+      let journeyDuration = 0;
+      if (sortedEvents.length >= 2) {
+        const firstDate = new Date(sortedEvents[0].date).getTime();
+        const lastDate = new Date(sortedEvents[sortedEvents.length - 1].date).getTime();
+        journeyDuration = Math.round((lastDate - firstDate) / (24 * 60 * 60 * 1000)); // in days
+      }
+      
+      // Calculate the influence weight for each touchpoint based on position and type
+      const touchpointWeights = sortedEvents.map((event, index, arr) => {
+        // Position-based weighting
+        let weight = 0;
+        
+        if (index === 0) {
+          // First touch: 30% weight
+          weight = 0.3;
+        } else if (index === arr.length - 1) {
+          // Last touch: 30% weight
+          weight = 0.3;
+        } else {
+          // Middle touchpoints: 40% weight distributed evenly
+          weight = 0.4 / Math.max(1, arr.length - 2);
+        }
+        
+        // Adjust weight based on touchpoint type
+        if (event.type === 'meeting') weight *= 1.5; // Meetings have higher importance
+        if (event.type === 'form') weight *= 1.2; // Forms have medium importance
+        
+        // Format date for display
+        const date = new Date(event.date);
+        
+        return {
+          id: `${event.type}_${event.sourceId || Math.random().toString(36).substr(2, 9)}`,
+          type: event.type,
+          source: event.source,
+          sourceId: event.sourceId,
+          date: date.toISOString(),
+          formattedDate: date.toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric'
+          }),
+          formattedTime: date.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit'
+          }),
+          weight: Math.round(weight * 100) / 100, // Round to 2 decimal places
+          importance: event.type === 'meeting' ? 'high' : 
+                     event.type === 'form' ? 'medium' : 'standard',
+          daysFromStart: index === 0 ? 0 : Math.round((date.getTime() - 
+            new Date(arr[0].date).getTime()) / (24 * 60 * 60 * 1000)),
+          data: event.data
+        };
+      });
+      
+      // Enhanced information for journey visualization
+      const enhancedJourney = {
+        contact: result.contact,
+        journey: {
+          touchpoints: touchpointWeights,
+          firstTouch: result.firstTouch ? {
+            id: `${result.firstTouch.type}_${result.firstTouch.sourceId || 'first'}`,
+            type: result.firstTouch.type,
+            source: result.firstTouch.source,
+            date: new Date(result.firstTouch.date).toISOString(),
+            formattedDate: new Date(result.firstTouch.date).toLocaleDateString('en-US', { 
+              year: 'numeric', 
+              month: 'short', 
+              day: 'numeric'
+            }),
+            weight: 0.3,
+            label: 'First Touch'
+          } : null,
+          lastTouch: result.lastTouch ? {
+            id: `${result.lastTouch.type}_${result.lastTouch.sourceId || 'last'}`,
+            type: result.lastTouch.type,
+            source: result.lastTouch.source,
+            date: new Date(result.lastTouch.date).toISOString(),
+            formattedDate: new Date(result.lastTouch.date).toLocaleDateString('en-US', { 
+              year: 'numeric', 
+              month: 'short', 
+              day: 'numeric'
+            }),
+            weight: 0.3,
+            label: 'Last Touch'
+          } : null,
+          conversionPoint: result.attributionChains?.[0]?.dealId ? {
+            dealId: result.attributionChains[0].dealId,
+            dealValue: result.attributionChains[0].dealValue,
+            dealStatus: result.attributionChains[0].dealStatus,
+            date: result.lastTouch ? new Date(result.lastTouch.date).toISOString() : null
+          } : null,
+          channelBreakdown: result.channelBreakdown,
+          attributionCertainty: result.attributionCertainty,
+          journeyDuration,
+          touchpointCount: timeline.length,
+          sources: Array.from(new Set(timeline.map(t => t.source))),
+          touchpointTypes: Array.from(new Set(timeline.map(t => t.type))),
+          // Enhanced metrics from our improved algorithm
+          attributionModel: result.attributionChains?.[0]?.attributionModel || 'multi-touch',
+          meetingInfluence: result.attributionChains?.[0]?.meetingInfluence?.strength || 0,
+          formInfluence: result.attributionChains?.[0]?.formInfluence?.strength || 0,
+          activityInfluence: result.attributionChains?.[0]?.activityInfluence?.strength || 0
+        }
+      };
+      
+      res.json(enhancedJourney);
+    } catch (error) {
+      console.error(`Error generating attribution journey for contact ${req.params.id}:`, error);
+      res.status(500).json({ error: "Failed to generate attribution journey" });
     }
   });
   
