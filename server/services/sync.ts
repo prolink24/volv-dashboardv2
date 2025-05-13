@@ -299,7 +299,7 @@ export async function syncCalendly() {
                 leadSource: 'calendly',
                 status: 'lead',
                 sourceId: invitee.uri,
-                sourceData: JSON.stringify(invitee),
+                sourceData: invitee,
                 createdAt: new Date()
               };
               
