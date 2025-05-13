@@ -378,6 +378,154 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Enhanced attribution stats with accuracy metrics
+  apiRouter.get("/attribution/enhanced-stats", async (req: Request, res: Response) => {
+    try {
+      const attributionData = await enhancedAttributionService.getAttributionStats();
+      
+      if (!attributionData.success) {
+        return res.status(500).json({ error: "Failed to generate enhanced attribution stats" });
+      }
+      
+      res.json({
+        success: true,
+        attributionAccuracy: attributionData.attributionAccuracy,
+        stats: attributionData.detailedAnalytics || {}
+      });
+    } catch (error) {
+      console.error("Error generating enhanced attribution stats:", error);
+      res.status(500).json({ error: "Failed to generate enhanced attribution stats" });
+    }
+  });
+  
+  // Enhanced attribution for a specific contact
+  apiRouter.get("/attribution/enhanced/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const result = await enhancedAttributionService.attributeContact(id);
+      
+      if (!result.success) {
+        return res.status(404).json({ error: "Contact not found or attribution failed" });
+      }
+      
+      res.json(result);
+    } catch (error) {
+      console.error(`Error generating enhanced attribution for contact ${req.params.id}:`, error);
+      res.status(500).json({ error: "Failed to generate enhanced attribution" });
+    }
+  });
+  
+  // Enhanced attribution timeline with certainty metrics
+  apiRouter.get("/attribution/enhanced-timeline/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const result = await enhancedAttributionService.getAttributionTimeline(id);
+      
+      if (!result.success) {
+        return res.status(404).json({ error: result.error || "Contact not found or attribution failed" });
+      }
+      
+      // Format the timeline data for visualization
+      const formattedTimeline = (result.timeline || []).map(event => {
+        const date = new Date(event.date || new Date());
+        let title = 'Untitled';
+        let description = '';
+        
+        // Safely type and access data properties
+        const eventData = event.data as any;
+        
+        switch (event.type) {
+          case 'activity':
+            title = eventData?.title || 'Untitled Activity';
+            description = eventData?.description || '';
+            break;
+          case 'meeting':
+            title = eventData?.title || 'Untitled Meeting';
+            description = eventData?.type ? `${eventData.type} Meeting` : 'Meeting';
+            break;
+          case 'form':
+            title = eventData?.formName || 'Form Submission';
+            description = 'Form Submission';
+            break;
+          case 'deal':
+            title = eventData?.title || 'Untitled Deal';
+            description = `$${eventData?.value || 0} - ${eventData?.status || 'Unknown'}`;
+            break;
+          default:
+            title = 'Event';
+            description = '';
+        }
+        
+        return {
+          id: `${event.type}_${event.sourceId || Math.random().toString(36).substr(2, 9)}`,
+          date: date.toISOString(),
+          formattedDate: date.toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          }),
+          type: event.type,
+          source: event.source,
+          title,
+          description,
+          data: event.data
+        };
+      }) || [];
+      
+      // Add attribution markers
+      const attributionInsights = {
+        firstTouch: result.firstTouch ? {
+          id: `${result.firstTouch.type}_${result.firstTouch.sourceId || 'first'}`,
+          label: 'First Touch'
+        } : null,
+        lastTouch: result.lastTouch ? {
+          id: `${result.lastTouch.type}_${result.lastTouch.sourceId || 'last'}`,
+          label: 'Last Touch'
+        } : null,
+        certainty: result.attributionCertainty,
+        channelAttribution: result.channelBreakdown
+      };
+      
+      res.json({
+        contact: result.contact,
+        timeline: formattedTimeline,
+        attributionInsights,
+        attributionChains: result.attributionChains?.map(chain => ({
+          dealId: chain.dealId,
+          dealValue: chain.dealValue,
+          dealStatus: chain.dealStatus,
+          attributionModel: chain.attributionModel,
+          attributionCertainty: chain.attributionCertainty,
+          significantTouchpoints: chain.significantTouchpoints?.map(t => ({
+            id: `${t.type}_${t.sourceId || Math.random().toString(36).substr(2, 9)}`,
+            type: t.type,
+            source: t.source,
+            date: new Date(t.date).toISOString()
+          })),
+          touchpointWeights: chain.touchpointWeights,
+          meetingInfluence: chain.meetingInfluence ? {
+            ...chain.meetingInfluence,
+            strength: chain.meetingInfluence.strength
+          } : null,
+          formInfluence: chain.formInfluence ? {
+            ...chain.formInfluence,
+            strength: chain.formInfluence.strength
+          } : null,
+          activityInfluence: chain.activityInfluence ? {
+            ...chain.activityInfluence,
+            strength: chain.activityInfluence.strength
+          } : null,
+          totalTouchpoints: chain.totalTouchpoints
+        }))
+      });
+    } catch (error) {
+      console.error(`Error getting enhanced timeline for contact ${req.params.id}:`, error);
+      res.status(500).json({ error: "Failed to get enhanced contact timeline" });
+    }
+  });
+  
   // Test attribution stats - simplified endpoint
   apiRouter.get("/attribution/stats", async (req: Request, res: Response) => {
     try {

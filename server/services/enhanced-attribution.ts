@@ -59,11 +59,14 @@ function calculateTouchpointWeights(
       // Meeting-dominated weighting: Last meeting gets 70%, first touch 20%, others 10%
       events.forEach((event, index) => {
         if (event === lastMeeting) {
-          weights[event.sourceId] = 0.7; // 70% to last meeting
+          const key = event.sourceId || `event_${index}`;
+          weights[key] = 0.7; // 70% to last meeting
         } else if (index === 0) {
-          weights[event.sourceId] = 0.2; // 20% to first touch
+          const key = event.sourceId || `event_${index}`;
+          weights[key] = 0.2; // 20% to first touch
         } else {
-          weights[event.sourceId] = 0.1 / (totalEvents - 2 || 1); // Remaining 10% distributed
+          const key = event.sourceId || `event_${index}`;
+          weights[key] = 0.1 / (totalEvents - 2 || 1); // Remaining 10% distributed
         }
       });
       return weights;
@@ -79,12 +82,13 @@ function calculateTouchpointWeights(
   if (timeSpan < 24 * 60 * 60 * 1000) { // Less than 1 day
     // Position-based weighting: 40% to first, 40% to last, 20% to middle
     events.forEach((event, index) => {
+      const key = event.sourceId || `event_${index}`;
       if (index === 0) {
-        weights[event.sourceId] = 0.4; // 40% to first
+        weights[key] = 0.4; // 40% to first
       } else if (index === totalEvents - 1) {
-        weights[event.sourceId] = 0.4; // 40% to last
+        weights[key] = 0.4; // 40% to last
       } else {
-        weights[event.sourceId] = 0.2 / (totalEvents - 2 || 1); // Remaining 20% distributed
+        weights[key] = 0.2 / (totalEvents - 2 || 1); // Remaining 20% distributed
       }
     });
     return weights;
@@ -94,13 +98,14 @@ function calculateTouchpointWeights(
   let totalWeight = 0;
   const rawWeights: Record<string, number> = {};
   
-  events.forEach(event => {
+  events.forEach((event, index) => {
     const eventTime = new Date(event.date).getTime();
     const daysBeforeConversion = (conversionTime - eventTime) / (24 * 60 * 60 * 1000);
     
     // Apply exponential decay with half-life of 7 days
     const weight = Math.exp(-0.1 * daysBeforeConversion);
-    rawWeights[event.sourceId] = weight;
+    const key = event.sourceId || `event_${index}`;
+    rawWeights[key] = weight;
     totalWeight += weight;
   });
   
