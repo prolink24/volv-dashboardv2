@@ -54,8 +54,9 @@ async function testApiConnection() {
 /**
  * Sync all leads from Close CRM
  * Handles pagination and batch processing for 5000+ contacts
+ * @param resetMode If true, create new contacts instead of updating existing ones
  */
-async function syncAllLeads() {
+async function syncAllLeads(resetMode: boolean = false) {
   // Initialize counters for sync status
   let totalLeads = 0;
   let processedLeads = 0;
@@ -63,6 +64,10 @@ async function syncAllLeads() {
   let withEmail = 0;
   let withoutEmail = 0;
   let errors = 0;
+  
+  // In reset mode, we'll create new contacts instead of updating existing ones
+  console.log(`Sync mode: ${resetMode ? 'RESET (create new)' : 'NORMAL (update existing)'}`);
+  
 
   try {
     // First, test the API connection
@@ -166,17 +171,22 @@ async function syncAllLeads() {
             if (contactData.email) {
               withEmail++;
               
-              // Check if contact exists by external ID
-              let existingContact = await storage.getContactByExternalId('close', lead.id);
+              // In reset mode, we skip checking for existing contacts and create new ones
+              let existingContact = null;
               
-              // If not found by ID, try email as a fallback
-              if (!existingContact && contactData.email) {
-                existingContact = await storage.getContactByEmail(contactData.email);
+              if (!resetMode) {
+                // Check if contact exists by external ID
+                existingContact = await storage.getContactByExternalId('close', lead.id);
+                
+                // If not found by ID, try email as a fallback
+                if (!existingContact && contactData.email) {
+                  existingContact = await storage.getContactByEmail(contactData.email);
+                }
               }
               
               try {
-                if (existingContact) {
-                  // Update existing contact
+                if (existingContact && !resetMode) {
+                  // Update existing contact (only in normal mode)
                   const updatedContact = await storage.updateContact(existingContact.id, contactData);
                   console.log(`Updated existing contact: ${contactData.name} (${contactData.email})`);
                 } else {
@@ -240,13 +250,13 @@ async function syncAllLeads() {
         
         // Update pagination info for next batch
         hasMore = response.data.has_more || false;
-        cursor = response.data.cursor || null;
+        cursor = response.data.cursor || '';  // Empty string instead of null to fix type issues
         
         // Log pagination details
-        console.log(`Page ${page} complete. hasMore: ${hasMore}, cursor: ${cursor ? 'exists' : 'null'}`);
+        console.log(`Page ${page} complete. hasMore: ${hasMore}, cursor: ${cursor ? 'exists' : 'empty'}`);
         console.log(`Progress: ${processedLeads}/${totalLeads} leads processed, ${importedContacts} contacts imported`);
         
-        // Handle the case when cursor is null but hasMore is true
+        // Handle the case when cursor is empty but hasMore is true
         if (hasMore && !cursor && page > 1) {
           console.log(`No cursor provided for next page, using skip-based pagination for page ${page+1}`);
           cursor = null; // Ensure cursor is null for skip-based pagination

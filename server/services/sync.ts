@@ -167,13 +167,20 @@ export async function syncAll() {
 
 /**
  * Synchronize only Close CRM data
+ * @param resetMode If true, ignore existing contacts and create new ones
  */
-export async function syncCloseCRM() {
+export async function syncCloseCRM(resetMode: boolean = false) {
   try {
     syncStatus.startSync('close');
     console.log('Starting Close CRM sync...');
+
+    // If in reset mode, we'll run a query to clear the old contact-lead associations
+    if (resetMode) {
+      console.log('Running in RESET mode - will create new contacts instead of updating');
+      // We won't actually delete contacts, just change how we handle finding existing contacts
+    }
     
-    const syncResult = await closeAPI.syncAllLeads();
+    const syncResult = await closeAPI.syncAllLeads(resetMode);
     
     if (!syncResult.success) {
       syncStatus.setSyncError(syncResult.error || 'Unknown Close CRM sync error');

@@ -96,7 +96,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   apiRouter.post("/sync/close", async (req: Request, res: Response) => {
     try {
-      const result = await syncService.syncCloseCRM();
+      // Check if we should reset existing data
+      const resetMode = req.body && req.body.reset === true;
+      console.log(`Starting Close CRM sync with reset mode: ${resetMode}`);
+      
+      const result = await syncService.syncCloseCRM(resetMode);
       res.json(result);
     } catch (error) {
       console.error("Error syncing Close data:", error);
