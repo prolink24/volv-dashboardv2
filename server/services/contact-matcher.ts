@@ -372,6 +372,7 @@ export async function findBestMatchingContact(contactData: Partial<InsertContact
 /**
  * Create a new contact or update an existing one if a match is found
  * Returns the contact, whether it was created, and the reason for match
+ * Implements smart field merging when combining data from multiple sources
  */
 export async function createOrUpdateContact(
   contactData: InsertContact,
@@ -397,18 +398,99 @@ export async function createOrUpdateContact(
   
   // If we found an acceptable match
   if (matchResult.contact && acceptableMatch) {
-    // Update the contact if requested
+    // Update the contact if requested with smart field merging
     if (updateIfFound) {
+      // Smart merging - only update fields if they provide more information
+      const existingContact = matchResult.contact;
+      const mergedData: Partial<InsertContact> = {};
+      
+      // Merge fields with smart logic
+      // Name - prefer the longer/more complete name
+      if (contactData.name && (!existingContact.name || 
+          (contactData.name.length > existingContact.name.length && !existingContact.name.includes(' ')))) {
+        mergedData.name = contactData.name;
+      } else {
+        mergedData.name = existingContact.name;
+      }
+      
+      // Email - prefer the existing one unless empty
+      mergedData.email = existingContact.email || contactData.email;
+      
+      // Phone - prefer the one with more digits or special formatting
+      if (contactData.phone && (!existingContact.phone || 
+          (contactData.phone.replace(/\D/g, '').length > existingContact.phone.replace(/\D/g, '').length))) {
+        mergedData.phone = contactData.phone;
+      } else {
+        mergedData.phone = existingContact.phone;
+      }
+      
+      // Company - prefer non-empty value
+      mergedData.company = existingContact.company || contactData.company;
+      
+      // Title - prefer non-empty value
+      mergedData.title = existingContact.title || contactData.title;
+      
+      // Source - preserve existing source if present
+      mergedData.sourceId = existingContact.sourceId || contactData.sourceId;
+      
+      // Source data - merge JSON if possible, otherwise take the new one
+      if (existingContact.sourceData && contactData.sourceData) {
+        try {
+          const existingSourceData = JSON.parse(existingContact.sourceData.toString());
+          const newSourceData = JSON.parse(contactData.sourceData.toString());
+          mergedData.sourceData = JSON.stringify({...existingSourceData, ...newSourceData});
+        } catch (e) {
+          mergedData.sourceData = contactData.sourceData;
+        }
+      } else {
+        mergedData.sourceData = existingContact.sourceData || contactData.sourceData;
+      }
+      
+      // Last activity - take the most recent
+      if (existingContact.lastActivityDate && contactData.lastActivityDate) {
+        const existingDate = new Date(existingContact.lastActivityDate);
+        const newDate = new Date(contactData.lastActivityDate);
+        mergedData.lastActivityDate = newDate > existingDate ? newDate : existingDate;
+      } else {
+        mergedData.lastActivityDate = contactData.lastActivityDate || existingContact.lastActivityDate;
+      }
+      
+      // Status - prioritize sales stages over marketing stages
+      const salesStages = ['opportunity', 'customer', 'deal'];
+      if (existingContact.status && salesStages.includes(existingContact.status)) {
+        mergedData.status = existingContact.status;
+      } else {
+        mergedData.status = contactData.status || existingContact.status;
+      }
+      
+      // Lead source - track both sources if different
+      if (existingContact.leadSource && contactData.leadSource && 
+          existingContact.leadSource !== contactData.leadSource) {
+        mergedData.leadSource = `${existingContact.leadSource},${contactData.leadSource}`;
+      } else {
+        mergedData.leadSource = existingContact.leadSource || contactData.leadSource;
+      }
+      
+      // Assignment - preserve existing assignment
+      mergedData.assignedTo = existingContact.assignedTo || contactData.assignedTo;
+      
+      // Notes - concatenate notes if both exist
+      if (existingContact.notes && contactData.notes) {
+        mergedData.notes = `${existingContact.notes}\n---\n${contactData.notes}`;
+      } else {
+        mergedData.notes = existingContact.notes || contactData.notes;
+      }
+      
       const updatedContact = await storage.updateContact(
-        matchResult.contact.id,
-        contactData
+        existingContact.id,
+        mergedData as InsertContact
       );
       
       if (updatedContact) {
         return {
           contact: updatedContact,
           created: false,
-          reason: matchResult.reason
+          reason: `${matchResult.reason} - Data merged from multiple sources`
         };
       }
     } else {
