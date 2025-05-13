@@ -10,7 +10,12 @@ import {
   FileText, 
   BarChart2, 
   Settings,
-  Link2
+  Link2,
+  DollarSign,
+  Phone,
+  LineChart,
+  ShieldCheck,
+  ClipboardCheck
 } from "lucide-react";
 
 interface SidebarItemProps {
@@ -55,11 +60,11 @@ const Sidebar = () => {
 
   const sidebarItems = [
     { icon: LayoutDashboard, label: "Overview", href: "/" },
-    { icon: LayoutDashboard, label: "Sales Dashboard", href: "/dashboard/sales" },
-    { icon: LayoutDashboard, label: "Setter Dashboard", href: "/dashboard/setter" },
-    { icon: LayoutDashboard, label: "Marketing Dashboard", href: "/dashboard/marketing" },
-    { icon: LayoutDashboard, label: "Admin Dashboard", href: "/dashboard/admin" },
-    { icon: LayoutDashboard, label: "Compliance Dashboard", href: "/dashboard/compliance" },
+    { icon: DollarSign, label: "Sales Dashboard", href: "/dashboard/sales" },
+    { icon: Phone, label: "Setter Dashboard", href: "/dashboard/setter" },
+    { icon: LineChart, label: "Marketing Dashboard", href: "/dashboard/marketing" },
+    { icon: ClipboardCheck, label: "Admin Dashboard", href: "/dashboard/admin" },
+    { icon: ShieldCheck, label: "Compliance Dashboard", href: "/dashboard/compliance" },
     { icon: Users, label: "Contacts", href: "/contacts" },
     { icon: Calendar, label: "Meetings", href: "/meetings" },
     { icon: FileText, label: "Forms", href: "/forms" },
