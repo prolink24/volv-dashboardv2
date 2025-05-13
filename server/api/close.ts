@@ -64,11 +64,16 @@ async function syncAllLeads(resetMode: boolean = false) {
   let withEmail = 0;
   let withoutEmail = 0;
   let errors = 0;
+  let failedLeads = 0;
+  let retryCount = 0;
+  const MAX_RETRIES = 3;
+  const BATCH_SIZE = 100;
+  const ERROR_THRESHOLD = 50; // Maximum allowed consecutive errors
+  let consecutiveErrors = 0;
   
   // In reset mode, we'll create new contacts instead of updating existing ones
   console.log(`Sync mode: ${resetMode ? 'RESET (create new)' : 'NORMAL (update existing)'}`);
   
-
   try {
     // First, test the API connection
     const connectionTest = await testApiConnection();
@@ -82,6 +87,7 @@ async function syncAllLeads(resetMode: boolean = false) {
     let hasMore = true;
     let cursor = 'initial'; // Using 'initial' as a marker for first page
     let page = 1;
+    let shouldRetry = false;
     
     // Initialize sync status
     syncStatus.updateCloseSyncStatus({
@@ -308,15 +314,38 @@ async function syncAllLeads(resetMode: boolean = false) {
       } catch (error: any) {
         console.error(`Error fetching leads page ${page}:`, error);
         errors++;
+        consecutiveErrors++;
         
-        // If we get an error, log it but try to continue - we want all 5000+ contacts
-        console.error(`Error on page ${page}, but continuing the sync...`);
+        // Advanced error handling and retry logic
+        if (consecutiveErrors >= ERROR_THRESHOLD) {
+          console.error(`Too many consecutive errors (${consecutiveErrors}). Aborting sync to prevent data issues.`);
+          throw new Error(`Sync aborted after ${consecutiveErrors} consecutive errors`);
+        }
+        
+        if (retryCount < MAX_RETRIES) {
+          retryCount++;
+          console.log(`Retrying page ${page} (Attempt ${retryCount} of ${MAX_RETRIES})...`);
+          
+          // Wait with exponential backoff before retrying
+          const backoffTime = Math.pow(2, retryCount) * 1000; // 2s, 4s, 8s
+          console.log(`Waiting ${backoffTime/1000} seconds before retry...`);
+          await new Promise(resolve => setTimeout(resolve, backoffTime));
+          
+          // Don't increment page on retry
+          shouldRetry = true;
+          continue;
+        }
+        
+        // Reset retry counter for next page
+        retryCount = 0;
+        
+        // If we get an error after retries, log it but try to continue - we want all 5000+ contacts
+        console.warn(`Error on page ${page} after ${MAX_RETRIES} retries, continuing to next page...`);
         
         // If cursor is null but we have more pages, try setting a new cursor
         if (cursor === '' && hasMore && page > 1) {
           console.log(`Lost cursor on page ${page}, attempting to continue with offset...`);
           // When cursor is lost, use _skip parameter to continue pagination
-          // Set page to continue from the current count
           page++;
           hasMore = true; // Force continuation
         } else {
@@ -324,6 +353,9 @@ async function syncAllLeads(resetMode: boolean = false) {
           page++;
         }
       }
+      
+      // Reset consecutive errors counter after a successful page
+      consecutiveErrors = 0;
     }
     
     // Final status update

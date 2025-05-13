@@ -46,7 +46,8 @@ export async function getNotionDatabases() {
             // Process the results
             for (const block of response.results) {
                 // Check if the block is a child database
-                if (block.type === "child_database") {
+                // Type assertion to handle the PartialBlockObjectResponse issue
+                if ('type' in block && block.type === "child_database") {
                     const databaseId = block.id;
 
                     // Retrieve the database title
@@ -139,8 +140,9 @@ export async function testNotionConnection() {
             message: "Successfully connected to Notion",
             pageInfo: {
                 id: pageInfo.id,
-                createdTime: pageInfo.created_time,
-                lastEditedTime: pageInfo.last_edited_time
+                // Type assertion to handle the PartialPageObjectResponse issue
+                createdTime: 'created_time' in pageInfo ? pageInfo.created_time : null,
+                lastEditedTime: 'last_edited_time' in pageInfo ? pageInfo.last_edited_time : null
             }
         };
     } catch (error) {
