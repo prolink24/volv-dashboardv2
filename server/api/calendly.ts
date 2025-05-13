@@ -135,23 +135,47 @@ async function syncAllEvents() {
                 continue;
               }
               
-              let contact = await storage.getContactByEmail(email);
-              if (!contact) {
-                // Create minimal contact
-                const contactData = {
-                  name: invitee.name || email.split('@')[0],
-                  email: email,
-                  phone: '',
-                  company: '',
-                  leadSource: 'calendly',
-                  status: 'lead',
-                  sourceId: invitee.uri,
-                  sourceData: JSON.stringify(invitee),
-                  createdAt: new Date(invitee.created_at)
-                };
+              // Import contact matcher service
+              const contactMatcher = require('../services/contact-matcher').default;
+              
+              // Prepare contact data from Calendly invitee
+              const contactData = {
+                name: invitee.name || email.split('@')[0],
+                email: email,
+                // Try to extract phone from questions if available
+                phone: extractPhoneFromInvitee(invitee),
+                company: extractCompanyFromInvitee(invitee),
+                leadSource: 'calendly',
+                status: 'lead',
+                sourceId: invitee.uri,
+                sourceData: JSON.stringify(invitee),
+                createdAt: new Date(invitee.created_at)
+              };
+              
+              // Use advanced contact matcher to find or create the contact
+              try {
+                const result = await contactMatcher.createOrUpdateContact(
+                  contactData, 
+                  'HIGH', // Match confidence threshold
+                  true    // Update existing contacts
+                );
                 
-                contact = await storage.createContact(contactData);
-                console.log(`Created new contact for Calendly invitee: ${contactData.name} (${contactData.email})`);
+                const contact = result.contact;
+                
+                if (result.created) {
+                  console.log(`Created new contact for Calendly invitee: ${contact.name} (${contact.email})`);
+                } else {
+                  console.log(`Matched Calendly invitee to existing contact: ${contact.name} (${contact.email}) - ${result.reason}`);
+                }
+              } catch (error) {
+                console.error(`Error matching contact for Calendly invitee: ${email}`, error);
+                // Fallback to simple lookup by email
+                let contact = await storage.getContactByEmail(email);
+                if (!contact) {
+                  // Create minimal contact as fallback
+                  contact = await storage.createContact(contactData);
+                  console.log(`Created new contact for Calendly invitee (fallback): ${contactData.name} (${contactData.email})`);
+                }
               }
               
               // Create a meeting record
