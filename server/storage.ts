@@ -844,17 +844,50 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createMeeting(meeting: InsertMeeting): Promise<Meeting> {
-    const [newMeeting] = await db.insert(meetings).values(meeting).returning();
-    return newMeeting;
+    try {
+      // Create a new meeting object with explicit properties to avoid SQL errors
+      const meetingData = {
+        contactId: meeting.contactId,
+        calendlyEventId: meeting.calendlyEventId,
+        type: meeting.type,
+        title: meeting.title,
+        startTime: meeting.startTime,
+        endTime: meeting.endTime,
+        status: meeting.status,
+        assignedTo: meeting.assignedTo || null,
+        metadata: meeting.metadata || null
+      };
+      
+      // Use standard insert approach with explicitly listed fields
+      const [newMeeting] = await db.insert(meetings).values(meetingData).returning();
+      
+      // Log successful meeting creation for debugging
+      console.log(`Successfully created meeting: ${meetingData.title} for contact ID ${meetingData.contactId}`);
+      return newMeeting;
+    } catch (error) {
+      console.error('Error creating meeting:', error);
+      throw error;
+    }
   }
 
   async updateMeeting(id: number, meeting: Partial<InsertMeeting>): Promise<Meeting | undefined> {
-    const [updatedMeeting] = await db
-      .update(meetings)
-      .set(meeting)
-      .where(eq(meetings.id, id))
-      .returning();
-    return updatedMeeting || undefined;
+    try {
+      // Create a meeting update object with normalized values
+      const updateData = {...meeting};
+      
+      const [updatedMeeting] = await db
+        .update(meetings)
+        .set(updateData)
+        .where(eq(meetings.id, id))
+        .returning();
+      
+      // Log successful meeting update for debugging
+      console.log(`Successfully updated meeting ID ${id}`);
+      return updatedMeeting || undefined;
+    } catch (error) {
+      console.error('Error updating meeting:', error);
+      throw error;
+    }
   }
 
   async deleteMeeting(id: number): Promise<boolean> {
