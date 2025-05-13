@@ -93,7 +93,12 @@ export async function syncCloseUsers(): Promise<{ success: boolean; count: numbe
  */
 async function fetchCloseUsers(): Promise<any[]> {
   try {
-    const response = await closeAPI.closeApiClient.get('/user/');
+    // Check if closeApiClient exists on closeAPI, otherwise access it directly
+    const apiClient = typeof closeAPI.closeApiClient !== 'undefined' 
+      ? closeAPI.closeApiClient 
+      : closeAPI;
+      
+    const response = await apiClient.get('/user/');
     return response.data.data || [];
   } catch (error) {
     console.error('Error fetching Close users:', error);
@@ -128,7 +133,11 @@ export async function syncContactUserAssignments(forceSync: boolean = false): Pr
         const sourceData = contact.sourceData;
         
         // Extract assigned_to information from source data
-        const assignedToId = sourceData.assigned_to_id || sourceData.assigned_to;
+        const sourceDataObj = typeof sourceData === 'string' 
+          ? JSON.parse(sourceData as string) 
+          : sourceData;
+          
+        const assignedToId = sourceDataObj?.assigned_to_id || sourceDataObj?.assigned_to;
         
         if (!assignedToId) {
           continue; // No assignment

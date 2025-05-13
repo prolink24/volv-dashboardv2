@@ -807,6 +807,133 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return user;
   }
+  
+  // Close CRM User operations
+  async getCloseUser(id: number): Promise<CloseUser | undefined> {
+    const [user] = await db.select().from(closeUsers).where(eq(closeUsers.id, id));
+    return user || undefined;
+  }
+
+  async getCloseUserByCloseId(closeId: string): Promise<CloseUser | undefined> {
+    const [user] = await db.select().from(closeUsers).where(eq(closeUsers.closeId, closeId));
+    return user || undefined;
+  }
+
+  async getCloseUserByEmail(email: string): Promise<CloseUser | undefined> {
+    const [user] = await db.select().from(closeUsers).where(eq(closeUsers.email, email));
+    return user || undefined;
+  }
+
+  async getAllCloseUsers(limit?: number, offset = 0): Promise<CloseUser[]> {
+    let query = db.select().from(closeUsers).orderBy(asc(closeUsers.name));
+    
+    if (limit) {
+      query = query.limit(limit).offset(offset);
+    }
+    
+    return await query;
+  }
+
+  async createCloseUser(insertCloseUser: InsertCloseUser): Promise<CloseUser> {
+    const [user] = await db
+      .insert(closeUsers)
+      .values({
+        ...insertCloseUser,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+    return user;
+  }
+
+  async updateCloseUser(id: number, updateData: Partial<InsertCloseUser>): Promise<CloseUser | undefined> {
+    const [user] = await db
+      .update(closeUsers)
+      .set({
+        ...updateData,
+        updatedAt: new Date()
+      })
+      .where(eq(closeUsers.id, id))
+      .returning();
+    return user || undefined;
+  }
+
+  async deleteCloseUser(id: number): Promise<boolean> {
+    const result = await db.delete(closeUsers).where(eq(closeUsers.id, id));
+    return result.rowCount > 0;
+  }
+  
+  // Contact-User Assignment operations
+  async getContactUserAssignment(id: number): Promise<ContactUserAssignment | undefined> {
+    const [assignment] = await db.select().from(contactToUserAssignments).where(eq(contactToUserAssignments.id, id));
+    return assignment || undefined;
+  }
+
+  async getContactUserAssignmentsByContactId(contactId: number): Promise<ContactUserAssignment[]> {
+    return await db.select().from(contactToUserAssignments).where(eq(contactToUserAssignments.contactId, contactId));
+  }
+
+  async getContactUserAssignmentsByCloseUserId(closeUserId: number): Promise<ContactUserAssignment[]> {
+    return await db.select().from(contactToUserAssignments).where(eq(contactToUserAssignments.closeUserId, closeUserId));
+  }
+
+  async createContactUserAssignment(insertAssignment: InsertContactUserAssignment): Promise<ContactUserAssignment> {
+    const [assignment] = await db
+      .insert(contactToUserAssignments)
+      .values(insertAssignment)
+      .returning();
+    return assignment;
+  }
+
+  async updateContactUserAssignment(id: number, updateData: Partial<InsertContactUserAssignment>): Promise<ContactUserAssignment | undefined> {
+    const [assignment] = await db
+      .update(contactToUserAssignments)
+      .set(updateData)
+      .where(eq(contactToUserAssignments.id, id))
+      .returning();
+    return assignment || undefined;
+  }
+
+  async deleteContactUserAssignment(id: number): Promise<boolean> {
+    const result = await db.delete(contactToUserAssignments).where(eq(contactToUserAssignments.id, id));
+    return result.rowCount > 0;
+  }
+  
+  // Deal-User Assignment operations
+  async getDealUserAssignment(id: number): Promise<DealUserAssignment | undefined> {
+    const [assignment] = await db.select().from(dealToUserAssignments).where(eq(dealToUserAssignments.id, id));
+    return assignment || undefined;
+  }
+
+  async getDealUserAssignmentsByDealId(dealId: number): Promise<DealUserAssignment[]> {
+    return await db.select().from(dealToUserAssignments).where(eq(dealToUserAssignments.dealId, dealId));
+  }
+
+  async getDealUserAssignmentsByCloseUserId(closeUserId: number): Promise<DealUserAssignment[]> {
+    return await db.select().from(dealToUserAssignments).where(eq(dealToUserAssignments.closeUserId, closeUserId));
+  }
+
+  async createDealUserAssignment(insertAssignment: InsertDealUserAssignment): Promise<DealUserAssignment> {
+    const [assignment] = await db
+      .insert(dealToUserAssignments)
+      .values(insertAssignment)
+      .returning();
+    return assignment;
+  }
+
+  async updateDealUserAssignment(id: number, updateData: Partial<InsertDealUserAssignment>): Promise<DealUserAssignment | undefined> {
+    const [assignment] = await db
+      .update(dealToUserAssignments)
+      .set(updateData)
+      .where(eq(dealToUserAssignments.id, id))
+      .returning();
+    return assignment || undefined;
+  }
+
+  async deleteDealUserAssignment(id: number): Promise<boolean> {
+    const result = await db.delete(dealToUserAssignments).where(eq(dealToUserAssignments.id, id));
+    return result.rowCount > 0;
+  }
 
   async getContact(id: number): Promise<Contact | undefined> {
     const [contact] = await db.select().from(contacts).where(eq(contacts.id, id));
