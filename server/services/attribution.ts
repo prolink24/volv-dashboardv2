@@ -54,15 +54,15 @@ export async function attributeContact(contactId: number) {
       })),
       ...forms.map(f => ({
         type: 'form',
-        date: f.date,
-        sourceId: f.sourceId,
+        date: f.submittedAt, // Use submittedAt for form submission date
+        sourceId: f.typeformResponseId, // Use typeformResponseId as sourceId
         source: 'typeform',
         data: f
       })),
       ...deals.map(d => ({
         type: 'deal',
-        date: d.date,
-        sourceId: d.sourceId,
+        date: d.createdAt || new Date(), // Use createdAt for deal creation date
+        sourceId: d.closeId || `deal_${d.id}`, // Use closeId or generate an ID
         source: 'close',
         data: d
       }))
@@ -83,7 +83,7 @@ export async function attributeContact(contactId: number) {
       lastTouch: timeline[timeline.length - 1] || null,
       conversionPoint: deals.length > 0 ? {
         type: 'deal',
-        date: deals[0].date,
+        date: deals[0].createdAt || new Date(),
         value: deals[0].value
       } : null
     };

@@ -8,9 +8,8 @@
 
 import closeApi from './server/api/close';
 import calendlyApi from './server/api/calendly';
-// import typeformApi from './server/api/typeform'; // Temporarily disabled
-import attributionService from './server/services/attribution';
 import { storage } from './server/storage';
+import attributionService from './server/services/attribution';
 
 // Colors for console output
 const colors = {
@@ -25,176 +24,232 @@ const colors = {
 
 async function runTests() {
   console.log(`${colors.magenta}===== MULTI-PLATFORM ATTRIBUTION TEST =====\n${colors.reset}`);
-
-  // Test 1: Verify API connections
-  console.log(`${colors.blue}[TEST 1] Verifying API connections${colors.reset}`);
   
-  // Test Close API
-  console.log(`\n${colors.cyan}Testing Close CRM API connection...${colors.reset}`);
+  // Step 1: Test API connections
+  console.log(`${colors.blue}[STEP 1] Testing API connections${colors.reset}`);
+  
+  // Test Close API connection
   const closeResult = await closeApi.testApiConnection();
   if (closeResult.success) {
-    console.log(`${colors.green}✓ Close CRM API connection successful!${colors.reset}`);
-    console.log(`  Authenticated as: ${closeResult.user.first_name} ${closeResult.user.last_name}`);
+    console.log(`${colors.green}✓ Close CRM API connection successful (Auth: ${closeResult.user?.name || 'Deal Maker'})${colors.reset}`);
   } else {
     console.log(`${colors.red}✗ Close CRM API connection failed: ${closeResult.error}${colors.reset}`);
-    console.log('  Please check your CLOSE_API_KEY environment variable');
+    throw new Error('Close CRM API connection failed');
   }
   
-  // Test Calendly API
-  console.log(`\n${colors.cyan}Testing Calendly API connection...${colors.reset}`);
+  // Test Calendly API connection
   const calendlyResult = await calendlyApi.testApiConnection();
   if (calendlyResult.success) {
-    console.log(`${colors.green}✓ Calendly API connection successful!${colors.reset}`);
-    console.log(`  Authenticated as: ${calendlyResult.user.name}`);
+    console.log(`${colors.green}✓ Calendly API connection successful (Auth: ${calendlyResult.user?.name || 'Dealmaker'})${colors.reset}`);
   } else {
     console.log(`${colors.red}✗ Calendly API connection failed: ${calendlyResult.error}${colors.reset}`);
-    console.log('  Please check your CALENDLY_API_KEY environment variable');
+    throw new Error('Calendly API connection failed');
   }
   
-  // Typeform API test skipped
-  console.log(`\n${colors.cyan}Skipping Typeform API test as requested${colors.reset}`);
-  const typeformResult = { success: false, skipped: true };
-
-  // Test 2: Verify data retrieval and contact creation
-  console.log(`\n${colors.blue}[TEST 2] Testing data retrieval${colors.reset}`);
+  // Step 2: Get and create test data
+  console.log(`\n${colors.blue}[STEP 2] Creating test contact with cross-platform data${colors.reset}`);
   
-  // Retrieve samples from each platform (if connected)
-  if (closeResult.success) {
-    console.log(`\n${colors.cyan}Retrieving sample lead from Close...${colors.reset}`);
-    try {
-      const leads = await closeApi.fetchLeads(1);
-      if (leads && leads.length > 0) {
-        console.log(`${colors.green}✓ Successfully retrieved ${leads.length} lead(s) from Close${colors.reset}`);
-        console.log(`  Lead: ${leads[0].display_name || leads[0].name || 'Unnamed lead'}`);
-      } else {
-        console.log(`${colors.yellow}⚠ No leads found in Close${colors.reset}`);
-      }
-    } catch (error) {
-      console.log(`${colors.red}✗ Error retrieving leads from Close: ${error.message}${colors.reset}`);
-    }
+  // Get a lead from Close
+  console.log('Fetching a sample lead from Close...');
+  const leads = await closeApi.fetchLeads(1);
+  if (!leads || leads.length === 0) {
+    console.log(`${colors.red}✗ No leads found in Close CRM${colors.reset}`);
+    throw new Error('No leads found in Close CRM');
   }
   
-  if (calendlyResult.success) {
-    console.log(`\n${colors.cyan}Retrieving sample events from Calendly...${colors.reset}`);
-    try {
-      const events = await calendlyApi.fetchEvents(1);
-      if (events && events.length > 0) {
-        console.log(`${colors.green}✓ Successfully retrieved ${events.length} event(s) from Calendly${colors.reset}`);
-        console.log(`  Event: ${events[0].name}, Scheduled for: ${new Date(events[0].startTime).toLocaleString()}`);
-      } else {
-        console.log(`${colors.yellow}⚠ No events found in Calendly${colors.reset}`);
-      }
-    } catch (error) {
-      console.log(`${colors.red}✗ Error retrieving events from Calendly: ${error.message}${colors.reset}`);
-    }
+  const lead = leads[0];
+  console.log(`Found lead from Close: ${lead.display_name}`);
+  
+  // Get first contact from lead
+  if (!lead.contacts || lead.contacts.length === 0) {
+    console.log(`${colors.red}✗ No contacts found in lead${colors.reset}`);
+    throw new Error('No contacts found in lead');
   }
   
-  // Skip Typeform response retrieval
-  console.log(`\n${colors.cyan}Skipping Typeform response retrieval as requested${colors.reset}`);
-
-  // Test 3: Verify attribution functionality
-  console.log(`\n${colors.blue}[TEST 3] Testing attribution functionality${colors.reset}`);
+  const leadContact = lead.contacts[0];
+  const contactEmail = leadContact.emails && leadContact.emails.length > 0 
+    ? leadContact.emails[0].email 
+    : `test_${Date.now()}@example.com`;
   
-  try {
-    // Get a contact from the database that has data from multiple platforms
-    console.log(`\n${colors.cyan}Finding a contact with cross-platform data...${colors.reset}`);
+  // Get a meeting from Calendly
+  console.log('Fetching a sample event from Calendly...');
+  const events = await calendlyApi.fetchEvents(1);
+  if (!events || events.length === 0) {
+    console.log(`${colors.red}✗ No events found in Calendly${colors.reset}`);
+    throw new Error('No events found in Calendly');
+  }
+  
+  const event = events[0];
+  console.log(`Found event from Calendly: ${event.name}`);
+  
+  // Check if contact with this email already exists
+  let contact = await storage.getContactByEmail(contactEmail);
+  
+  if (contact) {
+    console.log(`Contact with email ${contactEmail} already exists (ID: ${contact.id})`);
+  } else {
+    // Create the contact
+    console.log(`Creating new contact with email ${contactEmail}...`);
+    contact = await storage.createContact({
+      name: leadContact.name || lead.display_name,
+      email: contactEmail,
+      phone: leadContact.phones && leadContact.phones.length > 0 ? leadContact.phones[0].phone : null,
+      company: lead.company || '',
+      title: leadContact.title || '',
+      leadSource: 'close',
+      status: 'lead',
+      sourceId: lead.id,
+      sourceData: lead
+    });
     
-    // Get all contacts
-    const contacts = await storage.getAllContacts();
-    console.log(`Retrieved ${contacts.length} contacts from database`);
-    
-    // Find a contact with activities from multiple sources
-    let testContactId: number | null = null;
-    
-    // Look for contacts with multiple platform data
-    for (const contact of contacts) {
-      const activities = await storage.getActivitiesByContactId(contact.id);
-      const meetings = await storage.getMeetingsByContactId(contact.id);
-      const forms = await storage.getFormsByContactId(contact.id);
-      
-      // Check if contact has data from at least 2 platforms
-      const platforms = new Set();
-      if (activities.length > 0) platforms.add('close');
-      if (meetings.length > 0) platforms.add('calendly');
-      if (forms.length > 0) platforms.add('typeform');
-      
-      if (platforms.size >= 2) {
-        testContactId = contact.id;
-        console.log(`${colors.green}✓ Found contact with cross-platform data: ${contact.name} (ID: ${contact.id})${colors.reset}`);
-        console.log(`  Platforms: ${Array.from(platforms).join(', ')}`);
-        console.log(`  Activities: ${activities.length}, Meetings: ${meetings.length}, Forms: ${forms.length}`);
-        break;
-      }
+    console.log(`${colors.green}✓ Created new contact: ${contact.name} (ID: ${contact.id})${colors.reset}`);
+  }
+  
+  // Create a Close activity
+  console.log('Creating Close activity for contact...');
+  const activity = await storage.createActivity({
+    contactId: contact.id,
+    type: 'note',
+    title: 'Test note from Close',
+    description: 'This is a test note created for attribution testing',
+    date: new Date(),
+    source: 'close',
+    sourceId: `close_note_${Date.now()}`,
+    metadata: {
+      leadId: lead.id,
+      created_by: 'attribution_test'
     }
+  });
+  
+  console.log(`${colors.green}✓ Created Close activity: ${activity.title}${colors.reset}`);
+  
+  // Check if meeting already exists
+  console.log('Checking if Calendly meeting already exists...');
+  let meeting = await storage.getMeetingByCalendlyEventId(event.id);
+  
+  if (meeting) {
+    console.log(`${colors.yellow}⚠ Calendly meeting with event ID ${event.id} already exists${colors.reset}`);
     
-    if (!testContactId) {
-      console.log(`${colors.yellow}⚠ No contacts found with cross-platform data${colors.reset}`);
-      console.log('  Attempting to find any contact with at least some data');
-      
-      // Look for any contact with at least some data
-      for (const contact of contacts) {
-        const activities = await storage.getActivitiesByContactId(contact.id);
-        const meetings = await storage.getMeetingsByContactId(contact.id);
-        const forms = await storage.getFormsByContactId(contact.id);
-        
-        if (activities.length > 0 || meetings.length > 0 || forms.length > 0) {
-          testContactId = contact.id;
-          console.log(`${colors.green}✓ Found contact with some data: ${contact.name} (ID: ${contact.id})${colors.reset}`);
-          console.log(`  Activities: ${activities.length}, Meetings: ${meetings.length}, Forms: ${forms.length}`);
-          break;
+    // If meeting exists but is associated with a different contact, create a new one with a unique ID
+    if (meeting.contactId !== contact.id) {
+      console.log(`Creating Calendly meeting for contact with modified event ID...`);
+      meeting = await storage.createMeeting({
+        contactId: contact.id,
+        calendlyEventId: `${event.id}_${Date.now()}`, // Make the ID unique
+        type: event.eventType || 'meeting',
+        title: event.name,
+        startTime: new Date(event.startTime),
+        endTime: new Date(event.endTime),
+        status: event.status || 'scheduled',
+        assignedTo: 'Dealmaker',
+        metadata: {
+          eventUri: event.uri,
+          created_by: 'attribution_test'
         }
+      });
+      console.log(`${colors.green}✓ Created Calendly meeting: ${meeting.title}${colors.reset}`);
+    }
+  } else {
+    // Create the meeting if it doesn't exist
+    console.log('Creating Calendly meeting for contact...');
+    meeting = await storage.createMeeting({
+      contactId: contact.id,
+      calendlyEventId: event.id,
+      type: event.eventType || 'meeting',
+      title: event.name,
+      startTime: new Date(event.startTime),
+      endTime: new Date(event.endTime),
+      status: event.status || 'scheduled',
+      assignedTo: 'Dealmaker',
+      metadata: {
+        eventUri: event.uri,
+        created_by: 'attribution_test'
       }
-    }
-    
-    if (!testContactId && contacts.length > 0) {
-      // If still no contact with data found, just use the first contact
-      testContactId = contacts[0].id;
-      console.log(`${colors.yellow}⚠ No contacts found with any data, using first contact: ${contacts[0].name} (ID: ${contacts[0].id})${colors.reset}`);
-    }
-    
-    if (testContactId) {
-      // Test attribution on the found contact
-      console.log(`\n${colors.cyan}Testing attribution on contact ID: ${testContactId}...${colors.reset}`);
-      const attributionResult = await attributionService.attributeContact(testContactId);
-      
-      if (attributionResult.success) {
-        console.log(`${colors.green}✓ Attribution successful!${colors.reset}`);
-        
-        if (attributionResult.timeline && attributionResult.timeline.length > 0) {
-          console.log(`  Timeline events: ${attributionResult.timeline.length}`);
-          console.log(`  First touch: ${attributionResult.firstTouch ? new Date(attributionResult.firstTouch.date).toLocaleString() + ' via ' + attributionResult.firstTouch.source : 'None'}`);
-          console.log(`  Last touch: ${attributionResult.lastTouch ? new Date(attributionResult.lastTouch.date).toLocaleString() + ' via ' + attributionResult.lastTouch.source : 'None'}`);
-          
-          // Display timeline summary by platform
-          const platformCounts = attributionResult.timeline.reduce((acc, event) => {
-            acc[event.source] = (acc[event.source] || 0) + 1;
-            return acc;
-          }, {} as Record<string, number>);
-          
-          console.log('\n  Timeline summary by platform:');
-          Object.entries(platformCounts).forEach(([platform, count]) => {
-            console.log(`    - ${platform}: ${count} event(s)`);
-          });
-        } else {
-          console.log(`  No timeline events found`);
-        }
-      } else {
-        console.log(`${colors.red}✗ Attribution failed: ${attributionResult.error}${colors.reset}`);
-      }
-    } else {
-      console.log(`${colors.red}✗ No contacts found in database${colors.reset}`);
-    }
-  } catch (error) {
-    console.log(`${colors.red}✗ Error testing attribution: ${error.message}${colors.reset}`);
+    });
+    console.log(`${colors.green}✓ Created Calendly meeting: ${meeting.title}${colors.reset}`);
   }
-
-  console.log(`\n${colors.magenta}===== TEST COMPLETED =====\n${colors.reset}`);
+  
+  // Step 3: Test attribution
+  console.log(`\n${colors.blue}[STEP 3] Testing attribution for contact ID: ${contact.id}${colors.reset}`);
+  
+  // Get data counts
+  const activities = await storage.getActivitiesByContactId(contact.id);
+  const meetings = await storage.getMeetingsByContactId(contact.id);
+  
+  console.log(`Contact: ${contact.name} (${contact.email})`);
+  console.log(`Close activities: ${activities.filter(a => a.source === 'close').length}`);
+  console.log(`Calendly meetings: ${meetings.length}`);
+  
+  // Run attribution
+  console.log('Running attribution service...');
+  const attributionResult = await attributionService.attributeContact(contact.id);
+  
+  if (!attributionResult.success) {
+    console.log(`${colors.red}✗ Attribution failed: ${attributionResult.error}${colors.reset}`);
+    throw new Error(`Attribution failed: ${attributionResult.error}`);
+  }
+  
+  console.log(`${colors.green}✓ Attribution successful!${colors.reset}`);
+  
+  // Analyze the timeline
+  if (!attributionResult.timeline || attributionResult.timeline.length === 0) {
+    console.log(`${colors.yellow}⚠ No timeline events found${colors.reset}`);
+  } else {
+    console.log(`\nTimeline events: ${attributionResult.timeline.length}`);
+    
+    // Count events by platform and type
+    const platformCounts = {};
+    const typeCounts = {};
+    
+    for (const event of attributionResult.timeline) {
+      // Count by platform
+      platformCounts[event.source] = (platformCounts[event.source] || 0) + 1;
+      
+      // Count by type
+      typeCounts[event.type] = (typeCounts[event.type] || 0) + 1;
+    }
+    
+    // Display counts by platform
+    console.log(`\nEvents by platform:`);
+    Object.entries(platformCounts).forEach(([platform, count]) => {
+      console.log(`  - ${platform}: ${count} event(s)`);
+    });
+    
+    // Display counts by type
+    console.log(`\nEvents by type:`);
+    Object.entries(typeCounts).forEach(([type, count]) => {
+      console.log(`  - ${type}: ${count} event(s)`);
+    });
+    
+    // Display timeline
+    console.log(`\nTimeline:`);
+    attributionResult.timeline.forEach((event, i) => {
+      const date = new Date(event.date).toLocaleString();
+      console.log(`  ${i + 1}. ${event.type} (${event.source}) - ${date}`);
+    });
+    
+    // Display touchpoints
+    console.log(`\nTouchpoints:`);
+    console.log(`  First touch: ${attributionResult.firstTouch ? new Date(attributionResult.firstTouch.date).toLocaleString() + ' via ' + attributionResult.firstTouch.source : 'None'}`);
+    console.log(`  Last touch: ${attributionResult.lastTouch ? new Date(attributionResult.lastTouch.date).toLocaleString() + ' via ' + attributionResult.lastTouch.source : 'None'}`);
+  }
+  
+  console.log(`\n${colors.green}✓ Attribution test completed successfully!${colors.reset}`);
+  console.log(`${colors.magenta}===== TEST COMPLETED =====\n${colors.reset}`);
+  
+  return {
+    success: true,
+    contactId: contact.id,
+    name: contact.name,
+    email: contact.email,
+    timeline: attributionResult.timeline
+  };
 }
 
 // Run the tests
 runTests()
-  .then(() => {
-    console.log('Tests completed, exiting.');
+  .then((result) => {
+    console.log('All tests completed successfully.');
     process.exit(0);
   })
   .catch((error) => {
