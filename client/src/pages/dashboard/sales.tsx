@@ -63,8 +63,23 @@ export default function SalesDashboard() {
     );
   }
 
-  // Data from our database
-  const { kpis, salesTeam, advancedMetrics } = dashboardData;
+  // Data from our database 
+  const { kpis, salesTeam, triageMetrics, attribution } = dashboardData;
+  
+  // Add additional console logs for debugging
+  console.log("KPIs data:", kpis ? "Available" : "Missing");
+  console.log("Sales team data:", salesTeam ? "Available" : "Missing", "Length:", salesTeam?.length);
+  console.log("Triage metrics data:", triageMetrics ? "Available" : "Missing");
+  
+  // Map the new data structure to match what the component expects
+  const advancedMetrics = {
+    costPerClosedWon: attribution?.dealStats?.costPerClosedDeal || 0,
+    closerSlotUtilization: attribution?.dealStats?.utilizationRate || 0,
+    solutionCallCloseRate: attribution?.dealStats?.closeRate || 0,
+    salesCycle: attribution?.dealStats?.avgSalesCycle || 0,
+    callsToClose: attribution?.touchpointStats?.avgCallsToClose || 0,
+    profitPerSolutionCall: attribution?.dealStats?.revenuePerCall || 0
+  };
 
   // Chart data created from real salesTeam data
   const cashCollectedData = salesTeam.map((member) => ({
