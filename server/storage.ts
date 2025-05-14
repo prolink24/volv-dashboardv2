@@ -63,6 +63,7 @@ export interface IStorage {
   getDeal(id: number): Promise<Deal | undefined>;
   getDealBySourceId(source: string, sourceId: string): Promise<Deal | undefined>;
   createDeal(deal: InsertDeal): Promise<Deal>;
+  updateDeal(id: number, deal: Partial<InsertDeal>): Promise<Deal | undefined>;
   getDealsByContactId(contactId: number): Promise<Deal[]>;
   getDealsCount(): Promise<number>;
 
@@ -281,6 +282,15 @@ export class DatabaseStorage implements IStorage {
       .values(deal)
       .returning();
     return newDeal;
+  }
+
+  async updateDeal(id: number, deal: Partial<InsertDeal>): Promise<Deal | undefined> {
+    const [updatedDeal] = await db
+      .update(deals)
+      .set(deal)
+      .where(eq(deals.id, id))
+      .returning();
+    return updatedDeal || undefined;
   }
 
   async getDealsByContactId(contactId: number): Promise<Deal[]> {
