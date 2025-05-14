@@ -32,7 +32,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Endpoint to clear cache
   apiRouter.post("/cache/clear", (req: Request, res: Response) => {
-    const prefix = req.query.prefix as string;
+    const prefix = req.query.prefix as string || req.body.prefix;
     const count = cacheService.clearCache(prefix);
     res.json({ success: true, cleared: count, prefix: prefix || "all" });
   });

@@ -2,12 +2,15 @@ import NodeCache from "node-cache";
 import { Request, Response, NextFunction } from "express";
 
 // Create cache instance with 5 minute TTL default
-const cache = new NodeCache({
+// Define cache options
+const cacheOptions = {
   stdTTL: 300, // 5 minutes in seconds
   checkperiod: 120, // Check for expired keys every 2 minutes
   useClones: false, // Store references instead of cloning for better performance
   deleteOnExpire: true, // Auto delete expired items
-});
+};
+
+const cache = new NodeCache(cacheOptions);
 
 /**
  * Custom middleware to cache API responses
@@ -42,7 +45,9 @@ export function cacheMiddleware(ttl?: number, keyGenerator?: (req: Request) => s
       // Store in cache before sending
       if (res.statusCode === 200) {
         console.log(`[CACHE] Set for ${key}`);
-        cache.set(key, body, ttl || undefined);
+        // Use the provided TTL or fall back to the default TTL
+        const ttlValue: number = typeof ttl === 'number' ? ttl : cacheOptions.stdTTL;
+        cache.set(key, body, ttlValue);
       }
       
       // Call the original json method
