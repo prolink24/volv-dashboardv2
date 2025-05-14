@@ -17,6 +17,7 @@ import Analytics from "@/pages/analytics";
 import Settings from "@/pages/settings";
 import NotFound from "@/pages/not-found";
 import AttributionJourney from "@/pages/attribution-journey";
+import KpiConfigurationPage from "@/pages/settings/kpi-configuration";
 
 // Specialized dashboard views
 import SalesDashboard from "@/pages/dashboard/sales";
@@ -43,6 +44,7 @@ function Router() {
           <Route path="/forms" component={Forms} />
           <Route path="/analytics" component={Analytics} />
           <Route path="/settings" component={Settings} />
+          <Route path="/settings/kpi-configuration" component={KpiConfigurationPage} />
           <Route path="/attribution-journey" component={AttributionJourney} />
           <Route path="/attribution-journey/:id" component={AttributionJourney} />
           <Route component={NotFound} />

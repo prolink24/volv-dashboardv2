@@ -18,7 +18,8 @@ import {
   Phone,
   LineChart,
   ShieldCheck,
-  ClipboardCheck
+  ClipboardCheck,
+  Sliders
 } from "lucide-react";
 
 interface MobileSidebarProps {
@@ -65,6 +66,12 @@ const MobileSidebar = ({ isOpen, onClose, currentPath }: MobileSidebarProps) => 
     { icon: FileText, label: "Forms", href: "/forms" },
     { icon: BarChart2, label: "Analytics", href: "/analytics" },
     { icon: Settings, label: "Settings", href: "/settings" },
+    { 
+      icon: Sliders, 
+      label: "KPI Configuration", 
+      href: "/settings/kpi-configuration",
+      indent: true 
+    },
   ];
 
   return (
