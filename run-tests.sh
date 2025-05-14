@@ -4,8 +4,10 @@
 mode=$1
 
 # Check if the server is already running
-if ! nc -z localhost 5000 > /dev/null 2>&1; then
-  # Start the server in the background
+if command -v nc &> /dev/null && nc -z localhost 5000 &> /dev/null; then
+  echo "Server is already running on port 5000, using existing server..."
+  started_server=false
+else
   echo "Starting the application server..."
   npm run dev &
   server_pid=$!
@@ -16,9 +18,6 @@ if ! nc -z localhost 5000 > /dev/null 2>&1; then
   
   # Flag that we started the server
   started_server=true
-else
-  echo "Server is already running on port 5000, using existing server..."
-  started_server=false
 fi
 
 # Run the appropriate test command based on the mode

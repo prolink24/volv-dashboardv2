@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { customMatchers } from './utils/test-matchers';
+import { skipTest, skipIf } from './utils/test-helpers';
 
 test.describe('Attribution Visualization Tests', () => {
   test.beforeEach(async ({ page }) => {
@@ -88,7 +89,12 @@ test.describe('Attribution Visualization Tests', () => {
       await page.click('button:has-text("Attribution Model")');
       
       // Select a different attribution model
-      await page.click('div[role="option"]').nth(1);
+      const options = page.locator('div[role="option"]');
+      if (await options.count() > 1) {
+        await options.nth(1).click();
+      } else {
+        await options.first().click();
+      }
       
       // Wait for chart to update
       await page.waitForTimeout(1000);
@@ -96,7 +102,7 @@ test.describe('Attribution Visualization Tests', () => {
       // Verify the chart is still visible
       await expect(page.locator('.multi-touch-chart, .funnel-chart')).toBeVisible();
     } else {
-      test.skip('Attribution model selector not available');
+      skipTest('Attribution model selector not available');
     }
   });
 
@@ -172,7 +178,7 @@ test.describe('Attribution Visualization Tests', () => {
         expect(successMessageVisible || !optionsStillVisible).toBe(true);
       }
     } else {
-      test.skip('Export button not available');
+      skipTest('Export button not available');
     }
   });
 });

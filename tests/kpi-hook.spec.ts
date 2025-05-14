@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { customMatchers } from './utils/test-matchers';
+import { skipTest, skipIf, asyncUtils } from './utils/test-helpers';
 
 test.describe('KPI Configuration Hook Tests', () => {
   test.beforeEach(async ({ page }) => {
@@ -17,7 +18,7 @@ test.describe('KPI Configuration Hook Tests', () => {
     
     // Skip test if no inactive KPIs found
     if (await inactiveKpi.count() === 0) {
-      test.skip('No inactive KPIs found to test toggle functionality');
+      skipTest('No inactive KPIs found to test toggle functionality');
       return;
     }
     
