@@ -16,33 +16,45 @@ export const AttributionStats = () => {
   
   // Log data flow for debugging
   useEffect(() => {
-    console.log("==== ATTRIBUTION STATS DATA FLOW DEBUG ====");
-    console.log("Is Loading:", isLoading);
-    console.log("Is Error:", isError);
-    console.log("Error:", error || null);
-    console.log("Data:", data || null);
+    const debugInfo = [
+      "Attribution Stats Component Debug:",
+      `- Is Loading: ${isLoading}`,
+      `- Is Error: ${isError}`,
+      `- Error: ${error || null}`,
+      `- Has Data: ${Boolean(data)}`,
+    ];
     
     if (data) {
-      console.log("Data Structure:", Object.keys(data));
+      debugInfo.push(
+        `- Data Keys: ${JSON.stringify(Object.keys(data))}`,
+        `- Success Flag: ${data.success}`,
+        `- AttributionAccuracy: ${data.attributionAccuracy}`
+      );
+      
       if (data.stats) {
-        console.log("Stats Structure:", Object.keys(data.stats));
-        console.log("Attribution Accuracy:", data.attributionAccuracy);
-        console.log("Total Contacts:", data.stats.totalContacts);
-        console.log("Multi-Source Contacts:", data.stats.multiSourceContacts);
-        console.log("Multi-Source Rate:", data.stats.multiSourceRate);
-        console.log("Deal Attribution Rate:", data.stats.dealAttributionRate);
-        console.log("Field Coverage:", data.stats.fieldCoverage);
+        debugInfo.push(
+          `- Has Stats: ${Boolean(data.stats)}`,
+          `- Stats Keys: ${JSON.stringify(Object.keys(data.stats))}`
+        );
+      } else {
+        debugInfo.push("- Stats: Missing");
       }
-    } else {
-      console.log("Data Structure:", "N/A");
     }
-    console.log("========================================");
     
-    // Auto-retry once if there's an error
+    // Log all debug info at once to keep console cleaner
+    console.log(...debugInfo);
+    
+    // Implement progressive retry with backoff
     if (isError && !isLoading) {
-      setTimeout(() => {
-        refetch();
-      }, 1000);
+      console.log("Attribution stats error detected, will retry in 2s");
+      const retryTimer = setTimeout(() => {
+        console.log("Retrying attribution stats fetch...");
+        refetch().catch(e => {
+          console.error("Retry failed:", e instanceof Error ? e.message : String(e));
+        });
+      }, 2000);
+      
+      return () => clearTimeout(retryTimer);
     }
   }, [isLoading, isError, data, error, refetch]);
 

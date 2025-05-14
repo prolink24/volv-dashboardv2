@@ -9,22 +9,9 @@ interface UseDashboardDataProps {
   cache?: boolean;
 }
 
-// Type-safe wrapper around DashboardData with partial implementation
-// to keep TypeScript happy but still allow for production usage
-interface SafeDashboardData extends Partial<DashboardData> {
-  kpis: Record<string, any>;
-  salesTeam: any[];
-  triageMetrics: Record<string, any>;
-  missingAdmins: any[];
-  advancedMetrics: Record<string, any>;
-  attribution: Record<string, any>;
-  leadMetrics?: Record<string, any>;
-}
-
-// Type assertion helper to satisfy TypeScript while still providing fallback data
-const createSafeDashboardData = (): SafeDashboardData => {
-  // This is just a safety measure to ensure the UI doesn't crash
-  // The real data will come from the API
+// Create a safe empty dashboard data structure
+// This is only used as a fallback when the API fails
+const createEmptyDashboardData = () => {
   return {
     kpis: {
       closedDeals: 0,
@@ -43,9 +30,11 @@ const createSafeDashboardData = (): SafeDashboardData => {
       booked: 0,
       sits: 0,
       showRate: 0,
-      sales: 0,
+      solutionBookingRate: 0,
+      cancelRate: 0,
       outboundTriagesSet: 0,
-      totalDirectBookings: 0
+      totalDirectBookings: 0,
+      directBookingRate: 0
     },
     missingAdmins: [],
     advancedMetrics: {
@@ -70,7 +59,8 @@ const createSafeDashboardData = (): SafeDashboardData => {
     leadMetrics: {
       newLeads: 0,
       disqualified: 0,
-      totalLeads: 0
+      totalDials: 0,
+      pickUpRate: 0
     }
   };
 };
@@ -113,20 +103,8 @@ export function useDashboardData({
     select: (data) => {
       if (!data) {
         console.log("Dashboard data is null or undefined, using default structure");
-        // In production we'd never want to show fake data
-        if (process.env.NODE_ENV === 'production') {
-          return { 
-            kpis: {}, 
-            salesTeam: [], 
-            triageMetrics: {}, 
-            missingAdmins: [],
-            advancedMetrics: {},
-            attribution: {}
-          } as DashboardData;
-        }
-        
-        // Return a fallback in development only
-        return createFallbackDashboardData();
+        // Use empty structure with proper types for all required fields
+        return createEmptyDashboardData() as unknown as DashboardData;
       }
       
       // Return real data with fallbacks for missing properties
@@ -171,33 +149,77 @@ export function useAttributionStats() {
 }
 
 export function syncData() {
+  console.log('Starting data synchronization...');
+  
+  // Create a timeout controller
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+  
   return queryClient.fetchQuery({
     queryKey: ["/api/sync/all"],
     queryFn: async () => {
-      const response = await fetch("/api/sync/all", {
-        method: "POST",
-        credentials: "include",
-      });
-      
-      if (!response.ok) {
-        throw new Error("Failed to sync data");
+      try {
+        const response = await fetch("/api/sync/all", {
+          method: "POST",
+          credentials: "include",
+          signal: controller.signal,
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+        
+        // Clear timeout since request completed
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          console.error('Sync failed with status:', response.status);
+          throw new Error(`Failed to sync data: ${response.status} ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        console.log('Sync completed successfully:', result);
+        return result;
+      } catch (error) {
+        // Clear timeout in case of error
+        clearTimeout(timeoutId);
+        
+        console.error('Error during data sync:', error);
+        
+        // Provide more useful error messages
+        if (error.name === 'AbortError') {
+          throw new Error('Data sync timed out. The server might be busy, please try again later.');
+        }
+        
+        throw error;
       }
-      
-      return response.json();
     },
   });
 }
 
 export function invalidateDashboardData() {
-  return queryClient.invalidateQueries({ 
-    queryKey: ["/api/dashboard"] 
-  }).then(() => {
-    return queryClient.invalidateQueries({ 
-      queryKey: ["/api/enhanced-dashboard"] 
+  console.log('Invalidating dashboard data caches...');
+  
+  try {
+    // Use a comprehensive approach to invalidate all related queries
+    return Promise.all([
+      // Invalidate dashboard endpoints
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/dashboard"] 
+      }),
+      // Invalidate enhanced dashboard endpoints
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/enhanced-dashboard"] 
+      }),
+      // Invalidate attribution stats
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/attribution/enhanced-stats"] 
+      })
+    ]).then(() => {
+      console.log('All dashboard caches invalidated successfully');
+      return true;
     });
-  }).then(() => {
-    return queryClient.invalidateQueries({ 
-      queryKey: ["/api/attribution/enhanced-stats"] 
-    });
-  });
+  } catch (error) {
+    console.error('Error invalidating dashboard caches:', error);
+    throw new Error('Failed to refresh dashboard data. Please try again or reload the page.');
+  }
 }
