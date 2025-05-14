@@ -484,7 +484,9 @@ async function syncLeadOpportunities(leadId: string, contactId: number) {
       try {
         // Process the value to ensure it's in a compatible format for the database
         // Remove any currency symbols and commas to make sure it's a valid numeric string
-        let cleanValue = opportunity.value_formatted || String(opportunity.value || 0);
+        let valueStr = opportunity.value_formatted || String(opportunity.value || 0);
+        // Remove currency symbols, commas, and other non-numeric characters (except decimal point)
+        let cleanValue = valueStr.replace(/[^0-9.]/g, '');
         
         // Store original formatted value for display purposes in metadata
         const metadata = {
