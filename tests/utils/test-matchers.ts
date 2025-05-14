@@ -1,91 +1,100 @@
-import { expect, Page, Locator } from '@playwright/test';
+import { expect, Locator } from '@playwright/test';
 
 /**
- * Custom matchers to extend Playwright's expect functionality
+ * Custom matchers for Playwright tests
  */
 export const customMatchers = {
   /**
-   * Checks if the count of elements matching a locator is at least the specified value
+   * Asserts that a locator has at least the expected number of elements.
    */
-  async toHaveCountAtLeast(locator: Locator, expected: number): Promise<void> {
-    const count = await locator.count();
-    expect(count).toBeGreaterThanOrEqual(expected);
+  async toHaveCountAtLeast(locator: Locator, expectedCount: number): Promise<void> {
+    const actualCount = await locator.count();
+    expect(actualCount).toBeGreaterThanOrEqual(expectedCount);
   },
-  
+
   /**
-   * Checks if the count of elements matching a locator is greater than the specified value
-   */
-  async toHaveCountGreaterThan(locator: Locator, expected: number): Promise<void> {
-    const count = await locator.count();
-    expect(count).toBeGreaterThan(expected);
-  },
-  
-  /**
-   * Gets text content safely, returning empty string if null
+   * Gets text from a locator with error handling
    */
   async getTextSafely(locator: Locator): Promise<string> {
-    const text = await locator.textContent();
-    return text || '';
-  },
-  
-  /**
-   * Safely gets a bounding box, throwing a descriptive error if null
-   */
-  async getBoundingBoxSafe(locator: Locator, description: string): Promise<{x: number, y: number, width: number, height: number}> {
-    const box = await locator.boundingBox();
-    if (!box) {
-      throw new Error(`Failed to get bounding box for ${description}`);
+    try {
+      return await locator.textContent() || '';
+    } catch (error) {
+      console.error('Error getting text from locator:', error);
+      return '';
     }
-    return box;
   },
-  
+
   /**
-   * Compare vertical positions of two elements
+   * Checks if a locator contains any element with the specified text
    */
-  async checkVerticalStacking(topLocator: Locator, bottomLocator: Locator): Promise<void> {
-    const topBox = await topLocator.boundingBox();
-    const bottomBox = await bottomLocator.boundingBox();
+  async containsText(locator: Locator, text: string): Promise<boolean> {
+    try {
+      await locator.locator(`text=${text}`).first().waitFor({ state: 'visible', timeout: 1000 });
+      return true;
+    } catch (error) {
+      return false;
+    }
+  },
+
+  /**
+   * Waits for an element to have specific attributes
+   */
+  async toHaveAttributes(locator: Locator, attributes: Record<string, string>, timeout = 5000): Promise<void> {
+    await expect(async () => {
+      for (const [attr, value] of Object.entries(attributes)) {
+        const actualValue = await locator.getAttribute(attr);
+        expect(actualValue).toBe(value);
+      }
+    }).toPass({ timeout });
+  },
+
+  /**
+   * Waits for an element to have a class
+   */
+  async toHaveClass(locator: Locator, className: string, timeout = 5000): Promise<void> {
+    await expect(async () => {
+      const classes = await locator.getAttribute('class') || '';
+      const classNames = classes.split(/\s+/);
+      expect(classNames).toContain(className);
+    }).toPass({ timeout });
+  },
+
+  /**
+   * Verifies element has loaded properly
+   */
+  async toBeFullyLoaded(locator: Locator): Promise<void> {
+    // Verify it's visible
+    await expect(locator).toBeVisible();
     
-    if (!topBox || !bottomBox) {
-      throw new Error('Failed to get bounding boxes for elements');
+    // Verify it has content if it's supposed to have text
+    const hasText = ['h1', 'h2', 'h3', 'h4', 'p', 'span', 'div', 'button', 'a', 'label'];
+    const tagName = await locator.evaluate(el => el.tagName.toLowerCase());
+    
+    if (hasText.includes(tagName)) {
+      const text = await locator.textContent();
+      expect(text?.trim().length).toBeGreaterThan(0);
     }
     
-    expect(bottomBox.y).toBeGreaterThan(topBox.y + topBox.height - 5);
+    // For images, verify they're loaded
+    if (tagName === 'img') {
+      await expect(locator).toHaveJSProperty('complete', true);
+    }
+  },
+
+  /**
+   * Checks if the element is in viewport
+   */
+  async toBeInViewport(locator: Locator): Promise<void> {
+    const isVisible = await locator.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return (
+        rect.top >= 0 &&
+        rect.left >= 0 &&
+        rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+        rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+      );
+    });
+    
+    expect(isVisible).toBe(true);
   }
 };
-
-/**
- * Helper functions to collect and log test results
- */
-export interface TestResult {
-  name: string;
-  duration: number;
-  status: 'pass' | 'fail';
-  error?: string;
-}
-
-export class TestResultCollector {
-  private results: TestResult[] = [];
-  
-  addResult(result: TestResult): void {
-    this.results.push(result);
-  }
-  
-  logResults(): void {
-    console.table(this.results);
-    
-    // Calculate statistics
-    const totalTests = this.results.length;
-    const passedTests = this.results.filter(r => r.status === 'pass').length;
-    const failedTests = totalTests - passedTests;
-    const passRate = (passedTests / totalTests) * 100;
-    
-    console.log(`
-Test Summary:
-  Total Tests: ${totalTests}
-  Passed: ${passedTests}
-  Failed: ${failedTests}
-  Pass Rate: ${passRate.toFixed(2)}%
-    `);
-  }
-}
