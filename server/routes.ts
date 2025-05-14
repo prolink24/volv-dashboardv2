@@ -83,39 +83,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const dateStr = req.query.date as string || new Date().toISOString();
       const userId = req.query.userId as string;
+      const skipAttribution = req.query.skipAttribution === 'true';
       
       const date = new Date(dateStr);
       
-      // 1. Get basic dashboard data
+      // 1. First get basic dashboard data which should be fast
       const dashboardData = await storage.getDashboardData(date, userId);
       
-      // 2. Get attribution data
-      const attributionData = await attributionService.attributeAllContacts();
-      
-      // 3. Combine the data
-      const enhancedDashboard = {
+      // Initial response structure without attribution
+      const enhancedDashboard: any = {
         ...dashboardData,
+        success: true,
+        timestamp: new Date().toISOString(),
+        // Default empty attribution object for safety
         attribution: {
           summary: {
-            totalContacts: attributionData.detailedAnalytics?.contactStats.totalContacts || 0,
-            contactsWithDeals: attributionData.detailedAnalytics?.contactStats.contactsWithDeals || 0,
-            totalTouchpoints: attributionData.detailedAnalytics?.touchpointStats.totalTouchpoints || 0,
-            conversionRate: attributionData.detailedAnalytics?.contactStats.conversionRate || 0,
-            mostEffectiveChannel: attributionData.detailedAnalytics?.insights.mostEffectiveChannel || 'unknown'
+            totalContacts: 0,
+            contactsWithDeals: 0,
+            totalTouchpoints: 0,
+            conversionRate: 0,
+            mostEffectiveChannel: 'unknown'
           },
-          contactStats: attributionData.detailedAnalytics?.contactStats || {},
-          channelStats: attributionData.detailedAnalytics?.channelStats || {},
-          touchpointStats: attributionData.detailedAnalytics?.touchpointStats || {},
-          dealStats: attributionData.detailedAnalytics?.dealStats || {},
-          insights: attributionData.detailedAnalytics?.insights || {},
-          modelStats: attributionData.detailedAnalytics?.modelStats || {}
+          contactStats: {},
+          channelStats: {},
+          touchpointStats: {},
+          dealStats: {},
+          insights: {},
+          modelStats: {}
         }
       };
+      
+      // 2. Get attribution data only if not skipped
+      if (!skipAttribution) {
+        try {
+          // Set a timeout for attribution data (15 seconds)
+          const attributionPromise = attributionService.attributeAllContacts();
+          
+          // Create a timeout promise
+          const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error("Attribution data fetch timed out")), 15000);
+          });
+          
+          // Race the attribution promise against the timeout
+          const attributionData = await Promise.race([attributionPromise, timeoutPromise]) as any;
+          
+          // Update the attribution data if we got it in time
+          if (attributionData && attributionData.detailedAnalytics) {
+            enhancedDashboard.attribution = {
+              summary: {
+                totalContacts: attributionData.detailedAnalytics?.contactStats.totalContacts || 0,
+                contactsWithDeals: attributionData.detailedAnalytics?.contactStats.contactsWithDeals || 0,
+                totalTouchpoints: attributionData.detailedAnalytics?.touchpointStats.totalTouchpoints || 0,
+                conversionRate: attributionData.detailedAnalytics?.contactStats.conversionRate || 0,
+                mostEffectiveChannel: attributionData.detailedAnalytics?.insights.mostEffectiveChannel || 'unknown'
+              },
+              contactStats: attributionData.detailedAnalytics?.contactStats || {},
+              channelStats: attributionData.detailedAnalytics?.channelStats || {},
+              touchpointStats: attributionData.detailedAnalytics?.touchpointStats || {},
+              dealStats: attributionData.detailedAnalytics?.dealStats || {},
+              insights: attributionData.detailedAnalytics?.insights || {},
+              modelStats: attributionData.detailedAnalytics?.modelStats || {}
+            };
+          }
+        } catch (attributionError) {
+          console.warn("Attribution data timed out or failed:", attributionError);
+          // Don't fail the request, just return without attribution data
+          enhancedDashboard.attributionTimedOut = true;
+        }
+      } else {
+        enhancedDashboard.attributionSkipped = true;
+      }
       
       res.json(enhancedDashboard);
     } catch (error) {
       console.error("Error fetching enhanced dashboard data:", error);
-      res.status(500).json({ error: "Failed to fetch enhanced dashboard data" });
+      // Return a partial result with success=false rather than a 500 error
+      res.json({ 
+        success: false, 
+        error: "Failed to fetch complete enhanced dashboard data",
+        timestamp: new Date().toISOString(),
+        partialData: true
+      });
     }
   });
 
@@ -181,7 +229,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const users = await storage.getAllCloseUsers(limit, offset);
       const totalCount = await storage.getCloseUsersCount();
       
-      res.json({ users, totalCount });
+      // Add name field to each user since the test expects it
+      const usersWithName = users.map(user => ({
+        ...user,
+        // Create name from first_name and last_name if available
+        name: user.first_name && user.last_name 
+          ? `${user.first_name} ${user.last_name}`
+          : user.first_name || user.last_name || `User ${user.id}`
+      }));
+      
+      res.json({ users: usersWithName, totalCount });
     } catch (error) {
       console.error("Error fetching Close users:", error);
       res.status(500).json({ error: "Failed to fetch Close users" });
