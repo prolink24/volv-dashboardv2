@@ -374,67 +374,69 @@ const Dashboard = () => {
       )}
       
       {/* Triage Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="col-span-1 md:col-span-2 bg-card rounded-lg shadow-sm border border-border p-4">
-          <h3 className="text-base font-medium mb-4">Triage Performance Metrics</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="flex flex-col">
-              <span className="text-sm text-muted-foreground">Triage Booked</span>
-              <span className="text-xl font-bold">{dashboardData.triageMetrics?.booked || 0}</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-sm text-muted-foreground">Triage Sits</span>
-              <span className="text-xl font-bold">{dashboardData.triageMetrics?.sits || 0}</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-sm text-muted-foreground">Triage Show Rate</span>
-              <span className="text-xl font-bold">{dashboardData.triageMetrics?.showRate || 0}%</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-sm text-muted-foreground">Solution Booking Rate</span>
-              <span className="text-xl font-bold">{dashboardData.triageMetrics?.solutionBookingRate || 0}%</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-sm text-muted-foreground">Cancel Rate</span>
-              <span className="text-xl font-bold">{dashboardData.triageMetrics?.cancelRate || 0}%</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-sm text-muted-foreground">Outbound Triages Set</span>
-              <span className="text-xl font-bold">{dashboardData.triageMetrics?.outboundTriagesSet || 0}</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-sm text-muted-foreground">Total Direct Bookings</span>
-              <span className="text-xl font-bold">{dashboardData.triageMetrics?.totalDirectBookings || 0}</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-sm text-muted-foreground">Direct Booking Rate</span>
-              <span className="text-xl font-bold">{dashboardData.triageMetrics?.directBookingRate || 0}%</span>
+      {dashboardData.triageMetrics && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="col-span-1 md:col-span-2 bg-card rounded-lg shadow-sm border border-border p-4">
+            <h3 className="text-base font-medium mb-4">Triage Performance Metrics</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="flex flex-col">
+                <span className="text-sm text-muted-foreground">Triage Booked</span>
+                <span className="text-xl font-bold">{dashboardData.triageMetrics?.booked || 0}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm text-muted-foreground">Triage Sits</span>
+                <span className="text-xl font-bold">{dashboardData.triageMetrics?.sits || 0}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm text-muted-foreground">Triage Show Rate</span>
+                <span className="text-xl font-bold">{dashboardData.triageMetrics?.showRate || 0}%</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm text-muted-foreground">Solution Booking Rate</span>
+                <span className="text-xl font-bold">{dashboardData.triageMetrics?.solutionBookingRate || 0}%</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm text-muted-foreground">Cancel Rate</span>
+                <span className="text-xl font-bold">{dashboardData.triageMetrics?.cancelRate || 0}%</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm text-muted-foreground">Outbound Triages Set</span>
+                <span className="text-xl font-bold">{dashboardData.triageMetrics?.outboundTriagesSet || 0}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm text-muted-foreground">Total Direct Bookings</span>
+                <span className="text-xl font-bold">{dashboardData.triageMetrics?.totalDirectBookings || 0}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm text-muted-foreground">Direct Booking Rate</span>
+                <span className="text-xl font-bold">{dashboardData.triageMetrics?.directBookingRate || 0}%</span>
+              </div>
             </div>
           </div>
-        </div>
         
-        <div className="bg-card rounded-lg shadow-sm border border-border p-4">
-          <h3 className="text-base font-medium mb-4">Lead Metrics</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col">
-              <span className="text-sm text-muted-foreground">New Leads</span>
-              <span className="text-xl font-bold">{dashboardData.leadMetrics?.newLeads || 0}</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-sm text-muted-foreground">Leads Disqualified</span>
-              <span className="text-xl font-bold">{dashboardData.leadMetrics?.disqualified || 0}</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-sm text-muted-foreground">Total Dials</span>
-              <span className="text-xl font-bold">{dashboardData.leadMetrics?.totalDials || 0}</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-sm text-muted-foreground">Pick Up Rate</span>
-              <span className="text-xl font-bold">{dashboardData.leadMetrics?.pickUpRate || 0}%</span>
+          <div className="bg-card rounded-lg shadow-sm border border-border p-4">
+            <h3 className="text-base font-medium mb-4">Lead Metrics</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col">
+                <span className="text-sm text-muted-foreground">New Leads</span>
+                <span className="text-xl font-bold">{dashboardData.leadMetrics?.newLeads || 0}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm text-muted-foreground">Leads Disqualified</span>
+                <span className="text-xl font-bold">{dashboardData.leadMetrics?.disqualified || 0}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm text-muted-foreground">Total Dials</span>
+                <span className="text-xl font-bold">{dashboardData.leadMetrics?.totalDials || 0}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm text-muted-foreground">Pick Up Rate</span>
+                <span className="text-xl font-bold">{dashboardData.leadMetrics?.pickUpRate || 0}%</span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </main>
   );
 };
