@@ -13,7 +13,12 @@ import {
   FileText, 
   BarChart2, 
   Settings,
-  Link2
+  Link2,
+  DollarSign,
+  Phone,
+  LineChart,
+  ShieldCheck,
+  ClipboardCheck
 } from "lucide-react";
 
 interface MobileSidebarProps {
@@ -24,33 +29,33 @@ interface MobileSidebarProps {
 
 const MobileSidebar = ({ isOpen, onClose, currentPath }: MobileSidebarProps) => {
   const sidebarItems = [
-    { icon: LayoutDashboard, label: "Dashboard", href: "/" },
+    { icon: LayoutDashboard, label: "Overview", href: "/" },
     { 
-      icon: LayoutDashboard, 
+      icon: DollarSign, 
       label: "Sales Dashboard", 
       href: "/dashboard/sales",
       indent: true 
     },
     { 
-      icon: LayoutDashboard, 
+      icon: Phone, 
       label: "Setter Dashboard", 
       href: "/dashboard/setter",
       indent: true 
     },
     { 
-      icon: LayoutDashboard, 
+      icon: LineChart, 
       label: "Marketing Dashboard", 
       href: "/dashboard/marketing",
       indent: true 
     },
     { 
-      icon: LayoutDashboard, 
+      icon: ClipboardCheck, 
       label: "Admin Dashboard", 
       href: "/dashboard/admin",
       indent: true 
     },
     { 
-      icon: LayoutDashboard, 
+      icon: ShieldCheck, 
       label: "Compliance Dashboard", 
       href: "/dashboard/compliance",
       indent: true 

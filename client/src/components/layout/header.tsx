@@ -22,6 +22,11 @@ import MobileSidebar from "./mobile-sidebar";
 
 const pathToTitle: Record<string, string> = {
   "/": "Dashboard",
+  "/dashboard/sales": "Sales Dashboard",
+  "/dashboard/setter": "Setter Dashboard",
+  "/dashboard/marketing": "Marketing Dashboard",
+  "/dashboard/admin": "Admin Dashboard",
+  "/dashboard/compliance": "Compliance Dashboard",
   "/contacts": "Contacts",
   "/meetings": "Meetings",
   "/forms": "Forms",

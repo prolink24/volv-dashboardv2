@@ -27,7 +27,7 @@ interface SidebarItemProps {
   indent?: boolean;
 }
 
-const SidebarItem = ({ icon: Icon, label, href, isActive, isCollapsed }: SidebarItemProps) => {
+const SidebarItem = ({ icon: Icon, label, href, isActive, isCollapsed, indent }: SidebarItemProps) => {
   return (
     <Tooltip delayDuration={0}>
       <TooltipTrigger asChild>
@@ -37,7 +37,7 @@ const SidebarItem = ({ icon: Icon, label, href, isActive, isCollapsed }: Sidebar
             size="sm"
             className={cn(
               "w-full justify-start",
-              isCollapsed ? "px-2" : "px-4",
+              isCollapsed ? "px-2" : indent ? "pl-8" : "px-4",
               isActive && "bg-primary text-primary-foreground"
             )}
           >
@@ -61,11 +61,36 @@ const Sidebar = () => {
 
   const sidebarItems = [
     { icon: LayoutDashboard, label: "Overview", href: "/" },
-    { icon: DollarSign, label: "Sales Dashboard", href: "/dashboard/sales" },
-    { icon: Phone, label: "Setter Dashboard", href: "/dashboard/setter" },
-    { icon: LineChart, label: "Marketing Dashboard", href: "/dashboard/marketing" },
-    { icon: ClipboardCheck, label: "Admin Dashboard", href: "/dashboard/admin" },
-    { icon: ShieldCheck, label: "Compliance Dashboard", href: "/dashboard/compliance" },
+    { 
+      icon: DollarSign, 
+      label: "Sales Dashboard", 
+      href: "/dashboard/sales",
+      indent: true 
+    },
+    { 
+      icon: Phone, 
+      label: "Setter Dashboard", 
+      href: "/dashboard/setter",
+      indent: true 
+    },
+    { 
+      icon: LineChart, 
+      label: "Marketing Dashboard", 
+      href: "/dashboard/marketing",
+      indent: true 
+    },
+    { 
+      icon: ClipboardCheck, 
+      label: "Admin Dashboard", 
+      href: "/dashboard/admin",
+      indent: true 
+    },
+    { 
+      icon: ShieldCheck, 
+      label: "Compliance Dashboard",
+      href: "/dashboard/compliance",
+      indent: true 
+    },
     { icon: Users, label: "Contacts", href: "/contacts" },
     { icon: Calendar, label: "Meetings", href: "/meetings" },
     { icon: FileText, label: "Forms", href: "/forms" },
