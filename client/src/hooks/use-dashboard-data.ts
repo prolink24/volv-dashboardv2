@@ -47,14 +47,16 @@ export interface AttributionStatsData {
   success: boolean;
   attributionAccuracy?: number;
   stats?: {
-    contactsWithMultipleSources: number;
     totalContacts: number;
+    contactsAnalyzed: number;
+    highCertaintyContacts: number;
+    multiSourceContacts: number;
     multiSourceRate: number;
-    dealAttributionRate?: number;
+    totalDeals: number;
+    dealsWithAttribution: number;
+    dealAttributionRate: number;
+    fieldMappingSuccess: number;
     fieldCoverage: number;
-    channelDistribution: { name: string; value: number }[];
-    contactsBySource: { source: string; count: number; percentage: number }[];
-    contactsWithMissingData: number;
   };
   error?: string;
 }
