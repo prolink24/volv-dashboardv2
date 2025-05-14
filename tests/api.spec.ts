@@ -77,13 +77,14 @@ test.describe('API Tests', () => {
     const data = await response.json();
 
     expect(response.status()).toBe(200);
-    expect(data.success).toBe(true);
     expect(data.contacts).toBeDefined();
+    expect(Array.isArray(data.contacts)).toBe(true);
+    expect(data.totalCount).toBeDefined();
     
-    // Check that all returned contacts have the requested source
+    // Check that all returned contacts have the requested source in their leadSource
     if (data.contacts.length > 0) {
       for (const contact of data.contacts) {
-        expect(contact.sources).toContain(source);
+        expect(contact.leadSource).toContain(source);
       }
     }
   });
@@ -105,7 +106,6 @@ test.describe('API Tests', () => {
     const data = await response.json();
 
     expect(response.status()).toBe(200);
-    expect(data.success).toBe(true);
     expect(data.contact).toBeDefined();
     
     // Validate detailed contact data structure
@@ -114,11 +114,11 @@ test.describe('API Tests', () => {
     expect(contact.name).toBeDefined();
     expect(contact.email).toBeDefined();
     
-    // Check for detailed fields that should be present
-    expect(contact.sources).toBeDefined();
-    expect(contact.activities).toBeDefined();
-    expect(contact.meetings).toBeDefined();
-    expect(contact.deals).toBeDefined();
+    // Check for related data arrays
+    expect(Array.isArray(data.activities)).toBe(true);
+    expect(Array.isArray(data.deals)).toBe(true);
+    expect(Array.isArray(data.meetings)).toBe(true);
+    expect(Array.isArray(data.forms)).toBe(true);
   });
 
   test('should return KPI configuration', async ({ request }) => {
@@ -126,22 +126,27 @@ test.describe('API Tests', () => {
     const data = await response.json();
 
     expect(response.status()).toBe(200);
-    expect(data.success).toBe(true);
-    expect(data.kpiConfig).toBeDefined();
+    expect(Array.isArray(data)).toBe(true);
     
-    // Validate KPI configuration structure
-    expect(data.kpiConfig.kpis).toBeDefined();
-    expect(Array.isArray(data.kpiConfig.kpis)).toBe(true);
-    expect(data.kpiConfig.activeKpis).toBeDefined();
-    expect(Array.isArray(data.kpiConfig.activeKpis)).toBe(true);
+    // Should have categories
+    expect(data.length).toBeGreaterThan(0);
     
-    // Each KPI should have basic metadata
-    if (data.kpiConfig.kpis.length > 0) {
-      const kpi = data.kpiConfig.kpis[0];
+    // Validate category structure
+    const category = data[0];
+    expect(category.id).toBeDefined();
+    expect(category.name).toBeDefined();
+    expect(category.description).toBeDefined();
+    expect(Array.isArray(category.kpis)).toBe(true);
+    
+    // Validate KPI structure if present
+    if (category.kpis && category.kpis.length > 0) {
+      const kpi = category.kpis[0];
       expect(kpi.id).toBeDefined();
       expect(kpi.name).toBeDefined();
       expect(kpi.description).toBeDefined();
       expect(kpi.formula).toBeDefined();
+      expect(kpi.category).toBeDefined();
+      expect(kpi.enabled).toBeDefined();
     }
   });
 
