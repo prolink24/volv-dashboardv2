@@ -28,7 +28,7 @@ function Router() {
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar />
-      <div className="flex flex-col flex-1 overflow-hidden ml-16 md:ml-64">
+      <div className="flex flex-col flex-1 overflow-hidden">
         <Header />
         <Switch>
           <Route path="/" component={Dashboard} />

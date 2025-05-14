@@ -25,6 +25,36 @@ interface MobileSidebarProps {
 const MobileSidebar = ({ isOpen, onClose, currentPath }: MobileSidebarProps) => {
   const sidebarItems = [
     { icon: LayoutDashboard, label: "Dashboard", href: "/" },
+    { 
+      icon: LayoutDashboard, 
+      label: "Sales Dashboard", 
+      href: "/dashboard/sales",
+      indent: true 
+    },
+    { 
+      icon: LayoutDashboard, 
+      label: "Setter Dashboard", 
+      href: "/dashboard/setter",
+      indent: true 
+    },
+    { 
+      icon: LayoutDashboard, 
+      label: "Marketing Dashboard", 
+      href: "/dashboard/marketing",
+      indent: true 
+    },
+    { 
+      icon: LayoutDashboard, 
+      label: "Admin Dashboard", 
+      href: "/dashboard/admin",
+      indent: true 
+    },
+    { 
+      icon: LayoutDashboard, 
+      label: "Compliance Dashboard", 
+      href: "/dashboard/compliance",
+      indent: true 
+    },
     { icon: Users, label: "Contacts", href: "/contacts" },
     { icon: Calendar, label: "Meetings", href: "/meetings" },
     { icon: FileText, label: "Forms", href: "/forms" },
@@ -58,7 +88,7 @@ const MobileSidebar = ({ isOpen, onClose, currentPath }: MobileSidebarProps) => 
                 <Button
                   variant={isActive ? "default" : "ghost"}
                   size="sm"
-                  className="w-full justify-start px-4"
+                  className={`w-full justify-start ${item.indent ? "pl-8" : "px-4"}`}
                 >
                   <Icon className="h-5 w-5 mr-2" />
                   <span>{item.label}</span>

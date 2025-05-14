@@ -24,6 +24,7 @@ interface SidebarItemProps {
   href: string;
   isActive: boolean;
   isCollapsed: boolean;
+  indent?: boolean;
 }
 
 const SidebarItem = ({ icon: Icon, label, href, isActive, isCollapsed }: SidebarItemProps) => {
@@ -75,7 +76,7 @@ const Sidebar = () => {
   return (
     <div
       className={cn(
-        "flex flex-col border-r border-border bg-background transition-all duration-300 ease-in-out z-50 h-full fixed",
+        "hidden md:flex flex-col border-r border-border bg-background transition-all duration-300 ease-in-out z-10",
         isCollapsed ? "w-16" : "w-64"
       )}
     >
