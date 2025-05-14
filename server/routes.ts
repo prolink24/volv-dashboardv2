@@ -14,6 +14,7 @@ import { z } from "zod";
 import metricsRouter from "./routes/metrics";
 import cacheService from "./services/cache";
 import settingsRouter from "./api/settings";
+import kpiConfiguratorRouter from "./api/kpi-configurator";
 
 // Enhanced attribution response types
 interface AttributionStatsResponse {
