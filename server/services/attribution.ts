@@ -218,85 +218,132 @@ export async function attributeAllContacts() {
     let totalForms = 0;
     let daysToConversionValues = [];
     
-    // Process contacts in batches to avoid memory issues
+    // Process contacts in parallel with concurrency limit to avoid overloading
+    const concurrencyLimit = 10; // Process 10 contacts at a time in parallel
     const batchSize = 50;
+    
+    // Initialize a mutex for thread-safe updates to shared counters
+    const mutex = {
+      lock: async () => {
+        while (mutex.isLocked) {
+          await new Promise(resolve => setTimeout(resolve, 0));
+        }
+        mutex.isLocked = true;
+      },
+      unlock: () => {
+        mutex.isLocked = false;
+      },
+      isLocked: false
+    };
+    
+    // Process batches of contacts
     for (let i = 0; i < contacts.length; i += batchSize) {
       const batch = contacts.slice(i, i + batchSize);
       
-      // Process each contact in the batch
-      for (const contact of batch) {
-        try {
-          const attribution = await attributeContact(contact.id);
-          results.processed++;
+      // Start time for batch processing
+      const batchStartTime = performance.now();
+      
+      // Process concurrent batches with Promise.all and concurrency limit
+      const processBatch = async () => {
+        // Split batch into chunks for limited concurrency
+        for (let j = 0; j < batch.length; j += concurrencyLimit) {
+          const chunk = batch.slice(j, j + concurrencyLimit);
           
-          if (attribution.success) {
-            results.attributed++;
-            totalTouchpoints += attribution.touchpointCount || 0;
-            
-            // Channel stats
-            if (attribution.channelBreakdown) {
-              channelStats.calendly += attribution.channelBreakdown.calendly || 0;
-              channelStats.close += attribution.channelBreakdown.close || 0;
-              channelStats.typeform += attribution.channelBreakdown.typeform || 0;
+          // Process chunk in parallel
+          await Promise.all(chunk.map(async (contact) => {
+            try {
+              const attribution = await attributeContact(contact.id);
               
-              if (attribution.channelBreakdown.calendly > 0) {
-                contactsWithMeetings++;
-                totalMeetings += attribution.channelBreakdown.calendly;
-              }
-              
-              if (attribution.channelBreakdown.typeform > 0) {
-                contactsWithForms++;
-                totalForms += attribution.channelBreakdown.typeform;
-              }
-              
-              if (attribution.channelBreakdown.close > 0) {
-                totalActivities += attribution.channelBreakdown.close;
-              }
-            }
-            
-            // Deal attribution stats
-            if (attribution.attributionChains && attribution.attributionChains.length > 0) {
-              contactsWithDeals++;
-              
-              for (const chain of attribution.attributionChains) {
-                dealStats.total++;
-                const dealValue = typeof chain.dealValue === 'string' ? parseFloat(chain.dealValue) : (chain.dealValue || 0);
-                dealStats.totalValue += dealValue;
-                dealStats.totalTouchpoints += chain.totalTouchpoints ? Number(chain.totalTouchpoints) : 0;
+              // Use mutex to safely update shared counters
+              await mutex.lock();
+              try {
+                results.processed++;
                 
-                if (chain.attributionModel === 'last-touch') {
-                  modelStats.lastTouch++;
-                } else if (chain.attributionModel === 'multi-touch') {
-                  modelStats.multiTouch++;
-                } else {
-                  modelStats.noAttribution++;
-                }
-                
-                if (chain.meetingInfluence) {
-                  dealStats.withMeeting++;
-                  if (chain.meetingInfluence.daysToConversion) {
-                    daysToConversionValues.push(chain.meetingInfluence.daysToConversion);
+                if (attribution.success) {
+                  results.attributed++;
+                  totalTouchpoints += attribution.touchpointCount || 0;
+                  
+                  // Channel stats
+                  if (attribution.channelBreakdown) {
+                    channelStats.calendly += attribution.channelBreakdown.calendly || 0;
+                    channelStats.close += attribution.channelBreakdown.close || 0;
+                    channelStats.typeform += attribution.channelBreakdown.typeform || 0;
+                    
+                    if (attribution.channelBreakdown.calendly > 0) {
+                      contactsWithMeetings++;
+                      totalMeetings += attribution.channelBreakdown.calendly;
+                    }
+                    
+                    if (attribution.channelBreakdown.typeform > 0) {
+                      contactsWithForms++;
+                      totalForms += attribution.channelBreakdown.typeform;
+                    }
+                    
+                    if (attribution.channelBreakdown.close > 0) {
+                      totalActivities += attribution.channelBreakdown.close;
+                    }
                   }
+                  
+                  // Deal attribution stats
+                  if (attribution.attributionChains && attribution.attributionChains.length > 0) {
+                    contactsWithDeals++;
+                    
+                    for (const chain of attribution.attributionChains) {
+                      dealStats.total++;
+                      const dealValue = typeof chain.dealValue === 'string' ? parseFloat(chain.dealValue) : (chain.dealValue || 0);
+                      dealStats.totalValue += dealValue;
+                      dealStats.totalTouchpoints += chain.totalTouchpoints ? Number(chain.totalTouchpoints) : 0;
+                      
+                      if (chain.attributionModel === 'last-touch') {
+                        modelStats.lastTouch++;
+                      } else if (chain.attributionModel === 'multi-touch') {
+                        modelStats.multiTouch++;
+                      } else {
+                        modelStats.noAttribution++;
+                      }
+                      
+                      if (chain.meetingInfluence) {
+                        dealStats.withMeeting++;
+                        if (chain.meetingInfluence.daysToConversion) {
+                          daysToConversionValues.push(chain.meetingInfluence.daysToConversion);
+                        }
+                      }
+                      
+                      if (chain.formInfluence) {
+                        dealStats.withForm++;
+                      }
+                      
+                      if (chain.activityInfluence) {
+                        dealStats.withActivity++;
+                      }
+                    }
+                  }
+                } else {
+                  results.errors++;
                 }
-                
-                if (chain.formInfluence) {
-                  dealStats.withForm++;
-                }
-                
-                if (chain.activityInfluence) {
-                  dealStats.withActivity++;
-                }
+              } finally {
+                mutex.unlock();
+              }
+            } catch (error) {
+              console.error(`Error attributing contact ${contact.id}:`, error);
+              
+              await mutex.lock();
+              try {
+                results.processed++;
+                results.errors++;
+              } finally {
+                mutex.unlock();
               }
             }
-          } else {
-            results.errors++;
-          }
-        } catch (error) {
-          console.error(`Error attributing contact ${contact.id}:`, error);
-          results.processed++;
-          results.errors++;
+          }));
         }
-      }
+      };
+      
+      await processBatch();
+      
+      // Log batch processing time for performance monitoring
+      const batchEndTime = performance.now();
+      console.log(`Processed batch of ${batch.length} contacts in ${((batchEndTime - batchStartTime) / 1000).toFixed(2)}s`);
     }
     
     // Calculate averages and percentages
