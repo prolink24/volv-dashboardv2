@@ -15,6 +15,10 @@ export default function SalesDashboard() {
   });
 
   console.log("Sales Dashboard Data:", dashboardData ? "Loaded" : "Not loaded", "isLoading:", isLoading, "error:", error);
+  console.log("Dashboard data structure:", dashboardData ? Object.keys(dashboardData) : "No data");
+  if (dashboardData?.attribution) {
+    console.log("Attribution data:", Object.keys(dashboardData.attribution));
+  }
 
   if (isLoading || !dashboardData) {
     return (
