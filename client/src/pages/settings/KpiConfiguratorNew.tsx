@@ -105,7 +105,7 @@ const KpiConfiguratorNew: React.FC = () => {
     
     // Filter by dashboard type
     if (filterDashboard) {
-      matches = matches && (formula.dashboardTypes?.includes(filterDashboard) ?? false);
+      matches = matches && (Array.isArray(formula.dashboardTypes) && formula.dashboardTypes.includes(filterDashboard));
     }
     
     return matches;
@@ -427,11 +427,15 @@ const KpiConfiguratorNew: React.FC = () => {
                               </code>
                             </div>
                             <div className="flex flex-wrap gap-2 mt-2">
-                              {formula.dashboardTypes?.map(dashType => (
+                              {Array.isArray(formula.dashboardTypes) ? formula.dashboardTypes.map(dashType => (
                                 <Badge key={dashType} variant="secondary">
                                   {dashboardTypes.find(d => d?.id === dashType)?.name || dashType}
                                 </Badge>
-                              )) || []}
+                              )) : (
+                                <Badge variant="secondary">
+                                  Sales
+                                </Badge>
+                              )}
                             </div>
                           </div>
                           <div className="ml-4 flex flex-col gap-2">
