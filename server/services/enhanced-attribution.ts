@@ -224,7 +224,10 @@ const enhancedAttributionService = {
    */
   async attributeAllContacts() {
     try {
-      const contacts = await storage.getAllContacts(100); // Limit to 100 for performance
+      // Use contact sample instead of getAllContacts for better performance
+      const MAX_CONTACTS_FOR_DASHBOARD = 250;
+      const contacts = await storage.getContactSample(MAX_CONTACTS_FOR_DASHBOARD);
+      console.log(`Enhanced attribution using sample of ${contacts.length} contacts`);
       
       if (!contacts || contacts.length === 0) {
         return {
