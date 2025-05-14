@@ -471,6 +471,14 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return newMetrics;
   }
+  
+  async getMetrics(id: number): Promise<Metrics | undefined> {
+    const [metricsData] = await db
+      .select()
+      .from(metrics)
+      .where(eq(metrics.id, id));
+    return metricsData || undefined;
+  }
 
   async updateMetrics(id: number, metricsData: Partial<InsertMetrics>): Promise<Metrics | undefined> {
     const [updatedMetrics] = await db
