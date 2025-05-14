@@ -13,6 +13,9 @@ import {
 
 export const AttributionStats = () => {
   const { data, isLoading, error } = useAttributionStats();
+  
+  // Add debugging to see if we're receiving data correctly
+  console.log('Attribution Stats Data:', data);
 
   if (isLoading) {
     return (

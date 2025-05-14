@@ -1,4 +1,8 @@
 import { useState, useEffect } from "react";
+import { 
+  Activity, BarChart as BarChartIcon, CheckCircle, FileCheck, FileText, 
+  HelpCircle, LayoutDashboard 
+} from "lucide-react";
 import { useDashboard } from "@/providers/dashboard-provider";
 import { useDashboardData, syncData, invalidateDashboardData, useAttributionStats } from "@/hooks/use-dashboard-data";
 import { useToast } from "@/hooks/use-toast";
@@ -119,48 +123,51 @@ const Dashboard = () => {
     color: person.closingRate > 0 ? "var(--primary)" : "var(--muted)"
   }));
 
-  // Prepare attribution channel data if available
-  const channelData = dashboardData.attribution?.channelStats 
+  // Generate attribution channel data from our actual stats
+  const channelData = attributionStatsData?.stats 
     ? {
-        channels: Object.entries(dashboardData.attribution.channelStats)
-          .map(([name, stats]) => ({
-            name,
-            value: stats.count || 0,
-            percentage: stats.percentage || (stats.count / dashboardData.attribution.contactStats.totalContacts * 100) || 0,
-            color: name === 'calendly' ? '#FF8A65' : 
-                  name === 'close' ? '#4CAF50' : 
-                  name === 'typeform' ? '#AB47BC' : 
-                  name === 'email' ? '#42A5F5' : 
-                  name === 'call' ? '#FFA726' : '#78909C'
-          })),
+        channels: [
+          {
+            name: 'Close CRM',
+            value: attributionStatsData.stats.totalContacts - attributionStatsData.stats.multiSourceContacts,
+            percentage: 100 - attributionStatsData.stats.multiSourceRate,
+            color: '#4CAF50'
+          },
+          {
+            name: 'Multi-Source',
+            value: attributionStatsData.stats.multiSourceContacts,
+            percentage: attributionStatsData.stats.multiSourceRate,
+            color: '#FF8A65'
+          }
+        ],
         title: "Channel Attribution",
         description: "Contact attribution by source channel"
       }
     : undefined;
 
-  // Prepare attribution insights if available
-  const attributionInsights = dashboardData.attribution?.insights 
-    ? Object.entries(dashboardData.attribution.insights).map(([key, value]) => {
-        let icon;
-        let badge;
-        
-        if (key === 'mostEffectiveChannel') {
-          icon = <span className="i-lucide-mail text-blue-500" />;
-          badge = { text: "Top Channel", variant: "secondary" };
-        } else if (key === 'averageTouchpoints') {
-          icon = <span className="i-lucide-activity text-green-500" />;
-        } else if (key === 'salesCycleDuration') {
-          icon = <span className="i-lucide-clock text-orange-500" />;
+  // Generate attribution insights from our actual stats
+  const attributionInsights = attributionStatsData?.stats 
+    ? [
+        {
+          title: "Attribution Accuracy",
+          description: `${attributionStatsData.attributionAccuracy?.toFixed(1)}% accuracy in contact attribution`,
+          icon: <CheckCircle className="h-5 w-5 text-green-500" />,
+          badge: { text: "Excellent", variant: "default" }
+        },
+        {
+          title: "Field Coverage",
+          description: `${attributionStatsData.stats.fieldCoverage.toFixed(1)}% of contacts have complete data`,
+          icon: <FileCheck className="h-5 w-5 text-blue-500" />,
+          badge: { text: "Complete", variant: "default" }
+        },
+        {
+          title: "Deal Attribution",
+          description: `${attributionStatsData.stats.dealAttributionRate.toFixed(1)}% of deals have attribution chains`,
+          icon: <BarChartIcon className="h-5 w-5 text-amber-500" />,
+          badge: { text: "Good", variant: "default" }
         }
-
-        return {
-          title: key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
-          description: value.toString(),
-          icon,
-          badge
-        };
-      })
-    : undefined;
+      ]
+    : [];
 
   return (
     <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-background">
@@ -259,33 +266,33 @@ const Dashboard = () => {
         <KpiCard 
           title="Closing Rate" 
           value={`${dashboardData.kpis.closingRate}%`} 
-          trend={dashboardData.attribution?.modelStats?.modelAccuracy ? {
-            value: Math.round(dashboardData.attribution.modelStats.modelAccuracy),
+          trend={attributionStatsData?.attributionAccuracy ? {
+            value: Math.round(attributionStatsData.attributionAccuracy),
             label: "attribution certainty"
           } : undefined}
         />
         <KpiCard 
           title="Avg Cash Collected" 
           value={formatCurrency(dashboardData.kpis.avgCashCollected)}
-          trend={dashboardData.attribution?.dealStats?.avgDealValue ? {
-            value: Math.round((dashboardData.kpis.avgCashCollected / dashboardData.attribution.dealStats.avgDealValue - 1) * 100),
-            label: "vs. predicted"
+          trend={attributionStatsData?.stats?.dealAttributionRate ? {
+            value: Math.round(attributionStatsData.stats.dealAttributionRate),
+            label: "deal attribution"
           } : undefined}
         />
         <KpiCard 
           title="Solution Call Show Rate" 
           value={`${dashboardData.kpis.solutionCallShowRate}%`}
-          trend={dashboardData.attribution?.touchpointStats?.calendlyShowRate ? {
-            value: Math.round(dashboardData.attribution.touchpointStats.calendlyShowRate - dashboardData.kpis.solutionCallShowRate),
-            label: "vs. all meetings"
+          trend={attributionStatsData?.stats?.highCertaintyContacts ? {
+            value: attributionStatsData.stats.highCertaintyContacts,
+            label: "high certainty contacts"
           } : undefined}
         />
         <KpiCard 
           title="Earning Per Call 2" 
           value={formatCurrency(dashboardData.kpis.earningPerCall2)}
-          trend={dashboardData.attribution?.dealStats?.revenuePerTouchpoint ? {
-            value: Math.round((dashboardData.kpis.earningPerCall2 / dashboardData.attribution.dealStats.revenuePerTouchpoint - 1) * 100),
-            label: "vs. avg touchpoint"
+          trend={attributionStatsData?.stats?.multiSourceRate ? {
+            value: Math.round(attributionStatsData.stats.multiSourceRate),
+            label: "multi-source rate"
           } : undefined}
         />
       </div>
@@ -344,12 +351,12 @@ const Dashboard = () => {
             },
             { 
               label: "Sales Cycle", 
-              value: dashboardData.attribution?.insights?.salesCycleDuration || dashboardData.advancedMetrics?.salesCycle || 0, 
+              value: dashboardData.advancedMetrics?.salesCycle || 0, 
               description: "First Touch -> Close (Days)",
             },
             { 
               label: "Touchpoints To Close", 
-              value: dashboardData.attribution?.insights?.averageTouchpoints || dashboardData.advancedMetrics?.callsToClose || 0, 
+              value: dashboardData.advancedMetrics?.callsToClose || 0, 
               description: "Avg interactions before conversion",
             },
             { 
@@ -388,55 +395,98 @@ const Dashboard = () => {
                 <span className="text-xl font-bold">{dashboardData.triageMetrics?.sits || 0}</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-sm text-muted-foreground">Triage Show Rate</span>
+                <span className="text-sm text-muted-foreground">Show Rate</span>
                 <span className="text-xl font-bold">{dashboardData.triageMetrics?.showRate || 0}%</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-sm text-muted-foreground">Solution Booking Rate</span>
-                <span className="text-xl font-bold">{dashboardData.triageMetrics?.solutionBookingRate || 0}%</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-sm text-muted-foreground">Cancel Rate</span>
-                <span className="text-xl font-bold">{dashboardData.triageMetrics?.cancelRate || 0}%</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-sm text-muted-foreground">Outbound Triages Set</span>
-                <span className="text-xl font-bold">{dashboardData.triageMetrics?.outboundTriagesSet || 0}</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-sm text-muted-foreground">Total Direct Bookings</span>
-                <span className="text-xl font-bold">{dashboardData.triageMetrics?.totalDirectBookings || 0}</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-sm text-muted-foreground">Direct Booking Rate</span>
-                <span className="text-xl font-bold">{dashboardData.triageMetrics?.directBookingRate || 0}%</span>
+                <span className="text-sm text-muted-foreground">Bookings/Day</span>
+                <span className="text-xl font-bold">{dashboardData.triageMetrics?.bookingsPerDay || 0}</span>
               </div>
             </div>
           </div>
-        
-          {dashboardData.leadMetrics && (
-            <div className="bg-card rounded-lg shadow-sm border border-border p-4">
-              <h3 className="text-base font-medium mb-4">Lead Metrics</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col">
-                  <span className="text-sm text-muted-foreground">New Leads</span>
-                  <span className="text-xl font-bold">{dashboardData.leadMetrics?.newLeads || 0}</span>
+          
+          <div className="bg-card rounded-lg shadow-sm border border-border p-4">
+            <h3 className="text-base font-medium mb-4">Setter Performance</h3>
+            <div className="space-y-4">
+              <div className="flex flex-col">
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Setter Show Rate</span>
+                  <span className="text-sm font-medium">{dashboardData.triageMetrics?.setterShowRate || 0}%</span>
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-sm text-muted-foreground">Leads Disqualified</span>
-                  <span className="text-xl font-bold">{dashboardData.leadMetrics?.disqualified || 0}</span>
+                <ProgressBar 
+                  value={dashboardData.triageMetrics?.setterShowRate || 0} 
+                  max={100} 
+                  color="green"
+                />
+              </div>
+              <div className="flex flex-col">
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Setter Close Rate</span>
+                  <span className="text-sm font-medium">{dashboardData.triageMetrics?.setterCloseRate || 0}%</span>
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-sm text-muted-foreground">Total Dials</span>
-                  <span className="text-xl font-bold">{dashboardData.leadMetrics?.totalDials || 0}</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-sm text-muted-foreground">Pick Up Rate</span>
-                  <span className="text-xl font-bold">{dashboardData.leadMetrics?.pickUpRate || 0}%</span>
-                </div>
+                <ProgressBar 
+                  value={dashboardData.triageMetrics?.setterCloseRate || 0} 
+                  max={100} 
+                  color="blue"
+                />
               </div>
             </div>
-          )}
+          </div>
+        </div>
+      )}
+      
+      {/* Lead Metrics */}
+      {dashboardData.leadMetrics && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="col-span-1 md:col-span-2 bg-card rounded-lg shadow-sm border border-border p-4">
+            <h3 className="text-base font-medium mb-4">Lead Source Metrics</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="flex flex-col">
+                <span className="text-sm text-muted-foreground">Total Leads</span>
+                <span className="text-xl font-bold">{dashboardData.leadMetrics?.totalLeads || 0}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm text-muted-foreground">Qualified Leads</span>
+                <span className="text-xl font-bold">{dashboardData.leadMetrics?.qualifiedLeads || 0}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm text-muted-foreground">Conversion Rate</span>
+                <span className="text-xl font-bold">{dashboardData.leadMetrics?.conversionRate || 0}%</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm text-muted-foreground">Cost Per Lead</span>
+                <span className="text-xl font-bold">${dashboardData.leadMetrics?.costPerLead || 0}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-card rounded-lg shadow-sm border border-border p-4">
+            <h3 className="text-base font-medium mb-4">Lead Quality</h3>
+            <div className="space-y-4">
+              <div className="flex flex-col">
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Qualified Rate</span>
+                  <span className="text-sm font-medium">{dashboardData.leadMetrics?.qualifiedRate || 0}%</span>
+                </div>
+                <ProgressBar 
+                  value={dashboardData.leadMetrics?.qualifiedRate || 0} 
+                  max={100} 
+                  color="green"
+                />
+              </div>
+              <div className="flex flex-col">
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Response Rate</span>
+                  <span className="text-sm font-medium">{dashboardData.leadMetrics?.responseRate || 0}%</span>
+                </div>
+                <ProgressBar 
+                  value={dashboardData.leadMetrics?.responseRate || 0} 
+                  max={100} 
+                  color="blue"
+                />
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </main>
