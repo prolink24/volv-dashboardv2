@@ -272,12 +272,12 @@ const KpiConfigurationPage = () => {
       ...data,
     };
     
-    saveFormulaMutation.mutate(updatedFormula);
+    updateKpiFormula(updatedFormula);
   };
 
   // Handle custom field form submission
   const onCustomFieldSubmit = (data: z.infer<typeof CustomFieldSchema>) => {
-    saveCustomFieldMutation.mutate(data as CustomField);
+    saveCustomField(data as CustomField);
   };
 
   // Reset formula form when selected KPI changes
@@ -295,10 +295,9 @@ const KpiConfigurationPage = () => {
     }
   }, [selectedKpi, formulaForm]);
 
-  // Function to toggle KPI enabled state
-  const toggleKpiEnabled = (kpi: KpiFormula) => {
-    const updatedKpi = { ...kpi, enabled: !kpi.enabled };
-    saveFormulaMutation.mutate(updatedKpi);
+  // Function to toggle KPI enabled state - using the hook's toggle function
+  const handleToggleKpi = (kpi: KpiFormula) => {
+    toggleKpiEnabled(kpi);
   };
 
   // Function to render the formula editor
