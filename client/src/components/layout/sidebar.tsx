@@ -9,6 +9,7 @@ import {
   Calendar, 
   FileText, 
   BarChart2, 
+  BarChart,
   Settings,
   Link2,
   DollarSign,
@@ -96,6 +97,12 @@ const Sidebar = () => {
     { icon: FileText, label: "Forms", href: "/forms" },
     { icon: BarChart2, label: "Analytics", href: "/analytics" },
     { icon: Settings, label: "Settings", href: "/settings" },
+    { 
+      icon: BarChart, 
+      label: "KPI Configuration", 
+      href: "/settings/kpi-configuration",
+      indent: true 
+    },
   ];
 
   return (
