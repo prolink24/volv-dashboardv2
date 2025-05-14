@@ -12,10 +12,23 @@ import {
 } from "@/components/ui/tooltip";
 
 export const AttributionStats = () => {
-  const { data, isLoading, error } = useAttributionStats();
+  const { data, isLoading, error, isError } = useAttributionStats();
   
-  // Add debugging to see if we're receiving data correctly
-  console.log('Attribution Stats Data:', data);
+  // Enhanced debugging to pinpoint issues
+  console.log('Attribution Stats Component Debug:');
+  console.log('- Is Loading:', isLoading);
+  console.log('- Is Error:', isError);
+  console.log('- Error:', error);
+  console.log('- Has Data:', !!data);
+  if (data) {
+    console.log('- Data Keys:', Object.keys(data));
+    console.log('- Success Flag:', data.success);
+    console.log('- AttributionAccuracy:', data.attributionAccuracy);
+    console.log('- Has Stats:', !!data.stats);
+    if (data.stats) {
+      console.log('- Stats Keys:', Object.keys(data.stats));
+    }
+  }
 
   if (isLoading) {
     return (

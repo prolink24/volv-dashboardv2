@@ -7,6 +7,7 @@ import { DashboardProvider } from "@/providers/dashboard-provider";
 
 import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
+import DataFlowDebugger from "@/debug/data-flow-debugger";
 
 import Dashboard from "@/pages/dashboard";
 import Contacts from "@/pages/contacts";
@@ -58,6 +59,7 @@ function App() {
       <TooltipProvider>
         <DashboardProvider>
           <Toaster />
+          <DataFlowDebugger />
           <Router />
         </DashboardProvider>
       </TooltipProvider>
