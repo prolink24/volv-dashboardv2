@@ -151,13 +151,13 @@ test.describe('API Tests', () => {
   });
 
   test('should return Close CRM users', async ({ request }) => {
-    const response = await request.get('/api/users/close');
+    const response = await request.get('/api/close-users');
     const data = await response.json();
 
     expect(response.status()).toBe(200);
-    expect(data.success).toBe(true);
     expect(data.users).toBeDefined();
     expect(Array.isArray(data.users)).toBe(true);
+    expect(data.totalCount).toBeDefined();
     
     // Each user should have basic info
     if (data.users.length > 0) {
