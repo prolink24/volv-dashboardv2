@@ -35,7 +35,7 @@ import {
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useKpiConfiguration } from "@/hooks/use-kpi-configuration";
-import { KpiCategory, KpiFormula, CustomField } from "@shared/schema/kpi-configuration";
+import { KpiCategory as KpiCategoryType, KpiFormula as KpiFormulaType, CustomField as CustomFieldType } from "@shared/schema/kpi-configuration";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -63,44 +63,10 @@ import { z } from "zod";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
-// Define types for our KPI configuration data
-interface KpiFormula {
-  id: string;
-  name: string;
-  description: string;
-  formula: string;
-  enabled: boolean;
-  customizable: boolean;
-  category: 'sales' | 'marketing' | 'admin' | 'setter' | 'compliance' | 'attribution';
-  requiredFields: string[];
-  source: 'close' | 'calendly' | 'typeform' | 'calculated';
-  inputFields?: {
-    id: string;
-    name: string;
-    type: 'number' | 'string' | 'boolean' | 'date' | 'select';
-    source: 'close' | 'calendly' | 'typeform' | 'custom';
-    fieldPath?: string;
-    options?: string[];
-    value: any;
-  }[];
-}
-
-interface CustomField {
-  id: string;
-  name: string;
-  fieldType: 'text' | 'number' | 'date' | 'select' | 'boolean';
-  source: 'close' | 'calendly' | 'typeform' | 'custom';
-  path?: string;
-  options?: string[];
-  description?: string;
-}
-
-interface KpiCategory {
-  id: string;
-  name: string;
-  description: string;
-  kpis: KpiFormula[];
-}
+// Use the imported types as our interfaces
+type KpiFormula = KpiFormulaType;
+type CustomField = CustomFieldType;
+type KpiCategory = KpiCategoryType;
 
 // Create schema for KPI formula editing
 const KpiFormulaSchema = z.object({
@@ -272,6 +238,7 @@ const KpiConfigurationPage = () => {
       ...data,
     };
     
+    // Use the hook's function to update the formula
     updateKpiFormula(updatedFormula);
   };
 
@@ -528,7 +495,7 @@ const KpiConfigurationPage = () => {
                   <Switch 
                     className="ml-2" 
                     checked={selectedKpi.enabled}
-                    onCheckedChange={() => toggleKpiEnabled(selectedKpi)}
+                    onCheckedChange={() => handleToggleKpi(selectedKpi)}
                   />
                 </div>
               </div>
