@@ -445,7 +445,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Format the timeline data for visualization
-      const formattedTimeline = (result.timeline || []).map(event => {
+      const formattedTimeline = (result.timeline || []).map((event: any) => {
         const date = new Date(event.date || new Date());
         let title = 'Untitled';
         let description = '';
@@ -641,7 +641,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Format the timeline data for visualization
-      const formattedTimeline = (result.timeline || []).map(event => {
+      const formattedTimeline = (result.timeline || []).map((event: any) => {
         const date = new Date(event.date || new Date());
         let title = 'Untitled';
         let description = '';
@@ -713,7 +713,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           dealStatus: chain.dealStatus,
           attributionModel: chain.attributionModel,
           attributionCertainty: chain.attributionCertainty,
-          significantTouchpoints: chain.significantTouchpoints?.map(t => ({
+          significantTouchpoints: chain.significantTouchpoints?.map((t: any) => ({
             id: `${t.type}_${t.sourceId || Math.random().toString(36).substr(2, 9)}`,
             type: t.type,
             source: t.source,
@@ -855,8 +855,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           attributionCertainty: result.attributionCertainty,
           journeyDuration,
           touchpointCount: timeline.length,
-          sources: Array.from(new Set(timeline.map(t => t.source))),
-          touchpointTypes: Array.from(new Set(timeline.map(t => t.type))),
+          sources: Array.from(new Set(timeline.map((t: any) => t.source))),
+          touchpointTypes: Array.from(new Set(timeline.map((t: any) => t.type))),
           // Enhanced metrics from our improved algorithm
           attributionModel: result.attributionChains?.[0]?.attributionModel || 'multi-touch',
           meetingInfluence: result.attributionChains?.[0]?.meetingInfluence?.strength || 0,
