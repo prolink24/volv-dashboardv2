@@ -77,22 +77,23 @@ const KpiConfiguratorNew: React.FC = () => {
   const updateFormulaMutation = useUpdateKpiFormula();
   const deleteFormulaMutation = useDeleteKpiFormula();
   
-  // All available categories and dashboard types
-  const categories = getFormulaCategories();
-  const dashboardTypes = getDashboardTypes();
-  const availableFields = getAvailableFields();
+  // All available categories and dashboard types (with null/undefined handling)
+  const categories = getFormulaCategories() || [];
+  const dashboardTypes = getDashboardTypes() || [];
+  const availableFields = getAvailableFields() || [];
   
-  // Filter formulas based on search query and filters
-  const filteredFormulas = formulas.filter(formula => {
+  // Filter formulas based on search query and filters (safely handle potentially undefined formulas)
+  const filteredFormulas = formulas?.filter(formula => {
+    if (!formula) return false;
     let matches = true;
     
     // Filter by search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       matches = matches && (
-        formula.name.toLowerCase().includes(query) ||
+        (formula.name || "").toLowerCase().includes(query) ||
         (formula.description || "").toLowerCase().includes(query) ||
-        formula.formula.toLowerCase().includes(query)
+        (formula.formula || "").toLowerCase().includes(query)
       );
     }
     
@@ -103,11 +104,11 @@ const KpiConfiguratorNew: React.FC = () => {
     
     // Filter by dashboard type
     if (filterDashboard) {
-      matches = matches && formula.dashboardTypes.includes(filterDashboard);
+      matches = matches && formula.dashboardTypes?.includes(filterDashboard);
     }
     
     return matches;
-  });
+  }) || [];
   
   // Handle form input changes
   const handleInputChange = (field: keyof KpiFormulaInput, value: any) => {
@@ -369,8 +370,8 @@ const KpiConfiguratorNew: React.FC = () => {
                     <SelectContent>
                       <SelectItem value="all-dashboards">All dashboards</SelectItem>
                       {dashboardTypes.map(dashboard => (
-                        <SelectItem key={dashboard.id} value={dashboard.id}>
-                          {dashboard.name}
+                        <SelectItem key={dashboard.id} value={dashboard.id || ""}>
+                          {dashboard.name || ""}
                         </SelectItem>
                       ))}
                     </SelectContent>
