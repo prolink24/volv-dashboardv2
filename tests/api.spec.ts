@@ -160,7 +160,7 @@ test.describe('API Tests', () => {
   });
 
   test('should return Close CRM users', async ({ request }) => {
-    const response = await request.get('/api/close/users');
+    const response = await request.get('/api/close-users');
     const data = await response.json();
 
     expect(response.status()).toBe(200);
