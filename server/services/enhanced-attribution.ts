@@ -35,7 +35,7 @@ export interface Touchpoint {
   type: TouchpointType;
   source: string; // 'calendly', 'close', 'typeform'
   date: Date | string;
-  sourceId?: string;
+  sourceId?: string | undefined;
   data?: any;
 }
 
