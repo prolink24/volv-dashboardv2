@@ -8,6 +8,25 @@ export const customMatchers = {
     const count = await locator.count();
     expect(count, `Expected at least ${minCount} elements, but found ${count}`).toBeGreaterThanOrEqual(minCount);
   },
+  
+  /**
+   * Assert that a locator is fully loaded (no loading spinners, contains expected content)
+   */
+  async toBeFullyLoaded(locator: Locator): Promise<void> {
+    // Check if locator is visible
+    await expect(locator).toBeVisible();
+    
+    // Check that no loading spinners are present
+    const spinner = locator.locator('.loading, .spinner, .skeleton');
+    const spinnerCount = await spinner.count();
+    expect(spinnerCount, 'Expected no loading spinners').toBe(0);
+    
+    // Check that locator has some content (not empty)
+    const hasContent = await locator.evaluate(element => {
+      return element.textContent && element.textContent.trim().length > 0;
+    });
+    expect(hasContent, 'Expected element to have content').toBe(true);
+  },
 
   /**
    * Assert that a locator has at most the specified count of elements

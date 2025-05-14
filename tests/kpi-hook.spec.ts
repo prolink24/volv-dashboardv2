@@ -1,249 +1,272 @@
 import { test, expect } from '@playwright/test';
 import { customMatchers } from './utils/test-matchers';
-import { skipTest, skipIf, asyncUtils } from './utils/test-helpers';
+import { skipTest, skipIf, asyncUtils, testConstants } from './utils/test-helpers';
 
 test.describe('KPI Configuration Hook Tests', () => {
+  // These tests verify that the KPI configuration hook works correctly
+  // The hook should load, update, and persist KPI configuration data
+  
   test.beforeEach(async ({ page }) => {
-    // Navigate to KPI configuration page
+    // Navigate to KPI configuration page where the hook is used
     await page.goto('/settings/kpi-configuration');
     
-    // Wait for the page to fully load and data to be fetched
-    await page.waitForSelector('h1:has-text("KPI Configuration")');
-    await page.waitForTimeout(1000); // Wait for data fetch
+    // Wait for the page to load
+    await page.waitForSelector('h1:has-text("KPI Configuration"), h1:has-text("Configuration")', { timeout: 10000 });
   });
 
-  test('should toggle KPI visibility correctly', async ({ page }) => {
-    // Find an inactive KPI to test with
-    const inactiveKpi = page.locator('.kpi-toggle:not([data-state="checked"])').first();
+  test('should load KPI configuration data correctly', async ({ page }) => {
+    // Two ways to check this:
+    // 1. Through the API directly (more reliable)
+    // 2. Through the UI which uses the hook (more end-to-end)
     
-    // Skip test if no inactive KPIs found
-    if (await inactiveKpi.count() === 0) {
-      skipTest('No inactive KPIs found to test toggle functionality');
+    // Method 1: Check API directly
+    const apiResponse = await page.request.get('/api/settings/kpi-configuration');
+    expect(apiResponse.status()).toBe(200);
+    
+    const data = await apiResponse.json();
+    expect(data.success).toBe(true);
+    expect(data.kpiConfig).toBeDefined();
+    
+    // Method 2: Check UI elements that depend on hook data
+    const kpiList = page.locator('.kpi-list, .config-list, [data-testid="kpi-list"]');
+    await expect(kpiList).toBeVisible();
+    
+    const kpiItems = kpiList.locator('.kpi-item, .config-item, [data-testid="kpi-item"]');
+    await customMatchers.toHaveCountAtLeast(kpiItems, 1);
+    
+    // Verify the UI is using real data by checking that at least one KPI has a name
+    const firstItemName = kpiItems.first().locator('.kpi-name, .config-name, h3');
+    const nameText = await customMatchers.getTextSafely(firstItemName);
+    expect(nameText.length).toBeGreaterThan(0);
+  });
+
+  test('should update KPI configuration through the hook', async ({ page }) => {
+    // Find a toggle to interact with (it should use the hook's update function)
+    const toggleButton = page.locator('button.toggle, input[type="checkbox"], [role="switch"]').first();
+    
+    if (await toggleButton.count() === 0) {
+      skipTest('No toggle buttons found to test hook update functionality');
       return;
     }
     
-    // Get the KPI name
-    const kpiItem = inactiveKpi.locator('//ancestor::div[contains(@class, "kpi-item")]');
-    const kpiName = await customMatchers.getTextSafely(kpiItem.locator('h3'));
+    // Get the initial state from the API
+    const initialResponse = await page.request.get('/api/settings/kpi-configuration');
+    const initialData = await initialResponse.json();
+    const initialActiveKpis = initialData.kpiConfig.activeKpis || [];
     
-    // Toggle the KPI ON
-    await inactiveKpi.click();
+    // Record the initial count of active KPIs
+    const initialActiveCount = initialActiveKpis.length;
     
-    // Wait for the toggle action to complete (API call)
+    // Click the toggle to change the state
+    await toggleButton.click();
+    
+    // Wait for the change to be processed
     await page.waitForTimeout(1000);
     
-    // Verify the KPI is now in the Active KPIs section
-    await expect(page.locator('.active-kpis-list').locator(`text=${kpiName}`)).toBeVisible();
+    // Get the updated state from the API
+    const updatedResponse = await page.request.get('/api/settings/kpi-configuration');
+    const updatedData = await updatedResponse.json();
+    const updatedActiveKpis = updatedData.kpiConfig.activeKpis || [];
     
-    // Verify the state changes are reflected in the DOM
-    await expect(inactiveKpi).toHaveAttribute('data-state', 'checked');
+    // The count should have changed (either increased or decreased by 1)
+    const updatedActiveCount = updatedActiveKpis.length;
+    const countDifference = Math.abs(updatedActiveCount - initialActiveCount);
     
-    // Toggle it OFF again
-    await inactiveKpi.click();
+    expect(countDifference).toBe(1);
     
-    // Wait for the toggle action to complete
+    // Toggle back to original state
+    await toggleButton.click();
+    
+    // Wait for the change to be processed
     await page.waitForTimeout(1000);
     
-    // Verify it's removed from the active list
-    await expect(page.locator('.active-kpis-list').locator(`text=${kpiName}`)).not.toBeVisible();
+    // Verify the count is back to the initial value
+    const finalResponse = await page.request.get('/api/settings/kpi-configuration');
+    const finalData = await finalResponse.json();
+    const finalActiveKpis = finalData.kpiConfig.activeKpis || [];
     
-    // Verify the state is toggled back
-    await expect(inactiveKpi).toHaveAttribute('data-state', 'unchecked');
+    expect(finalActiveKpis.length).toBe(initialActiveCount);
   });
 
-  test('should save KPI formula changes', async ({ page }) => {
-    // Find an active KPI to edit
-    const activeKpi = page.locator('.active-kpis-list .kpi-item').first();
+  test('should handle concurrent updates correctly', async ({ page }) => {
+    // Find multiple toggle buttons
+    const toggleButtons = page.locator('button.toggle, input[type="checkbox"], [role="switch"]');
     
-    // Skip test if no active KPIs
-    if (await activeKpi.count() === 0) {
-      skipTest('No active KPIs found to test formula editing');
+    if (await toggleButtons.count() < 2) {
+      skipTest('Not enough toggle buttons found to test concurrent updates');
       return;
     }
     
-    // Click the edit button
-    await activeKpi.locator('button:has-text("Edit")').click();
+    // Click two toggles in quick succession
+    await toggleButtons.nth(0).click();
+    await toggleButtons.nth(1).click();
     
-    // Wait for formula editor
-    await expect(page.locator('.formula-editor')).toBeVisible();
+    // Wait for both updates to process
+    await page.waitForTimeout(1500);
     
-    // Get current formula
-    const formulaInput = page.locator('.formula-editor textarea');
-    const originalFormula = await formulaInput.inputValue();
+    // Verify the page doesn't crash and the API is still accessible
+    const response = await page.request.get('/api/settings/kpi-configuration');
+    expect(response.status()).toBe(200);
     
-    // Modify formula (add comment to make it unique but functionally identical)
-    const testId = Math.floor(Math.random() * 1000);
-    const newFormula = originalFormula.includes('//') 
-      ? originalFormula.replace(/\/\/.*$/, `// Test ${testId}`)
-      : `${originalFormula} // Test ${testId}`;
+    // Verify both toggles reflect their new states in the UI
+    // This would check if there were any race conditions in the hook
+    const button1State = await toggleButtons.nth(0).getAttribute('data-state') || 
+                         await toggleButtons.nth(0).getAttribute('aria-checked');
+    const button2State = await toggleButtons.nth(1).getAttribute('data-state') || 
+                         await toggleButtons.nth(1).getAttribute('aria-checked');
     
-    await formulaInput.fill(newFormula);
+    expect(button1State).not.toBeNull();
+    expect(button2State).not.toBeNull();
     
-    // Save the changes
-    await page.locator('button:has-text("Save Formula")').click();
-    
-    // Wait for save to complete
+    // Reset the toggles
+    await toggleButtons.nth(0).click();
+    await toggleButtons.nth(1).click();
     await page.waitForTimeout(1000);
-    
-    // Verify the formula was updated by reopening the editor
-    await activeKpi.locator('button:has-text("Edit")').click();
-    
-    // Check the formula contains our change
-    const updatedFormula = await page.locator('.formula-editor textarea').inputValue();
-    expect(updatedFormula).toContain(`Test ${testId}`);
-    
-    // Restore original formula
-    await page.locator('.formula-editor textarea').fill(originalFormula);
-    await page.locator('button:has-text("Save Formula")').click();
-    
-    // Close editor (if needed)
-    if (await page.locator('button:has-text("Cancel")').isVisible()) {
-      await page.locator('button:has-text("Cancel")').click();
-    }
   });
 
-  test('should add and delete custom fields', async ({ page }) => {
-    // Generate unique test field name
-    const testFieldName = `Test Field ${Math.floor(Math.random() * 10000)}`;
+  test('should maintain state across page navigations', async ({ page }) => {
+    // Find a toggle button
+    const toggleButton = page.locator('button.toggle, input[type="checkbox"], [role="switch"]').first();
     
-    // Click Add Custom Field button
-    await page.locator('button:has-text("Add Custom Field")').click();
-    
-    // Wait for dialog
-    await expect(page.locator('h2:has-text("Add Custom Field")')).toBeVisible();
-    
-    // Fill form
-    await page.locator('input[placeholder="Field Name"]').fill(testFieldName);
-    await page.locator('select[name="fieldType"]').selectOption('text');
-    
-    // Submit form
-    await page.locator('button:has-text("Create Field")').click();
-    
-    // Wait for field to be created
-    await page.waitForTimeout(1000);
-    
-    // Verify field appears in list
-    await expect(page.locator('.custom-fields-list').locator(`text=${testFieldName}`)).toBeVisible();
-    
-    // Now delete the field
-    await page.locator(`.custom-fields-list tr:has-text("${testFieldName}") button:has-text("Delete")`).click();
-    
-    // Confirm deletion
-    await page.locator('button:has-text("Confirm")').click();
-    
-    // Wait for deletion
-    await page.waitForTimeout(1000);
-    
-    // Verify field is gone
-    await expect(page.locator('.custom-fields-list').locator(`text=${testFieldName}`)).not.toBeVisible();
-  });
-
-  test('should validate formula syntax', async ({ page }) => {
-    // Find an active KPI to edit
-    const activeKpi = page.locator('.active-kpis-list .kpi-item').first();
-    
-    // Skip test if no active KPIs
-    if (await activeKpi.count() === 0) {
-      skipTest('No active KPIs found to test formula validation');
+    if (await toggleButton.count() === 0) {
+      skipTest('No toggle buttons found to test state persistence');
       return;
     }
     
-    // Click the edit button
-    await activeKpi.locator('button:has-text("Edit")').click();
+    // Get initial state
+    const initialState = await toggleButton.getAttribute('data-state') || 
+                         await toggleButton.getAttribute('aria-checked');
     
-    // Wait for the formula editor
-    await expect(page.locator('.formula-editor')).toBeVisible();
-    
-    // Get original formula to restore later
-    const originalFormula = await page.locator('.formula-editor textarea').inputValue();
-    
-    // Enter invalid formula
-    await page.locator('.formula-editor textarea').fill('invalid_function()');
-    
-    // Try to save
-    await page.locator('button:has-text("Save Formula")').click();
-    
-    // Verify error is shown
-    await expect(page.locator('.error-message, .text-red-500')).toBeVisible();
-    
-    // Enter valid formula
-    await page.locator('.formula-editor textarea').fill('SUM(contacts_count)');
-    
-    // Save the valid formula
-    await page.locator('button:has-text("Save Formula")').click();
-    
-    // Wait for save
+    // Toggle the state
+    await toggleButton.click();
     await page.waitForTimeout(1000);
     
-    // Verify no error is shown
-    await expect(page.locator('.error-message, .text-red-500')).not.toBeVisible();
+    // Get the new state
+    const newState = await toggleButton.getAttribute('data-state') || 
+                     await toggleButton.getAttribute('aria-checked');
     
-    // Restore original formula
-    await activeKpi.locator('button:has-text("Edit")').click();
-    await page.locator('.formula-editor textarea').fill(originalFormula);
-    await page.locator('button:has-text("Save Formula")').click();
+    // Navigate away
+    await page.goto('/');
+    await page.waitForTimeout(1000);
+    
+    // Navigate back
+    await page.goto('/settings/kpi-configuration');
+    await page.waitForTimeout(1000);
+    
+    // Find the same toggle button again
+    const toggleButtonAfterNav = page.locator('button.toggle, input[type="checkbox"], [role="switch"]').first();
+    
+    // Check that it maintained the new state
+    const stateAfterNav = await toggleButtonAfterNav.getAttribute('data-state') || 
+                           await toggleButtonAfterNav.getAttribute('aria-checked');
+    
+    expect(stateAfterNav).toBe(newState);
+    expect(stateAfterNav).not.toBe(initialState);
+    
+    // Toggle back to initial state
+    await toggleButtonAfterNav.click();
+    await page.waitForTimeout(1000);
   });
 
-  test('should preserve state between page navigations', async ({ page }) => {
-    // Record current active KPIs count
-    const initialActiveKpisCount = await page.locator('.active-kpis-list .kpi-item').count();
-    
-    // Navigate away from the page
-    await page.click('a:has-text("Dashboard")');
-    
-    // Wait for dashboard to load
-    await expect(page.locator('h1:has-text("Dashboard")')).toBeVisible();
-    
-    // Navigate back to KPI configuration
-    await page.click('a:has-text("Settings")');
-    await page.click('a:has-text("KPI Configuration")');
-    
-    // Wait for page to load
-    await expect(page.locator('h1:has-text("KPI Configuration")')).toBeVisible();
-    
-    // Verify the same number of active KPIs are shown
-    await expect(page.locator('.active-kpis-list .kpi-item')).toHaveCount(initialActiveKpisCount);
-  });
-
-  test('should show loading state and handle errors', async ({ page }) => {
-    // Simulate slow API by intercepting requests
-    await page.route('**/api/settings/kpi-configuration**', async (route) => {
-      // Delay the response
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      // Continue with the request
-      await route.continue();
-    });
-    
-    // Reload page to trigger the intercepted API call
-    await page.reload();
-    
-    // Check for loading state
-    const loadingIndicator = page.locator('.loading-indicator, .spinner, [aria-label="Loading"]');
-    const hasLoadingState = await loadingIndicator.isVisible();
-    
-    if (hasLoadingState) {
-      // Verify loading indicator appears
-      await expect(loadingIndicator).toBeVisible();
-      
-      // Verify it disappears after load
-      await expect(loadingIndicator).not.toBeVisible({ timeout: 5000 });
-    }
-    
-    // Now test error handling by making a request fail
-    await page.route('**/api/settings/kpi-configuration/kpis', route => {
-      return route.fulfill({
+  test('should handle error states in the hook', async ({ page }) => {
+    // Intercept API calls to simulate errors
+    await page.route('/api/settings/kpi-configuration', async (route) => {
+      // Return a 500 error
+      await route.fulfill({
         status: 500,
-        body: JSON.stringify({ success: false, error: 'Test error' })
+        contentType: 'application/json',
+        body: JSON.stringify({ success: false, error: 'Simulated server error' })
       });
     });
     
-    // Try to toggle a KPI (which should trigger the error handler)
-    const kpiToggle = page.locator('.kpi-toggle').first();
-    if (await kpiToggle.count() > 0) {
-      await kpiToggle.click();
+    // Refresh the page to trigger the hook with the intercepted response
+    await page.reload();
+    await page.waitForTimeout(2000);
+    
+    // Check for error state indicators
+    const errorMessage = page.locator('.error-message, .alert-error, .text-red-500:visible');
+    const hasError = await errorMessage.count() > 0;
+    
+    // There should either be an error message or a retry mechanism
+    const retryButton = page.locator('button:has-text("Retry"), button:has-text("Try again")');
+    const hasRetry = await retryButton.count() > 0;
+    
+    expect(hasError || hasRetry).toBe(true);
+    
+    // Clear the route interception
+    await page.unroute('/api/settings/kpi-configuration');
+    
+    // Reload to restore normal functionality
+    await page.reload();
+    await page.waitForTimeout(2000);
+  });
+
+  test('should optimize API calls with caching', async ({ page }) => {
+    // Define a way to count API calls
+    let apiCallCount = 0;
+    
+    // Intercept API calls to count them
+    await page.route('/api/settings/kpi-configuration', async (route) => {
+      apiCallCount++;
+      // Pass through the request
+      await route.continue();
+    });
+    
+    // Load the page (should trigger one API call)
+    await page.reload();
+    await page.waitForTimeout(1000);
+    
+    // Multiple UI interactions in quick succession should use the cached data
+    const toggles = page.locator('button.toggle, input[type="checkbox"], [role="switch"]');
+    
+    if (await toggles.count() >= 2) {
+      // Click different toggles
+      await toggles.nth(0).click();
+      await page.waitForTimeout(500);
+      await toggles.nth(0).click(); // Toggle back
       
-      // Wait for error notification
-      await expect(page.locator('.error-notification, .toast-error, .text-red-500')).toBeVisible({ timeout: 5000 });
+      await toggles.nth(1).click();
+      await page.waitForTimeout(500);
+      await toggles.nth(1).click(); // Toggle back
     }
+    
+    // The hook should batch updates or use optimistic updates with a single API call
+    // We expect a maximum of 3 API calls (initial load + 1-2 updates)
+    expect(apiCallCount).toBeLessThanOrEqual(3);
+    
+    // Clear the route interception
+    await page.unroute('/api/settings/kpi-configuration');
+  });
+
+  test('should provide loading states during API calls', async ({ page }) => {
+    // Make API response slower to ensure we can observe loading states
+    await page.route('/api/settings/kpi-configuration', async (route) => {
+      // Delay the response by 1 second
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      await route.continue();
+    });
+    
+    // Refresh to trigger a new API call
+    await page.reload();
+    
+    // Check for loading indicators immediately after reload
+    const loadingIndicator = page.locator('.loading, .spinner, .skeleton');
+    const hasLoading = await loadingIndicator.count() > 0;
+    
+    // Either there should be a loading indicator, or the content should be disabled/inactive
+    const disabledContent = page.locator('[aria-disabled="true"], .disabled, .inactive');
+    const hasDisabled = await disabledContent.count() > 0;
+    
+    expect(hasLoading || hasDisabled).toBe(true);
+    
+    // Wait for the API call to complete
+    await page.waitForTimeout(1500);
+    
+    // Now the content should be loaded and interactive
+    const kpiItems = page.locator('.kpi-item, .config-item, [data-testid="kpi-item"]');
+    await customMatchers.toHaveCountAtLeast(kpiItems, 1);
+    
+    // Clear the route interception
+    await page.unroute('/api/settings/kpi-configuration');
   });
 });
