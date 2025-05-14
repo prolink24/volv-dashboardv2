@@ -118,8 +118,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Contacts endpoints
-  apiRouter.get("/contacts", async (req: Request, res: Response) => {
+  // Contacts endpoints - with 10 minute cache as contact data is more frequently updated
+  apiRouter.get("/contacts", cacheService.cacheMiddleware(600), async (req: Request, res: Response) => {
     try {
       const limit = parseInt(req.query.limit as string) || 50;
       const offset = parseInt(req.query.offset as string) || 0;
@@ -135,7 +135,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  apiRouter.get("/contacts/search", async (req: Request, res: Response) => {
+  apiRouter.get("/contacts/search", cacheService.cacheMiddleware(300), async (req: Request, res: Response) => {
     try {
       const query = req.query.q as string;
       if (!query) {
@@ -150,7 +150,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  apiRouter.get("/contacts/:id", async (req: Request, res: Response) => {
+  apiRouter.get("/contacts/:id", cacheService.cacheMiddleware(300), async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       const contact = await storage.getContact(id);
@@ -212,8 +212,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get contacts for a specific Close user
-  apiRouter.get("/close-users/:id/contacts", async (req: Request, res: Response) => {
+  // Get contacts for a specific Close user - with 30 minute cache
+  apiRouter.get("/close-users/:id/contacts", cacheService.cacheMiddleware(1800), async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       const user = await storage.getCloseUser(id);
@@ -237,8 +237,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get deals for a specific Close user
-  apiRouter.get("/close-users/:id/deals", async (req: Request, res: Response) => {
+  // Get deals for a specific Close user - with 30 minute cache
+  apiRouter.get("/close-users/:id/deals", cacheService.cacheMiddleware(1800), async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       const user = await storage.getCloseUser(id);
