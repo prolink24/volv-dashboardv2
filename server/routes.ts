@@ -13,6 +13,7 @@ import { WebSocketServer } from "ws";
 import { z } from "zod";
 import metricsRouter from "./routes/metrics";
 import cacheService from "./services/cache";
+import settingsRouter from "./api/settings";
 
 // Enhanced attribution response types
 interface AttributionStatsResponse {

@@ -20,12 +20,11 @@ export const kpiCategories = pgTable("kpi_categories", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Define relations for KPI Categories
-export const kpiCategoriesRelations = relations(kpiCategories, ({ many }) => ({
-  kpis: many(kpiFormulas),
-}));
+// Define relations for KPI Categories (will be filled after formulas declaration)
+// We declare it initially as a null value to avoid TypeScript errors
+let kpiCategoriesRelations: any = null;
 
-// Define schema for KPI Formulas
+// Define schema for KPI Formulas - declare first to avoid circular refs
 export const kpiFormulas = pgTable("kpi_formulas", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
@@ -57,6 +56,16 @@ export const kpiFormulasRelations = relations(kpiFormulas, ({ one }) => ({
     references: [kpiCategories.id],
   }),
 }));
+
+// Now define the kpiCategoriesRelations
+export const kpiCategoriesRelationsDefinition = relations(kpiCategories, ({ many }) => ({
+  kpis: many(kpiFormulas),
+}));
+
+// Assign to our previously declared variable
+kpiCategoriesRelations = kpiCategoriesRelationsDefinition;
+// Also export it to be accessible
+export { kpiCategoriesRelations };
 
 // Custom Fields table
 export const customFields = pgTable("custom_fields", {
