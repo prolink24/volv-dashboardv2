@@ -414,27 +414,29 @@ const Dashboard = () => {
             </div>
           </div>
         
-          <div className="bg-card rounded-lg shadow-sm border border-border p-4">
-            <h3 className="text-base font-medium mb-4">Lead Metrics</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col">
-                <span className="text-sm text-muted-foreground">New Leads</span>
-                <span className="text-xl font-bold">{dashboardData.leadMetrics?.newLeads || 0}</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-sm text-muted-foreground">Leads Disqualified</span>
-                <span className="text-xl font-bold">{dashboardData.leadMetrics?.disqualified || 0}</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-sm text-muted-foreground">Total Dials</span>
-                <span className="text-xl font-bold">{dashboardData.leadMetrics?.totalDials || 0}</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-sm text-muted-foreground">Pick Up Rate</span>
-                <span className="text-xl font-bold">{dashboardData.leadMetrics?.pickUpRate || 0}%</span>
+          {dashboardData.leadMetrics && (
+            <div className="bg-card rounded-lg shadow-sm border border-border p-4">
+              <h3 className="text-base font-medium mb-4">Lead Metrics</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col">
+                  <span className="text-sm text-muted-foreground">New Leads</span>
+                  <span className="text-xl font-bold">{dashboardData.leadMetrics?.newLeads || 0}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-sm text-muted-foreground">Leads Disqualified</span>
+                  <span className="text-xl font-bold">{dashboardData.leadMetrics?.disqualified || 0}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-sm text-muted-foreground">Total Dials</span>
+                  <span className="text-xl font-bold">{dashboardData.leadMetrics?.totalDials || 0}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-sm text-muted-foreground">Pick Up Rate</span>
+                  <span className="text-xl font-bold">{dashboardData.leadMetrics?.pickUpRate || 0}%</span>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       )}
     </main>

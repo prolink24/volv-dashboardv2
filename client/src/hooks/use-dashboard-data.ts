@@ -43,13 +43,24 @@ export function useDashboardData({
   });
 }
 
+export interface AttributionStatsData {
+  success: boolean;
+  attributionAccuracy?: number;
+  stats?: {
+    contactsWithMultipleSources: number;
+    totalContacts: number;
+    multiSourceRate: number;
+    dealAttributionRate?: number;
+    fieldCoverage: number;
+    channelDistribution: { name: string; value: number }[];
+    contactsBySource: { source: string; count: number; percentage: number }[];
+    contactsWithMissingData: number;
+  };
+  error?: string;
+}
+
 export function useAttributionStats() {
-  return useQuery<{
-    success: boolean;
-    attributionAccuracy?: number;
-    stats?: any;
-    error?: string;
-  }>({
+  return useQuery<AttributionStatsData>({
     queryKey: ['/api/attribution/enhanced-stats'],
     staleTime: 1000 * 60 * 15, // 15 minutes
     refetchOnWindowFocus: true,
