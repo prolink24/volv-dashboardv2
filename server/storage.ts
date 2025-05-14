@@ -97,7 +97,7 @@ export interface IStorage {
   updateMetrics(id: number, metrics: Partial<InsertMetrics>): Promise<Metrics | undefined>;
 
   // Dashboard data
-  getDashboardData(date: Date, userId?: string): Promise<any>;
+  getDashboardData(date: Date, userId?: string, role?: string): Promise<any>;
 }
 
 // Memory Storage Implementation
@@ -1425,12 +1425,16 @@ export class DatabaseStorage implements IStorage {
     return updatedMetrics || undefined;
   }
 
-  async getDashboardData(date: Date, userId?: string): Promise<any> {
-    // Get metrics for the date
+  async getDashboardData(date: Date, userId?: string, role?: string): Promise<any> {
+    console.log(`Fetching dashboard data for role: ${role || 'default'}, date: ${date.toISOString()}, userId: ${userId || 'all'}`);
+    
+    // Get metrics for the date (potentially filtered by role)
     const metricsData = await this.getMetrics(date, userId);
     
     // Get Close CRM user data to use in the dashboard
-    const closeUsers = await this.getAllCloseUsers(3); // Get top 3 users for the dashboard
+    // If role is specified, we could filter users by role
+    const userLimit = role === 'sales' ? 5 : 3; // More users for sales dashboard
+    const closeUsers = await this.getAllCloseUsers(userLimit);
     
     // If we have Close users, generate sales team data from them
     let salesTeamData = [];

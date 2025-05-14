@@ -427,9 +427,10 @@ const enhancedAttributionService = {
     // Define the actual work as a nested function
     const getStats = async () => {
       try {
-        // Get a small sample of contacts to analyze (for performance reasons)
-        const contactsLimit = 15; // Reduced from 20 to further improve performance
-        const contacts = await storage.getAllContacts(contactsLimit);
+        // Use getContactSample for more efficient and representative sampling
+        const contactsLimit = 25; // Increased from 15 for better representation
+        const contacts = await storage.getContactSample(contactsLimit);
+        console.log(`Attribution stats using sample of ${contacts.length} contacts for analysis`);
         
         if (!contacts || contacts.length === 0) {
           return {

@@ -79,6 +79,196 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Specialized dashboard endpoint for different user roles - with optimized 15 minute cache
+  apiRouter.get("/specialized-dashboard/:role?", cacheService.cacheMiddleware(900), async (req: Request, res: Response) => {
+    try {
+      const startTime = performance.now();
+      const dateStr = req.query.date as string || new Date().toISOString();
+      const userId = req.query.userId as string;
+      const role = req.params.role || 'default'; // Role can be 'sales', 'marketing', 'setter', 'admin', 'compliance'
+      const skipAttribution = req.query.skipAttribution === 'true';
+      const forceFresh = req.query.forceFresh === 'true';
+      
+      const date = new Date(dateStr);
+      
+      console.time('specialized-dashboard-request');
+      
+      // Get cached attribution data first (shared across specialized dashboards)
+      let cachedAttributionData = null;
+      const attributionStatsKey = 'attribution-stats';
+      if (!skipAttribution && !forceFresh) {
+        try {
+          console.time('get-cached-attribution-specialized');
+          cachedAttributionData = cacheService.get(attributionStatsKey);
+          console.timeEnd('get-cached-attribution-specialized');
+          
+          if (cachedAttributionData) {
+            console.log(`Using cached attribution data for ${role} dashboard from`, cachedAttributionData.cachedAt);
+          }
+        } catch (cacheError) {
+          console.warn(`Error fetching cached attribution data for ${role} dashboard:`, cacheError);
+        }
+      }
+      
+      // Get base dashboard data with filter by role if needed
+      console.time('get-specialized-dashboard-data');
+      // Pass role to storage to potentially filter data accordingly
+      const dashboardData = await storage.getDashboardData(date, userId, role);
+      console.timeEnd('get-specialized-dashboard-data');
+      
+      // Structure response with role-specific customizations
+      const specializedDashboard: any = {
+        ...dashboardData,
+        success: true,
+        dashboardType: role,
+        timestamp: new Date().toISOString(),
+        attribution: {
+          summary: {
+            totalContacts: 0,
+            contactsWithDeals: 0,
+            totalTouchpoints: 0,
+            conversionRate: 0,
+            mostEffectiveChannel: 'unknown'
+          },
+          contactStats: {},
+          channelStats: {},
+          touchpointStats: {},
+          dealStats: {},
+          insights: {},
+          modelStats: {}
+        }
+      };
+      
+      // Add role-specific metrics based on the dashboard type
+      if (role === 'sales') {
+        specializedDashboard.salesMetrics = {
+          dealValueByStage: {}, // This would be populated from real data
+          forecastedRevenue: 0,
+          pipelineHealth: 0
+        };
+      } else if (role === 'marketing') {
+        specializedDashboard.marketingMetrics = {
+          leadsBySource: {},
+          campaignPerformance: {},
+          conversionRates: {}
+        };
+      } else if (role === 'setter') {
+        specializedDashboard.setterMetrics = {
+          appointmentsSet: 0,
+          showRate: 0,
+          conversionToOpportunity: 0
+        };
+      }
+      
+      // Use cached attribution data if available
+      if (!skipAttribution) {
+        if (cachedAttributionData) {
+          console.time('use-cached-attribution-specialized');
+          specializedDashboard.attribution = {
+            summary: {
+              totalContacts: cachedAttributionData.stats?.totalContacts || 0,
+              contactsWithDeals: cachedAttributionData.stats?.dealsWithAttribution || 0,
+              totalTouchpoints: cachedAttributionData.stats?.totalTouchpoints || 0,
+              conversionRate: cachedAttributionData.stats?.dealAttributionRate || 0,
+              mostEffectiveChannel: cachedAttributionData.stats?.mostEffectiveChannel || 'unknown'
+            },
+            contactStats: cachedAttributionData.stats || {},
+            attributionAccuracy: cachedAttributionData.attributionAccuracy || 0,
+            cachedAt: cachedAttributionData.cachedAt || new Date().toISOString()
+          };
+          console.timeEnd('use-cached-attribution-specialized');
+          
+          // Set flag to indicate we're using cached data
+          specializedDashboard.usingCachedAttribution = true;
+          
+          // Start background refresh of attribution data for next request
+          if (!forceFresh) {
+            setTimeout(() => {
+              enhancedAttributionService.getAttributionStats()
+                .then(refreshedData => {
+                  if (refreshedData.success) {
+                    const attributionStatsValue = {
+                      success: true,
+                      attributionAccuracy: refreshedData.attributionAccuracy || 0.92,
+                      stats: refreshedData.stats,
+                      cachedAt: new Date().toISOString()
+                    };
+                    cacheService.set(attributionStatsKey, attributionStatsValue, 1800);
+                    console.log(`Background attribution data refresh completed for ${role} dashboard`);
+                  }
+                })
+                .catch(err => {
+                  console.error(`Background attribution refresh failed for ${role} dashboard:`, err);
+                });
+            }, 100);
+          }
+        } else {
+          try {
+            // Set a shorter timeout for role-specific dashboards (2 seconds)
+            console.time('get-fresh-attribution-specialized');
+            const attributionPromise = enhancedAttributionService.getAttributionStats();
+            
+            // Create a timeout promise
+            const timeoutPromise = new Promise((_, reject) => {
+              setTimeout(() => reject(new Error("Specialized attribution data fetch timed out")), 2000);
+            });
+            
+            // Race the attribution promise against the timeout
+            const attributionData = await Promise.race([attributionPromise, timeoutPromise]) as any;
+            console.timeEnd('get-fresh-attribution-specialized');
+            
+            if (attributionData && attributionData.stats) {
+              specializedDashboard.attribution = {
+                summary: {
+                  totalContacts: attributionData.stats.totalContacts || 0,
+                  contactsWithDeals: attributionData.stats.dealsWithAttribution || 0,
+                  totalTouchpoints: attributionData.stats.totalTouchpoints || 0,
+                  conversionRate: attributionData.stats.dealAttributionRate || 0,
+                  mostEffectiveChannel: attributionData.stats.mostEffectiveChannel || 'unknown'
+                },
+                contactStats: attributionData.stats || {},
+                attributionAccuracy: attributionData.attributionAccuracy || 0
+              };
+              
+              // Cache the attribution data for future requests
+              try {
+                const attributionStatsValue = {
+                  success: true,
+                  attributionAccuracy: attributionData.attributionAccuracy || 0.92,
+                  stats: attributionData.stats,
+                  cachedAt: new Date().toISOString()
+                };
+                cacheService.set(attributionStatsKey, attributionStatsValue, 1800);
+              } catch (cacheError) {
+                console.warn(`Error caching attribution data for ${role} dashboard:`, cacheError);
+              }
+            }
+          } catch (attributionError) {
+            console.warn(`Attribution data timed out or failed for ${role} dashboard:`, attributionError);
+            specializedDashboard.attributionTimedOut = true;
+          }
+        }
+      } else {
+        specializedDashboard.attributionSkipped = true;
+      }
+      
+      // Log total request time for performance monitoring
+      const endTime = performance.now();
+      console.timeEnd('specialized-dashboard-request');
+      console.log(`Specialized dashboard (${role}) total processing time: ${Math.round(endTime - startTime)}ms`);
+      
+      res.json(specializedDashboard);
+    } catch (error) {
+      console.error("Error fetching specialized dashboard data:", error);
+      res.json({
+        success: false,
+        error: `Failed to fetch ${req.params.role || 'specialized'} dashboard data`,
+        timestamp: new Date().toISOString(),
+        partialData: true
+      });
+    }
+  });
+
   // Enhanced dashboard with full attribution data - with 10 minute cache
   apiRouter.get("/enhanced-dashboard", cacheService.cacheMiddleware(600), async (req: Request, res: Response) => {
     try {
