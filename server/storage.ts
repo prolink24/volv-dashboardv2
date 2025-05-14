@@ -234,6 +234,15 @@ export class DatabaseStorage implements IStorage {
     return newActivity;
   }
 
+  async updateActivity(id: number, activity: Partial<InsertActivity>): Promise<Activity | undefined> {
+    const [updatedActivity] = await db
+      .update(activities)
+      .set(activity)
+      .where(eq(activities.id, id))
+      .returning();
+    return updatedActivity || undefined;
+  }
+
   async getActivitiesByContactId(contactId: number): Promise<Activity[]> {
     return db
       .select()
@@ -259,8 +268,8 @@ export class DatabaseStorage implements IStorage {
       .from(deals)
       .where(
         and(
-          eq(deals.sourceId, sourceId),
-          eq(deals.source, source)
+          eq(deals.closeId, sourceId),
+          sql`1=1` // Cannot filter by source as it's not in the schema
         )
       );
     return deal || undefined;
@@ -297,7 +306,7 @@ export class DatabaseStorage implements IStorage {
     const [meeting] = await db
       .select()
       .from(meetings)
-      .where(eq(meetings.eventId, eventId));
+      .where(eq(meetings.calendlyEventId, eventId));
     return meeting || undefined;
   }
 
