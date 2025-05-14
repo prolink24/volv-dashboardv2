@@ -30,9 +30,12 @@ import {
   Plus, 
   Save, 
   Settings, 
-  Users 
+  Users,
+  AlertCircle
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useKpiConfiguration } from "@/hooks/use-kpi-configuration";
+import { KpiCategory, KpiFormula, CustomField } from "@shared/schema/kpi-configuration";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -160,7 +163,7 @@ const KpiConfigurationPage = () => {
 
   // Set up mutation for saving KPI formula changes
   const saveFormulaMutation = useMutation({
-    mutationFn: async (data: KpiFormula) => {
+    mutationFn: async (data: any) => {
       const response = await fetch('/api/settings/kpi-formula', {
         method: 'PUT',
         headers: {
