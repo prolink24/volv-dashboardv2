@@ -307,7 +307,7 @@ export default function SalesDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {formatCurrency(advancedMetrics?.costPerClosedWon || 0)}
+                  {formatCurrency(advancedMetrics.costPerClosedWon)}
                 </div>
               </CardContent>
             </Card>

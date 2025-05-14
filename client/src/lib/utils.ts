@@ -10,13 +10,14 @@ export function cn(...inputs: ClassValue[]) {
 
 /**
  * Format number as currency
+ * Safely handles undefined values by defaulting to 0
  */
-export function formatCurrency(amount: number): string {
+export function formatCurrency(amount: number | undefined): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
     maximumFractionDigits: 2
-  }).format(amount);
+  }).format(amount || 0);
 }
 
 /**
