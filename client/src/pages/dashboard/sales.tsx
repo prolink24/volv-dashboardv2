@@ -9,7 +9,12 @@ import { formatCurrency } from "@/lib/utils";
 
 export default function SalesDashboard() {
   const [month, setMonth] = useState("current");
-  const { data: dashboardData, isLoading } = useDashboardData();
+  const { data: dashboardData, isLoading, error } = useDashboardData({
+    useEnhanced: true,
+    cache: true
+  });
+
+  console.log("Sales Dashboard Data:", dashboardData ? "Loaded" : "Not loaded", "isLoading:", isLoading, "error:", error);
 
   if (isLoading || !dashboardData) {
     return (
