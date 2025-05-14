@@ -19,7 +19,15 @@ interface DashboardProviderProps {
 
 export function DashboardProvider({ children }: DashboardProviderProps) {
   const [activeTab, setActiveTab] = useState<string>("team-performance");
-  const [dateFilter, setDateFilter] = useState<string>("2025-03 | March");
+  
+  // Calculate current month and year
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+  const monthName = new Intl.DateTimeFormat('en-US', { month: 'long' }).format(now);
+  const currentMonthFilter = `${year}-${month < 10 ? '0' + month : month} | ${monthName}`;
+  
+  const [dateFilter, setDateFilter] = useState<string>(currentMonthFilter);
   const [userFilter, setUserFilter] = useState<string>("All Users");
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   
