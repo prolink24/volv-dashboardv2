@@ -201,11 +201,15 @@ const KpiConfiguratorNew: React.FC = () => {
       description: formula.description || "",
       formula: formula.formula,
       category: formula.category,
-      dashboardTypes: [...formula.dashboardTypes],
+      dashboardTypes: Array.isArray(formula.dashboardTypes) ? [...formula.dashboardTypes] : ["sales"],
       visualBlocks: formula.visualBlocks
     });
     setIsEditMode(true);
     setActiveTab("builder");
+    toast({
+      title: `Editing "${formula.name}"`,
+      description: "Make your changes and save to update this KPI formula"
+    });
   };
   
   // Clone formula
@@ -240,7 +244,7 @@ const KpiConfiguratorNew: React.FC = () => {
       description: formula.description || "",
       formula: formula.formula,
       category: formula.category,
-      dashboardTypes: [...formula.dashboardTypes],
+      dashboardTypes: Array.isArray(formula.dashboardTypes) ? [...formula.dashboardTypes] : ["sales"],
       visualBlocks: formula.visualBlocks
     });
     setIsEditMode(false);
