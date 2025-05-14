@@ -77,8 +77,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Enhanced dashboard with full attribution data
-  apiRouter.get("/enhanced-dashboard", async (req: Request, res: Response) => {
+  // Enhanced dashboard with full attribution data - with 10 minute cache
+  apiRouter.get("/enhanced-dashboard", cacheService.cacheMiddleware(600), async (req: Request, res: Response) => {
     try {
       const dateStr = req.query.date as string || new Date().toISOString();
       const userId = req.query.userId as string;
@@ -171,8 +171,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Close CRM Users endpoints
-  apiRouter.get("/close-users", async (req: Request, res: Response) => {
+  // Close CRM Users endpoints - with 30 minute cache (user data changes infrequently)
+  apiRouter.get("/close-users", cacheService.cacheMiddleware(1800), async (req: Request, res: Response) => {
     try {
       const limit = parseInt(req.query.limit as string) || 50;
       const offset = parseInt(req.query.offset as string) || 0;
@@ -187,7 +187,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  apiRouter.get("/close-users/:id", async (req: Request, res: Response) => {
+  apiRouter.get("/close-users/:id", cacheService.cacheMiddleware(1800), async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       const user = await storage.getCloseUser(id);
@@ -538,8 +538,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Enhanced attribution stats with accuracy metrics
-  apiRouter.get("/attribution/enhanced-stats", async (req: Request, res: Response) => {
+  // Enhanced attribution stats with accuracy metrics - with 15 minute cache
+  apiRouter.get("/attribution/enhanced-stats", cacheService.cacheMiddleware(900), async (req: Request, res: Response) => {
     try {
       const attributionData = await enhancedAttributionService.getAttributionStats() as AttributionStatsResponse;
       
@@ -814,8 +814,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Test attribution stats - simplified endpoint
-  apiRouter.get("/attribution/stats", async (req: Request, res: Response) => {
+  // Test attribution stats - simplified endpoint - with 15 minute cache
+  apiRouter.get("/attribution/stats", cacheService.cacheMiddleware(900), async (req: Request, res: Response) => {
     try {
       const attributionData = await attributionService.attributeAllContacts();
       
