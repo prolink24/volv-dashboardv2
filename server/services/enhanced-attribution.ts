@@ -112,7 +112,7 @@ const enhancedAttributionService = {
             type: 'activity',
             source: activity.source || 'close',
             date: activity.date,
-            sourceId: activity.sourceId,
+            sourceId: activity.sourceId ?? undefined,
             data: activity
           });
         });
