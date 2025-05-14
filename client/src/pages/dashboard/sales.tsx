@@ -197,7 +197,7 @@ export default function SalesDashboard() {
   }));
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="container mx-auto p-6 overflow-y-auto max-h-screen pb-20">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Sales Team Dashboard</h1>
         <div className="flex space-x-2">
@@ -478,31 +478,33 @@ export default function SalesDashboard() {
         <CardHeader>
           <CardTitle>Team Performance</CardTitle>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Closed Deals</TableHead>
-                <TableHead>Cash Collected</TableHead>
-                <TableHead>Revenue Generated</TableHead>
-                <TableHead>Total Calls</TableHead>
-                <TableHead>Closing Rate</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {salesTeam.map((member) => (
-                <TableRow key={member.id}>
-                  <TableCell className="font-medium">{member.name}</TableCell>
-                  <TableCell>{member.closed}</TableCell>
-                  <TableCell>{formatCurrency(member.cashCollected)}</TableCell>
-                  <TableCell>{formatCurrency(member.contractedValue)}</TableCell>
-                  <TableCell>{member.calls}</TableCell>
-                  <TableCell>{member.closingRate}%</TableCell>
+        <CardContent className="overflow-auto">
+          <div className="w-full min-w-[800px]">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="whitespace-nowrap">Name</TableHead>
+                  <TableHead className="whitespace-nowrap">Closed Deals</TableHead>
+                  <TableHead className="whitespace-nowrap">Cash Collected</TableHead>
+                  <TableHead className="whitespace-nowrap">Revenue Generated</TableHead>
+                  <TableHead className="whitespace-nowrap">Total Calls</TableHead>
+                  <TableHead className="whitespace-nowrap">Closing Rate</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {salesTeam.map((member) => (
+                  <TableRow key={member.id}>
+                    <TableCell className="font-medium">{member.name}</TableCell>
+                    <TableCell>{member.closed}</TableCell>
+                    <TableCell>{formatCurrency(member.cashCollected)}</TableCell>
+                    <TableCell>{formatCurrency(member.contractedValue)}</TableCell>
+                    <TableCell>{member.calls}</TableCell>
+                    <TableCell>{member.closingRate}%</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 
