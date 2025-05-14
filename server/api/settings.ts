@@ -6,7 +6,7 @@ import {
   kpiCategories, 
   customFields, 
   customFieldMappings 
-} from "@shared/schema";
+} from "@shared/schema/kpi-configuration";
 import { eq } from "drizzle-orm";
 
 const router = Router();
