@@ -482,7 +482,7 @@ const FieldBrowser = ({ fields, onFieldSelected }: {
             <SelectValue placeholder="Filter by source" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All sources</SelectItem>
+            <SelectItem value="all_sources">All sources</SelectItem>
             {sources.map(source => (
               <SelectItem key={source} value={source}>
                 {source.charAt(0).toUpperCase() + source.slice(1)}
@@ -496,7 +496,7 @@ const FieldBrowser = ({ fields, onFieldSelected }: {
             <SelectValue placeholder="Filter by type" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All types</SelectItem>
+            <SelectItem value="all_types">All types</SelectItem>
             {types.map(type => (
               <SelectItem key={type} value={type}>
                 {type.charAt(0).toUpperCase() + type.slice(1)}
