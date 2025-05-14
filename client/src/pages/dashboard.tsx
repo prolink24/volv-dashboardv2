@@ -27,31 +27,42 @@ const Dashboard = () => {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // Convert dateFilter to API format
-  // Extract the year and month from the dateFilter (format: "YYYY-MM | Month")
-  const dateParts = dateFilter.split('|')[0].trim().split('-');
-  let year, month;
+  // Extract the date parts from the dateFilter (format: "YYYY-MM-DD | Month")
+  let apiDate: Date;
   
   try {
-    year = parseInt(dateParts[0]);
-    month = parseInt(dateParts[1]) - 1; // JavaScript months are 0-indexed
+    // First try to parse the full date with day included
+    const datePart = dateFilter.split('|')[0].trim();
     
-    // Validate parsed values
-    if (isNaN(year) || isNaN(month) || year < 2000 || year > 2100 || month < 0 || month > 11) {
-      throw new Error(`Invalid date parts: year=${year}, month=${month}`);
+    if (datePart.split('-').length === 3) {
+      // Format is YYYY-MM-DD
+      apiDate = new Date(datePart);
+    } else {
+      // Old format YYYY-MM, use first day of month
+      const dateParts = datePart.split('-');
+      const year = parseInt(dateParts[0]);
+      const month = parseInt(dateParts[1]) - 1; // JavaScript months are 0-indexed
+      
+      // Validate parsed values
+      if (isNaN(year) || isNaN(month) || year < 2000 || year > 2100 || month < 0 || month > 11) {
+        throw new Error(`Invalid date parts: year=${year}, month=${month}`);
+      }
+      
+      apiDate = new Date(year, month, 1);
+    }
+    
+    // Final validation
+    if (isNaN(apiDate.getTime())) {
+      throw new Error(`Invalid date: ${apiDate}`);
     }
   } catch (error) {
     console.error(`Error parsing date filter "${dateFilter}":`, error);
-    // Fallback to current month if parsing fails
-    const now = new Date();
-    year = now.getFullYear();
-    month = now.getMonth();
+    // Fallback to current date if parsing fails
+    apiDate = new Date();
   }
   
-  // Create a date object for the first day of the selected month
-  const apiDate = new Date(year, month, 1);
-  
   // Debug log the date conversion
-  console.log(`Date filter: "${dateFilter}" -> API date: "${apiDate.toISOString()}" (${year}-${month+1}-1)`);
+  console.log(`Date filter: "${dateFilter}" -> API date: "${apiDate.toISOString()}" (${apiDate.getFullYear()}-${apiDate.getMonth()+1}-${apiDate.getDate()})`);
   
   // Fetch dashboard data with enhanced attribution
   const { 

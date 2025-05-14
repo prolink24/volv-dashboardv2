@@ -7,6 +7,7 @@
 
 import axios from 'axios';
 import chalk from 'chalk';
+import * as http from 'http';
 
 function log(message: string, type: 'info' | 'success' | 'error' | 'warning' = 'info') {
   const styles = {
@@ -20,6 +21,13 @@ function log(message: string, type: 'info' | 'success' | 'error' | 'warning' = '
 
 async function testDateSelection() {
   log('Starting dashboard date picker test...', 'info');
+  
+  // Create an HttpAgent to keep connections alive
+  const agent = new http.Agent({ keepAlive: true });
+  
+  // Get the server port from environment or default to 5000
+  const PORT = process.env.PORT || 5000;
+  const BASE_URL = `http://localhost:${PORT}`;
   
   // Test dates (we'll test current month and a few previous months)
   const today = new Date();
@@ -37,9 +45,14 @@ async function testDateSelection() {
     log(`Testing date: ${formattedDate}`, 'info');
     
     try {
-      // Make API request with the test date
-      const response = await axios.get(`/api/enhanced-dashboard?date=${encodeURIComponent(formattedDate)}`);
+      // Make API request with the test date - use full URL
+      const requestUrl = `${BASE_URL}/api/enhanced-dashboard?date=${encodeURIComponent(formattedDate)}`;
+      log(`Making request to: ${requestUrl}`, 'info');
       
+      const response = await axios.get(requestUrl, { 
+        httpAgent: agent,
+        timeout: 10000 // 10 second timeout
+      });
       // Validate response
       if (response.status === 200 && response.data) {
         log(`✓ Dashboard data retrieved successfully for ${formattedDate}`, 'success');

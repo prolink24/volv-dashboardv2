@@ -26,8 +26,10 @@ const DashboardFilters = () => {
   const formatSelectedDate = (selectedDate: Date) => {
     const year = selectedDate.getFullYear();
     const month = selectedDate.getMonth() + 1;
+    const day = selectedDate.getDate();
     const monthName = format(selectedDate, "MMMM");
-    return `${year}-${month < 10 ? '0' + month : month} | ${monthName}`;
+    // Keep the format with month and year for display, but include the actual day
+    return `${year}-${month < 10 ? '0' + month : month}-${day < 10 ? '0' + day : day} | ${monthName}`;
   };
   
   // Set initial date to current month on first load
