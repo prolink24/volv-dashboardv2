@@ -217,8 +217,10 @@ const Dashboard = () => {
       {/* Attribution Summary */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
         <AttributionStats />
-        <AttributionChannels data={channelData} />
-        <AttributionInsights insights={attributionInsights} />
+        {channelData && <AttributionChannels data={channelData} />}
+        {attributionInsights.length > 0 && <AttributionInsights insights={attributionInsights} />}
+        {!channelData && <AttributionChannels isLoading={!attributionStatsData} />}
+        {attributionInsights.length === 0 && <AttributionInsights isLoading={!attributionStatsData} />}
       </div>
       
       {/* KPI Cards */}
