@@ -883,36 +883,37 @@ const KpiConfigurationPage = () => {
 
   // Main render
   return (
-    <div className="container mx-auto py-6 space-y-8">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">KPI Configuration</h1>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="outline" className="gap-2">
-                <Code className="h-4 w-4" />
-                Formula Reference
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent className="w-80">
-              <div className="space-y-2 p-2">
-                <h4 className="font-semibold">Formula Syntax</h4>
-                <p className="text-sm">Use these operators in your formulas:</p>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div><code>+</code> Addition</div>
-                  <div><code>-</code> Subtraction</div>
-                  <div><code>*</code> Multiplication</div>
-                  <div><code>/</code> Division</div>
-                  <div><code>%</code> Percentage</div>
-                  <div><code>SUM()</code> Sum</div>
-                  <div><code>AVG()</code> Average</div>
-                  <div><code>COUNT()</code> Count</div>
+    <ScrollArea className="h-[calc(100vh-80px)] container px-6">
+      <div className="container mx-auto py-6 space-y-8">
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold">KPI Configuration</h1>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  <Code className="h-4 w-4" />
+                  Formula Reference
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="w-80">
+                <div className="space-y-2 p-2">
+                  <h4 className="font-semibold">Formula Syntax</h4>
+                  <p className="text-sm">Use these operators in your formulas:</p>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div><code>+</code> Addition</div>
+                    <div><code>-</code> Subtraction</div>
+                    <div><code>*</code> Multiplication</div>
+                    <div><code>/</code> Division</div>
+                    <div><code>%</code> Percentage</div>
+                    <div><code>SUM()</code> Sum</div>
+                    <div><code>AVG()</code> Average</div>
+                    <div><code>COUNT()</code> Count</div>
+                  </div>
                 </div>
-              </div>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
 
       <Tabs 
         value={activeTab} 
@@ -1030,6 +1031,7 @@ const KpiConfigurationPage = () => {
         </TabsContent>
       </Tabs>
     </div>
+    </ScrollArea>
   );
 };
 
