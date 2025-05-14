@@ -454,7 +454,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const limit = parseInt(req.query.limit as string) || 50;
       const offset = parseInt(req.query.offset as string) || 0;
       
-      const contacts = await storage.getAllContacts(limit, offset);
+      const contacts = await storage.getContacts(limit, offset);
       const totalCount = await storage.getContactsCount();
       
       // Add empty activities array to match ContactsData type
@@ -507,11 +507,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const limit = parseInt(req.query.limit as string) || 50;
       const offset = parseInt(req.query.offset as string) || 0;
       
-      const users = await storage.getAllCloseUsers(limit, offset);
+      const users = await storage.getCloseUsers(limit, offset);
       const totalCount = await storage.getCloseUsersCount();
       
       // Add name field to each user since the test expects it
-      const usersWithName = users.map(user => ({
+      const usersWithName = users.map((user: CloseUser) => ({
         ...user,
         // Create name from first_name and last_name if available
         name: user.first_name && user.last_name 

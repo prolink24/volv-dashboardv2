@@ -43,6 +43,8 @@ export interface IStorage {
   // Contact operations
   getContact(id: number): Promise<Contact | undefined>;
   getContactByEmail(email: string): Promise<Contact | undefined>;
+  getContactByExternalId(source: string, externalId: string): Promise<Contact | undefined>;
+  getContactSample(limit: number): Promise<Contact[]>;
   createContact(contact: InsertContact): Promise<Contact>;
   updateContact(id: number, contact: Partial<InsertContact>): Promise<Contact | undefined>;
   getContacts(limit?: number, offset?: number): Promise<Contact[]>;
@@ -128,6 +130,30 @@ export class DatabaseStorage implements IStorage {
   async getContactByEmail(email: string): Promise<Contact | undefined> {
     const [contact] = await db.select().from(contacts).where(eq(contacts.email, email));
     return contact || undefined;
+  }
+
+  async getContactByExternalId(source: string, externalId: string): Promise<Contact | undefined> {
+    // Find a contact where the sourceId matches and the leadSource matches the specified source
+    const [contact] = await db
+      .select()
+      .from(contacts)
+      .where(
+        and(
+          eq(contacts.sourceId, externalId),
+          eq(contacts.leadSource, source)
+        )
+      );
+    return contact || undefined;
+  }
+
+  async getContactSample(limit: number): Promise<Contact[]> {
+    // Get a random sample of contacts for analytics purposes
+    // Using SQL RANDOM() for true randomness
+    return db
+      .select()
+      .from(contacts)
+      .orderBy(sql`RANDOM()`)
+      .limit(limit);
   }
 
   async createContact(contact: InsertContact): Promise<Contact> {
@@ -390,10 +416,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Metrics operations
-  async createMetrics(metrics: InsertMetrics): Promise<Metrics> {
+  async createMetrics(metricsData: InsertMetrics): Promise<Metrics> {
     const [newMetrics] = await db
-      .insert(this.metrics)
-      .values(metrics)
+      .insert(metrics)
+      .values(metricsData)
       .returning();
     return newMetrics;
   }
