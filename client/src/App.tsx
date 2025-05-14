@@ -18,7 +18,7 @@ import Settings from "@/pages/settings";
 import NotFound from "@/pages/not-found";
 import AttributionJourney from "@/pages/attribution-journey";
 import KpiConfigurationPage from "@/pages/settings/kpi-configuration";
-import KpiConfigurator from "@/pages/settings/KpiConfigurator";
+import KpiConfigurator from "@/pages/settings/KpiConfiguratorNew";
 
 // Specialized dashboard views
 import SalesDashboard from "@/pages/dashboard/sales";
