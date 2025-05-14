@@ -12,6 +12,7 @@ import * as syncStatus from "./api/sync-status";
 import { WebSocketServer } from "ws";
 import { z } from "zod";
 import metricsRouter from "./routes/metrics";
+import cacheService from "./services/cache";
 
 // Enhanced attribution response types
 interface AttributionStatsResponse {
@@ -23,9 +24,21 @@ interface AttributionStatsResponse {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const apiRouter = express.Router();
+  
+  // API Cache endpoint - mainly for debugging
+  apiRouter.get("/cache/stats", (req: Request, res: Response) => {
+    res.json(cacheService.getCacheStats());
+  });
+  
+  // Endpoint to clear cache
+  apiRouter.post("/cache/clear", (req: Request, res: Response) => {
+    const prefix = req.query.prefix as string;
+    const count = cacheService.clearCache(prefix);
+    res.json({ success: true, cleared: count, prefix: prefix || "all" });
+  });
 
-  // Dashboard data endpoint
-  apiRouter.get("/dashboard", async (req: Request, res: Response) => {
+  // Dashboard data endpoint with caching (5 minutes TTL)
+  apiRouter.get("/dashboard", cacheService.cacheMiddleware(300), async (req: Request, res: Response) => {
     try {
       const dateStr = req.query.date as string || new Date().toISOString();
       const userId = req.query.userId as string;
