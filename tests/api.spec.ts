@@ -2,37 +2,58 @@ import { test, expect } from '@playwright/test';
 import { skipTest, skipIf, asyncUtils } from './utils/test-helpers';
 
 test.describe('API Tests', () => {
-  test('should return dashboard stats data', async ({ request }) => {
-    const response = await request.get('/api/dashboard/stats');
+  test('should return enhanced dashboard data', async ({ request }) => {
+    const response = await request.get('/api/enhanced-dashboard');
     const data = await response.json();
 
     expect(response.status()).toBe(200);
     expect(data.success).toBe(true);
-    expect(data.stats).toBeDefined();
-
-    // Verify the data structure contains expected fields
-    expect(data.stats.totalContacts).toBeDefined();
-    expect(data.stats.totalMeetings).toBeDefined();
-    expect(data.stats.totalDeals).toBeDefined();
-    expect(data.stats.attributionRate).toBeDefined();
-
-    // Attribution rate should be above 90% based on project requirements
-    expect(data.stats.attributionRate).toBeGreaterThanOrEqual(90);
+    
+    // Check for expected dashboard sections
+    expect(data.kpis).toBeDefined();
+    expect(data.salesTeam).toBeDefined();
+    expect(data.attribution).toBeDefined();
+    
+    // Verify attribution section contains expected data
+    expect(data.attribution.summary).toBeDefined();
+    expect(data.attribution.contactStats).toBeDefined();
+    expect(data.attribution.dealStats).toBeDefined();
+    
+    // Verify KPI data
+    expect(Array.isArray(data.kpis)).toBe(true);
+    if (data.kpis.length > 0) {
+      const kpi = data.kpis[0];
+      expect(kpi.name).toBeDefined();
+      expect(kpi.value).toBeDefined();
+    }
+    
+    // Verify sales team data
+    expect(Array.isArray(data.salesTeam)).toBe(true);
+    if (data.salesTeam.length > 0) {
+      const teamMember = data.salesTeam[0];
+      expect(teamMember.name).toBeDefined();
+      expect(teamMember.metrics).toBeDefined();
+    }
   });
 
-  test('should return attribution stats', async ({ request }) => {
+  test('should return enhanced attribution stats', async ({ request }) => {
     const response = await request.get('/api/attribution/enhanced-stats');
     const data = await response.json();
 
     expect(response.status()).toBe(200);
     expect(data.success).toBe(true);
-    expect(data.attribution).toBeDefined();
+    expect(data.attributionAccuracy).toBeDefined();
+    expect(data.stats).toBeDefined();
 
-    // Verify attribution data structure
-    expect(data.attribution.totalSources).toBeDefined();
-    expect(data.attribution.contactsBySource).toBeDefined();
-    expect(data.attribution.conversionsBySource).toBeDefined();
-    expect(data.attribution.confidenceScores).toBeDefined();
+    // Verify stats data structure
+    expect(data.stats.totalContacts).toBeDefined();
+    expect(data.stats.contactsAnalyzed).toBeDefined();
+    expect(data.stats.highCertaintyContacts).toBeDefined();
+    expect(data.stats.multiSourceContacts).toBeDefined();
+    expect(data.stats.dealAttributionRate).toBeDefined();
+    
+    // Attribution accuracy should be above 90% per project requirements
+    expect(data.attributionAccuracy).toBeGreaterThanOrEqual(90);
   });
 
   test('should return paginated contacts', async ({ request }) => {
