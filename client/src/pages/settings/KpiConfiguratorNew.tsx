@@ -14,6 +14,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   File, 
   Plus, 
@@ -274,28 +275,29 @@ const KpiConfiguratorNew: React.FC = () => {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">KPI Configurator</h1>
-          <p className="text-muted-foreground">
-            Create powerful KPI formulas for all your dashboards
-          </p>
+    <ScrollArea className="h-[calc(100vh-80px)]">
+      <div className="p-6 max-w-7xl mx-auto">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-3xl font-bold">KPI Configurator</h1>
+            <p className="text-muted-foreground">
+              Create powerful KPI formulas for all your dashboards
+            </p>
+          </div>
+          <div className="flex space-x-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsTutorialOpen(true)}
+            >
+              <BookOpen className="mr-2 h-4 w-4" />
+              Tutorials
+            </Button>
+            <Button onClick={handleCreateFormula}>
+              <Plus className="mr-2 h-4 w-4" />
+              Create Formula
+            </Button>
+          </div>
         </div>
-        <div className="flex space-x-2">
-          <Button
-            variant="outline"
-            onClick={() => setIsTutorialOpen(true)}
-          >
-            <BookOpen className="mr-2 h-4 w-4" />
-            Tutorials
-          </Button>
-          <Button onClick={handleCreateFormula}>
-            <Plus className="mr-2 h-4 w-4" />
-            Create Formula
-          </Button>
-        </div>
-      </div>
 
       <Tabs defaultValue="formulas" value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-4 mb-8">
@@ -678,6 +680,7 @@ const KpiConfiguratorNew: React.FC = () => {
         onClose={handleTooltipsClose}
       />
     </div>
+    </ScrollArea>
   );
 };
 
