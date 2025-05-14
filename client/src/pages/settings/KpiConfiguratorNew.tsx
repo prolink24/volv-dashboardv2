@@ -348,12 +348,12 @@ const KpiConfiguratorNew: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex gap-4">
-                  <Select value={filterCategory || ""} onValueChange={(v) => setFilterCategory(v || null)}>
+                  <Select value={filterCategory || "all-categories"} onValueChange={(v) => setFilterCategory(v === "all-categories" ? null : v)}>
                     <SelectTrigger className="w-[180px]">
                       <SelectValue placeholder="Filter by category" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All categories</SelectItem>
+                      <SelectItem value="all-categories">All categories</SelectItem>
                       {categories.map(category => (
                         <SelectItem key={category} value={category}>
                           {category.charAt(0).toUpperCase() + category.slice(1)}
@@ -362,12 +362,12 @@ const KpiConfiguratorNew: React.FC = () => {
                     </SelectContent>
                   </Select>
                   
-                  <Select value={filterDashboard || ""} onValueChange={(v) => setFilterDashboard(v || null)}>
+                  <Select value={filterDashboard || "all-dashboards"} onValueChange={(v) => setFilterDashboard(v === "all-dashboards" ? null : v)}>
                     <SelectTrigger className="w-[180px]">
                       <SelectValue placeholder="Filter by dashboard" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All dashboards</SelectItem>
+                      <SelectItem value="all-dashboards">All dashboards</SelectItem>
                       {dashboardTypes.map(dashboard => (
                         <SelectItem key={dashboard.id} value={dashboard.id}>
                           {dashboard.name}
