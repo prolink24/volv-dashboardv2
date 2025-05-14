@@ -74,10 +74,6 @@ const DashboardFilters = () => {
             selected={selectedDate}
             onSelect={(newDate) => handleDateSelect(newDate)}
             initialFocus
-            disabled={(d) => {
-              // Only enable selection by month (first day of each month)
-              return d.getDate() !== 1;
-            }}
           />
         </PopoverContent>
       </Popover>

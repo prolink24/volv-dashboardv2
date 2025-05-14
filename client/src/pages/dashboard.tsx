@@ -27,7 +27,16 @@ const Dashboard = () => {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // Convert dateFilter to API format
-  const apiDate = new Date(dateFilter.split('|')[0].trim().replace('-', '/') + '/01');
+  // Extract the year and month from the dateFilter (format: "YYYY-MM | Month")
+  const dateParts = dateFilter.split('|')[0].trim().split('-');
+  const year = parseInt(dateParts[0]);
+  const month = parseInt(dateParts[1]) - 1; // JavaScript months are 0-indexed
+  
+  // Create a date object for the first day of the selected month
+  const apiDate = new Date(year, month, 1);
+  
+  // Debug log the date conversion
+  console.log(`Date filter: "${dateFilter}" -> API date: "${apiDate.toISOString()}" (${year}-${month+1}-1)`);
   
   // Fetch dashboard data with enhanced attribution
   const { 
