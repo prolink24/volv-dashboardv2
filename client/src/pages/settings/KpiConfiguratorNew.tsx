@@ -504,17 +504,17 @@ const KpiConfiguratorNew: React.FC = () => {
                   <label className="text-sm font-medium">Dashboard Types</label>
                   <div className="flex flex-wrap gap-2">
                     {dashboardTypes.map(dashType => (
-                      <div key={dashType.id} className="flex items-center space-x-2">
+                      <div key={dashType.id || ""} className="flex items-center space-x-2">
                         <Checkbox 
-                          id={`dashboard-${dashType.id}`}
-                          checked={formulaInput.dashboardTypes.includes(dashType.id)}
-                          onCheckedChange={() => toggleDashboardType(dashType.id)}
+                          id={`dashboard-${dashType.id || ""}`}
+                          checked={dashType.id ? formulaInput.dashboardTypes.includes(dashType.id) : false}
+                          onCheckedChange={() => dashType.id && toggleDashboardType(dashType.id)}
                         />
                         <label 
-                          htmlFor={`dashboard-${dashType.id}`}
+                          htmlFor={`dashboard-${dashType.id || ""}`}
                           className="text-sm cursor-pointer"
                         >
-                          {dashType.name}
+                          {dashType.name || ""}
                         </label>
                       </div>
                     ))}
