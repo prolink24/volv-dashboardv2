@@ -47,10 +47,10 @@ export default defineConfig({
     },
   ],
 
-  /* Run your local dev server before starting the tests */
+  /* We'll handle server management in our custom scripts */
   webServer: {
-    command: 'npm run dev',
+    command: 'echo "Server is managed by run-tests.sh"',
     url: 'http://localhost:5000',
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: true,
   },
 });
