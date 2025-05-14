@@ -44,7 +44,7 @@ test.describe('Performance Tests', () => {
     const maxLoadTime = 5000;
     
     // Measure load time for each page
-    const results = [];
+    const results: Array<{url: string; loadTime: number; error?: string}> = [];
     
     for (const { url, selector } of pages) {
       try {
@@ -66,7 +66,7 @@ test.describe('Performance Tests', () => {
     // Calculate and log average load time (excluding errors)
     const validResults = results.filter(r => r.loadTime > 0);
     if (validResults.length > 0) {
-      const avgLoadTime = validResults.reduce((sum, { loadTime }) => sum + loadTime, 0) / validResults.length;
+      const avgLoadTime = validResults.reduce((sum, result) => sum + result.loadTime, 0) / validResults.length;
       console.log(`Average page load time: ${avgLoadTime.toFixed(2)}ms`);
     }
   });
