@@ -256,6 +256,20 @@ export class MemStorage implements IStorage {
     }
     return allContacts;
   }
+  
+  async getContactsCount(): Promise<number> {
+    return this.contacts.size;
+  }
+  
+  async getContactSample(sampleSize: number): Promise<Contact[]> {
+    const allContacts = Array.from(this.contacts.values());
+    // Shuffle array using Fisher-Yates algorithm
+    for (let i = allContacts.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [allContacts[i], allContacts[j]] = [allContacts[j], allContacts[i]];
+    }
+    return allContacts.slice(0, sampleSize);
+  }
 
   async createContact(contact: InsertContact): Promise<Contact> {
     const id = this.contactCurrentId++;
@@ -1081,6 +1095,15 @@ export class DatabaseStorage implements IStorage {
   async getContactsCount(): Promise<number> {
     const result = await db.select({ count: sql`count(*)` }).from(contacts);
     return Number(result[0].count);
+  }
+
+  async getContactSample(sampleSize: number): Promise<Contact[]> {
+    // Use random() function to get a random sample of contacts
+    return db
+      .select()
+      .from(contacts)
+      .orderBy(sql`random()`)
+      .limit(sampleSize);
   }
 
   async createContact(contact: InsertContact): Promise<Contact> {
