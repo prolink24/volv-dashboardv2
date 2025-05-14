@@ -437,8 +437,8 @@ const KpiConfigurationPage = () => {
             <div>
               <h3 className="text-sm font-medium text-muted-foreground mb-2">Required Fields</h3>
               <div className="grid grid-cols-2 gap-2">
-                {selectedKpi.requiredFields.map((fieldId) => {
-                  const field = availableFields.find(f => f.id === fieldId);
+                {selectedKpi?.requiredFields ? selectedKpi.requiredFields.map((fieldId) => {
+                  const field = availableFields?.find(f => f.id === fieldId);
                   return field ? (
                     <div key={field.id} className="flex items-center p-2 rounded-md border">
                       <span className="text-sm">{field.name}</span>
@@ -450,11 +450,11 @@ const KpiConfigurationPage = () => {
                       </Badge>
                     </div>
                   ) : null;
-                })}
+                }) : <div className="text-sm text-muted-foreground p-2">No required fields</div>}
               </div>
             </div>
 
-            {!selectedKpi.customizable && (
+            {selectedKpi && !selectedKpi.customizable && (
               <div className="flex items-center p-4 rounded-md bg-amber-50 text-amber-800 border border-amber-200">
                 <Lock className="h-5 w-5 mr-2" />
                 <p className="text-sm">
@@ -684,7 +684,7 @@ const KpiConfigurationPage = () => {
         <Separator />
 
         <div className="grid md:grid-cols-2 gap-4">
-          {customFields.map((field) => (
+          {customFields && customFields.length > 0 ? customFields.map((field) => (
             <Card key={field.id} className="group relative">
               <CardHeader className="pb-2">
                 <div className="flex justify-between">
@@ -738,10 +738,10 @@ const KpiConfigurationPage = () => {
                 </div>
               </CardContent>
             </Card>
-          ))}
+          )) : null}
         </div>
 
-        {customFields.length === 0 && (
+        {customFields && customFields.length === 0 && (
           <div className="flex items-center justify-center h-[400px] bg-muted/20 rounded-md">
             <div className="text-center p-4">
               <Database className="mx-auto h-12 w-12 text-muted-foreground" />
@@ -963,7 +963,7 @@ const KpiConfigurationPage = () => {
                 >
                   All Categories
                 </Button>
-                {kpiCategories?.map((category: KpiCategory) => (
+                {kpiCategories ? kpiCategories.map((category: KpiCategory) => (
                   <Button 
                     key={category.id}
                     variant={selectedCategory === category.id ? "default" : "ghost"} 
@@ -972,7 +972,7 @@ const KpiConfigurationPage = () => {
                   >
                     {category.name}
                   </Button>
-                ))}
+                )) : <div className="text-sm text-muted-foreground p-2">No categories available</div>}
               </div>
 
               <Separator />
@@ -981,7 +981,7 @@ const KpiConfigurationPage = () => {
                 <h3 className="text-sm font-medium mb-2">KPI Formulas</h3>
                 <ScrollArea className="h-[400px] pr-4">
                   <div className="space-y-1">
-                    {kpiCategories?.flatMap((category: KpiCategory) => 
+                    {kpiCategories ? kpiCategories.flatMap((category: KpiCategory) => 
                       selectedCategory && category.id !== selectedCategory
                         ? []
                         : (category.kpis ?? []).map((kpi: KpiFormula) => (
@@ -1009,7 +1009,7 @@ const KpiConfigurationPage = () => {
                               )}
                             </Button>
                           ))
-                    )}
+                    ) : <div className="p-4 text-sm text-muted-foreground">No KPI formulas available</div>}
                   </div>
                 </ScrollArea>
               </div>
