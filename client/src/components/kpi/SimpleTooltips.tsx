@@ -40,6 +40,12 @@ const SimpleTooltips: React.FC<SimpleTooltipsProps> = ({
       category: "basic"
     },
     {
+      id: "multi-dashboard",
+      title: "Multi-Dashboard Support",
+      description: "Assign your KPIs to specific dashboard types to make them available across Sales, Marketing, Setter, and Admin views.",
+      category: "basic"
+    },
+    {
       id: "templates",
       title: "Using Templates",
       description: "Don't start from scratch! Use our templates for common KPIs like conversion rates, average deal sizes, and more.",
@@ -56,12 +62,40 @@ const SimpleTooltips: React.FC<SimpleTooltipsProps> = ({
       title: "Version History",
       description: "All your formulas have automatic version history. You can always go back to a previous version if needed.",
       category: "advanced"
+    },
+    {
+      id: "cross-platform",
+      title: "Cross-Platform Data",
+      description: "Create KPIs that combine data from Close CRM, Calendly, and other integrated sources for true multi-platform attribution.",
+      category: "advanced"
+    },
+    {
+      id: "time-periods",
+      title: "Time Period Functions",
+      description: "Use time-based functions like THIS_MONTH(), LAST_QUARTER(), or YEAR_TO_DATE() to analyze trends over specific periods.",
+      category: "advanced"
+    },
+    {
+      id: "filtering",
+      title: "Data Filtering",
+      description: "Apply filters to your KPIs using WHERE() conditions to focus on specific segments of your data.",
+      category: "advanced"
+    },
+    {
+      id: "clone-formulas",
+      title: "Clone Existing Formulas",
+      description: "Use the Clone button to create variations of existing formulas without starting from scratch.",
+      category: "basic"
     }
   ];
 
+  // Filter tips by category
+  const basicTips = tips.filter(tip => tip.category === "basic");
+  const advancedTips = tips.filter(tip => tip.category === "advanced");
+  
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Lightbulb className="h-5 w-5 text-amber-500" />
@@ -72,17 +106,46 @@ const SimpleTooltips: React.FC<SimpleTooltipsProps> = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
-          {tips.map(tip => (
-            <Card key={tip.id} className="relative">
-              <CardContent className="p-4">
-                <h3 className="font-medium text-base mb-2">{tip.title}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {tip.description}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
+        <div className="my-4 space-y-6">
+          <div>
+            <h3 className="text-lg font-medium mb-3 flex items-center">
+              <BookOpen className="mr-2 h-4 w-4 text-blue-500" />
+              Getting Started Tips
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {basicTips.map(tip => (
+                <Card key={tip.id} className="relative overflow-hidden border-blue-100">
+                  <div className="absolute inset-0 bg-blue-50/50 pointer-events-none" />
+                  <CardContent className="p-4 relative">
+                    <h3 className="font-medium text-base mb-2">{tip.title}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {tip.description}
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+          
+          <div>
+            <h3 className="text-lg font-medium mb-3 flex items-center">
+              <ArrowRight className="mr-2 h-4 w-4 text-purple-500" />
+              Advanced Techniques
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {advancedTips.map(tip => (
+                <Card key={tip.id} className="relative overflow-hidden border-purple-100">
+                  <div className="absolute inset-0 bg-purple-50/50 pointer-events-none" />
+                  <CardContent className="p-4 relative">
+                    <h3 className="font-medium text-base mb-2">{tip.title}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {tip.description}
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
         </div>
 
         <DialogFooter>
