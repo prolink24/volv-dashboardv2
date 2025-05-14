@@ -50,11 +50,12 @@ export function useKpiFormulas() {
     queryKey: ['/api/kpi/formulas'],
     queryFn: async () => {
       try {
-        const response = await apiRequest('/api/kpi/formulas');
-        if (!response.data.success) {
-          throw new Error(response.data.message || 'Failed to fetch KPI formulas');
+        const response = await fetch('/api/kpi/formulas');
+        const data = await response.json();
+        if (!data.success) {
+          throw new Error(data.message || 'Failed to fetch KPI formulas');
         }
-        return response.data.formulas as KpiFormula[];
+        return data.formulas as KpiFormula[];
       } catch (error) {
         console.error('Error fetching KPI formulas:', error);
         // If API fails, return example data
@@ -83,16 +84,20 @@ export function useKpiFormulasByDashboard(dashboardType: string) {
 export function useCreateKpiFormula() {
   return useMutation({
     mutationFn: async (formulaData: KpiFormulaInput) => {
-      const response = await apiRequest('/api/kpi/formulas', {
+      const response = await fetch('/api/kpi/formulas', {
         method: 'POST',
-        data: formulaData
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formulaData)
       });
       
-      if (!response.data.success) {
-        throw new Error(response.data.message || 'Failed to create KPI formula');
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to create KPI formula');
       }
       
-      return response.data.formula as KpiFormula;
+      return data.formula as KpiFormula;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/kpi/formulas'] });
@@ -115,16 +120,20 @@ export function useCreateKpiFormula() {
 export function useUpdateKpiFormula() {
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<KpiFormulaInput> }) => {
-      const response = await apiRequest(`/api/kpi/formulas/${id}`, {
+      const response = await fetch(`/api/kpi/formulas/${id}`, {
         method: 'PATCH',
-        data
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
       });
       
-      if (!response.data.success) {
-        throw new Error(response.data.message || 'Failed to update KPI formula');
+      const responseData = await response.json();
+      if (!responseData.success) {
+        throw new Error(responseData.message || 'Failed to update KPI formula');
       }
       
-      return response.data.formula as KpiFormula;
+      return responseData.formula as KpiFormula;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/kpi/formulas'] });
@@ -147,12 +156,13 @@ export function useUpdateKpiFormula() {
 export function useDeleteKpiFormula() {
   return useMutation({
     mutationFn: async (id: string) => {
-      const response = await apiRequest(`/api/kpi/formulas/${id}`, {
+      const response = await fetch(`/api/kpi/formulas/${id}`, {
         method: 'DELETE'
       });
       
-      if (!response.data.success) {
-        throw new Error(response.data.message || 'Failed to delete KPI formula');
+      const responseData = await response.json();
+      if (!responseData.success) {
+        throw new Error(responseData.message || 'Failed to delete KPI formula');
       }
       
       return id;

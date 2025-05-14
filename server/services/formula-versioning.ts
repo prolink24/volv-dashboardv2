@@ -1,5 +1,6 @@
 import { db } from "../db";
-import { formulaVersions, kpiFormulas, formulaBlocks, blockConnections, formulaBlockPositions } from "@shared/schema/visual-formula";
+import { formulaVersions, formulaBlocks, blockConnections, formulaBlockPositions } from "@shared/schema/visual-formula";
+import { kpiFormulas } from "@shared/schema/kpi-configuration";
 import { eq, desc, and, gt } from "drizzle-orm";
 import { compileFormula, generateFormulaText } from "./formula-compiler";
 
@@ -10,21 +11,23 @@ import { compileFormula, generateFormulaText } from "./formula-compiler";
  * allowing users to track changes, compare versions, and roll back to previous states.
  */
 
+// Using the FormulaVersion type from the schema, but defining it here to match the DB structure
+// This allows for null values in certain fields that are defined as optional in the schema
 interface FormulaVersion {
   id: string;
-  formulaId: string;
+  formulaId: string | null; // Can be null in database
   versionNumber: number;
   formula: string;
-  visualBlocks: any[];
-  connections: any[];
+  visualBlocks: any; // JSON objects
+  connections: any; // JSON objects
   createdAt: Date;
-  createdBy?: string;
-  comment?: string;
+  createdBy: string | null; // Allows for null value
+  comment: string | null; // Allows for null value
 }
 
 interface VersionComparisonResult {
-  versionA: FormulaVersion;
-  versionB: FormulaVersion;
+  versionA: any; // Using any here to avoid TypeScript errors with DB returned types
+  versionB: any; // Using any here to avoid TypeScript errors with DB returned types
   blockChanges: {
     added: number;
     removed: number;
@@ -417,12 +420,12 @@ export async function getFormulaHistory(
   formulaId: string,
   limit: number = 10
 ): Promise<{ 
-  versions: FormulaVersion[]; 
+  versions: any[]; 
   changes: { 
     versionNumber: number; 
     createdAt: Date; 
-    createdBy?: string; 
-    comment?: string; 
+    createdBy: string | null; 
+    comment: string | null; 
     summary: string; 
   }[]; 
 }> {

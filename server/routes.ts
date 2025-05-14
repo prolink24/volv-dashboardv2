@@ -937,6 +937,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Mount the settings router
   app.use("/api/settings", settingsRouter);
+  
+  // Mount the KPI configurator router
+  app.use("/api/kpi", kpiConfiguratorRouter);
 
   // Create HTTP server
   const httpServer = createServer(app);
