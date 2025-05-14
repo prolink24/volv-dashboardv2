@@ -103,104 +103,25 @@ const KpiConfigurationPage = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedKpi, setSelectedKpi] = useState<KpiFormula | null>(null);
   const [editMode, setEditMode] = useState(false);
-  const [customFields, setCustomFields] = useState<CustomField[]>([]);
-  const [availableFields, setAvailableFields] = useState<CustomField[]>([]);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Get KPI categories and formulas
-  const { 
-    data: kpiCategories, 
-    isLoading, 
-    error 
-  } = useQuery({
-    queryKey: ['/api/settings/kpi-configuration'],
-    refetchOnWindowFocus: false,
-  });
+  // Use our custom KPI configuration hook
+  const {
+    kpiCategories,
+    isLoadingKpis: isLoading,
+    kpisError: error,
+    availableFields,
+    customFields,
+    isLoadingFields: isFieldsLoading,
+    updateKpiFormula,
+    toggleKpiEnabled,
+    saveCustomField
+  } = useKpiConfiguration();
 
-  // Get available fields from the API
-  const { 
-    data: fieldsData,
-    isLoading: isFieldsLoading,
-  } = useQuery({
-    queryKey: ['/api/settings/available-fields'],
-    refetchOnWindowFocus: false,
-  });
+  // We're now using the hook's mutation functions: updateKpiFormula, toggleKpiEnabled, saveCustomField
 
-  // Set up mutation for saving KPI formula changes
-  const saveFormulaMutation = useMutation({
-    mutationFn: async (data: any) => {
-      const response = await fetch('/api/settings/kpi-formula', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to save formula');
-      }
-      
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/settings/kpi-configuration'] });
-      toast({
-        title: "Formula saved",
-        description: "KPI formula has been updated successfully",
-      });
-      setEditMode(false);
-    },
-    onError: (error) => {
-      toast({
-        title: "Error saving formula",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
-        variant: "destructive",
-      });
-    }
-  });
-
-  // Set up mutation for saving custom field
-  const saveCustomFieldMutation = useMutation({
-    mutationFn: async (data: CustomField) => {
-      const response = await fetch('/api/settings/custom-field', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to save custom field');
-      }
-      
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/settings/available-fields'] });
-      toast({
-        title: "Custom field saved",
-        description: "Field has been updated successfully",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error saving field",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
-        variant: "destructive",
-      });
-    }
-  });
-
-  // Update available fields when fieldsData changes
-  useEffect(() => {
-    if (fieldsData) {
-      setAvailableFields(fieldsData.fields || []);
-      setCustomFields(fieldsData.customFields || []);
-    }
-  }, [fieldsData]);
+  // Using availableFields and customFields directly from the hook now
 
   // KPI formula editing form
   const formulaForm = useForm<z.infer<typeof KpiFormulaSchema>>({
@@ -244,6 +165,7 @@ const KpiConfigurationPage = () => {
 
   // Handle custom field form submission
   const onCustomFieldSubmit = (data: z.infer<typeof CustomFieldSchema>) => {
+    // Use the hook's function to save the custom field
     saveCustomField(data as CustomField);
   };
 
