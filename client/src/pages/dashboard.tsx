@@ -29,8 +29,23 @@ const Dashboard = () => {
   // Convert dateFilter to API format
   // Extract the year and month from the dateFilter (format: "YYYY-MM | Month")
   const dateParts = dateFilter.split('|')[0].trim().split('-');
-  const year = parseInt(dateParts[0]);
-  const month = parseInt(dateParts[1]) - 1; // JavaScript months are 0-indexed
+  let year, month;
+  
+  try {
+    year = parseInt(dateParts[0]);
+    month = parseInt(dateParts[1]) - 1; // JavaScript months are 0-indexed
+    
+    // Validate parsed values
+    if (isNaN(year) || isNaN(month) || year < 2000 || year > 2100 || month < 0 || month > 11) {
+      throw new Error(`Invalid date parts: year=${year}, month=${month}`);
+    }
+  } catch (error) {
+    console.error(`Error parsing date filter "${dateFilter}":`, error);
+    // Fallback to current month if parsing fails
+    const now = new Date();
+    year = now.getFullYear();
+    month = now.getMonth();
+  }
   
   // Create a date object for the first day of the selected month
   const apiDate = new Date(year, month, 1);

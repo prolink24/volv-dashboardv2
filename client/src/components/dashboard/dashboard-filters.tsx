@@ -44,8 +44,11 @@ const DashboardFilters = () => {
   // Handle date selection
   const handleDateSelect = (newDate: Date | undefined) => {
     if (newDate) {
-      setSelectedDate(newDate);
-      const formattedDate = formatSelectedDate(newDate);
+      // Update the date to the 1st of the month for consistency
+      const firstOfMonth = new Date(newDate.getFullYear(), newDate.getMonth(), 1);
+      setSelectedDate(firstOfMonth);
+      const formattedDate = formatSelectedDate(firstOfMonth);
+      console.log(`Selected date: ${newDate.toISOString()}, formatted: ${formattedDate}`);
       setDateFilter(formattedDate);
     }
   };

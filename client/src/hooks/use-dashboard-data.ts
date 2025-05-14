@@ -91,6 +91,8 @@ export function useDashboardData({
     ? `/api/enhanced-dashboard${queryString ? `?${queryString}` : ""}`
     : `/api/dashboard${queryString ? `?${queryString}` : ""}`;
   
+  console.log(`Fetching dashboard data from endpoint: ${endpoint}`);
+  
   return useQuery<DashboardData>({
     queryKey: [endpoint],
     staleTime: 1000 * 60 * 5, // 5 minutes
@@ -99,6 +101,10 @@ export function useDashboardData({
     refetchOnMount: true, // Always refetch when component mounts
     retry: 3, // Retry failed requests three times
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+    // Add detailed error logging
+    onError: (error) => {
+      console.error(`Error fetching dashboard data from ${endpoint}:`, error);
+    },
     // Transform the response to ensure default values or use fallback in development
     select: (data) => {
       if (!data) {
@@ -106,6 +112,18 @@ export function useDashboardData({
         // Use empty structure with proper types for all required fields
         return createEmptyDashboardData() as unknown as DashboardData;
       }
+      
+      console.log(`Dashboard data successfully fetched from ${endpoint}`);
+      // Log structure for debugging
+      console.log("Dashboard data structure:", {
+        hasKpis: !!data.kpis,
+        hasSalesTeam: !!data.salesTeam,
+        hasTriageMetrics: !!data.triageMetrics,
+        hasLeadMetrics: !!data.leadMetrics,
+        hasAdvancedMetrics: !!data.advancedMetrics,
+        hasMissingAdmins: !!data.missingAdmins,
+        hasAttribution: !!data.attribution
+      });
       
       // Return real data with fallbacks for missing properties
       return {
@@ -143,8 +161,23 @@ export function useAttributionStats() {
   return useQuery<AttributionStatsData>({
     queryKey: ['/api/attribution/enhanced-stats'],
     staleTime: 1000 * 60 * 15, // 15 minutes
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false, // Changed to avoid extra requests
     refetchOnMount: true,
+    retry: 5, // Increased retries
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+    onError: (error) => {
+      console.error("Error fetching attribution stats:", error);
+      console.log("Attribution stats error detected, will retry in 2s");
+      // After error logging, we'll retry with a delay via the retry config
+    },
+    onSuccess: (data) => {
+      console.log("Attribution stats fetch succeeded:", {
+        hasData: !!data,
+        success: data?.success,
+        hasStats: !!data?.stats,
+        attributionAccuracy: data?.attributionAccuracy
+      });
+    }
   });
 }
 
