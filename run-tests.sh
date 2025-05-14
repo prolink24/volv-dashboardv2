@@ -58,15 +58,15 @@ else
   
   # Wait for server to start
   echo -n "Waiting for server to start"
-  for i in {1..30}; do
+  for i in {1..10}; do
     if check_server_running; then
       echo -e "\n${GREEN}Server started successfully${NC}"
       break
     fi
     echo -n "."
     sleep 1
-    if [ $i -eq 30 ]; then
-      echo -e "\n${RED}Server failed to start within 30 seconds${NC}"
+    if [ $i -eq 10 ]; then
+      echo -e "\n${RED}Server failed to start within 10 seconds${NC}"
       exit 1
     fi
   done
