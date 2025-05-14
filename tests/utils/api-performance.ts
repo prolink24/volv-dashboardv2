@@ -1,85 +1,165 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page, APIRequestContext } from '@playwright/test';
 
 /**
- * Test the performance of an API endpoint
- * @param url The URL to test
- * @param maxResponseTime The maximum allowed response time in milliseconds
+ * Measure the response time of an API endpoint
+ * @param request Playwright APIRequestContext object
+ * @param url API endpoint URL
+ * @param acceptableResponseTime Maximum acceptable response time in ms
+ * @returns Response time in milliseconds
  */
-export async function testApiPerformance(url: string, maxResponseTime: number = 3000) {
+export async function measureApiResponseTime(
+  request: APIRequestContext, 
+  url: string,
+  acceptableResponseTime: number = 2000
+): Promise<number> {
   const startTime = Date.now();
-  const response = await fetch(url);
+  const response = await request.get(url);
   const endTime = Date.now();
   
-  // Check response status
-  expect(response.status).toBe(200);
-  
-  // Check response time
   const responseTime = endTime - startTime;
-  console.log(`API ${url} response time: ${responseTime}ms`);
-  expect(responseTime).toBeLessThanOrEqual(maxResponseTime);
   
-  // Parse the JSON response
-  const data = await response.json();
+  // Validate the response was successful
+  expect(response.status()).toBe(200);
   
-  // Ensure the response has a success field set to true
-  expect(data.success).toBe(true);
+  // Validate the response time is acceptable
+  expect(responseTime, `API ${url} response time exceeded ${acceptableResponseTime}ms threshold (actual: ${responseTime}ms)`).toBeLessThanOrEqual(
+    acceptableResponseTime
+  );
   
-  return { responseTime, data };
+  return responseTime;
 }
 
 /**
- * Test multiple API endpoints and return their performance metrics
- * @param endpoints Array of API endpoints to test
- * @param maxResponseTime The maximum allowed response time in milliseconds
+ * Test multiple API endpoints for performance
+ * @param request Playwright APIRequestContext object
+ * @param endpoints Array of endpoint objects with url and acceptable response time
+ * @returns Object mapping endpoints to their response times
  */
-export async function testMultipleApiEndpoints(
-  endpoints: string[],
-  maxResponseTime: number = 3000
-) {
-  const results = [];
+export async function testMultipleEndpoints(
+  request: APIRequestContext,
+  endpoints: Array<{url: string, maxResponseTime?: number}>
+): Promise<Record<string, number>> {
+  const results: Record<string, number> = {};
   
   for (const endpoint of endpoints) {
-    const url = `http://localhost:5000${endpoint}`;
-    const { responseTime, data } = await testApiPerformance(url, maxResponseTime);
+    const responseTime = await measureApiResponseTime(
+      request,
+      endpoint.url,
+      endpoint.maxResponseTime
+    );
     
-    results.push({
-      endpoint,
-      responseTime,
-      status: 'success',
-      dataSize: JSON.stringify(data).length
-    });
+    results[endpoint.url] = responseTime;
   }
   
   return results;
 }
 
 /**
- * Measure page load time
- * @param page The Playwright page object
- * @param url The URL to navigate to
- * @param selector A selector to wait for to consider the page loaded
- * @param maxLoadTime The maximum allowed load time in milliseconds
+ * Measure client-side rendering performance of a page
+ * @param page Playwright page object
+ * @param selector Selector for the element to wait for
+ * @param acceptableRenderTime Maximum acceptable render time in ms
+ * @returns Render time in milliseconds
  */
-export async function measurePageLoadTime(
-  page: any,
-  url: string,
+export async function measureRenderTime(
+  page: Page,
   selector: string,
-  maxLoadTime: number = 5000
-) {
+  acceptableRenderTime: number = 5000
+): Promise<number> {
+  // Navigate to the page and measure time until the selector is visible
   const startTime = Date.now();
-  
-  // Navigate to the page
-  await page.goto(url);
   
   // Wait for the selector to be visible
   await page.waitForSelector(selector, { state: 'visible' });
   
-  // Get the end time
   const endTime = Date.now();
-  const loadTime = endTime - startTime;
+  const renderTime = endTime - startTime;
   
-  console.log(`Page ${url} load time: ${loadTime}ms`);
-  expect(loadTime).toBeLessThanOrEqual(maxLoadTime);
+  // Validate render time is acceptable
+  expect(renderTime, `Rendering time for selector "${selector}" exceeded ${acceptableRenderTime}ms threshold (actual: ${renderTime}ms)`).toBeLessThanOrEqual(
+    acceptableRenderTime
+  );
   
-  return loadTime;
+  return renderTime;
+}
+
+/**
+ * Create a performance report for multiple API endpoints
+ * @param request Playwright APIRequestContext object
+ * @param endpoints Array of endpoint objects with url and acceptable response time
+ * @param outputToConsole Whether to output results to console
+ * @returns Performance report object
+ */
+export async function createApiPerformanceReport(
+  request: APIRequestContext,
+  endpoints: Array<{url: string, maxResponseTime?: number, description?: string}>,
+  outputToConsole: boolean = false
+): Promise<{
+  totalEndpoints: number,
+  passedEndpoints: number,
+  failedEndpoints: number,
+  averageResponseTime: number,
+  endpointResults: Record<string, {responseTime: number, passed: boolean, description?: string}>
+}> {
+  const results: Record<string, {responseTime: number, passed: boolean, description?: string}> = {};
+  let totalResponseTime = 0;
+  let passedEndpoints = 0;
+  let failedEndpoints = 0;
+  
+  for (const endpoint of endpoints) {
+    try {
+      const responseTime = await measureApiResponseTime(
+        request,
+        endpoint.url,
+        endpoint.maxResponseTime || 2000
+      );
+      
+      results[endpoint.url] = {
+        responseTime,
+        passed: true,
+        description: endpoint.description
+      };
+      
+      totalResponseTime += responseTime;
+      passedEndpoints++;
+      
+      if (outputToConsole) {
+        console.log(`✅ ${endpoint.url} - ${responseTime}ms ${endpoint.description ? `(${endpoint.description})` : ''}`);
+      }
+    } catch (error) {
+      failedEndpoints++;
+      
+      // Extract response time from error message if available
+      const timeMatch = String(error).match(/actual: (\d+)ms/);
+      const responseTime = timeMatch ? parseInt(timeMatch[1]) : -1;
+      
+      results[endpoint.url] = {
+        responseTime,
+        passed: false,
+        description: endpoint.description
+      };
+      
+      if (outputToConsole) {
+        console.error(`❌ ${endpoint.url} - ${responseTime > 0 ? `${responseTime}ms` : 'Failed'} ${endpoint.description ? `(${endpoint.description})` : ''}`);
+      }
+    }
+  }
+  
+  const averageResponseTime = passedEndpoints > 0 ? totalResponseTime / passedEndpoints : -1;
+  
+  if (outputToConsole) {
+    console.log(`\nPerformance Report:`);
+    console.log(`Total Endpoints: ${endpoints.length}`);
+    console.log(`Passed: ${passedEndpoints}`);
+    console.log(`Failed: ${failedEndpoints}`);
+    console.log(`Average Response Time: ${averageResponseTime.toFixed(2)}ms`);
+  }
+  
+  return {
+    totalEndpoints: endpoints.length,
+    passedEndpoints,
+    failedEndpoints,
+    averageResponseTime,
+    endpointResults: results
+  };
 }

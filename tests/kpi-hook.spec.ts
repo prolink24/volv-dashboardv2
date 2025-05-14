@@ -57,7 +57,7 @@ test.describe('KPI Configuration Hook Tests', () => {
     
     // Skip test if no active KPIs
     if (await activeKpi.count() === 0) {
-      test.skip('No active KPIs found to test formula editing');
+      skipTest('No active KPIs found to test formula editing');
       return;
     }
     
@@ -144,7 +144,7 @@ test.describe('KPI Configuration Hook Tests', () => {
     
     // Skip test if no active KPIs
     if (await activeKpi.count() === 0) {
-      test.skip('No active KPIs found to test formula validation');
+      skipTest('No active KPIs found to test formula validation');
       return;
     }
     

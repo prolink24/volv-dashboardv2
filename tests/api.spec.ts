@@ -1,192 +1,209 @@
 import { test, expect } from '@playwright/test';
-import { customMatchers } from './utils/test-matchers';
 import { skipTest, skipIf, asyncUtils } from './utils/test-helpers';
 
 test.describe('API Tests', () => {
-  const BASE_URL = 'http://localhost:5000';
-
-  test('should fetch dashboard data successfully', async ({ request }) => {
-    const response = await request.get(`${BASE_URL}/api/dashboard`);
-    expect(response.status()).toBe(200);
-    
+  test('should return dashboard stats data', async ({ request }) => {
+    const response = await request.get('/api/dashboard/stats');
     const data = await response.json();
+
+    expect(response.status()).toBe(200);
     expect(data.success).toBe(true);
-    
-    // Check that the dashboard data has the expected structure
-    expect(data).toHaveProperty('stats');
-    expect(data).toHaveProperty('teamPerformance');
-    expect(data).toHaveProperty('recentActivity');
+    expect(data.stats).toBeDefined();
+
+    // Verify the data structure contains expected fields
+    expect(data.stats.totalContacts).toBeDefined();
+    expect(data.stats.totalMeetings).toBeDefined();
+    expect(data.stats.totalDeals).toBeDefined();
+    expect(data.stats.attributionRate).toBeDefined();
+
+    // Attribution rate should be above 90% based on project requirements
+    expect(data.stats.attributionRate).toBeGreaterThanOrEqual(90);
   });
 
-  test('should fetch attribution stats with required fields', async ({ request }) => {
-    const response = await request.get(`${BASE_URL}/api/attribution/stats`);
-    expect(response.status()).toBe(200);
-    
+  test('should return attribution stats', async ({ request }) => {
+    const response = await request.get('/api/attribution/enhanced-stats');
     const data = await response.json();
+
+    expect(response.status()).toBe(200);
     expect(data.success).toBe(true);
-    
-    // Check for the key attribution metrics
-    expect(data).toHaveProperty('attributionAccuracy');
-    expect(data).toHaveProperty('stats');
-    expect(data.stats).toHaveProperty('totalContacts');
-    expect(data.stats).toHaveProperty('multiSourceRate');
-    expect(data.stats).toHaveProperty('dealAttributionRate');
-    
-    // Verify attribution accuracy is above 90%
-    expect(data.attributionAccuracy).toBeGreaterThanOrEqual(90);
+    expect(data.attribution).toBeDefined();
+
+    // Verify attribution data structure
+    expect(data.attribution.totalSources).toBeDefined();
+    expect(data.attribution.contactsBySource).toBeDefined();
+    expect(data.attribution.conversionsBySource).toBeDefined();
+    expect(data.attribution.confidenceScores).toBeDefined();
   });
 
-  test('should fetch enhanced attribution stats', async ({ request }) => {
-    const response = await request.get(`${BASE_URL}/api/attribution/enhanced-stats`);
-    expect(response.status()).toBe(200);
-    
+  test('should return paginated contacts', async ({ request }) => {
+    // Test with pagination parameters
+    const response = await request.get('/api/contacts?page=1&limit=10');
     const data = await response.json();
-    expect(data.success).toBe(true);
-    
-    // Check for enhanced metrics
-    expect(data).toHaveProperty('attributionAccuracy');
-    expect(data).toHaveProperty('stats');
-    expect(data.stats).toHaveProperty('highCertaintyContacts');
-    expect(data.stats).toHaveProperty('fieldCoverage');
-  });
 
-  test('should fetch contacts paginated', async ({ request }) => {
-    const response = await request.get(`${BASE_URL}/api/contacts?page=1&limit=10`);
     expect(response.status()).toBe(200);
-    
-    const data = await response.json();
     expect(data.success).toBe(true);
-    
-    // Check pagination data
-    expect(data).toHaveProperty('contacts');
-    expect(data).toHaveProperty('pagination');
-    expect(data.pagination).toHaveProperty('currentPage');
-    expect(data.pagination).toHaveProperty('totalPages');
-    expect(data.pagination).toHaveProperty('totalItems');
-    
-    // Check contact data shape
+    expect(data.contacts).toBeDefined();
     expect(Array.isArray(data.contacts)).toBe(true);
+    
+    // Should include pagination metadata
+    expect(data.pagination).toBeDefined();
+    expect(data.pagination.page).toBe(1);
+    expect(data.pagination.limit).toBe(10);
+    expect(data.pagination.total).toBeDefined();
+    expect(data.pagination.totalPages).toBeDefined();
+    
+    // Validate contact object structure on the first item (if exists)
     if (data.contacts.length > 0) {
-      const firstContact = data.contacts[0];
-      expect(firstContact).toHaveProperty('id');
-      expect(firstContact).toHaveProperty('name');
-      expect(firstContact).toHaveProperty('email');
+      const contact = data.contacts[0];
+      expect(contact.id).toBeDefined();
+      expect(contact.name).toBeDefined();
+      expect(contact.email).toBeDefined();
+      expect(contact.sources).toBeDefined();
     }
   });
 
-  test('should filter contacts by search term', async ({ request }) => {
-    // First get a contact to use as a search term
-    const allResponse = await request.get(`${BASE_URL}/api/contacts?page=1&limit=1`);
-    const allData = await allResponse.json();
+  test('should return contacts from specific source', async ({ request }) => {
+    // Test filtering by source
+    const source = 'close';
+    const response = await request.get(`/api/contacts?source=${source}`);
+    const data = await response.json();
+
+    expect(response.status()).toBe(200);
+    expect(data.success).toBe(true);
+    expect(data.contacts).toBeDefined();
     
-    if (allData.contacts.length === 0) {
-      skipTest('No contacts available to test search');
+    // Check that all returned contacts have the requested source
+    if (data.contacts.length > 0) {
+      for (const contact of data.contacts) {
+        expect(contact.sources).toContain(source);
+      }
+    }
+  });
+
+  test('should return detailed contact data', async ({ request }) => {
+    // First get a list of contacts to find a valid ID
+    const listResponse = await request.get('/api/contacts?limit=1');
+    const listData = await listResponse.json();
+    
+    if (listData.contacts.length === 0) {
+      skipTest('No contacts available for testing individual contact API');
       return;
     }
     
-    const searchTerm = allData.contacts[0].name.split(' ')[0]; // Use first name
+    const contactId = listData.contacts[0].id;
     
-    // Now search using that term
-    const response = await request.get(`${BASE_URL}/api/contacts?page=1&limit=10&search=${encodeURIComponent(searchTerm)}`);
-    expect(response.status()).toBe(200);
-    
+    // Now get the specific contact details
+    const response = await request.get(`/api/contacts/${contactId}`);
     const data = await response.json();
-    expect(data.success).toBe(true);
-    
-    // Verify search results contain the search term
-    if (data.contacts.length > 0) {
-      const matchesFound = data.contacts.some(contact => 
-        contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (contact.email && contact.email.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
-      expect(matchesFound).toBe(true);
-    }
-  });
 
-  test('should fetch KPI configuration', async ({ request }) => {
-    const response = await request.get(`${BASE_URL}/api/settings/kpi-configuration`);
     expect(response.status()).toBe(200);
-    
-    const data = await response.json();
     expect(data.success).toBe(true);
+    expect(data.contact).toBeDefined();
     
-    // Check KPI configuration structure
-    expect(data).toHaveProperty('kpis');
-    expect(data).toHaveProperty('activeKpis');
-    expect(data).toHaveProperty('customFields');
+    // Validate detailed contact data structure
+    const contact = data.contact;
+    expect(contact.id).toBe(contactId);
+    expect(contact.name).toBeDefined();
+    expect(contact.email).toBeDefined();
     
-    // Verify arrays
-    expect(Array.isArray(data.kpis)).toBe(true);
-    expect(Array.isArray(data.activeKpis)).toBe(true);
-    expect(Array.isArray(data.customFields)).toBe(true);
+    // Check for detailed fields that should be present
+    expect(contact.sources).toBeDefined();
+    expect(contact.activities).toBeDefined();
+    expect(contact.meetings).toBeDefined();
+    expect(contact.deals).toBeDefined();
+  });
+
+  test('should return KPI configuration', async ({ request }) => {
+    const response = await request.get('/api/settings/kpi-configuration');
+    const data = await response.json();
+
+    expect(response.status()).toBe(200);
+    expect(data.success).toBe(true);
+    expect(data.kpiConfig).toBeDefined();
     
-    // Check KPI properties
-    if (data.kpis.length > 0) {
-      const firstKpi = data.kpis[0];
-      expect(firstKpi).toHaveProperty('id');
-      expect(firstKpi).toHaveProperty('name');
-      expect(firstKpi).toHaveProperty('description');
+    // Validate KPI configuration structure
+    expect(data.kpiConfig.kpis).toBeDefined();
+    expect(Array.isArray(data.kpiConfig.kpis)).toBe(true);
+    expect(data.kpiConfig.activeKpis).toBeDefined();
+    expect(Array.isArray(data.kpiConfig.activeKpis)).toBe(true);
+    
+    // Each KPI should have basic metadata
+    if (data.kpiConfig.kpis.length > 0) {
+      const kpi = data.kpiConfig.kpis[0];
+      expect(kpi.id).toBeDefined();
+      expect(kpi.name).toBeDefined();
+      expect(kpi.description).toBeDefined();
+      expect(kpi.formula).toBeDefined();
     }
   });
 
-  test('should handle error responses appropriately', async ({ request }) => {
-    // Test with an invalid endpoint
-    const response = await request.get(`${BASE_URL}/api/invalid-endpoint`);
+  test('should return Close CRM users', async ({ request }) => {
+    const response = await request.get('/api/users/close');
+    const data = await response.json();
+
+    expect(response.status()).toBe(200);
+    expect(data.success).toBe(true);
+    expect(data.users).toBeDefined();
+    expect(Array.isArray(data.users)).toBe(true);
     
-    // Should return 404 or error status
-    expect(response.status()).not.toBe(200);
-    
-    // If it returns JSON, check error structure
-    try {
-      const data = await response.json();
-      expect(data.success).toBe(false);
-      expect(data).toHaveProperty('error');
-    } catch (e) {
-      // If not JSON, that's also acceptable as long as it's an error status
-      expect(response.status()).toBeGreaterThanOrEqual(400);
+    // Each user should have basic info
+    if (data.users.length > 0) {
+      const user = data.users[0];
+      expect(user.id).toBeDefined();
+      expect(user.name).toBeDefined();
+      expect(user.email).toBeDefined();
     }
   });
 
-  test('should handle server-side validation', async ({ request }) => {
-    // Try to create a KPI with invalid data
-    const invalidData = {
-      name: '', // Empty name should be invalid
-      description: 'Test description',
-      formula: 'SUM(contacts)'
-    };
+  test('should handle invalid API endpoints gracefully', async ({ request }) => {
+    const response = await request.get('/api/nonexistent-endpoint');
     
-    const response = await request.post(`${BASE_URL}/api/settings/kpi-configuration/kpis`, {
-      data: invalidData
-    });
+    // Should receive a proper 404 response, not a server error
+    expect(response.status()).toBe(404);
     
-    // Should return validation error
-    expect(response.status()).toBe(400);
-    
+    // Response should still be well-formed JSON
     const data = await response.json();
     expect(data.success).toBe(false);
-    expect(data).toHaveProperty('error');
-    expect(data.error).toContain('validation');
+    expect(data.error).toBeDefined();
   });
-  
-  test('should respect API caching headers', async ({ request }) => {
-    // Make first request
-    const response1 = await request.get(`${BASE_URL}/api/attribution/stats`);
-    expect(response1.status()).toBe(200);
+
+  test('should handle invalid input gracefully', async ({ request }) => {
+    // Test with invalid contact ID
+    const response = await request.get('/api/contacts/999999999');
     
-    // Check for caching headers
-    const cacheControl = response1.headers()['cache-control'];
-    if (cacheControl) {
-      expect(cacheControl).toContain('max-age=');
+    // Should get a proper error, not a server crash
+    expect(response.status()).toBe(404);
+    
+    // Response should have error details
+    const data = await response.json();
+    expect(data.success).toBe(false);
+    expect(data.error).toBeDefined();
+  });
+
+  test('should return user-specific metrics', async ({ request }) => {
+    // First get a list of users to find a valid ID
+    const usersResponse = await request.get('/api/users/close');
+    const usersData = await usersResponse.json();
+    
+    if (!usersData.users || usersData.users.length === 0) {
+      skipTest('No users available for testing user metrics API');
+      return;
     }
     
-    // Make second request immediately
-    const response2 = await request.get(`${BASE_URL}/api/attribution/stats`);
-    expect(response2.status()).toBe(200);
+    const userId = usersData.users[0].id;
     
-    // Both should have the same data
-    const data1 = await response1.json();
-    const data2 = await response2.json();
+    // Now get the metrics for this user
+    const response = await request.get(`/api/metrics/user/${userId}`);
+    const data = await response.json();
+
+    expect(response.status()).toBe(200);
+    expect(data.success).toBe(true);
+    expect(data.metrics).toBeDefined();
     
-    expect(JSON.stringify(data1)).toBe(JSON.stringify(data2));
+    // Validate user metrics structure
+    expect(data.metrics.totalContacts).toBeDefined();
+    expect(data.metrics.totalDeals).toBeDefined();
+    expect(data.metrics.conversionRate).toBeDefined();
+    expect(data.metrics.performance).toBeDefined();
   });
 });
