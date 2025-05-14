@@ -596,17 +596,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Enhanced attribution stats with accuracy metrics - with 15 minute cache
-  apiRouter.get("/attribution/enhanced-stats", cacheService.cacheMiddleware(900), async (req: Request, res: Response) => {
+  // Enhanced attribution stats with accuracy metrics - with 30 minute cache (increased from 15 min)
+  apiRouter.get("/attribution/enhanced-stats", cacheService.cacheMiddleware(1800), async (req: Request, res: Response) => {
     try {
+      console.time("attribution-stats-generation");
       const attributionData = await enhancedAttributionService.getAttributionStats() as AttributionStatsResponse;
+      console.timeEnd("attribution-stats-generation");
       
       if (!attributionData.success) {
         return res.status(500).json({ error: "Failed to generate enhanced attribution stats" });
       }
       
-      // Simply pass through the service result which is already formatted correctly
-      res.json(attributionData);
+      // Add the time when this data was cached to help UI indicate data freshness
+      const responseWithTimestamp = {
+        ...attributionData,
+        cachedAt: new Date().toISOString()
+      };
+      
+      // Pass through the service result which is already formatted correctly
+      res.json(responseWithTimestamp);
     } catch (error) {
       console.error("Error generating enhanced attribution stats:", error);
       res.status(500).json({ error: "Failed to generate enhanced attribution stats" });

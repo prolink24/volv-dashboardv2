@@ -1,13 +1,14 @@
 import NodeCache from "node-cache";
 import { Request, Response, NextFunction } from "express";
 
-// Create cache instance with 5 minute TTL default
+// Create cache instance with 15 minute default TTL
 // Define cache options
 const cacheOptions = {
-  stdTTL: 300, // 5 minutes in seconds
+  stdTTL: 900, // 15 minutes in seconds (increased from 5 minutes)
   checkperiod: 120, // Check for expired keys every 2 minutes
   useClones: false, // Store references instead of cloning for better performance
   deleteOnExpire: true, // Auto delete expired items
+  maxKeys: 1000, // Limit maximum keys to prevent memory issues
 };
 
 const cache = new NodeCache(cacheOptions);
