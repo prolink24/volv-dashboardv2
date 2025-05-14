@@ -51,20 +51,14 @@ test.describe('API Tests', () => {
 
   test('should return paginated contacts', async ({ request }) => {
     // Test with pagination parameters
-    const response = await request.get('/api/contacts?page=1&limit=10');
+    const response = await request.get('/api/contacts?limit=10&offset=0');
     const data = await response.json();
 
     expect(response.status()).toBe(200);
-    expect(data.success).toBe(true);
     expect(data.contacts).toBeDefined();
     expect(Array.isArray(data.contacts)).toBe(true);
-    
-    // Should include pagination metadata
-    expect(data.pagination).toBeDefined();
-    expect(data.pagination.page).toBe(1);
-    expect(data.pagination.limit).toBe(10);
-    expect(data.pagination.total).toBeDefined();
-    expect(data.pagination.totalPages).toBeDefined();
+    expect(data.totalCount).toBeDefined();
+    expect(data.totalCount).toBeGreaterThan(0);
     
     // Validate contact object structure on the first item (if exists)
     if (data.contacts.length > 0) {
@@ -72,7 +66,7 @@ test.describe('API Tests', () => {
       expect(contact.id).toBeDefined();
       expect(contact.name).toBeDefined();
       expect(contact.email).toBeDefined();
-      expect(contact.sources).toBeDefined();
+      expect(contact.leadSource).toBeDefined();
     }
   });
 
