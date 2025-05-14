@@ -984,18 +984,18 @@ const KpiConfigurationPage = () => {
                     {kpiCategories?.flatMap((category: KpiCategory) => 
                       selectedCategory && category.id !== selectedCategory
                         ? []
-                        : category.kpis.map((kpi: KpiFormula) => (
+                        : (category.kpis ?? []).map((kpi: KpiFormula) => (
                             <Button 
-                              key={kpi.id}
-                              variant={selectedKpi?.id === kpi.id ? "secondary" : "ghost"} 
+                              key={kpi?.id}
+                              variant={selectedKpi?.id === kpi?.id ? "secondary" : "ghost"} 
                               className={cn(
                                 "w-full justify-between pl-6 pr-2",
-                                !kpi.enabled && "text-muted-foreground"
+                                !kpi?.enabled && "text-muted-foreground"
                               )}
                               onClick={() => setSelectedKpi(kpi)}
                             >
-                              <span className="truncate text-left">{kpi.name}</span>
-                              {!kpi.customizable && (
+                              <span className="truncate text-left">{kpi?.name || "Unnamed KPI"}</span>
+                              {!kpi?.customizable && (
                                 <TooltipProvider>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
