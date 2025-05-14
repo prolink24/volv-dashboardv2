@@ -3,6 +3,24 @@ import { queryClient } from "@/lib/queryClient";
 import { apiRequest } from "@/lib/queryClient";
 import { toast } from "@/hooks/use-toast";
 
+// Legacy hook for backward compatibility with KpiConfigurator component
+export function useKpiConfiguration() {
+  const { data: formulas = [], isLoading, error } = useKpiFormulas();
+  
+  return {
+    formulas,
+    isLoading,
+    error,
+    addFormula: useCreateKpiFormula().mutateAsync,
+    updateFormula: useUpdateKpiFormula().mutateAsync,
+    deleteFormula: useDeleteKpiFormula().mutateAsync,
+    getFields: getAvailableFields,
+    getFunctions: getAvailableFunctions,
+    getCategories: getFormulaCategories,
+    getDashboardTypes: getDashboardTypes
+  };
+}
+
 // KPI types
 export interface KpiFormula {
   id: string;
