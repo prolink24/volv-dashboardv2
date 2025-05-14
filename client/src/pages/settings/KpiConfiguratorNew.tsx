@@ -219,12 +219,16 @@ const KpiConfiguratorNew: React.FC = () => {
       description: formula.description || "",
       formula: formula.formula,
       category: formula.category,
-      dashboardTypes: [...formula.dashboardTypes],
+      dashboardTypes: Array.isArray(formula.dashboardTypes) ? [...formula.dashboardTypes] : ["sales"],
       visualBlocks: formula.visualBlocks
     });
     setIsEditMode(false);
     setCurrentFormula(null);
     setActiveTab("builder");
+    toast({
+      title: `Cloned "${formula.name}"`,
+      description: "You can now customize this formula to create a new one"
+    });
   };
   
   // Start creating a new formula
@@ -601,11 +605,15 @@ const KpiConfiguratorNew: React.FC = () => {
                     <code className="text-sm">{template.formula}</code>
                   </div>
                   <div className="flex flex-wrap gap-1 mt-2">
-                    {template.dashboardTypes?.map(dashType => (
+                    {Array.isArray(template.dashboardTypes) ? template.dashboardTypes.map(dashType => (
                       <Badge key={dashType} variant="secondary" className="text-xs">
                         {dashboardTypes.find(d => d?.id === dashType)?.name || dashType}
                       </Badge>
-                    )) || []}
+                    )) : (
+                      <Badge variant="secondary" className="text-xs">
+                        Sales
+                      </Badge>
+                    )}
                   </div>
                 </CardContent>
                 <CardFooter className="flex justify-between">
