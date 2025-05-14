@@ -245,7 +245,7 @@ export async function findBestMatchingContact(contactData: Partial<InsertContact
     const normalizedEmail = normalizeEmail(contactData.email);
     
     // Find all contacts to do detailed matching
-    const allContacts = await storage.getAllContacts();
+    const allContacts = await storage.getContacts(5000, 0); // Get up to 5000 contacts for matching
     
     // Find exact email match (normalized)
     const exactMatch = allContacts.find(contact => 

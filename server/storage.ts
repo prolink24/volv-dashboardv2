@@ -53,18 +53,21 @@ export interface IStorage {
 
   // Activity operations
   getActivity(id: number): Promise<Activity | undefined>;
+  getActivityBySourceId(source: string, sourceId: string): Promise<Activity | undefined>;
   createActivity(activity: InsertActivity): Promise<Activity>;
   getActivitiesByContactId(contactId: number): Promise<Activity[]>;
   getActivitiesCount(): Promise<number>;
 
   // Deal operations
   getDeal(id: number): Promise<Deal | undefined>;
+  getDealBySourceId(source: string, sourceId: string): Promise<Deal | undefined>;
   createDeal(deal: InsertDeal): Promise<Deal>;
   getDealsByContactId(contactId: number): Promise<Deal[]>;
   getDealsCount(): Promise<number>;
 
   // Meeting operations
   getMeeting(id: number): Promise<Meeting | undefined>;
+  getMeetingByCalendlyEventId(eventId: string): Promise<Meeting | undefined>;
   createMeeting(meeting: InsertMeeting): Promise<Meeting>;
   getMeetingsByContactId(contactId: number): Promise<Meeting[]>;
   getMeetingsCount(): Promise<number>;
@@ -96,6 +99,7 @@ export interface IStorage {
   // KPI Metrics operations
   createMetrics(metrics: InsertMetrics): Promise<Metrics>;
   updateMetrics(id: number, metrics: Partial<InsertMetrics>): Promise<Metrics | undefined>;
+  getMetrics(id: number): Promise<Metrics | undefined>;
   getMetricsByDate(date: string, userId?: string): Promise<Metrics | undefined>;
   getDashboardData(date: Date, userId?: string, role?: string): Promise<any>;
 }
@@ -205,6 +209,19 @@ export class DatabaseStorage implements IStorage {
   // Activity operations
   async getActivity(id: number): Promise<Activity | undefined> {
     const [activity] = await db.select().from(activities).where(eq(activities.id, id));
+    return activity || undefined;
+  }
+
+  async getActivityBySourceId(source: string, sourceId: string): Promise<Activity | undefined> {
+    const [activity] = await db
+      .select()
+      .from(activities)
+      .where(
+        and(
+          eq(activities.sourceId, sourceId),
+          eq(activities.source, source)
+        )
+      );
     return activity || undefined;
   }
 
