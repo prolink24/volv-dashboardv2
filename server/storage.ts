@@ -55,6 +55,7 @@ export interface IStorage {
   getActivity(id: number): Promise<Activity | undefined>;
   getActivityBySourceId(source: string, sourceId: string): Promise<Activity | undefined>;
   createActivity(activity: InsertActivity): Promise<Activity>;
+  updateActivity(id: number, activity: Partial<InsertActivity>): Promise<Activity | undefined>;
   getActivitiesByContactId(contactId: number): Promise<Activity[]>;
   getActivitiesCount(): Promise<number>;
 
@@ -252,6 +253,19 @@ export class DatabaseStorage implements IStorage {
     return deal || undefined;
   }
 
+  async getDealBySourceId(source: string, sourceId: string): Promise<Deal | undefined> {
+    const [deal] = await db
+      .select()
+      .from(deals)
+      .where(
+        and(
+          eq(deals.sourceId, sourceId),
+          eq(deals.source, source)
+        )
+      );
+    return deal || undefined;
+  }
+
   async createDeal(deal: InsertDeal): Promise<Deal> {
     const [newDeal] = await db
       .insert(deals)
@@ -276,6 +290,14 @@ export class DatabaseStorage implements IStorage {
   // Meeting operations
   async getMeeting(id: number): Promise<Meeting | undefined> {
     const [meeting] = await db.select().from(meetings).where(eq(meetings.id, id));
+    return meeting || undefined;
+  }
+
+  async getMeetingByCalendlyEventId(eventId: string): Promise<Meeting | undefined> {
+    const [meeting] = await db
+      .select()
+      .from(meetings)
+      .where(eq(meetings.eventId, eventId));
     return meeting || undefined;
   }
 
