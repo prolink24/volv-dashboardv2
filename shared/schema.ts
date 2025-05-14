@@ -3,6 +3,9 @@ import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Import KPI configuration schema
+export * from "./schema/kpi-configuration";
+
 // User schema
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
