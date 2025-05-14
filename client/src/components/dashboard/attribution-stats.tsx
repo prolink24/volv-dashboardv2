@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useAttributionStats } from "@/hooks/use-dashboard-data";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -12,23 +12,39 @@ import {
 } from "@/components/ui/tooltip";
 
 export const AttributionStats = () => {
-  const { data, isLoading, error, isError } = useAttributionStats();
+  const { data, isLoading, error, isError, refetch } = useAttributionStats();
   
-  // Enhanced debugging to pinpoint issues
-  console.log('Attribution Stats Component Debug:');
-  console.log('- Is Loading:', isLoading);
-  console.log('- Is Error:', isError);
-  console.log('- Error:', error);
-  console.log('- Has Data:', !!data);
-  if (data) {
-    console.log('- Data Keys:', Object.keys(data));
-    console.log('- Success Flag:', data.success);
-    console.log('- AttributionAccuracy:', data.attributionAccuracy);
-    console.log('- Has Stats:', !!data.stats);
-    if (data.stats) {
-      console.log('- Stats Keys:', Object.keys(data.stats));
+  // Log data flow for debugging
+  useEffect(() => {
+    console.log("==== ATTRIBUTION STATS DATA FLOW DEBUG ====");
+    console.log("Is Loading:", isLoading);
+    console.log("Is Error:", isError);
+    console.log("Error:", error || null);
+    console.log("Data:", data || null);
+    
+    if (data) {
+      console.log("Data Structure:", Object.keys(data));
+      if (data.stats) {
+        console.log("Stats Structure:", Object.keys(data.stats));
+        console.log("Attribution Accuracy:", data.attributionAccuracy);
+        console.log("Total Contacts:", data.stats.totalContacts);
+        console.log("Multi-Source Contacts:", data.stats.multiSourceContacts);
+        console.log("Multi-Source Rate:", data.stats.multiSourceRate);
+        console.log("Deal Attribution Rate:", data.stats.dealAttributionRate);
+        console.log("Field Coverage:", data.stats.fieldCoverage);
+      }
+    } else {
+      console.log("Data Structure:", "N/A");
     }
-  }
+    console.log("========================================");
+    
+    // Auto-retry once if there's an error
+    if (isError && !isLoading) {
+      setTimeout(() => {
+        refetch();
+      }, 1000);
+    }
+  }, [isLoading, isError, data, error, refetch]);
 
   if (isLoading) {
     return (

@@ -50,16 +50,35 @@ const Dashboard = () => {
     }
   }, [dashboardData, isInitialLoad]);
 
-  // Handle refresh data
+  // Handle refresh data with improved error handling
   const handleRefresh = async () => {
+    toast({
+      title: "Refreshing data",
+      description: "Syncing data from all sources...",
+    });
+    
     try {
-      await syncData();
-      await invalidateDashboardData();
+      // First try to sync the data
+      const syncResult = await syncData().catch(err => {
+        console.error("Error syncing data:", err);
+        throw new Error("Data sync failed. Please try again.");
+      });
+      
+      // If sync was successful, invalidate the cache
+      if (syncResult) {
+        await invalidateDashboardData().catch(err => {
+          console.error("Error invalidating cache:", err);
+          throw new Error("Cache invalidation failed. Please reload the page.");
+        });
+      }
+      
       toast({
         title: "Data refreshed",
         description: "Dashboard data has been updated from all sources",
       });
     } catch (error) {
+      console.error("Data refresh error:", error);
+      
       toast({
         title: "Error refreshing data",
         description: error instanceof Error ? error.message : "An unknown error occurred",
