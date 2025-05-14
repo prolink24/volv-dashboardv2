@@ -60,6 +60,36 @@ export function cacheMiddleware(ttl?: number, keyGenerator?: (req: Request) => s
 }
 
 /**
+ * Get a value from the cache
+ * @param key - The cache key
+ * @returns The cached value, or undefined if not found
+ */
+export function get(key: string): any {
+  return cache.get(key);
+}
+
+/**
+ * Set a value in the cache
+ * @param key - The cache key
+ * @param value - The value to cache
+ * @param ttl - Optional time to live in seconds
+ * @returns success - true if successful, false otherwise
+ */
+export function set(key: string, value: any, ttl?: number): boolean {
+  try {
+    const ttlValue: number = typeof ttl === 'number' ? ttl : cacheOptions.stdTTL;
+    const result = cache.set(key, value, ttlValue);
+    if (result) {
+      console.log(`[CACHE] Manual set for ${key} with TTL ${ttlValue}s`);
+    }
+    return result;
+  } catch (error) {
+    console.error(`[CACHE] Error setting ${key}:`, error);
+    return false;
+  }
+}
+
+/**
  * Clear all or part of the cache
  * @param prefix - Optional prefix to only clear matching keys
  */
@@ -90,5 +120,8 @@ export default {
   cache,
   cacheMiddleware,
   clearCache,
-  getCacheStats
+  getCacheStats,
+  // Add direct access to get/set methods
+  get,
+  set
 };

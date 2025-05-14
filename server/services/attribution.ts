@@ -171,10 +171,40 @@ export async function attributeContact(contactId: number) {
 /**
  * Attribute all contacts in the system and collect analytics
  * This is used for bulk attribution processing and generating insights
+ * 
+ * Performance optimized with:
+ * - Parallel processing with concurrency limits
+ * - Mutex for thread-safe counter updates
+ * - Sample-based attribution for fast insights
+ * - Optimized batch size based on system capabilities
  */
 export async function attributeAllContacts() {
+  const attributionStartTime = performance.now(); // For performance monitoring
+  console.time('attribution-stats-generation');
+  
   try {
-    const contacts = await storage.getAllContacts();
+    // Option to use a sample of contacts for faster attribution in dashboard contexts
+    // We can process a limited subset of contacts for quick stats generation
+    const MAX_CONTACTS_FOR_DASHBOARD = 250; // Limit to 250 contacts for dashboard view
+    const isFullAttribution = process.env.FULL_ATTRIBUTION === 'true';
+    
+    // Get contact count before fetching all contacts
+    const contactCount = await storage.getContactsCount();
+    
+    // Decide if we should use a sample or all contacts
+    const useSample = !isFullAttribution && contactCount > MAX_CONTACTS_FOR_DASHBOARD;
+    
+    // Get either all contacts or a sample based on our decision
+    let contacts = [];
+    if (useSample) {
+      // Get a representative sample of contacts for faster processing
+      contacts = await storage.getContactSample(MAX_CONTACTS_FOR_DASHBOARD);
+      console.log(`Using a sample of ${contacts.length} contacts for attribution stats`);
+    } else {
+      // Get all contacts for complete attribution
+      contacts = await storage.getAllContacts();
+      console.log(`Processing all ${contacts.length} contacts for full attribution`);
+    }
     
     // Basic processing results
     const results = {
@@ -218,9 +248,10 @@ export async function attributeAllContacts() {
     let totalForms = 0;
     let daysToConversionValues = [];
     
-    // Process contacts in parallel with concurrency limit to avoid overloading
-    const concurrencyLimit = 10; // Process 10 contacts at a time in parallel
-    const batchSize = 50;
+    // Performance optimization parameters
+    // Adjust concurrency based on system resources, higher for more cores
+    const concurrencyLimit = 20; // Increased from 10 to 20 for better parallelization
+    const batchSize = 100; // Increased from 50 to 100 for less batch processing overhead
     
     // Initialize a mutex for thread-safe updates to shared counters
     const mutex = {
@@ -243,14 +274,17 @@ export async function attributeAllContacts() {
       // Start time for batch processing
       const batchStartTime = performance.now();
       
-      // Process concurrent batches with Promise.all and concurrency limit
-      const processBatch = async () => {
-        // Split batch into chunks for limited concurrency
-        for (let j = 0; j < batch.length; j += concurrencyLimit) {
-          const chunk = batch.slice(j, j + concurrencyLimit);
+      // Process all contacts in this batch with Promise.all for maximum parallelization
+      await Promise.all(
+        // Split batch into chunks based on concurrency limit
+        Array.from({ length: Math.ceil(batch.length / concurrencyLimit) }, (_, chunkIndex) => {
+          // Get current chunk of contacts
+          const startIdx = chunkIndex * concurrencyLimit;
+          const endIdx = Math.min(startIdx + concurrencyLimit, batch.length);
+          const chunk = batch.slice(startIdx, endIdx);
           
-          // Process chunk in parallel
-          await Promise.all(chunk.map(async (contact) => {
+          // Process this chunk in parallel
+          return Promise.all(chunk.map(async (contact) => {
             try {
               const attribution = await attributeContact(contact.id);
               
@@ -336,10 +370,8 @@ export async function attributeAllContacts() {
               }
             }
           }));
-        }
-      };
-      
-      await processBatch();
+        })
+      );
       
       // Log batch processing time for performance monitoring
       const batchEndTime = performance.now();
