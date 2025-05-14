@@ -17,7 +17,10 @@ import {
   ShieldCheck,
   ClipboardCheck,
   Gauge,
-  Sliders
+  Sliders,
+  ChevronLeft,
+  ChevronRight,
+  Menu
 } from "lucide-react";
 
 interface SidebarItemProps {
@@ -59,7 +62,19 @@ const SidebarItem = ({ icon: Icon, label, href, isActive, isCollapsed, indent }:
 
 const Sidebar = () => {
   const [location] = useLocation();
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  
+  // Initialize with localStorage value if available, otherwise default to false
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    const saved = localStorage.getItem('sidebar-collapsed');
+    return saved === 'true' ? true : false;
+  });
+  
+  // Save to localStorage whenever state changes
+  const toggleSidebar = () => {
+    const newState = !isCollapsed;
+    setIsCollapsed(newState);
+    localStorage.setItem('sidebar-collapsed', String(newState));
+  };
 
   const sidebarItems = [
     { icon: LayoutDashboard, label: "Overview", href: "/" },
@@ -114,11 +129,22 @@ const Sidebar = () => {
       )}
     >
       {/* Logo */}
-      <div className="h-16 flex items-center px-4 border-b border-border">
-        <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center text-primary-foreground">
-          <Link2 className="h-5 w-5" />
+      <div className="h-16 flex items-center justify-between px-4 border-b border-border">
+        <div className="flex items-center">
+          <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center text-primary-foreground">
+            <Link2 className="h-5 w-5" />
+          </div>
+          {!isCollapsed && <span className="ml-3 text-lg font-semibold">ContactSync</span>}
         </div>
-        {!isCollapsed && <span className="ml-3 text-lg font-semibold">ContactSync</span>}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          onClick={toggleSidebar}
+          aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+        </Button>
       </div>
       
       {/* Navigation */}
@@ -131,6 +157,7 @@ const Sidebar = () => {
             href={item.href}
             isActive={location === item.href}
             isCollapsed={isCollapsed}
+            indent={item.indent}
           />
         ))}
       </div>
