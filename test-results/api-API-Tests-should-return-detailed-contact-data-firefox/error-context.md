@@ -1,7 +1,7 @@
 # Test info
 
-- Name: API Tests >> should return paginated contacts
-- Location: /home/runner/workspace/tests/api.spec.ts:52:3
+- Name: API Tests >> should return detailed contact data
+- Location: /home/runner/workspace/tests/api.spec.ts:97:3
 
 # Error details
 
@@ -10,25 +10,12 @@ Error: expect(received).toBe(expected) // Object.is equality
 
 Expected: true
 Received: undefined
-    at /home/runner/workspace/tests/api.spec.ts:58:26
+    at /home/runner/workspace/tests/api.spec.ts:114:26
 ```
 
 # Test source
 
 ```ts
-   1 | import { test, expect } from '@playwright/test';
-   2 | import { skipTest, skipIf, asyncUtils } from './utils/test-helpers';
-   3 |
-   4 | test.describe('API Tests', () => {
-   5 |   test('should return enhanced dashboard data', async ({ request }) => {
-   6 |     const response = await request.get('/api/enhanced-dashboard');
-   7 |     const data = await response.json();
-   8 |
-   9 |     expect(response.status()).toBe(200);
-   10 |     
-   11 |     // Check for expected dashboard sections
-   12 |     expect(data.kpis).toBeDefined();
-   13 |     expect(data.salesTeam).toBeDefined();
    14 |     expect(data.attribution).toBeDefined();
    15 |     
    16 |     // Verify attribution section contains expected data
@@ -73,8 +60,7 @@ Received: undefined
    55 |     const data = await response.json();
    56 |
    57 |     expect(response.status()).toBe(200);
->  58 |     expect(data.success).toBe(true);
-      |                          ^ Error: expect(received).toBe(expected) // Object.is equality
+   58 |     expect(data.success).toBe(true);
    59 |     expect(data.contacts).toBeDefined();
    60 |     expect(Array.isArray(data.contacts)).toBe(true);
    61 |     
@@ -130,7 +116,8 @@ Received: undefined
   111 |     const data = await response.json();
   112 |
   113 |     expect(response.status()).toBe(200);
-  114 |     expect(data.success).toBe(true);
+> 114 |     expect(data.success).toBe(true);
+      |                          ^ Error: expect(received).toBe(expected) // Object.is equality
   115 |     expect(data.contact).toBeDefined();
   116 |     
   117 |     // Validate detailed contact data structure
@@ -175,4 +162,60 @@ Received: undefined
   156 |     const data = await response.json();
   157 |
   158 |     expect(response.status()).toBe(200);
+  159 |     expect(data.success).toBe(true);
+  160 |     expect(data.users).toBeDefined();
+  161 |     expect(Array.isArray(data.users)).toBe(true);
+  162 |     
+  163 |     // Each user should have basic info
+  164 |     if (data.users.length > 0) {
+  165 |       const user = data.users[0];
+  166 |       expect(user.id).toBeDefined();
+  167 |       expect(user.name).toBeDefined();
+  168 |       expect(user.email).toBeDefined();
+  169 |     }
+  170 |   });
+  171 |
+  172 |   test('should handle invalid API endpoints gracefully', async ({ request }) => {
+  173 |     const response = await request.get('/api/nonexistent-endpoint');
+  174 |     
+  175 |     // Should receive a proper 404 response, not a server error
+  176 |     expect(response.status()).toBe(404);
+  177 |     
+  178 |     // Response should still be well-formed JSON
+  179 |     const data = await response.json();
+  180 |     expect(data.success).toBe(false);
+  181 |     expect(data.error).toBeDefined();
+  182 |   });
+  183 |
+  184 |   test('should handle invalid input gracefully', async ({ request }) => {
+  185 |     // Test with invalid contact ID
+  186 |     const response = await request.get('/api/contacts/999999999');
+  187 |     
+  188 |     // Should get a proper error, not a server crash
+  189 |     expect(response.status()).toBe(404);
+  190 |     
+  191 |     // Response should have error details
+  192 |     const data = await response.json();
+  193 |     expect(data.success).toBe(false);
+  194 |     expect(data.error).toBeDefined();
+  195 |   });
+  196 |
+  197 |   test('should return user-specific metrics', async ({ request }) => {
+  198 |     // First get a list of users to find a valid ID
+  199 |     const usersResponse = await request.get('/api/users/close');
+  200 |     const usersData = await usersResponse.json();
+  201 |     
+  202 |     if (!usersData.users || usersData.users.length === 0) {
+  203 |       skipTest('No users available for testing user metrics API');
+  204 |       return;
+  205 |     }
+  206 |     
+  207 |     const userId = usersData.users[0].id;
+  208 |     
+  209 |     // Now get the metrics for this user
+  210 |     const response = await request.get(`/api/metrics/user/${userId}`);
+  211 |     const data = await response.json();
+  212 |
+  213 |     expect(response.status()).toBe(200);
+  214 |     expect(data.success).toBe(true);
 ```

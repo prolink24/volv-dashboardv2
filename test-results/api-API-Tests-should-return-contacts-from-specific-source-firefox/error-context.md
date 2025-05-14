@@ -1,7 +1,7 @@
 # Test info
 
-- Name: API Tests >> should return paginated contacts
-- Location: /home/runner/workspace/tests/api.spec.ts:52:3
+- Name: API Tests >> should return contacts from specific source
+- Location: /home/runner/workspace/tests/api.spec.ts:79:3
 
 # Error details
 
@@ -10,7 +10,7 @@ Error: expect(received).toBe(expected) // Object.is equality
 
 Expected: true
 Received: undefined
-    at /home/runner/workspace/tests/api.spec.ts:58:26
+    at /home/runner/workspace/tests/api.spec.ts:86:26
 ```
 
 # Test source
@@ -73,8 +73,7 @@ Received: undefined
    55 |     const data = await response.json();
    56 |
    57 |     expect(response.status()).toBe(200);
->  58 |     expect(data.success).toBe(true);
-      |                          ^ Error: expect(received).toBe(expected) // Object.is equality
+   58 |     expect(data.success).toBe(true);
    59 |     expect(data.contacts).toBeDefined();
    60 |     expect(Array.isArray(data.contacts)).toBe(true);
    61 |     
@@ -102,7 +101,8 @@ Received: undefined
    83 |     const data = await response.json();
    84 |
    85 |     expect(response.status()).toBe(200);
-   86 |     expect(data.success).toBe(true);
+>  86 |     expect(data.success).toBe(true);
+      |                          ^ Error: expect(received).toBe(expected) // Object.is equality
    87 |     expect(data.contacts).toBeDefined();
    88 |     
    89 |     // Check that all returned contacts have the requested source
@@ -175,4 +175,32 @@ Received: undefined
   156 |     const data = await response.json();
   157 |
   158 |     expect(response.status()).toBe(200);
+  159 |     expect(data.success).toBe(true);
+  160 |     expect(data.users).toBeDefined();
+  161 |     expect(Array.isArray(data.users)).toBe(true);
+  162 |     
+  163 |     // Each user should have basic info
+  164 |     if (data.users.length > 0) {
+  165 |       const user = data.users[0];
+  166 |       expect(user.id).toBeDefined();
+  167 |       expect(user.name).toBeDefined();
+  168 |       expect(user.email).toBeDefined();
+  169 |     }
+  170 |   });
+  171 |
+  172 |   test('should handle invalid API endpoints gracefully', async ({ request }) => {
+  173 |     const response = await request.get('/api/nonexistent-endpoint');
+  174 |     
+  175 |     // Should receive a proper 404 response, not a server error
+  176 |     expect(response.status()).toBe(404);
+  177 |     
+  178 |     // Response should still be well-formed JSON
+  179 |     const data = await response.json();
+  180 |     expect(data.success).toBe(false);
+  181 |     expect(data.error).toBeDefined();
+  182 |   });
+  183 |
+  184 |   test('should handle invalid input gracefully', async ({ request }) => {
+  185 |     // Test with invalid contact ID
+  186 |     const response = await request.get('/api/contacts/999999999');
 ```
