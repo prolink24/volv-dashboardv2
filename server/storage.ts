@@ -53,6 +53,8 @@ export interface IStorage {
   getContactByEmail(email: string): Promise<Contact | undefined>;
   getContactByExternalId(source: string, id: string): Promise<Contact | undefined>;
   getAllContacts(limit?: number, offset?: number): Promise<Contact[]>;
+  getContactsCount(): Promise<number>;
+  getContactSample(sampleSize: number): Promise<Contact[]>;
   createContact(contact: InsertContact): Promise<Contact>;
   updateContact(id: number, contact: Partial<InsertContact>): Promise<Contact | undefined>;
   deleteContact(id: number): Promise<boolean>;
