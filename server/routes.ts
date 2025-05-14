@@ -699,8 +699,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: `${result.lastTouch.type}_${result.lastTouch.sourceId || 'last'}`,
           label: 'Last Touch'
         } : null,
-        certainty: result.attributionCertainty,
-        channelAttribution: result.channelBreakdown
+        certainty: (result as any).attributionCertainty || 0,
+        channelAttribution: (result as any).channelBreakdown || {}
       };
       
       res.json({
@@ -785,7 +785,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Adjust weight based on touchpoint type
         if (event.type === 'meeting') weight *= 1.5; // Meetings have higher importance
-        if (event.type === 'form') weight *= 1.2; // Forms have medium importance
+        if (event.type === 'form_submission') weight *= 1.2; // Forms have medium importance
         
         // Format date for display
         const date = new Date(event.date);
@@ -807,7 +807,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }),
           weight: Math.round(weight * 100) / 100, // Round to 2 decimal places
           importance: event.type === 'meeting' ? 'high' : 
-                     event.type === 'form' ? 'medium' : 'standard',
+                     event.type === 'form_submission' ? 'medium' : 'standard',
           daysFromStart: index === 0 ? 0 : Math.round((date.getTime() - 
             new Date(arr[0].date).getTime()) / (24 * 60 * 60 * 1000)),
           data: event.data
@@ -851,8 +851,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             dealStatus: result.attributionChains[0].dealStatus,
             date: result.lastTouch ? new Date(result.lastTouch.date).toISOString() : null
           } : null,
-          channelBreakdown: result.channelBreakdown,
-          attributionCertainty: result.attributionCertainty,
+          channelBreakdown: (result as any).channelBreakdown || {},
+          attributionCertainty: (result as any).attributionCertainty || 0,
           journeyDuration,
           touchpointCount: timeline.length,
           sources: Array.from(new Set(timeline.map((t: any) => t.source))),
