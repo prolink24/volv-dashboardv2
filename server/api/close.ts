@@ -482,24 +482,31 @@ async function syncLeadOpportunities(leadId: string, contactId: number) {
     
     for (const opportunity of opportunities) {
       try {
+        // Process the value to ensure it's in a compatible format for the database
+        // Remove any currency symbols and commas to make sure it's a valid numeric string
+        let cleanValue = opportunity.value_formatted || String(opportunity.value || 0);
+        
+        // Store original formatted value for display purposes in metadata
+        const metadata = {
+          status_label: opportunity.status_label,
+          value_currency: opportunity.value_currency,
+          value_period: opportunity.value_period,
+          confidence: opportunity.confidence,
+          lead_name: opportunity.lead_name,
+          opportunity_data: opportunity,
+          original_value_formatted: opportunity.value_formatted
+        };
+        
         // Extract relevant deal data
-        // Store original formatted value as-is since we changed the DB schema to text
         const dealData = {
           contactId,
           title: opportunity.opportunity_name || 'Unnamed Deal',
           status: opportunity.status_type || 'active',
-          value: opportunity.value_formatted || String(opportunity.value || 0),
+          value: cleanValue, // Store as cleaned string
           closeDate: opportunity.date_won ? new Date(opportunity.date_won).toISOString() : null,
           assignedTo: opportunity.assigned_to_name || null,
           closeId: opportunity.id,
-          metadata: {
-            status_label: opportunity.status_label,
-            value_currency: opportunity.value_currency,
-            value_period: opportunity.value_period,
-            confidence: opportunity.confidence,
-            lead_name: opportunity.lead_name,
-            opportunity_data: opportunity
-          }
+          metadata
         };
         
         // Check if deal exists by external ID

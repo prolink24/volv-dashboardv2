@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useDashboard } from "@/providers/dashboard-provider";
-import { format, setDate } from "date-fns";
+import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { 
   Select, 
@@ -16,11 +16,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { type DayPickerSingleProps } from "react-day-picker";
 
 const DashboardFilters = () => {
   const { dateFilter, setDateFilter, userFilter, setUserFilter } = useDashboard();
-  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   
   // Convert the selected date to the format expected by the dashboard context
@@ -37,7 +36,7 @@ const DashboardFilters = () => {
       const now = new Date();
       const formattedDate = formatSelectedDate(now);
       setDateFilter(formattedDate);
-      setDate(now);
+      setSelectedDate(now);
       setIsInitialLoad(false);
     }
   }, [isInitialLoad, setDateFilter]);
@@ -45,7 +44,7 @@ const DashboardFilters = () => {
   // Handle date selection
   const handleDateSelect = (newDate: Date | undefined) => {
     if (newDate) {
-      setDate(newDate);
+      setSelectedDate(newDate);
       const formattedDate = formatSelectedDate(newDate);
       setDateFilter(formattedDate);
     }
@@ -66,18 +65,18 @@ const DashboardFilters = () => {
         <PopoverTrigger asChild>
           <Button variant="outline" className="w-[200px] justify-start text-left font-normal">
             <CalendarIcon className="mr-2 h-4 w-4" />
-            {date ? format(date, "MMMM yyyy") : <span>Select month</span>}
+            {selectedDate ? format(selectedDate, "MMMM yyyy") : <span>Select month</span>}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
           <Calendar
             mode="single"
-            selected={date}
+            selected={selectedDate}
             onSelect={(newDate) => handleDateSelect(newDate)}
             initialFocus
-            disabled={(date) => {
+            disabled={(d) => {
               // Only enable selection by month (first day of each month)
-              return date.getDate() !== 1;
+              return d.getDate() !== 1;
             }}
           />
         </PopoverContent>
