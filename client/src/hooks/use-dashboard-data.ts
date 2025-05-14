@@ -38,8 +38,21 @@ export function useDashboardData({
   return useQuery<DashboardData>({
     queryKey: [endpoint],
     staleTime: 1000 * 60 * 5, // 5 minutes
-    refetchOnWindowFocus: true,
-    refetchOnMount: true,
+    gcTime: 1000 * 60 * 30, // 30 minutes - keep in cache longer
+    refetchOnWindowFocus: false, // Don't refetch on focus for better performance
+    refetchOnMount: "always", // Always refetch when component mounts
+    retry: 2, // Retry failed requests only twice
+    // Transform the response to ensure default values
+    select: (data) => {
+      if (!data) return data;
+      return {
+        ...data,
+        kpis: data.kpis || {},
+        salesTeam: data.salesTeam || [],
+        triageMetrics: data.triageMetrics || {},
+        attribution: data.attribution || {}
+      };
+    }
   });
 }
 

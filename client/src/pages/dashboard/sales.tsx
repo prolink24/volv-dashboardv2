@@ -48,44 +48,42 @@ export default function SalesDashboard() {
   // Debug counter to track render cycles
   const [renderCount, setRenderCount] = useState(0);
   
-  // Comprehensive logging with improved data readiness detection
+  // Debug counter increment in component body (not in effect)
   useEffect(() => {
-    // Log detailed dashboard data for debugging
-    logDashboardData("Sales Dashboard", dashboardData, isLoading, error);
     setRenderCount(prev => prev + 1);
-    console.log(`[Sales Dashboard] Render count: ${renderCount + 1}`);
+  }, []); // Empty dependency array means this runs only once
+
+  // Only log on significant state changes
+  useEffect(() => {
+    // Avoid expensive logging operations unless necessary
+    if (process.env.NODE_ENV === 'development') {
+      // Log detailed dashboard data for debugging
+      console.log(`[Sales Dashboard] Render count: ${renderCount}`);
+      logDashboardData("Sales Dashboard", dashboardData, isLoading, error);
+    }
     
     // Check if data is available and request is complete
     if (dashboardData && !isLoading) {
-      // Log what components of the data are available
-      console.log("[Sales Dashboard] Data structure check:", 
-        dashboardData.kpis ? "✓ KPIs" : "✗ KPIs",
-        dashboardData.salesTeam ? `✓ SalesTeam (${dashboardData.salesTeam ? dashboardData.salesTeam.length : 0} items)` : "✗ SalesTeam",
-        dashboardData.attribution ? "✓ Attribution" : "✗ Attribution"
-      );
+      // Always set data as ready once we have data and loading is complete
+      // This handles partial data gracefully
+      setDataReady(true);
       
-      // Log all available top-level data keys
-      console.log("[Sales Dashboard] Available data keys:", Object.keys(dashboardData));
-      
-      // Set data as ready if we have salesTeam data available
-      // This ensures we show at least the sales team data even if other parts are still loading
-      if (dashboardData.salesTeam) {
-        setDataReady(true);
-        console.log("[Sales Dashboard] Sales team data is available, ready to render");
-      } else {
-        setDataReady(false);
-        console.log("[Sales Dashboard] Sales team data is missing");
+      // Only log detailed diagnostics in development
+      if (process.env.NODE_ENV === 'development') {
+        console.log("[Sales Dashboard] Data structure check:", 
+          dashboardData.kpis ? "✓ KPIs" : "✗ KPIs",
+          dashboardData.salesTeam ? `✓ SalesTeam (${dashboardData.salesTeam?.length || 0} items)` : "✗ SalesTeam",
+          dashboardData.attribution ? "✓ Attribution" : "✗ Attribution"
+        );
+        console.log("[Sales Dashboard] Available data keys:", Object.keys(dashboardData));
       }
-    } else {
-      // If data is not ready yet, keep showing loading state
+    } else if (error) {
+      // Only set not ready if there's an actual error
+      // (we'll use the default values otherwise)
       setDataReady(false);
-      console.log("[Sales Dashboard] Data not ready for rendering", 
-        isLoading ? "- Still loading" : "- Not loading",
-        error ? `- Error: ${error}` : "- No error",
-        !dashboardData ? "- No data" : "- Has data object"
-      );
+      console.error("[Sales Dashboard] Error loading data:", error);
     }
-  }, [dashboardData, isLoading, error, renderCount]);
+  }, [dashboardData, isLoading, error]);
 
   // Only show loading during initial load or when explicitly not ready
   // If we're loading or have no data at all, show loading state
@@ -132,11 +130,40 @@ export default function SalesDashboard() {
     );
   }
 
-  // Start with safe extraction and rendering - using empty default values
-  let kpis = {};
-  let salesTeam = [];
-  let triageMetrics = {};
-  let attribution = {};
+  // Start with safe extraction and rendering - using empty default values with proper types
+  interface SalesTeamMember {
+    id: string;
+    name: string;
+    email: string;
+    closedDeals: number;
+    cashCollected: number;
+    revenueGenerated: number;
+    totalCalls: number;
+    call1Taken: number;
+    call2Taken: number;
+    closingRate: number;
+    avgCashCollected?: number;
+    solutionCallShowRate?: number;
+    earningPerCall2?: number;
+    [key: string]: any; // Allow for any additional properties
+  }
+  
+  interface KPIData {
+    closedDeals?: number;
+    cashCollected?: number;
+    revenueGenerated?: number;
+    totalCalls?: number;
+    call1Taken?: number;
+    call2Taken?: number;
+    closingRate?: number;
+    [key: string]: any; // Allow for any additional properties
+  }
+  
+  // Initialize with empty values but correct types for safe access
+  let kpis: KPIData = {};
+  let salesTeam: SalesTeamMember[] = [];
+  let triageMetrics: Record<string, any> = {};
+  let attribution: Record<string, any> = {};
   
   // Create advancedMetrics with fallback values for safety
   const advancedMetrics = {
@@ -149,47 +176,42 @@ export default function SalesDashboard() {
   };
   
   try {
-    // Extract data from dashboard response
-    ({ kpis, salesTeam, triageMetrics, attribution } = dashboardData);
-    
-    console.log("[Sales Dashboard] Successfully extracted dashboard data components");
-    
-    // Log detailed attribution structure for debugging
-    console.log("[Sales Dashboard] Attribution structure:", attribution);
-    
-    // Safely update metrics if data exists
-    if (attribution) {
-      // Try to extract data based on the actual structure
-      console.log("[Sales Dashboard] Attribution data keys:", Object.keys(attribution));
+    // Only extract data if dashboardData exists
+    if (dashboardData) {
+      // Type-safe extraction with defaults
+      kpis = dashboardData.kpis || {};
+      salesTeam = dashboardData.salesTeam || [];
+      triageMetrics = dashboardData.triageMetrics || {};
+      attribution = dashboardData.attribution || {};
       
-      // Use type assertion to handle the unknown attribution structure
-      const attributionAny = attribution as any;
-      
-      // Look for nested objects that might contain metrics
-      const dealStatsObj = attributionAny.dealStats || attributionAny.summary?.dealStats;
-      const touchpointStatsObj = attributionAny.touchpointStats || attributionAny.summary?.touchpointStats;
-      
-      if (dealStatsObj) {
-        if (dealStatsObj.costPerClosedDeal) advancedMetrics.costPerClosedWon = dealStatsObj.costPerClosedDeal;
-        if (dealStatsObj.utilizationRate) advancedMetrics.closerSlotUtilization = dealStatsObj.utilizationRate;
-        if (dealStatsObj.closeRate) advancedMetrics.solutionCallCloseRate = dealStatsObj.closeRate;
-        if (dealStatsObj.avgSalesCycle) advancedMetrics.salesCycle = dealStatsObj.avgSalesCycle;
-        if (dealStatsObj.revenuePerCall) advancedMetrics.profitPerSolutionCall = dealStatsObj.revenuePerCall;
+      // Only log in development environment to reduce console noise
+      if (process.env.NODE_ENV === 'development') {
+        console.log("[Sales Dashboard] Successfully extracted dashboard data components");
       }
       
-      if (touchpointStatsObj && touchpointStatsObj.avgCallsToClose) {
-        advancedMetrics.callsToClose = touchpointStatsObj.avgCallsToClose;
+      // Safely update metrics if attribution data exists
+      if (attribution) {
+        // Type assertion is safer when we check object properties
+        const attributionAny = attribution as any;
+        
+        // Use optional chaining for nested property access
+        const dealStatsObj = attributionAny?.dealStats || attributionAny?.summary?.dealStats || {};
+        const touchpointStatsObj = attributionAny?.touchpointStats || attributionAny?.summary?.touchpointStats || {};
+        
+        // Use nullish coalescing to only update values if they exist
+        advancedMetrics.costPerClosedWon = dealStatsObj?.costPerClosedDeal ?? advancedMetrics.costPerClosedWon;
+        advancedMetrics.closerSlotUtilization = dealStatsObj?.utilizationRate ?? advancedMetrics.closerSlotUtilization;
+        advancedMetrics.solutionCallCloseRate = dealStatsObj?.closeRate ?? advancedMetrics.solutionCallCloseRate;
+        advancedMetrics.salesCycle = dealStatsObj?.avgSalesCycle ?? advancedMetrics.salesCycle;
+        advancedMetrics.profitPerSolutionCall = dealStatsObj?.revenuePerCall ?? advancedMetrics.profitPerSolutionCall;
+        
+        // Same technique for touchpoint stats
+        advancedMetrics.callsToClose = touchpointStatsObj?.avgCallsToClose ?? advancedMetrics.callsToClose;
       }
     }
-    
-    console.log("[Sales Dashboard] Final advancedMetrics:", advancedMetrics);
   } catch (error) {
     console.error("[Sales Dashboard] Error processing dashboard data:", error);
-    // Ensure we have at least empty defaults if something goes wrong
-    kpis = kpis || {};
-    salesTeam = salesTeam || [];
-    triageMetrics = triageMetrics || {};
-    attribution = attribution || {};
+    // Values are already initialized at the top, no need to re-assign defaults
   }
 
   // Chart data created from real salesTeam data
