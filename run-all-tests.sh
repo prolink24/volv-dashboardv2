@@ -12,8 +12,8 @@ echo -e "${BLUE}=======================================================${NC}"
 echo -e "${BLUE}    Contact Attribution Platform - All Test Suites     ${NC}"
 echo -e "${BLUE}=======================================================${NC}"
 
-# Check if server is already running
-if netstat -tuln 2>/dev/null | grep -q ":5000"; then
+# Check if server is already running by trying to connect to it
+if curl -s http://localhost:5000/api/attribution/enhanced-stats > /dev/null; then
   echo -e "${GREEN}Server already running on port 5000${NC}"
   SERVER_RUNNING=true
 else
@@ -49,19 +49,29 @@ fi
 declare -a TEST_RESULTS
 declare -a TEST_NAMES
 
+# Function to run tests with separated output
+run_test() {
+  local test_name=$1
+  local test_command=$2
+  
+  echo -e "\n${BLUE}------------------------------------------------------${NC}"
+  echo -e "${YELLOW}Running ${test_name}...${NC}"
+  echo -e "${BLUE}------------------------------------------------------${NC}"
+  
+  eval $test_command
+  local exit_code=$?
+  
+  TEST_RESULTS+=($exit_code)
+  TEST_NAMES+=("$test_name")
+  
+  return $exit_code
+}
+
 # Run the core API tests
-echo -e "\n${YELLOW}Running Core API Tests...${NC}"
-npx tsx api-test.ts
-API_TEST_EXIT_CODE=$?
-TEST_RESULTS+=($API_TEST_EXIT_CODE)
-TEST_NAMES+=("Core API Tests")
+run_test "Core API Tests" "npx tsx api-test.ts"
 
 # Run the KPI hook tests
-echo -e "\n${YELLOW}Running KPI Configuration Hook Tests...${NC}"
-npx tsx test-kpi-hook.ts
-KPI_TEST_EXIT_CODE=$?
-TEST_RESULTS+=($KPI_TEST_EXIT_CODE)
-TEST_NAMES+=("KPI Configuration Tests")
+run_test "KPI Configuration Hook Tests" "npx tsx test-kpi-hook.ts"
 
 # Print overall summary
 echo -e "\n${BLUE}=======================================================${NC}"

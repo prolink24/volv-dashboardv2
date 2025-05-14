@@ -9,11 +9,11 @@ NC='\033[0m' # No Color
 
 # Header
 echo -e "${BLUE}=======================================================${NC}"
-echo -e "${BLUE}     Contact Attribution Platform - API Test Suite      ${NC}"
+echo -e "${BLUE}      Contact Attribution Platform - API Tests         ${NC}"
 echo -e "${BLUE}=======================================================${NC}"
 
-# Check if server is already running
-if netstat -tuln | grep -q ":5000"; then
+# Check if server is already running by trying to connect to it
+if curl -s http://localhost:5000/api/attribution/enhanced-stats > /dev/null; then
   echo -e "${GREEN}Server already running on port 5000${NC}"
   SERVER_RUNNING=true
 else
@@ -46,18 +46,9 @@ else
 fi
 
 # Run the API tests
-echo -e "${YELLOW}Running API tests...${NC}"
+echo -e "\n${YELLOW}Running API Tests...${NC}"
 npx tsx api-test.ts
 API_TEST_EXIT_CODE=$?
-
-# Determine overall result
-if [ $API_TEST_EXIT_CODE -eq 0 ]; then
-  echo -e "${GREEN}✅ All API tests passed!${NC}"
-  OVERALL_RESULT=0
-else
-  echo -e "${RED}❌ Some API tests failed${NC}"
-  OVERALL_RESULT=1
-fi
 
 # Clean up only if we started the server
 if [ "$SERVER_RUNNING" = false ]; then
@@ -65,8 +56,13 @@ if [ "$SERVER_RUNNING" = false ]; then
   kill $SERVER_PID 2>/dev/null
 fi
 
+# Print final message
 echo -e "${BLUE}=======================================================${NC}"
-echo -e "${BLUE}                 Test Suite Complete                    ${NC}"
+if [ $API_TEST_EXIT_CODE -eq 0 ]; then
+  echo -e "${GREEN}🎉 API tests passed! The API is working correctly.${NC}"
+else
+  echo -e "${RED}❌ API tests failed. Please fix the issues before proceeding.${NC}"
+fi
 echo -e "${BLUE}=======================================================${NC}"
 
-exit $OVERALL_RESULT
+exit $API_TEST_EXIT_CODE
