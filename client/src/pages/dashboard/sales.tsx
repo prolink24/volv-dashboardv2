@@ -48,29 +48,36 @@ export default function SalesDashboard() {
   // Debug counter to track render cycles
   const [renderCount, setRenderCount] = useState(0);
   
-  // Comprehensive logging
+  // Comprehensive logging with improved data readiness detection
   useEffect(() => {
+    // Log detailed dashboard data for debugging
     logDashboardData("Sales Dashboard", dashboardData, isLoading, error);
     setRenderCount(prev => prev + 1);
     console.log(`[Sales Dashboard] Render count: ${renderCount + 1}`);
     
-    // Set dataReady state based on data availability
+    // Check if data is available and request is complete
     if (dashboardData && !isLoading) {
+      // Log what components of the data are available
       console.log("[Sales Dashboard] Data structure check:", 
         dashboardData.kpis ? "✓ KPIs" : "✗ KPIs",
-        dashboardData.salesTeam ? `✓ SalesTeam (${dashboardData.salesTeam.length} items)` : "✗ SalesTeam",
+        dashboardData.salesTeam ? `✓ SalesTeam (${dashboardData.salesTeam ? dashboardData.salesTeam.length : 0} items)` : "✗ SalesTeam",
         dashboardData.attribution ? "✓ Attribution" : "✗ Attribution"
       );
       
-      // Only set ready if both essential structures exist
-      if (dashboardData.kpis && dashboardData.salesTeam) {
+      // Log all available top-level data keys
+      console.log("[Sales Dashboard] Available data keys:", Object.keys(dashboardData));
+      
+      // Set data as ready if we have salesTeam data available
+      // This ensures we show at least the sales team data even if other parts are still loading
+      if (dashboardData.salesTeam) {
         setDataReady(true);
-        console.log("[Sales Dashboard] Data is READY for rendering");
+        console.log("[Sales Dashboard] Sales team data is available, ready to render");
       } else {
         setDataReady(false);
-        console.log("[Sales Dashboard] Data is MISSING essential components");
+        console.log("[Sales Dashboard] Sales team data is missing");
       }
     } else {
+      // If data is not ready yet, keep showing loading state
       setDataReady(false);
       console.log("[Sales Dashboard] Data not ready for rendering", 
         isLoading ? "- Still loading" : "- Not loading",
@@ -81,7 +88,8 @@ export default function SalesDashboard() {
   }, [dashboardData, isLoading, error, renderCount]);
 
   // Only show loading during initial load or when explicitly not ready
-  if (isLoading || !dashboardData || !dataReady) {
+  // If we're loading or have no data at all, show loading state
+  if (isLoading || !dashboardData) {
     return (
       <div className="container mx-auto p-6">
         <div className="flex items-center justify-between mb-6">
