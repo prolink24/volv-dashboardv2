@@ -1,66 +1,140 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# Determine the test mode based on the argument
-mode=$1
+# Terminal colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
 
-# Check if the server is already running
-if command -v nc &> /dev/null && nc -z localhost 5000 &> /dev/null; then
-  echo "Server is already running on port 5000, using existing server..."
-  started_server=false
+# Function to check if server is running
+check_server_running() {
+  # Check using lsof for port 5000
+  if lsof -i:5000 -t &> /dev/null; then
+    return 0 # Server is running
+  else
+    return 1 # Server is not running
+  fi
+}
+
+# Print header
+echo -e "${BLUE}===============================================${NC}"
+echo -e "${BLUE}     Contact Attribution Testing Suite${NC}"
+echo -e "${BLUE}===============================================${NC}"
+
+# Parse command line arguments
+TEST_PATH=""
+HEADLESS=""
+SERVER_ONLY=false
+UI_ONLY=false
+API_ONLY=false
+VERBOSE=false
+
+while [[ "$#" -gt 0 ]]; do
+  case $1 in
+    --server-only) SERVER_ONLY=true; shift ;;
+    --ui-only) UI_ONLY=true; shift ;;
+    --api-only) API_ONLY=true; shift ;;
+    --verbose) VERBOSE=true; shift ;;
+    --headless) HEADLESS="--headed"; shift ;;
+    *) TEST_PATH="$1"; shift ;;
+  esac
+done
+
+# Check if server is already running
+SERVER_WAS_RUNNING=false
+if check_server_running; then
+  echo -e "${YELLOW}Server already running on port 5000${NC}"
+  SERVER_WAS_RUNNING=true
 else
-  echo "Starting the application server..."
-  npm run dev &
-  server_pid=$!
-
-  # Give the server time to start
-  echo "Waiting for server to start..."
-  sleep 5
+  echo -e "${YELLOW}Starting server...${NC}"
+  # Start the server in the background
+  if [ "$VERBOSE" = true ]; then
+    npm run dev &
+  else
+    npm run dev > /dev/null 2>&1 &
+  fi
+  SERVER_PID=$!
   
-  # Flag that we started the server
-  started_server=true
-fi
-
-# Run the appropriate test command based on the mode
-case $mode in
-  "headed")
-    echo "Running tests in headed mode..."
-    npx playwright test --headed
-    ;;
-  "ui")
-    echo "Running tests with UI mode..."
-    npx playwright test --ui
-    ;;
-  "debug")
-    echo "Running tests in debug mode..."
-    npx playwright test --debug
-    ;;
-  "file")
-    # Run a specific test file
-    if [ -z "$2" ]; then
-      echo "Error: Please specify a test file to run"
+  # Wait for server to start
+  echo -n "Waiting for server to start"
+  for i in {1..30}; do
+    if check_server_running; then
+      echo -e "\n${GREEN}Server started successfully${NC}"
+      break
+    fi
+    echo -n "."
+    sleep 1
+    if [ $i -eq 30 ]; then
+      echo -e "\n${RED}Server failed to start within 30 seconds${NC}"
       exit 1
     fi
-    echo "Running specific test file: $2..."
-    npx playwright test "$2"
-    ;;
-  *)
-    echo "Running tests in headless mode..."
-    npx playwright test
-    ;;
-esac
-
-# Capture the test exit code
-test_exit_code=$?
-
-# Shutdown the server if we started it
-if [ "$started_server" = true ]; then
-  echo "Shutting down the server..."
-  kill $server_pid
-  wait $server_pid 2>/dev/null
-else
-  echo "Leaving existing server running..."
+  done
 fi
 
-# Exit with the test exit code
-echo "Tests completed with exit code: $test_exit_code"
-exit $test_exit_code
+# Exit if only starting the server was requested
+if [ "$SERVER_ONLY" = true ]; then
+  echo -e "${GREEN}Server is now running. Use Ctrl+C to stop.${NC}"
+  # If we started the server, wait for it, otherwise just exit
+  if [ "$SERVER_WAS_RUNNING" = false ]; then
+    wait $SERVER_PID
+  fi
+  exit 0
+fi
+
+# Run the tests
+echo -e "${YELLOW}Running tests...${NC}"
+
+# Set up the test command
+TEST_COMMAND="npx playwright test"
+
+# Add specific test path if provided
+if [ -n "$TEST_PATH" ]; then
+  TEST_COMMAND="$TEST_COMMAND $TEST_PATH"
+elif [ "$UI_ONLY" = true ]; then
+  # Filter to only include UI tests
+  TEST_COMMAND="$TEST_COMMAND tests/dashboard.spec.ts tests/contacts.spec.ts tests/attribution-visualizations.spec.ts tests/kpi-hook.spec.ts"
+elif [ "$API_ONLY" = true ]; then
+  # Filter to only include API tests
+  TEST_COMMAND="$TEST_COMMAND tests/api.spec.ts"
+fi
+
+# Add headless flag if specified
+if [ -n "$HEADLESS" ]; then
+  TEST_COMMAND="$TEST_COMMAND $HEADLESS"
+fi
+
+# Run the tests
+if [ "$VERBOSE" = true ]; then
+  echo -e "${BLUE}Executing: $TEST_COMMAND${NC}"
+  eval "$TEST_COMMAND"
+else
+  eval "$TEST_COMMAND"
+fi
+
+TEST_EXIT_CODE=$?
+
+# Print test status
+if [ $TEST_EXIT_CODE -eq 0 ]; then
+  echo -e "${GREEN}Tests completed successfully!${NC}"
+else
+  echo -e "${RED}Tests failed with exit code $TEST_EXIT_CODE${NC}"
+fi
+
+# Cleanup - only stop the server if we started it
+if [ "$SERVER_WAS_RUNNING" = false ]; then
+  echo -e "${YELLOW}Stopping server...${NC}"
+  kill $SERVER_PID
+  # Wait to make sure server is stopped
+  sleep 2
+  if check_server_running; then
+    echo -e "${RED}Failed to stop server${NC}"
+    echo -e "${YELLOW}Attempting force kill...${NC}"
+    kill -9 $SERVER_PID
+    sleep 1
+  fi
+  echo -e "${GREEN}Server stopped${NC}"
+fi
+
+# Return the test exit code
+exit $TEST_EXIT_CODE
