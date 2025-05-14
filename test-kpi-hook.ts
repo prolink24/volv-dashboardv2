@@ -28,21 +28,31 @@ interface KpiCategory {
   kpis: KpiFormula[];
 }
 
-interface CustomField {
-  id: number;
+interface Field {
+  id: string;
   name: string;
-  key: string;
+  fieldType: string;
   source: string;
-  dataType: string;
+  path?: string;
+  description?: string;
+  options?: string[];
 }
 
 interface AvailableFieldsResponse {
-  fields: string[];
-  customFields: CustomField[];
+  fields: Field[];
+  customFields: Field[];
+}
+
+// Define test type
+interface Test {
+  name: string;
+  path: string;
+  validation: (data: any) => boolean;
+  expectedStatus?: number;
 }
 
 // Define tests
-const TESTS = [
+const TESTS: Test[] = [
   {
     name: 'KPI Configuration Endpoint',
     path: '/kpi-configuration',
@@ -77,12 +87,21 @@ const TESTS = [
       if (!data.customFields) throw new Error('Missing customFields array');
       if (!Array.isArray(data.customFields)) throw new Error('CustomFields is not an array');
       
+      // If there are standard fields, check their structure
+      if (data.fields.length > 0) {
+        const field = data.fields[0];
+        if (!field.id) throw new Error('Field missing id');
+        if (!field.name) throw new Error('Field missing name');
+        if (!field.fieldType) throw new Error('Field missing fieldType');
+        if (!field.source) throw new Error('Field missing source');
+      }
+      
       // If there are custom fields, check their structure
       if (data.customFields.length > 0) {
         const field = data.customFields[0];
         if (!field.id) throw new Error('Custom field missing id');
         if (!field.name) throw new Error('Custom field missing name');
-        if (!field.key) throw new Error('Custom field missing key');
+        if (!field.fieldType) throw new Error('Custom field missing fieldType');
         if (!field.source) throw new Error('Custom field missing source');
       }
       
@@ -97,7 +116,7 @@ function hr() {
 }
 
 // Test a single endpoint
-async function testEndpoint(test: typeof TESTS[0]) {
+async function testEndpoint(test: Test) {
   process.stdout.write(chalk.yellow(`Testing ${test.name}... `));
   
   try {
@@ -108,8 +127,9 @@ async function testEndpoint(test: typeof TESTS[0]) {
     });
     
     // Check status code
-    if (response.status !== 200) {
-      throw new Error(`Expected status 200, got ${response.status}`);
+    const expectedStatus = test.expectedStatus || 200;
+    if (response.status !== expectedStatus) {
+      throw new Error(`Expected status ${expectedStatus}, got ${response.status}`);
     }
     
     // If we have a validation function, run it

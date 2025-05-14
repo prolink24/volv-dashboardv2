@@ -12,7 +12,7 @@ const API_BASE_URL = 'http://localhost:5000/api';
 const REQUEST_TIMEOUT = 5000; // 5 second timeout
 
 // Only testing core endpoints to avoid timeouts
-const ENDPOINTS = [
+const ENDPOINTS: TestEndpoint[] = [
   {
     name: 'Attribution Stats',
     path: '/attribution/enhanced-stats',
@@ -54,8 +54,16 @@ function hr() {
   console.log(chalk.gray('─'.repeat(80)));
 }
 
+// Define the endpoint type
+interface TestEndpoint {
+  name: string;
+  path: string;
+  validation: (data: any) => boolean;
+  expectedStatus?: number;
+}
+
 // Test a single endpoint
-async function testEndpoint(endpoint: typeof ENDPOINTS[0]) {
+async function testEndpoint(endpoint: TestEndpoint) {
   process.stdout.write(chalk.yellow(`Testing ${endpoint.name}... `));
   
   try {
