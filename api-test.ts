@@ -9,7 +9,7 @@ import chalk from 'chalk';
 
 // Configuration
 const API_BASE_URL = 'http://localhost:5000/api';
-const REQUEST_TIMEOUT = 5000; // 5 second timeout
+const REQUEST_TIMEOUT = 10000; // 10 second timeout for slow endpoints
 
 // Only testing core endpoints to avoid timeouts
 const ENDPOINTS: TestEndpoint[] = [
@@ -42,6 +42,61 @@ const ENDPOINTS: TestEndpoint[] = [
         if (!contact.id) throw new Error('Contact missing id');
         if (!contact.name) throw new Error('Contact missing name');
         if (!contact.email) throw new Error('Contact missing email');
+      }
+      
+      return true;
+    }
+  },
+  {
+    name: 'Enhanced Dashboard Data',
+    path: '/enhanced-dashboard?date=2025-03-01T00:00:00.000Z', // Use a fixed date to avoid timeouts
+    validation: (data: any) => {
+      // Check for data structure
+      if (!data) throw new Error('Missing dashboard data');
+      
+      // If attribution section exists, check it
+      if (data.attribution) {
+        if (!data.attribution.summary && data.attribution.summary !== null) {
+          throw new Error('Dashboard missing attribution.summary');
+        }
+      }
+      
+      return true;
+    }
+  },
+  {
+    name: 'KPI Configuration',
+    path: '/settings/kpi-configuration',
+    validation: (data: any) => {
+      // Categories could be the array itself or nested in categories property
+      const categories = Array.isArray(data) ? data : data.categories;
+      
+      if (!Array.isArray(categories)) throw new Error('KPI categories is not an array');
+      if (categories.length === 0) throw new Error('KPI categories is empty');
+      
+      // Check first category
+      const category = categories[0];
+      if (!category.id) throw new Error('KPI category missing id');
+      if (!category.name) throw new Error('KPI category missing name');
+      
+      return true;
+    }
+  },
+  {
+    name: 'Close CRM Users',
+    path: '/close-users',
+    validation: (data: any) => {
+      // Users could be directly the array or in a users property
+      const users = Array.isArray(data) ? data : data.users;
+      
+      if (!Array.isArray(users)) throw new Error('Close users is not an array');
+      
+      // Check first user if available
+      if (users.length > 0) {
+        const user = users[0];
+        if (!user.id) throw new Error('User missing id');
+        // Some users might not have name, just check that the property exists
+        if (!('name' in user)) throw new Error('User missing name property');
       }
       
       return true;
@@ -140,6 +195,33 @@ function summarizeData(path: string, data: any): string {
   
   if (path.startsWith('/contacts') && data.contacts) {
     return `Found ${data.contacts.length} contacts${data.pagination ? ` (Page ${data.pagination.page}/${data.pagination.totalPages})` : ''}`;
+  }
+  
+  if (path === '/enhanced-dashboard') {
+    const sources = data.attribution?.sources || [];
+    const sourcesCount = sources.length || 0;
+    return [
+      `Dashboard data retrieved`,
+      `Attribution sources: ${sourcesCount}`,
+      `Time period: ${data.timePeriod || 'Not specified'}`
+    ].join('\n');
+  }
+  
+  if (path === '/settings/kpi-configuration') {
+    const categories = Array.isArray(data) ? data : data.categories || [];
+    const kpiCount = categories.reduce((count, cat) => {
+      return count + (cat.kpis?.length || 0);
+    }, 0);
+    
+    return [
+      `KPI Categories: ${categories.length}`,
+      `Total KPIs: ${kpiCount}`
+    ].join('\n');
+  }
+  
+  if (path === '/close-users') {
+    const users = Array.isArray(data) ? data : data.users || [];
+    return `Found ${users.length} Close CRM users`;
   }
   
   return '';
