@@ -752,6 +752,45 @@ const enhancedAttributionService = {
   },
 
   /**
+   * Get attribution timeline for a contact
+   */
+  async getAttributionTimeline(contactId: number): Promise<{
+    success: boolean;
+    error?: string;
+    contact?: Contact;
+    timeline?: Touchpoint[];
+    firstTouch?: Touchpoint;
+    lastTouch?: Touchpoint;
+    attributionChains?: AttributionChain[];
+  }> {
+    try {
+      const attribution = await this.attributeContact(contactId);
+      
+      if (!attribution.success) {
+        return {
+          success: false,
+          error: attribution.error || "Failed to generate attribution data"
+        };
+      }
+      
+      return {
+        success: true,
+        contact: attribution.contact,
+        timeline: attribution.timeline,
+        firstTouch: attribution.firstTouch,
+        lastTouch: attribution.lastTouch,
+        attributionChains: attribution.attributionChains
+      };
+    } catch (error) {
+      console.error(`Error generating attribution timeline for contact ${contactId}:`, error);
+      return {
+        success: false,
+        error: `Failed to generate attribution timeline: ${error}`
+      };
+    }
+  },
+  
+  /**
    * Generate attribution timeline for a contact
    */
   async generateContactTimeline(contactId: number): Promise<{
