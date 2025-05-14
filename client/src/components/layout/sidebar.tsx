@@ -8,15 +8,16 @@ import {
   Users, 
   Calendar, 
   FileText, 
-  BarChart2, 
-  BarChart,
+  BarChart2,
   Settings,
   Link2,
   DollarSign,
   Phone,
   LineChart,
   ShieldCheck,
-  ClipboardCheck
+  ClipboardCheck,
+  Gauge,
+  Sliders
 } from "lucide-react";
 
 interface SidebarItemProps {
@@ -98,7 +99,7 @@ const Sidebar = () => {
     { icon: BarChart2, label: "Analytics", href: "/analytics" },
     { icon: Settings, label: "Settings", href: "/settings" },
     { 
-      icon: BarChart, 
+      icon: Sliders, 
       label: "KPI Configuration", 
       href: "/settings/kpi-configuration",
       indent: true 
