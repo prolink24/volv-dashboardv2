@@ -132,11 +132,11 @@ export default function SalesDashboard() {
     );
   }
 
-  // Start with safe extraction and rendering
-  let kpis;
-  let salesTeam;
-  let triageMetrics;
-  let attribution;
+  // Start with safe extraction and rendering - using empty default values
+  let kpis = {};
+  let salesTeam = [];
+  let triageMetrics = {};
+  let attribution = {};
   
   // Create advancedMetrics with fallback values for safety
   const advancedMetrics = {
