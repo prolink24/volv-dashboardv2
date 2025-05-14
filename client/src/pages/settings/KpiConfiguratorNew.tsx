@@ -579,7 +579,7 @@ const KpiConfiguratorNew: React.FC = () => {
         {/* Templates Tab */}
         <TabsContent value="templates" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {formulas.filter(f => f.category !== "custom").map(template => (
+            {formulas?.filter(f => f?.category !== "custom")?.map(template => (
               <Card key={template.id} className="cursor-pointer hover:shadow-md transition-shadow">
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
@@ -595,11 +595,11 @@ const KpiConfiguratorNew: React.FC = () => {
                     <code className="text-sm">{template.formula}</code>
                   </div>
                   <div className="flex flex-wrap gap-1 mt-2">
-                    {template.dashboardTypes.map(dashType => (
+                    {template.dashboardTypes?.map(dashType => (
                       <Badge key={dashType} variant="secondary" className="text-xs">
-                        {dashboardTypes.find(d => d.id === dashType)?.name || dashType}
+                        {dashboardTypes.find(d => d?.id === dashType)?.name || dashType}
                       </Badge>
-                    ))}
+                    )) || []}
                   </div>
                 </CardContent>
                 <CardFooter className="flex justify-between">
