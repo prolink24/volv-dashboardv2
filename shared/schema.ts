@@ -99,12 +99,31 @@ export const insertContactSchema = createInsertSchema(contacts).omit({
 export const activities = pgTable("activities", {
   id: serial("id").primaryKey(),
   contactId: integer("contact_id").notNull(),
-  type: text("type").notNull(),
+  type: text("type").notNull(), // call, email, task, note, etc.
   source: text("source").notNull(), // "close", "calendly", "typeform"
   sourceId: text("source_id"),
   title: text("title").notNull(),
   description: text("description"),
   date: timestamp("date").notNull(),
+  // Call-specific fields
+  callDuration: integer("call_duration"), // Duration in seconds
+  callDirection: text("call_direction"), // inbound, outbound
+  callOutcome: text("call_outcome"), // answered, voicemail, no-answer, etc.
+  callNotes: text("call_notes"), // Notes from the call
+  callRecordingUrl: text("call_recording_url"), // URL to recording if available
+  // Email-specific fields
+  emailSubject: text("email_subject"),
+  emailBody: text("email_body"),
+  emailStatus: text("email_status"), // sent, opened, clicked, replied
+  emailTemplate: text("email_template"), // Template name if used
+  // Task-specific fields
+  taskStatus: text("task_status"), // completed, in_progress, etc.
+  taskDueDate: timestamp("task_due_date"),
+  taskAssignedTo: text("task_assigned_to"),
+  taskPriority: text("task_priority"), // high, medium, low
+  // Field tracking
+  fieldCoverage: integer("field_coverage"), // Percentage of fields filled (0-100)
+  // Additional metadata
   metadata: jsonb("metadata"),
 });
 
@@ -123,6 +142,18 @@ export const deals = pgTable("deals", {
   createdAt: timestamp("created_at").defaultNow(),
   closeId: text("close_id"),
   assignedTo: text("assigned_to"),
+  // Explicit financial fields from Close CRM custom fields
+  cashCollected: text("cash_collected"), // Amount actually collected
+  contractedValue: text("contracted_value"), // Total contracted value
+  valuePeriod: text("value_period"), // monthly, annual, one-time
+  valueCurrency: text("value_currency"), // USD, EUR, etc.
+  // Sales process tracking
+  confidence: integer("confidence"), // Confidence score (0-100)
+  leadName: text("lead_name"), // Associated lead name
+  statusLabel: text("status_label"), // Human-readable status
+  // Field tracking
+  fieldCoverage: integer("field_coverage"), // Percentage of fields filled (0-100)
+  // All other custom fields stored in metadata
   metadata: jsonb("metadata"),
 });
 
