@@ -401,9 +401,13 @@ const enhancedAttributionService = {
    * This function has been optimized with a 10-second timeout to prevent
    * dashboard rendering blockage
    */
-  async getAttributionStats() {
+  async getAttributionStats(startDate?: Date, endDate?: Date) {
     // Import the timeout utility
     const { withTimeoutFallback } = await import("../utils/timeout");
+    
+    // Format dates for PostgreSQL if provided
+    const startDateString = startDate ? startDate.toISOString().split('T')[0] : undefined;
+    const endDateString = endDate ? endDate.toISOString().split('T')[0] : undefined;
     
     // Create a fallback return value in case of timeout
     const fallbackResponse = {
@@ -427,9 +431,18 @@ const enhancedAttributionService = {
     // Define the actual work as a nested function
     const getStats = async () => {
       try {
-        // Use getContactSample for more efficient and representative sampling
+        // Use getContactSample for more efficient and representative sampling with date filtering
         const contactsLimit = 25; // Increased from 15 for better representation
-        const contacts = await storage.getContactSample(contactsLimit);
+        
+        // Get contacts within date range if specified
+        let contacts;
+        if (startDateString && endDateString) {
+          console.log(`Getting recent contacts within date range: ${startDateString} to ${endDateString}`);
+          contacts = await storage.getRecentContacts(contactsLimit, startDateString, endDateString);
+        } else {
+          contacts = await storage.getContactSample(contactsLimit);
+        }
+        
         console.log(`Attribution stats using sample of ${contacts.length} contacts for analysis`);
         
         if (!contacts || contacts.length === 0) {

@@ -340,8 +340,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       console.log(`Using date param format: ${typeof dateParam === 'string' ? 'single date' : 'date range'}`);
+      
+      // Convert string dates to Date objects
+      let formattedDateParam;
+      if (typeof dateParam === 'string') {
+        formattedDateParam = new Date(dateParam);
+      } else {
+        formattedDateParam = {
+          startDate: new Date(dateParam.startDate),
+          endDate: new Date(dateParam.endDate)
+        };
+      }
+      
       const dashboardData = await storage.getDashboardData(
-        dateParam, 
+        formattedDateParam, 
         userId
       );
       console.timeEnd('get-dashboard-data');
@@ -1231,10 +1243,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Use optimized attribution service that uses sampling
-      console.log("Calculating attribution stats with small sample size for faster dashboard loading");
+      console.log(`Calculating attribution stats with small sample size for faster dashboard loading (date range: ${startDate?.toISOString() || 'all-time'} to ${endDate?.toISOString() || 'all-time'})`);
       
-      // Use enhanced attribution service's optimized method
-      const statsPromise = enhancedAttributionService.getAttributionStats();
+      // Use enhanced attribution service's optimized method - pass date parameters to service
+      const statsPromise = enhancedAttributionService.getAttributionStats(startDate, endDate);
       
       // Set a timeout to ensure we return in a reasonable time
       const timeoutPromise = new Promise((_, reject) => {
