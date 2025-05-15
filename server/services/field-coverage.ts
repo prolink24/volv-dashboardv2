@@ -26,9 +26,9 @@ export function calculateContactFieldCoverage(contact: Contact): number {
     'email',
     'phone',
     'company',
-    'title',
-    'source', 
-    'created_date'
+    'title', 
+    'leadSource',
+    'createdAt'
   ];
 
   const optionalFields = [
@@ -37,17 +37,17 @@ export function calculateContactFieldCoverage(contact: Contact): number {
     'state',
     'zipcode',
     'country',
-    'linkedin_url',
-    'twitter_handle',
-    'secondary_email',
-    'secondary_phone',
-    'utm_source',
-    'utm_medium',
-    'utm_campaign',
-    'referral_source',
+    'linkedInUrl',
+    'twitterHandle',
+    'secondaryEmail',
+    'secondaryPhone',
+    'utmSource',
+    'utmMedium',
+    'utmCampaign',
+    'referralSource',
     'timezone',
     'language',
-    'lead_score',
+    'leadScore',
     'qualification_status',
     'lead_temperature',
     'first_touch_date'
