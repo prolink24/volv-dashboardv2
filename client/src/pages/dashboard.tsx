@@ -286,7 +286,7 @@ const Dashboard = () => {
         {channelData && <AttributionChannels data={channelData} />}
         {attributionInsights.length > 0 && <AttributionInsights insights={attributionInsights} />}
         {!channelData && <AttributionChannels data={{ isLoading: !attributionStatsData }} />}
-        {attributionInsights.length === 0 && <AttributionInsights insights={[]} loading={!attributionStatsData} />}
+        {attributionInsights.length === 0 && <AttributionInsights insights={[]} isLoading={!attributionStatsData} />}
       </div>
       
       {/* KPI Cards */}

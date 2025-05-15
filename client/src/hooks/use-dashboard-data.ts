@@ -148,9 +148,19 @@ export function usePrefetchDashboardData(queryClient: any) {
  * Interface for attribution stats data
  */
 export interface AttributionStatsData {
-  success: boolean;
-  attributionAccuracy: number;
-  stats: {
+  success?: boolean;
+  attributionAccuracy?: number;
+  totalContacts?: number;
+  contactsWithMeetings?: number;
+  contactsWithDeals?: number;
+  totalTouchpoints?: number;
+  conversionRate?: number;
+  mostEffectiveChannel?: string;
+  averageTouchpointsPerContact?: number;
+  channelBreakdown?: {
+    [channel: string]: number;
+  };
+  stats?: {
     totalContacts: number;
     contactsWithDeals: number;
     multiSourceContacts: number;
@@ -164,7 +174,7 @@ export interface AttributionStatsData {
 }
 
 /**
- * Custom hook for fetching attribution stats data
+ * Custom hook for fetching attribution stats data with built-in timeout handling and retries
  * 
  * @returns Query result with attribution stats data
  */
@@ -175,12 +185,49 @@ export function useAttributionStats() {
     queryKey: ['/api/attribution/stats', dateRange.startDate.toISOString(), dateRange.endDate.toISOString()],
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
+    gcTime: 10 * 60 * 1000, // 10 minutes
+    retry: 2, // Retry up to 2 times
+    retryDelay: (attemptIndex) => Math.min(1000 * (2 ** attemptIndex), 30000), // Exponential backoff with max of 30 seconds
     queryFn: async () => {
-      const response = await fetch(`/api/attribution/stats?startDate=${encodeURIComponent(dateRange.startDate.toISOString())}&endDate=${encodeURIComponent(dateRange.endDate.toISOString())}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch attribution stats');
+      // Create an abort controller with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 seconds timeout
+      
+      try {
+        console.log("[AttributionStats] Fetching data...");
+        const response = await fetch(
+          `/api/attribution/stats?startDate=${encodeURIComponent(dateRange.startDate.toISOString())}&endDate=${encodeURIComponent(dateRange.endDate.toISOString())}`,
+          { signal: controller.signal }
+        );
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("[AttributionStats] Error response:", errorText);
+          throw new Error(`Failed to fetch attribution stats: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log("[AttributionStats] Data received:", data ? "Success" : "No data");
+        
+        // If the API response doesn't include certain fields, add default values
+        return {
+          ...data,
+          channelBreakdown: data.channelBreakdown || (data.stats?.channelDistribution || {}),
+          totalTouchpoints: data.totalTouchpoints || 
+            (data.stats?.channelDistribution ? 
+              Object.values(data.stats.channelDistribution).reduce((sum, val) => sum + (val as number), 0) : 0)
+        };
+      } catch (error) {
+        clearTimeout(timeoutId);
+        if (error instanceof DOMException && error.name === "AbortError") {
+          console.error("[AttributionStats] Request timed out after 15 seconds");
+          throw new Error("Request timed out. The attribution data calculation may be taking longer than expected.");
+        }
+        console.error("[AttributionStats] Fetch error:", error);
+        throw error;
       }
-      return response.json();
     }
   });
 }
