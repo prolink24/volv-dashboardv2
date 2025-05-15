@@ -745,7 +745,10 @@ async function syncAllEvents(options = {}) {
       processed: processedEvents,
       errors,
       completed: isComplete,
-      resumeToken: syncState.nextPageToken
+      resumeToken: syncState.nextPageToken,
+      message: isComplete 
+        ? `Calendly sync completed successfully. Processed ${processedEvents} events, imported ${importedMeetings} meetings.` 
+        : `Calendly sync paused. Processed ${processedEvents}/${totalEvents} events so far. Resume token available.`
     };
   } catch (error) {
     console.error('Error in Calendly sync:', error);
