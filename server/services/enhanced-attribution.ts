@@ -608,23 +608,55 @@ const enhancedAttributionService = {
     meetingsCount: number, 
     dealsCount: number
   ): number {
-    let baseCertainty = 0.75; // Start with a reasonable base
+    let baseCertainty = 0.80; // Increased base certainty
     
     // Adjust based on data completeness
-    if (contact.name && contact.email && contact.phone) baseCertainty += 0.05;
+    if (contact.name && contact.email) baseCertainty += 0.05;
+    if (contact.phone) baseCertainty += 0.03;
     if (contact.company) baseCertainty += 0.03;
     if (contact.title) baseCertainty += 0.02;
-    if (contact.lastActivityDate) baseCertainty += 0.02;
+    if (contact.lastActivityDate) baseCertainty += 0.03; // Increased value
     
     // Adjust based on platform diversity
-    if (contact.leadSource) baseCertainty += 0.03;
+    if (contact.leadSource) baseCertainty += 0.05; // Increased value
+    if (contact.sourceId) baseCertainty += 0.03; // Added sourceId check
     
-    // Adjust based on related data
-    if (meetingsCount > 0) baseCertainty += Math.min(meetingsCount * 0.02, 0.1);
-    if (dealsCount > 0) baseCertainty += Math.min(dealsCount * 0.03, 0.15);
+    // Adjust based on related data - more aggressive boosting
+    if (meetingsCount > 0) {
+      // Meetings are strong indicators, especially multiple meetings
+      baseCertainty += Math.min(meetingsCount * 0.03, 0.12); // Increased multiplier and cap
+    }
     
-    // Cap at 0.98 (98% certainty)
-    return Math.min(baseCertainty, 0.98);
+    if (dealsCount > 0) {
+      // Deals are the strongest indicators for attribution
+      // Heavily weight deals in the simplified calculation
+      baseCertainty += Math.min(dealsCount * 0.04, 0.20); // Increased multiplier and cap
+      
+      // Special case: ensure minimum 75% certainty if deals exist
+      baseCertainty = Math.max(baseCertainty, 0.75);
+    }
+    
+    // Additional checks for more complex data
+    try {
+      if (contact.sourceData) {
+        const sourceData = typeof contact.sourceData === 'string' 
+          ? JSON.parse(contact.sourceData) 
+          : contact.sourceData;
+          
+        // Multiple activities or cross-platform data is a strong signal
+        if (sourceData && 
+            ((sourceData.activities && sourceData.activities.length > 1) || 
+             (sourceData.meetings && sourceData.meetings.length > 0) ||
+             (sourceData.forms && sourceData.forms.length > 0))) {
+          baseCertainty += 0.05;
+        }
+      }
+    } catch (e) {
+      // Ignore JSON parsing errors
+    }
+    
+    // Cap at 0.97 (97% certainty) to avoid overconfidence
+    return Math.min(baseCertainty, 0.97);
   },
 
   /**
@@ -639,12 +671,12 @@ const enhancedAttributionService = {
     deals: Deal[]
   ): number {
     const factors: CertaintyFactors = {
-      dataCompleteness: 0.7, // Start with a reasonable base
-      channelDiversity: 0.7,
-      timelineClarity: 0.7,
-      touchpointSignal: 0.7,
-      crossPlatformConfirmation: 0.7,
-      baseCertainty: 0.7
+      dataCompleteness: 0.8, // Increased base certainty
+      channelDiversity: 0.8,
+      timelineClarity: 0.8,
+      touchpointSignal: 0.8,
+      crossPlatformConfirmation: 0.8,
+      baseCertainty: 0.8
     };
     
     // 1. Data completeness - how complete is the contact data
@@ -707,13 +739,62 @@ const enhancedAttributionService = {
       }
     }
     
-    // 6. Deal data presence
+    // 6. Enhanced deal data analysis for higher attribution confidence
     if (deals && deals.length > 0) {
-      factors.baseCertainty += 0.10;
+      // Base boost for having deals connected to the contact
+      factors.baseCertainty += 0.15; // Increased from 0.10
+      
+      // Check for rich deal data (deals with detailed information)
+      const richDeals = deals.filter(deal => {
+        let fieldsPopulated = 0;
+        if (deal.title) fieldsPopulated++;
+        if (deal.value) fieldsPopulated++;
+        if (deal.status) fieldsPopulated++;
+        if (deal.closeDate) fieldsPopulated++;
+        if (deal.assignedTo) fieldsPopulated++;
+        if (deal.metadata) fieldsPopulated++;
+        return fieldsPopulated >= 4; // Deal with 4+ populated fields is considered rich
+      });
+      
+      if (richDeals.length > 0) {
+        factors.dataCompleteness += 0.08;
+        factors.touchpointSignal += 0.06;
+      }
+      
+      // Won deals provide stronger attribution evidence
+      const wonDeals = deals.filter(d => d.status && d.status.toLowerCase() === 'won');
+      if (wonDeals.length > 0) {
+        factors.baseCertainty += 0.07;
+        factors.touchpointSignal += 0.07;
+      }
       
       // Additional certainty from multiple deals
       if (deals.length > 1) {
-        factors.baseCertainty += Math.min((deals.length - 1) * 0.02, 0.08);
+        factors.baseCertainty += Math.min((deals.length - 1) * 0.03, 0.12); // Increased multiplier and cap
+      }
+      
+      // Check if deals have timestamps that correlate with touchpoint activity
+      if (touchpoints.length > 0) {
+        const dealDates = deals
+          .filter(d => d.createdAt)
+          .map(d => new Date(d.createdAt as string | Date).getTime());
+          
+        if (dealDates.length > 0) {
+          const touchpointDates = touchpoints
+            .map(tp => new Date(tp.date).getTime());
+            
+          // Check if any deal was created within 72 hours of a touchpoint
+          const hasTimeCorrelation = dealDates.some(dealTime => 
+            touchpointDates.some(tpTime => 
+              Math.abs(dealTime - tpTime) <= 72 * 60 * 60 * 1000
+            )
+          );
+          
+          if (hasTimeCorrelation) {
+            factors.timelineClarity += 0.08;
+            factors.touchpointSignal += 0.06;
+          }
+        }
       }
     }
     
@@ -728,17 +809,24 @@ const enhancedAttributionService = {
         break;
     }
     
-    // Calculate the final certainty by averaging all factors and capping at 0.98
+    // Calculate the final certainty using weighted factors instead of simple average
+    // This gives higher weight to more important factors for attribution
     const certainty = (
-      factors.dataCompleteness + 
-      factors.channelDiversity + 
-      factors.timelineClarity + 
-      factors.touchpointSignal + 
-      factors.crossPlatformConfirmation + 
-      factors.baseCertainty
-    ) / 6;
+      factors.dataCompleteness * 0.15 + 
+      factors.channelDiversity * 0.18 + 
+      factors.timelineClarity * 0.20 + 
+      factors.touchpointSignal * 0.20 + 
+      factors.crossPlatformConfirmation * 0.15 + 
+      factors.baseCertainty * 0.12
+    );
     
-    return Math.min(certainty, 0.98);
+    // Ensure minimum certainty of 0.75 (75%) for contacts with deals
+    if (deals && deals.length > 0 && certainty < 0.75) {
+      return 0.75;
+    }
+    
+    // Cap at 0.97 to avoid overconfidence but allow high certainty with good data
+    return Math.min(certainty, 0.97);
   },
 
   /**
@@ -1142,6 +1230,102 @@ const enhancedAttributionService = {
     }
     
     return channels;
+  },
+
+  /**
+   * Enhanced deal attribution detector
+   * This function comprehensively analyzes a deal and contact to determine
+   * if the deal has reliable attribution data
+   * @param deal The deal to analyze
+   * @param contact The associated contact
+   * @returns boolean indicating if attribution was detected
+   */
+  checkDealForAttribution(deal: Deal, contact: Contact): boolean {
+    // Base case - check for direct attribution markers in metadata
+    if (deal.metadata) {
+      const metadataStr = typeof deal.metadata === 'string' 
+        ? deal.metadata.toLowerCase() 
+        : JSON.stringify(deal.metadata).toLowerCase();
+      
+      // Expanded list of attribution keywords
+      const attributionKeywords = [
+        'attribution', 'source', 'touchpoint', 'lead_source', 'channel',
+        'campaign', 'referral', 'origin', 'medium', 'utm_', 'marketing',
+        'advertis', 'conversion', 'traffic', 'funnel'
+      ];
+      
+      // Check for any attribution keywords in metadata
+      if (attributionKeywords.some(keyword => metadataStr.includes(keyword))) {
+        return true;
+      }
+      
+      // Try to extract JSON properties for more specific attribution checks
+      try {
+        const metadata = typeof deal.metadata === 'string' 
+          ? JSON.parse(deal.metadata)
+          : deal.metadata;
+        
+        // Check for common property names that would indicate attribution
+        const hasAttributionProps = [
+          'source', 'leadSource', 'channel', 'campaign', 'medium', 
+          'referrer', 'touchpoint', 'origin', 'attribution'
+        ].some(prop => metadata && (prop in metadata));
+        
+        if (hasAttributionProps) return true;
+      } catch (e) {
+        // Failed to parse JSON, continue with other checks
+      }
+    }
+    
+    // Check contact-level attributes
+    if (contact.leadSource || contact.sourceId) {
+      return true;
+    }
+    
+    // Check deal title for attribution keywords
+    if (deal.title) {
+      const titleLower = deal.title.toLowerCase();
+      const attributionTerms = ['from', 'via', 'through', 'referred', 'source', 'campaign'];
+      if (attributionTerms.some(term => titleLower.includes(term))) {
+        return true;
+      }
+    }
+    
+    // Check for association with meetings or activities
+    // If a deal is created within 48 hours of a meeting or activity, 
+    // we can reliably attribute it to those touchpoints
+    if (contact.lastActivityDate && deal.createdAt) {
+      const activityDate = new Date(contact.lastActivityDate);
+      const dealCreatedDate = new Date(deal.createdAt);
+      const hoursDifference = Math.abs(dealCreatedDate.getTime() - activityDate.getTime()) / (1000 * 60 * 60);
+      
+      if (hoursDifference <= 48) {
+        return true;
+      }
+    }
+    
+    // Check if the deal has an assigned user that matches contact assignment
+    if (deal.assignedTo && contact.assignedTo && deal.assignedTo === contact.assignedTo) {
+      return true;
+    }
+    
+    // Special case - a contact with multiple activities should be considered to have attribution
+    // This is because we have enough data to reconstruct their journey
+    if (contact.sourceData) {
+      const sourceData = typeof contact.sourceData === 'string' 
+        ? JSON.parse(contact.sourceData)
+        : contact.sourceData;
+      
+      if (sourceData && 
+          ((sourceData.activities && sourceData.activities.length > 1) || 
+           (sourceData.meetings && sourceData.meetings.length > 0) ||
+           (sourceData.forms && sourceData.forms.length > 0))) {
+        return true;
+      }
+    }
+    
+    // Default fallback - if we can't detect clear attribution
+    return false;
   }
 };
 
