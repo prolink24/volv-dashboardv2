@@ -7,8 +7,10 @@
  * 3. Batch processing continues correctly after resuming
  */
 
-import fetch from 'node-fetch';
 import chalk from 'chalk';
+
+// Use native fetch API rather than the node-fetch package
+const fetch = global.fetch;
 
 // Helper function to log messages with colors
 function log(message: string, type: 'info' | 'success' | 'warning' | 'error' = 'info'): void {
