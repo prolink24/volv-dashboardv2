@@ -24,6 +24,19 @@ type CalendlySyncStatus = {
   };
 };
 
+type CloseSyncStatus = {
+  totalLeads: number;
+  processedLeads: number;
+  importedContacts: number;
+  errors: number;
+  completed?: boolean;
+  inProgress?: boolean;
+  startTime?: Date | null;
+  endTime?: Date | null;
+  error?: string | null;
+  lastUpdated?: Date;
+};
+
 type PlatformStatus = {
   inProgress: boolean;
   completed: boolean;
@@ -216,14 +229,106 @@ export function getSyncStatus(platform?: 'close' | 'calendly' | 'typeform') {
   return platformSyncStatus;
 }
 
+// In-memory store for Close CRM sync status
+let closeSyncStatus: CloseSyncStatus = {
+  totalLeads: 0,
+  processedLeads: 0,
+  importedContacts: 0,
+  errors: 0,
+  completed: false,
+  inProgress: false,
+  startTime: null,
+  endTime: null,
+  error: null
+};
+
+/**
+ * Update Close CRM sync status with latest information
+ */
+export function updateCloseSyncStatus(status: Partial<CloseSyncStatus>) {
+  closeSyncStatus = {
+    ...closeSyncStatus,
+    ...status,
+    lastUpdated: new Date()
+  };
+  
+  // Mark as in progress if not completed
+  if (!status.completed) {
+    closeSyncStatus.inProgress = true;
+  } else {
+    closeSyncStatus.inProgress = false;
+    closeSyncStatus.endTime = new Date();
+  }
+  
+  // Set start time if not already set
+  if (!closeSyncStatus.startTime && closeSyncStatus.inProgress) {
+    closeSyncStatus.startTime = new Date();
+  }
+
+  // Update the platform sync status too
+  platformSyncStatus.close = {
+    inProgress: !!closeSyncStatus.inProgress,
+    completed: !!closeSyncStatus.completed,
+    startTime: closeSyncStatus.startTime,
+    endTime: closeSyncStatus.endTime,
+    error: closeSyncStatus.error
+  };
+}
+
+/**
+ * Get the current Close CRM sync status
+ */
+export function getCloseSyncStatus() {
+  return {
+    ...closeSyncStatus,
+    runningTime: closeSyncStatus.startTime 
+      ? Math.floor((new Date().getTime() - closeSyncStatus.startTime.getTime()) / 1000) 
+      : 0
+  };
+}
+
+/**
+ * Reset the Close CRM sync status
+ */
+export function resetCloseSyncStatus() {
+  closeSyncStatus = {
+    totalLeads: 0,
+    processedLeads: 0,
+    importedContacts: 0,
+    errors: 0,
+    completed: false,
+    inProgress: false,
+    startTime: null,
+    endTime: null,
+    error: null
+  };
+  
+  // Reset platform status too
+  platformSyncStatus.close = {
+    inProgress: false,
+    completed: false,
+    startTime: null,
+    endTime: null,
+    error: null
+  };
+}
+
 export default {
+  // Calendly sync functions
   updateCalendlySyncStatus,
   getCalendlySyncStatus,
   resetCalendlySyncStatus,
   getCalendlySyncProgress,
   getCalendlySyncSummary,
+  
+  // General sync functions
   startSync,
   completeSync,
   setSyncError,
-  getSyncStatus
+  getSyncStatus,
+  
+  // Close CRM sync functions
+  updateCloseSyncStatus,
+  getCloseSyncStatus,
+  resetCloseSyncStatus
 };
