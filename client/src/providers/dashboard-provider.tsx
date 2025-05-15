@@ -31,6 +31,16 @@ export function DashboardProvider({ children }: DashboardProviderProps) {
   const [userFilter, setUserFilter] = useState<string>("All Users");
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   
+  // Add a wrapper for setDateFilter to include debugging
+  const updateDateFilter = (newDate: string) => {
+    console.log(`[DashboardProvider] Updating date filter to: ${newDate}`);
+    setDateFilter(newDate);
+    // Force a rerender/refresh when date filter changes
+    setTimeout(() => {
+      console.log(`[DashboardProvider] Date filter updated, value is now: ${newDate}`);
+    }, 100);
+  };
+  
   const refreshData = async () => {
     setIsRefreshing(true);
     
@@ -55,7 +65,7 @@ export function DashboardProvider({ children }: DashboardProviderProps) {
         activeTab,
         setActiveTab,
         dateFilter,
-        setDateFilter,
+        setDateFilter: updateDateFilter, // Use our enhanced version with debugging
         userFilter,
         setUserFilter,
         refreshData,

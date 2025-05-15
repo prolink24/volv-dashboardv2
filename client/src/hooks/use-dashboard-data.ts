@@ -74,6 +74,8 @@ export function useDashboardData({
   const queryParams = new URLSearchParams();
   
   if (date) {
+    console.log(`[useDashboardData] Processing date parameter: "${date}"`);
+    
     // Convert the date string to a Date object and pass as ISO string
     try {
       // Parse date from our custom format (YYYY-MM-DD | Month Day)
@@ -83,30 +85,43 @@ export function useDashboardData({
         const month = parseInt(dateParts[1]) - 1; // JavaScript months are 0-indexed
         const day = parseInt(dateParts[2]);
         
+        console.log(`[useDashboardData] Parsed date parts: year=${year}, month=${month}, day=${day}`);
+        
         const dateObj = new Date(year, month, day);
         if (!isNaN(dateObj.getTime())) {
           // Use the ISO string format for the API
-          queryParams.append("date", dateObj.toISOString());
-          console.log(`Converted date parameter from "${date}" to "${dateObj.toISOString()}"`);
+          const isoDate = dateObj.toISOString();
+          queryParams.append("date", isoDate);
+          console.log(`[useDashboardData] Converted date parameter from "${date}" to ISO: "${isoDate}"`);
         } else {
-          console.error(`Invalid date format: ${date}`);
-          queryParams.append("date", date); // Use as-is if parsing fails
+          console.error(`[useDashboardData] Invalid date created from parts: ${date}`);
+          // Fallback to a safe default
+          const now = new Date();
+          queryParams.append("date", now.toISOString());
         }
       } else {
-        // Use as-is for backward compatibility
+        console.log(`[useDashboardData] Date format doesn't have 3 parts, using as-is: ${date}`);
         queryParams.append("date", date);
       }
     } catch (error) {
-      console.error(`Error parsing date "${date}":`, error);
-      queryParams.append("date", date); // Use as-is if parsing fails
+      console.error(`[useDashboardData] Error parsing date "${date}":`, error);
+      // Fallback to a safe default
+      const now = new Date();
+      queryParams.append("date", now.toISOString());
     }
+  } else {
+    console.log(`[useDashboardData] No date parameter provided, using current date`);
+    const now = new Date();
+    queryParams.append("date", now.toISOString());
   }
   
   if (userId) {
+    console.log(`[useDashboardData] Adding userId parameter: ${userId}`);
     queryParams.append("userId", userId);
   }
   
   if (!cache) {
+    console.log(`[useDashboardData] Adding cache=false parameter`);
     queryParams.append("cache", "false");
   }
   

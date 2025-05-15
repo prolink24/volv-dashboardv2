@@ -26,43 +26,29 @@ const Dashboard = () => {
   const { toast } = useToast();
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-  // Convert dateFilter to API format
-  // Extract the date parts from the dateFilter (format: "YYYY-MM-DD | Month")
-  let apiDate: Date;
+  // Extract date from dateFilter for logging purposes only
+  console.log(`[Dashboard] Current date filter: "${dateFilter}"`);
   
+  // We no longer need to parse the date here since useDashboardData does it
+  // This is just for debugging purposes
   try {
-    // First try to parse the full date with day included
     const datePart = dateFilter.split('|')[0].trim();
+    const dateParts = datePart.split('-');
     
-    if (datePart.split('-').length === 3) {
-      // Format is YYYY-MM-DD
-      apiDate = new Date(datePart);
-    } else {
-      // Old format YYYY-MM, use first day of month
-      const dateParts = datePart.split('-');
+    if (dateParts.length === 3) {
       const year = parseInt(dateParts[0]);
-      const month = parseInt(dateParts[1]) - 1; // JavaScript months are 0-indexed
+      const month = parseInt(dateParts[1]) - 1;
+      const day = parseInt(dateParts[2]);
+      const parsedDate = new Date(year, month, day);
       
-      // Validate parsed values
-      if (isNaN(year) || isNaN(month) || year < 2000 || year > 2100 || month < 0 || month > 11) {
-        throw new Error(`Invalid date parts: year=${year}, month=${month}`);
-      }
-      
-      apiDate = new Date(year, month, 1);
-    }
-    
-    // Final validation
-    if (isNaN(apiDate.getTime())) {
-      throw new Error(`Invalid date: ${apiDate}`);
+      console.log(`[Dashboard] Parsed date from filter: year=${year}, month=${month}, day=${day}`);
+      console.log(`[Dashboard] Date object: ${parsedDate.toISOString()}`);
+    } else {
+      console.log(`[Dashboard] Unable to parse date parts from: ${datePart}`);
     }
   } catch (error) {
-    console.error(`Error parsing date filter "${dateFilter}":`, error);
-    // Fallback to current date if parsing fails
-    apiDate = new Date();
+    console.error(`[Dashboard] Error parsing date filter for logging: ${error}`);
   }
-  
-  // Debug log the date conversion
-  console.log(`Date filter: "${dateFilter}" -> API date: "${apiDate.toISOString()}" (${apiDate.getFullYear()}-${apiDate.getMonth()+1}-${apiDate.getDate()})`);
   
   // Fetch dashboard data with enhanced attribution
   const { 
