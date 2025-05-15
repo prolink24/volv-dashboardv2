@@ -112,6 +112,7 @@ const Sidebar = () => {
     { icon: Calendar, label: "Meetings", href: "/meetings" },
     { icon: FileText, label: "Forms", href: "/forms" },
     { icon: BarChart2, label: "Analytics", href: "/analytics" },
+    { icon: Gauge, label: "Customer Journey", href: "/customer-journey" },
     { icon: Settings, label: "Settings", href: "/settings" },
     { 
       icon: Sliders, 

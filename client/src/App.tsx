@@ -51,6 +51,7 @@ function Router() {
           <Route path="/settings/kpi-configurator" component={KpiConfigurator} />
           <Route path="/attribution-journey" component={AttributionJourney} />
           <Route path="/attribution-journey/:id" component={AttributionJourney} />
+          <Route path="/customer-journey" component={CustomerJourney} />
           <Route component={NotFound} />
         </Switch>
       </div>

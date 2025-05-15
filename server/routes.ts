@@ -1374,6 +1374,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Mount customer journey routes
+  apiRouter.use('/customer-journey', customerJourneyRoutes);
+  
   // Register API routes with prefix
   app.use("/api", apiRouter);
   
