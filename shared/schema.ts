@@ -153,7 +153,7 @@ export const activities = pgTable("activities", {
   taskAssignedTo: text("task_assigned_to"),
   taskPriority: text("task_priority"), // high, medium, low
   // Field tracking
-  fieldCoverage: integer("fieldCoverage"), // Percentage of fields filled (0-100)
+  fieldCoverage: integer("fieldcoverage"), // Percentage of fields filled (0-100)
   // Additional metadata
   metadata: jsonb("metadata"),
 });
@@ -183,7 +183,7 @@ export const deals = pgTable("deals", {
   leadName: text("lead_name"), // Associated lead name
   statusLabel: text("status_label"), // Human-readable status
   // Field tracking
-  fieldCoverage: integer("fieldCoverage"), // Percentage of fields filled (0-100)
+  fieldCoverage: integer("fieldcoverage"), // Percentage of fields filled (0-100)
   // All other custom fields stored in metadata
   metadata: jsonb("metadata"),
 });
@@ -211,7 +211,6 @@ export const meetings = pgTable("meetings", {
   assigneeTimezone: text("assignee_timezone"),
   inviteeEmail: text("invitee_email"),
   inviteeName: text("invitee_name"),
-  inviteeTimezone: text("invitee_timezone"),
   // Location and joining details
   location: text("location"), // Can be URL or physical address
   conferenceUrl: text("conference_url"), // URL for video conference
@@ -232,7 +231,7 @@ export const meetings = pgTable("meetings", {
   utmContent: text("utm_content"),
   utmTerm: text("utm_term"),
   // Field tracking
-  fieldCoverage: integer("field_coverage"), // Percentage of fields filled (0-100)
+  fieldCoverage: integer("fieldcoverage"), // Percentage of fields filled (0-100)
   // All other metadata
   metadata: jsonb("metadata"),
 });
