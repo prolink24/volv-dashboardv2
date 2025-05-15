@@ -15,6 +15,7 @@ import metricsRouter from "./routes/metrics";
 import cacheService from "./services/cache";
 import settingsRouter from "./api/settings";
 import kpiConfiguratorRouter from "./api/kpi-configurator";
+import customerJourneyRoutes from "./routes/customer-journey";
 import { CloseUser } from "@shared/schema";
 
 // Enhanced attribution response types
@@ -1384,6 +1385,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Mount the KPI configurator router
   app.use("/api/kpi", kpiConfiguratorRouter);
+  
+  // Mount the customer journey router
+  app.use("/api/customer-journey", customerJourneyRoutes);
 
   // Create HTTP server
   const httpServer = createServer(app);

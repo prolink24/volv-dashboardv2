@@ -18,6 +18,7 @@ import Analytics from "@/pages/analytics";
 import Settings from "@/pages/settings";
 import NotFound from "@/pages/not-found";
 import AttributionJourney from "@/pages/attribution-journey";
+import CustomerJourney from "@/pages/customer-journey";
 import KpiConfigurationPage from "@/pages/settings/kpi-configuration";
 import KpiConfigurator from "@/pages/settings/KpiConfiguratorNew";
 
