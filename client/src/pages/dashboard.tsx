@@ -301,21 +301,30 @@ const Dashboard = () => {
         />
         <KpiCard 
           title="Total Calls" 
-          value={dashboardData.kpis.totalCalls} 
+          value={dashboardData.kpis.totalCalls?.current || dashboardData.kpis.totalCalls || dashboardData.kpis.activities.current} 
           subValue="/60 target"
-          trend={{ value: -5, label: "vs. last month" }}
+          trend={{ 
+            value: dashboardData.kpis.totalCalls?.change || -5, 
+            label: "vs. last month" 
+          }}
         />
         <KpiCard 
           title="Call 1 Taken" 
-          value={dashboardData.kpis.call1Taken} 
+          value={dashboardData.kpis.call1Taken?.current || dashboardData.kpis.call1Taken || 0} 
           subValue="/40 target"
-          trend={{ value: 8, label: "vs. last month" }}
+          trend={{ 
+            value: dashboardData.kpis.call1Taken?.change || 8, 
+            label: "vs. last month" 
+          }}
         />
         <KpiCard 
           title="Call 2 Taken" 
-          value={dashboardData.kpis.call2Taken} 
+          value={dashboardData.kpis.call2Taken?.current || dashboardData.kpis.call2Taken || 0} 
           subValue="/20 target"
-          trend={{ value: -10, label: "vs. last month" }}
+          trend={{ 
+            value: dashboardData.kpis.call2Taken?.change || -10, 
+            label: "vs. last month" 
+          }}
         />
       </div>
       
