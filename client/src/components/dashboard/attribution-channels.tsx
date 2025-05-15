@@ -70,7 +70,7 @@ export const AttributionChannels = ({ data }: AttributionChannelsProps) => {
       </CardHeader>
       <CardContent className="pt-2">
         <div className="space-y-4">
-          {sortedChannels.map((channel, index) => (
+          {Array.isArray(sortedChannels) ? sortedChannels.map((channel, index) => (
             <div key={index}>
               <div className="flex justify-between items-center mb-1">
                 <div className="flex items-center">
@@ -102,7 +102,12 @@ export const AttributionChannels = ({ data }: AttributionChannelsProps) => {
                 />
               </div>
             </div>
-          ))}
+          )) : (
+            <div className="text-center py-4 text-muted-foreground">
+              <p>No channel data available</p>
+              <p className="text-xs mt-2">Channel data could not be loaded</p>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

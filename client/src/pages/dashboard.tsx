@@ -6,6 +6,8 @@ import {
 import { useDashboard } from "@/providers/dashboard-provider";
 import { useDashboardData, syncData, invalidateDashboardData, useAttributionStats } from "@/hooks/use-dashboard-data";
 import { useToast } from "@/hooks/use-toast";
+import { DashboardDebugWrapper } from "@/components/debug/dashboard-debug-wrapper";
+import { safeMap } from "@/utils/debug-logger";
 
 import KpiCard from "@/components/dashboard/kpi-card";
 import BarChart from "@/components/dashboard/bar-chart";
@@ -210,49 +212,53 @@ const Dashboard = () => {
     : [];
 
   return (
-    <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-background">
-      {/* Filters */}
-      <div className="mb-6 flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
-        <DashboardFilters />
-        
-        <div className="flex gap-2">
-          <button 
-            type="button" 
-            className="px-3 py-1.5 rounded-md bg-card border border-border text-sm font-medium flex items-center gap-1"
-            onClick={() => {
-              toast({
-                title: "Filters Applied",
-                description: "Dashboard data filtered",
-              });
-            }}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-            <span>Filters</span>
-          </button>
-          <button 
-            type="button" 
-            className="px-3 py-1.5 rounded-md bg-card border border-border text-sm font-medium flex items-center gap-1"
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-            <span>Refresh</span>
-          </button>
-          <button 
-            type="button" 
-            className="px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-sm font-medium flex items-center gap-1"
-            onClick={() => {
-              toast({
-                title: "Export Started",
-                description: "Your data is being exported",
-              });
-            }}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-            <span>Export</span>
-          </button>
+    <DashboardDebugWrapper 
+      dashboardData={dashboardData} 
+      rawData={attributionStatsData}
+    >
+      <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-background">
+        {/* Filters */}
+        <div className="mb-6 flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
+          <DashboardFilters />
+          
+          <div className="flex gap-2">
+            <button 
+              type="button" 
+              className="px-3 py-1.5 rounded-md bg-card border border-border text-sm font-medium flex items-center gap-1"
+              onClick={() => {
+                toast({
+                  title: "Filters Applied",
+                  description: "Dashboard data filtered",
+                });
+              }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+              <span>Filters</span>
+            </button>
+            <button 
+              type="button" 
+              className="px-3 py-1.5 rounded-md bg-card border border-border text-sm font-medium flex items-center gap-1"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+              <span>Refresh</span>
+            </button>
+            <button 
+              type="button" 
+              className="px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-sm font-medium flex items-center gap-1"
+              onClick={() => {
+                toast({
+                  title: "Export Started",
+                  description: "Your data is being exported",
+                });
+              }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+              <span>Export</span>
+            </button>
+          </div>
         </div>
-      </div>
       
       {/* Attribution Summary */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
@@ -534,6 +540,7 @@ const Dashboard = () => {
         </div>
       )}
     </main>
+    </DashboardDebugWrapper>
   );
 };
 
