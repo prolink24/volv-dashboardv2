@@ -181,7 +181,9 @@ function getDateRangeParams(dateRange: DateRange, additionalParams: Record<strin
  * @returns Query result with dashboard data
  */
 export function useDashboardData(options?: string | { date?: string; userId?: string; useEnhanced?: boolean; skipAttribution?: boolean }) {
-  const { dateRange, isLoading: isDateLoading, refreshData } = useDateRange();
+  const dateRangeState = useDateRange();
+  const { dateRange } = dateRangeState;
+  
   let userId: string | undefined;
   let skipAttribution: boolean | undefined;
   
@@ -200,7 +202,6 @@ export function useDashboardData(options?: string | { date?: string; userId?: st
   
   return useQuery<DashboardData>({
     queryKey: ['/api/enhanced-dashboard', dateRange.startDate.toISOString(), dateRange.endDate.toISOString(), userId, skipAttribution],
-    enabled: !isDateLoading,
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
     queryFn: async () => {
@@ -359,7 +360,8 @@ export interface AttributionStatsData {
  * @returns Query result with attribution stats data
  */
 export function useAttributionStats() {
-  const { dateRange, refreshData } = useDateRange();
+  const dateRangeState = useDateRange();
+  const { dateRange } = dateRangeState;
   
   return useQuery<AttributionStatsData>({
     queryKey: ['/api/attribution/stats', dateRange.startDate.toISOString(), dateRange.endDate.toISOString()],
