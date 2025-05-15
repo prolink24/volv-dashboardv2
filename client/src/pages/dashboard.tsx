@@ -44,6 +44,42 @@ const Dashboard = () => {
     userId: userFilter !== "All Users" ? userFilter : undefined,
     useEnhanced: true
   });
+  
+  // Default empty dashboard data to prevent null reference errors
+  const safeData = dashboardData || {
+    kpis: {
+      deals: { current: 0, previous: 0, change: 0 },
+      revenue: { current: 0, previous: 0, change: 0 },
+      activities: { current: 0, previous: 0, change: 0 },
+      meetings: { current: 0, previous: 0, change: 0 },
+      closedDeals: { current: 0, previous: 0, change: 0 },
+      cashCollected: { current: 0, previous: 0, change: 0 },
+      revenueGenerated: { current: 0, previous: 0, change: 0 },
+      totalCalls: { current: 0, previous: 0, change: 0 },
+      call1Taken: { current: 0, previous: 0, change: 0 },
+      call2Taken: { current: 0, previous: 0, change: 0 },
+      closingRate: 0,
+      avgCashCollected: 0,
+      solutionCallShowRate: 0,
+      earningPerCall2: 0
+    },
+    salesTeam: [],
+    leadMetrics: {
+      newLeadsToday: 0,
+      leadsLastWeek: 0,
+      averageLeadQualificationTime: 0,
+      leadConversionRate: 0,
+      leadSourceDistribution: {},
+      totalLeads: 0,
+      qualifiedLeads: 0,
+      conversionRate: 0,
+      costPerLead: 0,
+      qualifiedRate: 0,
+      responseRate: 0
+    },
+    timelineData: [],
+    topDeals: []
+  };
 
   // Get attribution stats separately
   const { data: attributionStatsData } = useAttributionStats();
@@ -274,55 +310,58 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         <KpiCard 
           title="Closed Deals" 
-          value={dashboardData.kpis.closedDeals?.current || dashboardData.kpis.deals.current} 
+          value={safeData.kpis.closedDeals?.current || safeData.kpis.deals.current} 
           subValue="/10 target" 
           trend={{ 
-            value: dashboardData.kpis.closedDeals?.change || dashboardData.kpis.deals.change, 
+            value: safeData.kpis.closedDeals?.change || safeData.kpis.deals.change, 
             label: "vs. last month" 
           }}
         />
         <KpiCard 
           title="Cash Collected" 
-          value={formatCurrency(dashboardData.kpis.cashCollected?.current || dashboardData.kpis.revenue.current)} 
+          value={formatCurrency(safeData.kpis.cashCollected?.current || safeData.kpis.revenue.current)} 
           subValue="/150k target"
           trend={{ 
-            value: dashboardData.kpis.cashCollected?.change || dashboardData.kpis.revenue.change, 
+            value: safeData.kpis.cashCollected?.change || safeData.kpis.revenue.change, 
             label: "vs. last month" 
           }}
         />
         <KpiCard 
           title="Revenue Generated" 
-          value={formatCurrency(dashboardData.kpis.revenueGenerated?.current || dashboardData.kpis.revenue.current)} 
+          value={formatCurrency(safeData.kpis.revenueGenerated?.current || safeData.kpis.revenue.current)} 
           subValue="/250k target"
           trend={{ 
-            value: dashboardData.kpis.revenueGenerated?.change || dashboardData.kpis.revenue.change, 
+            value: safeData.kpis.revenueGenerated?.change || safeData.kpis.revenue.change, 
             label: "vs. last month" 
           }}
         />
         <KpiCard 
           title="Total Calls" 
-          value={dashboardData.kpis.totalCalls?.current || dashboardData.kpis.totalCalls || dashboardData.kpis.activities.current} 
+          value={typeof safeData.kpis.totalCalls === 'object' ? safeData.kpis.totalCalls.current : 
+                 (typeof safeData.kpis.totalCalls === 'number' ? safeData.kpis.totalCalls : safeData.kpis.activities.current)} 
           subValue="/60 target"
           trend={{ 
-            value: dashboardData.kpis.totalCalls?.change || -5, 
+            value: typeof safeData.kpis.totalCalls === 'object' ? safeData.kpis.totalCalls.change : -5, 
             label: "vs. last month" 
           }}
         />
         <KpiCard 
           title="Call 1 Taken" 
-          value={dashboardData.kpis.call1Taken?.current || dashboardData.kpis.call1Taken || 0} 
+          value={typeof safeData.kpis.call1Taken === 'object' ? safeData.kpis.call1Taken.current : 
+                 (typeof safeData.kpis.call1Taken === 'number' ? safeData.kpis.call1Taken : 0)} 
           subValue="/40 target"
           trend={{ 
-            value: dashboardData.kpis.call1Taken?.change || 8, 
+            value: typeof safeData.kpis.call1Taken === 'object' ? safeData.kpis.call1Taken.change : 8, 
             label: "vs. last month" 
           }}
         />
         <KpiCard 
           title="Call 2 Taken" 
-          value={dashboardData.kpis.call2Taken?.current || dashboardData.kpis.call2Taken || 0} 
+          value={typeof safeData.kpis.call2Taken === 'object' ? safeData.kpis.call2Taken.current : 
+                 (typeof safeData.kpis.call2Taken === 'number' ? safeData.kpis.call2Taken : 0)} 
           subValue="/20 target"
           trend={{ 
-            value: dashboardData.kpis.call2Taken?.change || -10, 
+            value: typeof safeData.kpis.call2Taken === 'object' ? safeData.kpis.call2Taken.change : -10, 
             label: "vs. last month" 
           }}
         />
@@ -332,7 +371,8 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <KpiCard 
           title="Closing Rate" 
-          value={`${dashboardData.kpis.closingRate}%`} 
+          value={`${typeof safeData.kpis.closingRate === 'object' ? safeData.kpis.closingRate.current : 
+                 (typeof safeData.kpis.closingRate === 'number' ? safeData.kpis.closingRate : 0)}%`} 
           trend={attributionStatsData?.attributionAccuracy ? {
             value: Math.round(attributionStatsData.attributionAccuracy),
             label: "attribution certainty"
@@ -340,7 +380,9 @@ const Dashboard = () => {
         />
         <KpiCard 
           title="Avg Cash Collected" 
-          value={formatCurrency(dashboardData.kpis.avgCashCollected)}
+          value={formatCurrency(typeof safeData.kpis.avgCashCollected === 'object' ? 
+                 safeData.kpis.avgCashCollected.current : 
+                 (typeof safeData.kpis.avgCashCollected === 'number' ? safeData.kpis.avgCashCollected : 0))}
           trend={attributionStatsData?.stats?.dealAttributionRate ? {
             value: Math.round(attributionStatsData.stats.dealAttributionRate),
             label: "deal attribution"
@@ -348,7 +390,10 @@ const Dashboard = () => {
         />
         <KpiCard 
           title="Solution Call Show Rate" 
-          value={`${dashboardData.kpis.solutionCallShowRate}%`}
+          value={`${typeof safeData.kpis.solutionCallShowRate === 'object' ? 
+                 safeData.kpis.solutionCallShowRate.current : 
+                 (typeof safeData.kpis.solutionCallShowRate === 'number' ? 
+                  safeData.kpis.solutionCallShowRate : 0)}%`}
           trend={attributionStatsData?.stats?.highCertaintyContacts ? {
             value: attributionStatsData.stats.highCertaintyContacts,
             label: "high certainty contacts"
@@ -356,7 +401,10 @@ const Dashboard = () => {
         />
         <KpiCard 
           title="Earning Per Call 2" 
-          value={formatCurrency(dashboardData.kpis.earningPerCall2)}
+          value={formatCurrency(typeof safeData.kpis.earningPerCall2 === 'object' ? 
+                 safeData.kpis.earningPerCall2.current : 
+                 (typeof safeData.kpis.earningPerCall2 === 'number' ? 
+                  safeData.kpis.earningPerCall2 : 0))}
           trend={attributionStatsData?.stats?.multiSourceRate ? {
             value: Math.round(attributionStatsData.stats.multiSourceRate),
             label: "multi-source rate"
