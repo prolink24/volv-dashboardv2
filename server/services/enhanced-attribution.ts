@@ -432,14 +432,16 @@ const enhancedAttributionService = {
     const getStats = async () => {
       try {
         // Use getContactSample for more efficient and representative sampling with date filtering
-        const contactsLimit = 25; // Increased from 15 for better representation
+        const contactsLimit = 1000; // Increased to 1000 for more comprehensive testing per user request
         
         // Get contacts within date range if specified
         let contacts;
         if (startDateString && endDateString) {
           console.log(`Getting recent contacts within date range: ${startDateString} to ${endDateString}`);
+          console.log(`Using larger sample size of ${contactsLimit} contacts for comprehensive attribution testing`);
           contacts = await storage.getRecentContacts(contactsLimit, startDateString, endDateString);
         } else {
+          console.log(`Getting sample of ${contactsLimit} contacts for attribution analysis`);
           contacts = await storage.getContactSample(contactsLimit);
         }
         
@@ -587,10 +589,10 @@ const enhancedAttributionService = {
       }
     };
 
-    // Execute the stats function with timeout protection
+    // Execute the stats function with extended timeout for larger sample processing
     return withTimeoutFallback(
       getStats(),
-      10000, // 10 second timeout
+      60000, // 60 second timeout for processing 1000 deals
       fallbackResponse
     );
   },
