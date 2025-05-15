@@ -151,17 +151,17 @@ const Dashboard = () => {
   if (!dashboardData) return null;
 
   // Prepare chart data
-  const cashCollectedData = dashboardData.salesTeam.map(person => ({
+  const cashCollectedData = dashboardData.salesTeam ? dashboardData.salesTeam.map(person => ({
     name: person.name.split(' ')[0],
-    value: person.cashCollected,
+    value: person.cashCollected || 0,
     color: "var(--primary)"
-  }));
+  })) : [];
 
-  const closingRateData = dashboardData.salesTeam.map(person => ({
+  const closingRateData = dashboardData.salesTeam ? dashboardData.salesTeam.map(person => ({
     name: person.name.split(' ')[0],
-    value: person.closingRate,
-    color: person.closingRate > 0 ? "var(--primary)" : "var(--muted)"
-  }));
+    value: person.closingRate || 0,
+    color: (person.closingRate || 0) > 0 ? "var(--primary)" : "var(--muted)"
+  })) : [];
 
   // Generate attribution channel data from our actual stats
   const channelData = attributionStatsData?.stats 
@@ -352,8 +352,10 @@ const Dashboard = () => {
                   <span className="text-sm font-medium">{formatCurrency(person.cashCollected)}</span>
                 </div>
                 <ProgressBar 
-                  value={person.cashCollected} 
-                  max={Math.max(...dashboardData.salesTeam.map(p => p.cashCollected))} 
+                  value={person.cashCollected || 0} 
+                  max={dashboardData.salesTeam && dashboardData.salesTeam.length > 0 
+                    ? Math.max(...dashboardData.salesTeam.map(p => p.cashCollected || 0)) 
+                    : 100} 
                 />
               </div>
             ))}
