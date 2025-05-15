@@ -71,6 +71,7 @@ export interface IStorage {
   getMeeting(id: number): Promise<Meeting | undefined>;
   getMeetingByCalendlyEventId(eventId: string): Promise<Meeting | undefined>;
   createMeeting(meeting: InsertMeeting): Promise<Meeting>;
+  updateMeeting(id: number, meeting: Partial<InsertMeeting>): Promise<Meeting | undefined>;
   getMeetingsByContactId(contactId: number): Promise<Meeting[]>;
   getMeetingsCount(): Promise<number>;
 
