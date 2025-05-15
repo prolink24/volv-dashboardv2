@@ -115,8 +115,8 @@ export const contacts = pgTable("contacts", {
   notes: text("notes"),
   tags: text("tags").array(), // Array of tags
   // Field tracking
-  fieldCoverage: integer("fieldCoverage"), // Percentage of fields filled (0-100)
-  requiredFieldsComplete: boolean("requiredFieldsComplete").default(false),
+  fieldCoverage: integer("fieldcoverage"), // Percentage of fields filled (0-100)
+  requiredFieldsComplete: boolean("required_fields_complete").default(false),
   // All raw source data
   sourceData: jsonb("source_data"),
 });
