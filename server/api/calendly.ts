@@ -74,16 +74,18 @@ async function syncAllEvents() {
     console.log('Current user organization URI:', organizationUri);
     console.log('Current user ID:', userId);
     
-    // Calculate date range for a full year (3 months back, 3 months forward)
+    // Calculate date range for a comprehensive history (2 years back, 1 year forward)
     const now = new Date();
-    const threeMonthsAgo = new Date(now);
-    threeMonthsAgo.setMonth(now.getMonth() - 3);
+    const twoYearsAgo = new Date(now);
+    twoYearsAgo.setFullYear(now.getFullYear() - 2);
     
-    const threeMonthsForward = new Date(now);
-    threeMonthsForward.setMonth(now.getMonth() + 3);
+    const oneYearForward = new Date(now);
+    oneYearForward.setFullYear(now.getFullYear() + 1);
     
-    const minStartTime = threeMonthsAgo.toISOString();
-    const maxStartTime = threeMonthsForward.toISOString();
+    const minStartTime = twoYearsAgo.toISOString();
+    const maxStartTime = oneYearForward.toISOString();
+    
+    console.log(`Using date range from ${twoYearsAgo.toDateString()} to ${oneYearForward.toDateString()} for comprehensive meeting data`);
     
     // Set initial pagination state
     let hasMore = true;
@@ -106,7 +108,7 @@ async function syncAllEvents() {
           user: userId,
           min_start_time: minStartTime,
           max_start_time: maxStartTime,
-          count: 10 // Start with a small number to test
+          count: 100 // Get maximum number of events allowed per page
         }
       });
       
@@ -116,6 +118,14 @@ async function syncAllEvents() {
       // If we got events, process them
       if (userEvents.length > 0) {
         totalEvents = userEventsResponse.data.pagination.count || userEvents.length;
+        
+        // Check if there's pagination for more events
+        const pagination = userEventsResponse.data.pagination;
+        if (pagination && pagination.next_page_token) {
+          console.log(`Found pagination token for more events: ${pagination.next_page_token}`);
+          pageToken = pagination.next_page_token;
+          hasMore = true;
+        }
         
         // Process these events
         for (const event of userEvents) {
