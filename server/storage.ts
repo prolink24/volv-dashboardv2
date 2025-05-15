@@ -103,7 +103,7 @@ export interface IStorage {
   updateMetrics(id: number, metrics: Partial<InsertMetrics>): Promise<Metrics | undefined>;
   getMetrics(id: number): Promise<Metrics | undefined>;
   getMetricsByDate(date: string, userId?: string): Promise<Metrics | undefined>;
-  getDashboardData(date: Date, userId?: string, role?: string): Promise<any>;
+  getDashboardData(date: Date | { startDate: Date, endDate: Date }, userId?: string, role?: string): Promise<any>;
 }
 
 // Implementation with database storage using Drizzle ORM
@@ -513,12 +513,29 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Dashboard data - builds dummy data for now, to be replaced with real implementation
-  async getDashboardData(date: Date, userId?: string, role?: string): Promise<any> {
-    console.log(`Fetching dashboard data for role: ${role || 'default'}, date: ${date.toISOString()}, userId: ${userId || 'all'}`);
+  async getDashboardData(date: Date | { startDate: Date, endDate: Date }, userId?: string, role?: string): Promise<any> {
+    // Handle both single date and date range
+    let startDate: Date, endDate: Date;
+    
+    if (date instanceof Date) {
+      // Single date provided
+      startDate = date;
+      endDate = date;
+      console.log(`Fetching dashboard data for role: ${role || 'default'}, date: ${date.toISOString()}, userId: ${userId || 'all'}`);
+    } else {
+      // Date range provided
+      startDate = date.startDate;
+      endDate = date.endDate;
+      console.log(`Fetching dashboard data for role: ${role || 'default'}, date range: ${startDate.toISOString()} to ${endDate.toISOString()}, userId: ${userId || 'all'}`);
+    }
     
     // Common base dashboard data
+    const dateValue = date instanceof Date ? 
+      date.toISOString() : 
+      { startDate: date.startDate.toISOString(), endDate: date.endDate.toISOString() };
+      
     const commonData = {
-      date: date.toISOString(),
+      date: dateValue,
       userId: userId || 'all',
       success: true,
       kpis: {

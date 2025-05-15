@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { DashboardProvider } from "@/providers/dashboard-provider";
+import { DateProvider } from "@/providers/date-context";
 
 import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
@@ -56,16 +57,18 @@ function Router() {
   );
 }
 
-// The App component now includes the necessary DashboardProvider
+// The App component now includes the necessary DateProvider and DashboardProvider
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <DashboardProvider>
-          <Toaster />
-          <DataFlowDebugger />
-          <Router />
-        </DashboardProvider>
+        <DateProvider>
+          <DashboardProvider>
+            <Toaster />
+            <DataFlowDebugger />
+            <Router />
+          </DashboardProvider>
+        </DateProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

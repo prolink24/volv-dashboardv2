@@ -274,12 +274,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   apiRouter.get("/enhanced-dashboard", cacheService.cacheMiddleware(600), async (req: Request, res: Response) => {
     try {
       const startTime = performance.now();
-      const dateStr = req.query.date as string || new Date().toISOString();
+      const dateStr = req.query.date as string;
+      const startDateStr = req.query.startDate as string;
+      const endDateStr = req.query.endDate as string;
       const userId = req.query.userId as string;
       const skipAttribution = req.query.skipAttribution === 'true';
       const forceFresh = req.query.forceFresh === 'true';
       
-      const date = new Date(dateStr);
+      // Support both single date and date range
+      let startDate: Date, endDate: Date;
+      
+      if (startDateStr && endDateStr) {
+        // Use date range if provided
+        startDate = new Date(startDateStr);
+        endDate = new Date(endDateStr);
+        console.log(`Fetching dashboard data for date range: ${startDate.toISOString()} to ${endDate.toISOString()}, userId: ${userId || 'all'}`);
+      } else if (dateStr) {
+        // Fall back to single date if provided
+        const singleDate = new Date(dateStr);
+        startDate = singleDate;
+        endDate = singleDate;
+        console.log(`Fetching dashboard data for date: ${singleDate.toISOString()}, userId: ${userId || 'all'}`);
+      } else {
+        // Default to current date if neither is provided
+        const today = new Date();
+        startDate = today;
+        endDate = today;
+        console.log(`Fetching dashboard data with default date: ${today.toISOString()}, userId: ${userId || 'all'}`);
+      }
       
       console.time('enhanced-dashboard-request');
       
@@ -303,7 +325,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // 1. First get basic dashboard data which should be fast
       console.time('get-dashboard-data');
-      const dashboardData = await storage.getDashboardData(date, userId);
+      const dashboardData = await storage.getDashboardData(
+        startDate === endDate ? startDate : { startDate, endDate }, 
+        userId
+      );
       console.timeEnd('get-dashboard-data');
       
       // Initial response structure without attribution
@@ -822,8 +847,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const dateStr = req.query.date as string || new Date().toISOString();
       const userId = req.query.userId as string;
       
-      const date = new Date(dateStr);
-      const metrics = await storage.getMetrics(date, userId);
+      // Here we're using getMetricsByDate which is expecting a string date
+      const metrics = await storage.getMetricsByDate(dateStr, userId);
       
       if (!metrics) {
         return res.status(404).json({ error: "Metrics not found" });
