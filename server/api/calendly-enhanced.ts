@@ -591,7 +591,9 @@ async function syncAllEvents(options = {}) {
             resumeToken: null, // We don't need page token anymore
             batchNumber: i,    // But we do need batch number
             completed: false,
-            message: 'Sync timeout reached during batch processing, resumable'
+            message: syncOptions.isResuming 
+              ? `Continuing batch processing: completed ${processedEvents}/${totalEvents} events. Resume at batch ${i}.`
+              : 'Sync timeout reached during batch processing, resumable'
           };
         }
         
@@ -749,8 +751,12 @@ async function syncAllEvents(options = {}) {
       completed: isComplete,
       resumeToken: syncState.nextPageToken,
       message: isComplete 
-        ? `Calendly sync completed successfully. Processed ${processedEvents} events, imported ${importedMeetings} meetings.` 
-        : `Calendly sync paused. Processed ${processedEvents}/${totalEvents} events so far. Resume token available.`
+        ? syncOptions.isResuming
+          ? `Resumed Calendly sync completed successfully. Processed ${processedEvents} events, imported ${importedMeetings} meetings with ${errors} errors.`
+          : `Calendly sync completed successfully. Processed ${processedEvents} events, imported ${importedMeetings} meetings with ${errors} errors.`
+        : syncOptions.isResuming
+          ? `Resumed sync paused. Processed ${processedEvents}/${totalEvents} events so far. Resume token saved for continuation.`
+          : `Calendly sync paused. Processed ${processedEvents}/${totalEvents} events so far. Resume token available.`
     };
   } catch (error) {
     console.error('Error in Calendly sync:', error);
@@ -774,7 +780,9 @@ async function syncAllEvents(options = {}) {
       processed: processedEvents,
       errors: errors + 1,
       resumeToken: syncState.nextPageToken,
-      message: `Calendly sync failed after processing ${processedEvents}/${totalEvents} events. Error: ${error.message || 'Unknown error'}`
+      message: syncOptions.isResuming
+        ? `Resumed Calendly sync failed after processing ${processedEvents}/${totalEvents} events. Error: ${error.message || 'Unknown error'}`
+        : `Calendly sync failed after processing ${processedEvents}/${totalEvents} events. Error: ${error.message || 'Unknown error'}`
     };
   }
 }
