@@ -348,10 +348,13 @@ async function syncAllEvents(options = {}) {
   const defaultOptions = {
     batchSize: 10,          // How many events to process in one batch (increased from 5)
     resumeFromToken: null,  // Resume from a specific page token
+    resumeFromBatch: 0,     // Resume from a specific batch
     syncLimit: 0,           // Limit number of events to sync (0 = all)
     timeout: 540000,        // Timeout in ms (9 minutes to allow for clean shutdown)
     retryCount: 3,          // Number of retry attempts for failed requests
-    retryDelay: 1000        // Delay between retries in ms
+    retryDelay: 1000,       // Delay between retries in ms
+    adaptiveProcessing: true, // Enable adaptive processing speed
+    logProgress: true       // Log detailed progress information
   };
   
   const syncOptions = { ...defaultOptions, ...options };
@@ -368,8 +371,11 @@ async function syncAllEvents(options = {}) {
   // Storage for restart information
   let syncState = {
     nextPageToken: syncOptions.resumeFromToken,
-    batchNumber: 0,
-    hasMore: true
+    batchNumber: syncOptions.resumeFromBatch,
+    currentPage: 1,
+    hasMore: true,
+    allPages: [], // Store all pagination tokens for robust resume
+    completedBatches: [] // Track which batches have been completed
   };
 
   try {
@@ -410,52 +416,196 @@ async function syncAllEvents(options = {}) {
       syncState
     });
     
-    // Get the first batch of events (or resume from a token)
-    const firstBatch = await getNextEventBatch(
-      userId, 
-      minStartTime, 
-      maxStartTime, 
-      syncState.nextPageToken, 
-      100
-    );
-    
-    if (!firstBatch.success) {
-      throw new Error(`Failed to fetch events: ${firstBatch.error}`);
+    if (syncOptions.logProgress) {
+      console.log(`Starting Calendly sync with date range from ${minStartTime} to ${maxStartTime}`);
+      if (syncState.nextPageToken) {
+        console.log(`Resuming from page token: ${syncState.nextPageToken.substring(0, 15)}...`);
+      }
     }
     
-    // Update total events count
-    totalEvents = firstBatch.totalCount;
-    console.log(`Found ${totalEvents} events for the user`);
+    // Keep track of all events to process, we'll build this list across multiple pages
+    let allEvents = [];
+    let currentPageToken = syncState.nextPageToken;
+    let currentPage = syncState.currentPage;
+    let hasMorePages = true;
+    
+    // Keep fetching pages until we get all the events
+    while (hasMorePages) {
+      if (syncOptions.logProgress) {
+        console.log(`Fetching page ${currentPage} of events${currentPageToken ? ' (with pagination token)' : ''}`);
+      }
+      
+      // Check if we've exceeded the timeout
+      if (Date.now() - startTime > syncOptions.timeout * 0.7) { // Use 70% of timeout for fetching
+        console.log('Sync timeout threshold reached while fetching pages, saving state for future resume');
+        // Save state for future resume
+        syncState.nextPageToken = currentPageToken;
+        syncState.currentPage = currentPage;
+        
+        // Update sync status before exiting
+        syncStatus.updateCalendlySyncStatus({
+          totalEvents,
+          processedEvents,
+          importedMeetings,
+          errors,
+          syncState
+        });
+        
+        return {
+          success: true,
+          count: processedEvents,
+          total: totalEvents,
+          processed: processedEvents,
+          errors,
+          resumeToken: currentPageToken,
+          completed: false,
+          message: 'Sync timeout reached while fetching pages, resumable'
+        };
+      }
+      
+      // Get this page of events
+      const eventBatch = await getNextEventBatch(
+        userId, 
+        minStartTime, 
+        maxStartTime, 
+        currentPageToken, 
+        100,
+        {
+          retryCount: syncOptions.retryCount,
+          retryDelay: syncOptions.retryDelay
+        }
+      );
+      
+      if (!eventBatch.success) {
+        console.error(`Failed to fetch events page ${currentPage}: ${eventBatch.error}`);
+        syncStatus.updateCalendlySyncStatus({
+          totalEvents,
+          processedEvents,
+          importedMeetings,
+          errors: errors + 1,
+          syncState,
+          error: `Failed to fetch events: ${eventBatch.error}`
+        });
+        
+        return {
+          success: false,
+          error: `Failed to fetch events: ${eventBatch.error}`,
+          count: processedEvents,
+          total: totalEvents,
+          processed: processedEvents,
+          errors: errors + 1,
+          resumeToken: currentPageToken
+        };
+      }
+      
+      // If this is the first page, update the total events count
+      if (currentPage === 1) {
+        totalEvents = eventBatch.totalCount;
+        console.log(`Found ${totalEvents} events for the user`);
+      }
+      
+      // Add these events to our collection
+      allEvents = allEvents.concat(eventBatch.events);
+      
+      // Store this page token in our ordered page list for resuming
+      if (currentPageToken) {
+        syncState.allPages.push(currentPageToken);
+      }
+      
+      // Update for next iteration
+      currentPageToken = eventBatch.nextPageToken;
+      hasMorePages = !!currentPageToken;
+      currentPage++;
+      
+      if (syncOptions.logProgress) {
+        console.log(`Fetched ${eventBatch.events.length} events, ${allEvents.length}/${totalEvents} total (${(allEvents.length / totalEvents * 100).toFixed(1)}%)`);
+      }
+      
+      // If we have a sync limit and we've reached it, stop paging
+      if (syncOptions.syncLimit > 0 && allEvents.length >= syncOptions.syncLimit) {
+        console.log(`Reached sync limit of ${syncOptions.syncLimit} events, stopping pagination`);
+        hasMorePages = false;
+        allEvents = allEvents.slice(0, syncOptions.syncLimit);
+      }
+      
+      // Update sync status periodically
+      syncStatus.updateCalendlySyncStatus({
+        totalEvents,
+        processedEvents,
+        importedMeetings,
+        errors,
+        syncState
+      });
+    }
     
     // If we received events, process them in batches
-    if (firstBatch.events.length > 0) {
+    if (allEvents.length > 0) {
       // Break the events into batches
       const eventBatches = [];
       const batchSize = syncOptions.batchSize;
       
-      for (let i = 0; i < firstBatch.events.length; i += batchSize) {
-        eventBatches.push(firstBatch.events.slice(i, i + batchSize));
+      for (let i = 0; i < allEvents.length; i += batchSize) {
+        eventBatches.push(allEvents.slice(i, i + batchSize));
       }
       
-      console.log(`Split ${firstBatch.events.length} events into ${eventBatches.length} batches of size ${batchSize}`);
+      console.log(`Split ${allEvents.length} events into ${eventBatches.length} batches of size ${batchSize}`);
+      
+      // Start from resumeBatch if specified
+      const startBatch = syncState.batchNumber || 0;
       
       // Process each batch
-      for (let i = 0; i < eventBatches.length; i++) {
-        // Check if we've exceeded the timeout
-        if (Date.now() - startTime > syncOptions.timeout) {
-          console.log('Sync timeout reached, saving state for future resume');
-          // Save state for future resume
-          syncState.nextPageToken = firstBatch.nextPageToken;
-          syncState.batchNumber = i;
-          break;
+      for (let i = startBatch; i < eventBatches.length; i++) {
+        // Skip completed batches if resuming
+        if (syncState.completedBatches.includes(i)) {
+          if (syncOptions.logProgress) {
+            console.log(`Skipping batch ${i} as it was completed in a previous run`);
+          }
+          continue;
         }
         
-        // Process the batch
+        // Check if we've exceeded the timeout
+        if (Date.now() - startTime > syncOptions.timeout * 0.9) { // Use 90% of timeout for processing
+          console.log('Sync timeout reached during batch processing, saving state for future resume');
+          
+          // Save state for future resume
+          syncState.nextPageToken = null; // We already have all the events
+          syncState.batchNumber = i;
+          
+          // Update sync status
+          syncStatus.updateCalendlySyncStatus({
+            totalEvents,
+            processedEvents,
+            importedMeetings,
+            errors,
+            syncState
+          });
+          
+          return {
+            success: true,
+            count: processedEvents,
+            total: totalEvents,
+            processed: processedEvents,
+            errors,
+            resumeToken: null, // We don't need page token anymore
+            batchNumber: i,    // But we do need batch number
+            completed: false,
+            message: 'Sync timeout reached during batch processing, resumable'
+          };
+        }
+        
+        // Process the batch with advanced retry and logging options
         const batchResults = await processEventBatch(
           eventBatches[i],
           userId,
-          syncState.batchNumber + i,
-          batchSize
+          i, // Use actual batch index, not offset from resume position
+          batchSize,
+          {
+            initialDelay: 200,           // Increased from 100ms
+            maxDelay: 8000,              // Increased from 5000ms for more tolerance
+            adaptiveDelay: syncOptions.adaptiveProcessing,
+            retryAttempts: syncOptions.retryCount,
+            logProgress: syncOptions.logProgress
+          }
         );
         
         // Update counters
@@ -463,7 +613,10 @@ async function syncAllEvents(options = {}) {
         importedMeetings += batchResults.importedMeetings;
         errors += batchResults.errors;
         
-        // Update sync status
+        // Mark this batch as completed
+        syncState.completedBatches.push(i);
+        
+        // Update sync status periodically
         syncStatus.updateCalendlySyncStatus({
           totalEvents,
           processedEvents,
