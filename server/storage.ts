@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { and, eq, desc, or, isNotNull, sql, exists, gte, lte } from "drizzle-orm";
+import { and, eq, desc, or, isNotNull, sql, exists, gte, lte, like } from "drizzle-orm";
 import { 
   users, 
   contacts, 
@@ -32,7 +32,6 @@ import {
   type DealUserAssignment,
   type InsertDealUserAssignment
 } from "@shared/schema";
-import { eq, and, like, desc, sql } from "drizzle-orm";
 
 // Define interface for storage operations
 export interface IStorage {
@@ -208,6 +207,17 @@ export class DatabaseStorage implements IStorage {
     const result = await db.select({ count: sql<number>`COUNT(*)` }).from(contacts);
     return result[0]?.count || 0;
   }
+  
+  async getRecentContacts(limit: number, startDate: string, endDate: string): Promise<Contact[]> {
+    return db.select()
+      .from(contacts)
+      .where(and(
+        gte(contacts.createdAt, startDate),
+        lte(contacts.createdAt, endDate)
+      ))
+      .orderBy(desc(contacts.createdAt))
+      .limit(limit);
+  }
 
   // Activity operations
   async getActivity(id: number): Promise<Activity | undefined> {
@@ -256,6 +266,17 @@ export class DatabaseStorage implements IStorage {
   async getActivitiesCount(): Promise<number> {
     const result = await db.select({ count: sql<number>`COUNT(*)` }).from(activities);
     return result[0]?.count || 0;
+  }
+  
+  async getRecentActivities(limit: number, startDate: string, endDate: string): Promise<Activity[]> {
+    return db.select()
+      .from(activities)
+      .where(and(
+        gte(activities.date, startDate),
+        lte(activities.date, endDate)
+      ))
+      .orderBy(desc(activities.date))
+      .limit(limit);
   }
 
   // Deal operations
