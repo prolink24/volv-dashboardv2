@@ -180,8 +180,8 @@ export async function getMeetingsByDateRange(dateRange: DateRange): Promise<Meet
     .from(meetings)
     .where(
       and(
-        gte(meetings.date, dateRange.startDate),
-        lte(meetings.date, dateRange.endDate)
+        gte(meetings.startTime, dateRange.startDate),
+        lte(meetings.startTime, dateRange.endDate)
       )
     );
 }
@@ -197,8 +197,8 @@ export async function getFormsByDateRange(dateRange: DateRange): Promise<Form[]>
     .from(forms)
     .where(
       and(
-        gte(forms.submission_date, dateRange.startDate),
-        lte(forms.submission_date, dateRange.endDate)
+        gte(forms.submittedAt, dateRange.startDate),
+        lte(forms.submittedAt, dateRange.endDate)
       )
     );
 }
@@ -217,7 +217,7 @@ export async function getMetricsByDateRange(
   const dateRangeStr = formatDateRange(dateRange);
   
   // Build query conditions
-  const conditions = [eq(metrics.date_range, dateRangeStr)];
+  const conditions = [eq(metrics.dateRange, dateRangeStr)];
   
   // Add user filter if provided
   if (userId) {
@@ -257,7 +257,7 @@ export async function saveMetricsForDateRange(
       .update(metrics)
       .set({
         ...metricsData,
-        date_range: dateRangeStr,
+        dateRange: dateRangeStr,
         userId: userId,
       })
       .where(eq(metrics.id, existingMetrics.id))
@@ -270,8 +270,8 @@ export async function saveMetricsForDateRange(
       .insert(metrics)
       .values({
         ...metricsData,
-        date: new Date(), // Current date as the creation date
-        date_range: dateRangeStr,
+        createdAt: new Date(), // Current date as the creation date
+        dateRange: dateRangeStr,
         userId: userId,
       })
       .returning();
