@@ -192,7 +192,8 @@ export async function syncData() {
  * @returns Promise resolving to cache invalidation result
  */
 export async function invalidateDashboardData() {
-  const queryClient = window.__QUERY_CLIENT__;
+  // Import queryClient directly from lib
+  const queryClient = require('@/lib/queryClient').queryClient;
   if (!queryClient) {
     throw new Error('Query client not available');
   }
