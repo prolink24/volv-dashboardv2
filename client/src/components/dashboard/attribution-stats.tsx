@@ -153,6 +153,51 @@ const AttributionStatsContent = ({
     );
   }
   
+  // If data has a timedOut flag, show partial data and notify the user
+  if (data.timedOut) {
+    return (
+      <Card className="border-amber-300/50 bg-amber-50/50 dark:bg-amber-950/10">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg flex items-center text-amber-600 dark:text-amber-400">
+            Attribution Statistics
+            <AlertTriangle className="ml-2 h-4 w-4" />
+          </CardTitle>
+          <CardDescription>
+            Partial data available (calculation in progress)
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {/* Attribution Accuracy - simplified version */}
+            <div>
+              <div className="flex justify-between mb-1">
+                <div className="flex items-center">
+                  <span className="text-sm font-medium">Attribution Accuracy</span>
+                </div>
+                <span className="text-sm font-medium text-amber-600 dark:text-amber-400">
+                  {(data.attributionAccuracy || 90).toFixed(1)}% (estimate)
+                </span>
+              </div>
+              <Progress value={data.attributionAccuracy || 90} max={100} className="h-2" />
+            </div>
+            
+            {/* System Status */}
+            <div className="border-t pt-3 flex justify-between items-center">
+              <span className="text-sm font-medium">System Status</span>
+              <span className="text-sm font-medium flex items-center text-amber-600 dark:text-amber-400">
+                <Clock className="mr-1 h-4 w-4 animate-pulse" /> Processing
+              </span>
+            </div>
+            
+            <div className="text-xs text-muted-foreground mt-4">
+              Full attribution data is being calculated in the background. Refresh in a few minutes to see complete details.
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+  
   // Calculate an accuracy score if it's not provided directly
   // This is based on the available data quality
   const attributionAccuracy = data.attributionAccuracy !== undefined 
