@@ -48,9 +48,9 @@ export function calculateContactFieldCoverage(contact: Contact): number {
     'timezone',
     'language',
     'leadScore',
-    'qualification_status',
-    'lead_temperature',
-    'first_touch_date'
+    'qualificationStatus',
+    'leadTemperature',
+    'firstTouchDate'
   ];
 
   let filledRequiredCount = 0;
@@ -326,7 +326,7 @@ export async function updateAllContactsFieldCoverage(): Promise<void> {
     await db.update(contacts)
       .set({ 
         fieldCoverage: coverage, 
-        required_fields_complete: requiredFieldsComplete 
+        requiredFieldsComplete: requiredFieldsComplete 
       })
       .where(eq(contacts.id, contact.id));
     

@@ -113,12 +113,12 @@ export function getDateRangePresets(): Record<string, DateRange> {
 /**
  * Filter contacts by date range
  * @param dateRange DateRange object
- * @param dateField Which date field to filter on ('created_date', 'updated_date', 'last_activity_date', etc.)
+ * @param dateField Which date field to filter on ('createdAt', 'updatedAt', 'lastActivityDate', etc.)
  * @returns Array of contacts within the date range
  */
 export async function getContactsByDateRange(
   dateRange: DateRange,
-  dateField: keyof Contact = 'created_date'
+  dateField: keyof Contact = 'createdAt'
 ): Promise<Contact[]> {
   return db
     .select()
@@ -151,12 +151,12 @@ export async function getActivitiesByDateRange(dateRange: DateRange): Promise<Ac
 /**
  * Filter deals by date range
  * @param dateRange DateRange object
- * @param dateField Which date field to filter on ('created_date', 'updated_date', 'close_date', etc.)
+ * @param dateField Which date field to filter on ('createdAt', 'updatedAt', 'closeDate', etc.)
  * @returns Array of deals within the date range
  */
 export async function getDealsByDateRange(
   dateRange: DateRange,
-  dateField: keyof Deal = 'created_date'
+  dateField: keyof Deal = 'createdAt'
 ): Promise<Deal[]> {
   return db
     .select()
