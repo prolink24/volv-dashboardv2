@@ -29,7 +29,7 @@ const DashboardFilters = () => {
     const day = selectedDate.getDate();
     const monthName = format(selectedDate, "MMMM");
     // Keep the format with month and year for display, but include the actual day
-    return `${year}-${month < 10 ? '0' + month : month}-${day < 10 ? '0' + day : day} | ${monthName}`;
+    return `${year}-${month < 10 ? '0' + month : month}-${day < 10 ? '0' + day : day} | ${monthName} ${day}`;
   };
   
   // Set initial date to current month on first load
@@ -78,6 +78,9 @@ const DashboardFilters = () => {
             selected={selectedDate}
             onSelect={(newDate) => handleDateSelect(newDate)}
             initialFocus
+            fromMonth={new Date(2024, 0)} // Allow selecting any date from Jan 2024
+            toMonth={new Date(2025, 11)}  // to Dec 2025
+            disableNavigation={false}
           />
         </PopoverContent>
       </Popover>

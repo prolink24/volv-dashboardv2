@@ -74,7 +74,32 @@ export function useDashboardData({
   const queryParams = new URLSearchParams();
   
   if (date) {
-    queryParams.append("date", date);
+    // Convert the date string to a Date object and pass as ISO string
+    try {
+      // Parse date from our custom format (YYYY-MM-DD | Month Day)
+      const dateParts = date.split('|')[0].trim().split('-');
+      if (dateParts.length === 3) {
+        const year = parseInt(dateParts[0]);
+        const month = parseInt(dateParts[1]) - 1; // JavaScript months are 0-indexed
+        const day = parseInt(dateParts[2]);
+        
+        const dateObj = new Date(year, month, day);
+        if (!isNaN(dateObj.getTime())) {
+          // Use the ISO string format for the API
+          queryParams.append("date", dateObj.toISOString());
+          console.log(`Converted date parameter from "${date}" to "${dateObj.toISOString()}"`);
+        } else {
+          console.error(`Invalid date format: ${date}`);
+          queryParams.append("date", date); // Use as-is if parsing fails
+        }
+      } else {
+        // Use as-is for backward compatibility
+        queryParams.append("date", date);
+      }
+    } catch (error) {
+      console.error(`Error parsing date "${date}":`, error);
+      queryParams.append("date", date); // Use as-is if parsing fails
+    }
   }
   
   if (userId) {
