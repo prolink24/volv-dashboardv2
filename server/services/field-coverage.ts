@@ -470,27 +470,27 @@ export async function getOverallFieldCoverage(): Promise<{
 }> {
   // Get average field coverage for contacts
   const contactsResult = await db.select({
-    avg: db.fn.avg(contacts.field_coverage)
+    avg: db.fn.avg(contacts.fieldCoverage)
   }).from(contacts);
   
   // Get average field coverage for activities
   const activitiesResult = await db.select({
-    avg: db.fn.avg(activities.field_coverage)
+    avg: db.fn.avg(activities.fieldCoverage)
   }).from(activities);
   
   // Get average field coverage for deals
   const dealsResult = await db.select({
-    avg: db.fn.avg(deals.field_coverage)
+    avg: db.fn.avg(deals.fieldCoverage)
   }).from(deals);
   
   // Get average field coverage for meetings
   const meetingsResult = await db.select({
-    avg: db.fn.avg(meetings.field_coverage)
+    avg: db.fn.avg(meetings.fieldCoverage)
   }).from(meetings);
   
   // Get average field coverage for forms
   const formsResult = await db.select({
-    avg: db.fn.avg(forms.field_coverage)
+    avg: db.fn.avg(forms.fieldCoverage)
   }).from(forms);
   
   // Convert results to numbers, defaulting to 0 if null
@@ -536,9 +536,9 @@ export async function getIncompleteContacts(limit: number = 100): Promise<Contac
     .from(contacts)
     .where(
       or(
-        eq(contacts.required_fields_complete, false),
-        isNull(contacts.required_fields_complete),
-        lt(contacts.field_coverage, 70)
+        eq(contacts.requiredFieldsComplete, false),
+        isNull(contacts.requiredFieldsComplete),
+        lt(contacts.fieldCoverage, 70)
       )
     )
     .limit(limit);
