@@ -325,19 +325,19 @@ async function getCalendlyCustomFields(): Promise<FieldInfo[]> {
     const customFields = new Map<string, FieldInfo>();
     
     for (const meeting of calendlyMeetings) {
-      // Process any custom questions/answers
-      if (meeting.questions) {
-        const questions = meeting.questions as Record<string, any>;
+      // Extract metadata fields from the metadata field
+      if (meeting.metadata) {
+        const metadata = meeting.metadata as Record<string, any>;
         
-        for (const [key, value] of Object.entries(questions)) {
-          if (!customFields.has(`calendly_question_${key}`)) {
-            customFields.set(`calendly_question_${key}`, {
-              id: `calendly_question_${key}`,
+        for (const [key, value] of Object.entries(metadata)) {
+          if (!customFields.has(`calendly_metadata_${key}`)) {
+            customFields.set(`calendly_metadata_${key}`, {
+              id: `calendly_metadata_${key}`,
               name: `Calendly: ${key}`,
-              description: `Custom question from Calendly: ${key}`,
-              fieldType: 'text',
+              description: `Metadata field from Calendly: ${key}`,
+              fieldType: typeof value === 'string' ? 'text' : typeof value === 'number' ? 'number' : 'object',
               source: 'calendly',
-              path: `questions.${key}`,
+              path: `metadata.${key}`,
               usageCount: 1,
               suggestedWith: ['meeting', 'scheduling'],
               metadata: {
@@ -347,7 +347,7 @@ async function getCalendlyCustomFields(): Promise<FieldInfo[]> {
               }
             });
           } else {
-            const existing = customFields.get(`calendly_question_${key}`)!;
+            const existing = customFields.get(`calendly_metadata_${key}`)!;
             existing.usageCount += 1;
           }
         }

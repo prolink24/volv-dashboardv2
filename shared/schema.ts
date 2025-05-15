@@ -217,16 +217,8 @@ export const meetings = pgTable("meetings", {
   // Rescheduling and cancellation
   rescheduled: boolean("rescheduled").default(false),
   canceledAt: timestamp("canceled_at"),
-  cancelReason: text("cancel_reason"),
-  // Custom questions and answers
-  questions: jsonb("questions"), // Questions asked during booking
-  answers: jsonb("answers"), // Answers to questions
-  // UTM and tracking
-  utmSource: text("utm_source"),
-  utmMedium: text("utm_medium"),
-  utmCampaign: text("utm_campaign"),
-  utmContent: text("utm_content"),
-  utmTerm: text("utm_term"),
+
+
   // Field tracking
   fieldCoverage: integer("fieldcoverage"), // Percentage of fields filled (0-100)
   // All other metadata
