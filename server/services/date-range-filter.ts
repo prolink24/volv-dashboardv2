@@ -142,8 +142,8 @@ export async function getActivitiesByDateRange(dateRange: DateRange): Promise<Ac
     .from(activities)
     .where(
       and(
-        gte(activities.date, dateRange.startDate),
-        lte(activities.date, dateRange.endDate)
+        gte(activities.createdAt, dateRange.startDate),
+        lte(activities.createdAt, dateRange.endDate)
       )
     );
 }
