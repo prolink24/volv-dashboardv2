@@ -358,6 +358,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       console.timeEnd('get-dashboard-data');
       
+      // Get missing data properties or provide empty arrays
+      const activities = dashboardData?.activities || [];
+      const deals = dashboardData?.deals || [];
+      const contacts = dashboardData?.contacts || [];
+      const meetings = dashboardData?.meetings || [];
+      const salesTeam = dashboardData?.salesTeam || [];
+      
       // Initial response structure without attribution
       const enhancedDashboard: any = {
         ...dashboardData,
@@ -378,7 +385,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           dealStats: {},
           insights: {},
           modelStats: {}
-        }
+        },
+        // Add missing properties required by the frontend components
+        activities,
+        deals,
+        contacts,
+        meetings,
+        salesTeam
       };
       
       // 2. Get attribution data only if not skipped
