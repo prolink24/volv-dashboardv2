@@ -150,7 +150,25 @@ async function syncAllLeads(resetMode: boolean = false) {
               status: lead.status_label || 'unknown',
               sourceId: lead.id,
               sourceData: lead,
-              createdAt: new Date(lead.date_created) // Pass Date object, not ISO string
+              createdAt: new Date(lead.date_created), // Pass Date object, not ISO string
+              title: '', // Will be populated from contacts if available
+              address: '',
+              city: '',
+              state: '',
+              zipcode: '',
+              country: '',
+              // Additional fields for enhanced data collection
+              lastActivityDate: lead.date_last_communication ? new Date(lead.date_last_communication) : null,
+              assignedTo: lead.assigned_to_name || null,
+              linkedInUrl: '',
+              twitterHandle: '',
+              secondaryEmail: '',
+              secondaryPhone: '',
+              notes: '',
+              timezone: '',
+              language: '',
+              // Store all custom fields in metadata
+              metadata: {}
             };
             
             // Extract email if available
@@ -158,6 +176,10 @@ async function syncAllLeads(resetMode: boolean = false) {
               for (const contact of lead.contacts) {
                 if (contact.emails && contact.emails.length > 0) {
                   contactData.email = contact.emails[0].email;
+                  // Also capture secondary email if available
+                  if (contact.emails.length > 1) {
+                    contactData.secondaryEmail = contact.emails[1].email;
+                  }
                   break;
                 }
               }
@@ -168,9 +190,102 @@ async function syncAllLeads(resetMode: boolean = false) {
               for (const contact of lead.contacts) {
                 if (contact.phones && contact.phones.length > 0) {
                   contactData.phone = contact.phones[0].phone;
+                  // Also capture secondary phone if available
+                  if (contact.phones.length > 1) {
+                    contactData.secondaryPhone = contact.phones[1].phone;
+                  }
                   break;
                 }
               }
+              
+              // Extract other contact data like title
+              for (const contact of lead.contacts) {
+                if (contact.title) {
+                  contactData.title = contact.title;
+                  break;
+                }
+              }
+              
+              // Extract address information
+              for (const contact of lead.contacts) {
+                if (contact.addresses && contact.addresses.length > 0) {
+                  const address = contact.addresses[0];
+                  contactData.address = address.street || '';
+                  contactData.city = address.city || '';
+                  contactData.state = address.state || '';
+                  contactData.zipcode = address.zipcode || '';
+                  contactData.country = address.country || '';
+                  break;
+                }
+              }
+            }
+            
+            // Extract URLs and social profiles
+            if (lead.urls && lead.urls.length > 0) {
+              for (const url of lead.urls) {
+                const urlLower = url.url.toLowerCase();
+                if (urlLower.includes('linkedin.com')) {
+                  contactData.linkedInUrl = url.url;
+                } else if (urlLower.includes('twitter.com')) {
+                  contactData.twitterHandle = url.url.split('/').pop();
+                }
+              }
+            }
+            
+            // Extract custom fields
+            if (lead.custom && typeof lead.custom === 'object') {
+              // Store all custom fields in the metadata
+              const customData = {};
+              
+              for (const [fieldId, fieldValue] of Object.entries(lead.custom)) {
+                customData[fieldId] = fieldValue;
+                
+                // Map certain custom fields to specific contact fields based on common naming patterns
+                const fieldNameLower = fieldId.toLowerCase();
+                
+                // Map to common fields when possible
+                if (fieldNameLower.includes('title') || fieldNameLower.includes('job_title') || fieldNameLower.includes('position')) {
+                  if (!contactData.title && fieldValue) {
+                    contactData.title = String(fieldValue);
+                  }
+                }
+                
+                if (fieldNameLower.includes('linkedin')) {
+                  if (!contactData.linkedInUrl && fieldValue) {
+                    contactData.linkedInUrl = String(fieldValue);
+                  }
+                }
+                
+                if (fieldNameLower.includes('twitter')) {
+                  if (!contactData.twitterHandle && fieldValue) {
+                    contactData.twitterHandle = String(fieldValue);
+                  }
+                }
+                
+                if (fieldNameLower.includes('timezone') || fieldNameLower.includes('time_zone')) {
+                  if (fieldValue) {
+                    contactData.timezone = String(fieldValue);
+                  }
+                }
+                
+                if (fieldNameLower.includes('language') || fieldNameLower.includes('preferred_language')) {
+                  if (fieldValue) {
+                    contactData.language = String(fieldValue);
+                  }
+                }
+                
+                if (fieldNameLower.includes('note') || fieldNameLower.includes('notes')) {
+                  if (fieldValue) {
+                    contactData.notes = String(fieldValue);
+                  }
+                }
+              }
+              
+              // Store all custom fields in metadata
+              contactData.metadata = {
+                ...contactData.metadata,
+                custom_fields: customData
+              };
             }
             
             // Check if we have an email (required for matching across platforms)
@@ -488,15 +603,55 @@ async function syncLeadOpportunities(leadId: string, contactId: number) {
         // Remove currency symbols, commas, and other non-numeric characters (except decimal point)
         let cleanValue = valueStr.replace(/[^0-9.]/g, '');
         
+        // Process custom fields to extract important financial metrics
+        let cashCollected = null;
+        let contractedValue = null;
+        let valuePeriod = opportunity.value_period || null;
+        let valueCurrency = opportunity.value_currency || 'USD';
+        
+        // Look for custom fields related to cash_collected and contracted_value
+        if (opportunity.custom && typeof opportunity.custom === 'object') {
+          // Extract all custom fields from the opportunity
+          for (const [fieldId, fieldValue] of Object.entries(opportunity.custom)) {
+            // This is the best way to find field values without knowing the field IDs in advance
+            const fieldNameLower = fieldId.toLowerCase();
+            
+            // Look for cash collected field
+            if (fieldNameLower.includes('cash_collected') || 
+                fieldNameLower.includes('cash_collection') || 
+                fieldNameLower.includes('collected') || 
+                fieldNameLower.includes('payment')) {
+              if (fieldValue) {
+                // Clean the value just like we did for the main value
+                const valueString = String(fieldValue).trim();
+                cashCollected = valueString.replace(/[^0-9.]/g, '');
+              }
+            }
+            
+            // Look for contracted value field
+            if (fieldNameLower.includes('contracted_value') || 
+                fieldNameLower.includes('contract_value') || 
+                fieldNameLower.includes('total_value') || 
+                fieldNameLower.includes('full_value')) {
+              if (fieldValue) {
+                // Clean the value
+                const valueString = String(fieldValue).trim();
+                contractedValue = valueString.replace(/[^0-9.]/g, '');
+              }
+            }
+          }
+        }
+        
         // Store original formatted value for display purposes in metadata
         const metadata = {
           status_label: opportunity.status_label,
-          value_currency: opportunity.value_currency,
-          value_period: opportunity.value_period,
+          value_currency: valueCurrency,
+          value_period: valuePeriod,
           confidence: opportunity.confidence,
           lead_name: opportunity.lead_name,
           opportunity_data: opportunity,
-          original_value_formatted: opportunity.value_formatted
+          original_value_formatted: opportunity.value_formatted,
+          custom_fields: opportunity.custom || {}
         };
         
         // Extract relevant deal data
@@ -508,6 +663,11 @@ async function syncLeadOpportunities(leadId: string, contactId: number) {
           closeDate: opportunity.date_won ? new Date(opportunity.date_won).toISOString() : null,
           assignedTo: opportunity.assigned_to_name || null,
           closeId: opportunity.id,
+          // Add explicit financial fields
+          cashCollected: cashCollected,
+          contractedValue: contractedValue || cleanValue, // Fall back to regular value if no specific contracted value
+          valuePeriod: valuePeriod,
+          valueCurrency: valueCurrency,
           metadata
         };
         
