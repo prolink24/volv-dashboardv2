@@ -50,6 +50,7 @@ export interface IStorage {
   getContacts(limit?: number, offset?: number): Promise<Contact[]>;
   searchContacts(query: string, limit?: number, offset?: number): Promise<Contact[]>;
   getContactsCount(): Promise<number>;
+  getAllContacts(): Promise<Contact[]>;
 
   // Activity operations
   getActivity(id: number): Promise<Activity | undefined>;
@@ -74,6 +75,7 @@ export interface IStorage {
   updateMeeting(id: number, meeting: Partial<InsertMeeting>): Promise<Meeting | undefined>;
   getMeetingsByContactId(contactId: number): Promise<Meeting[]>;
   getMeetingsCount(): Promise<number>;
+  getAllMeetings(): Promise<Meeting[]>;
 
   // Form operations
   getForm(id: number): Promise<Form | undefined>;
@@ -362,6 +364,15 @@ export class DatabaseStorage implements IStorage {
     return newMeeting;
   }
 
+  async updateMeeting(id: number, meeting: Partial<InsertMeeting>): Promise<Meeting | undefined> {
+    const [updatedMeeting] = await db
+      .update(meetings)
+      .set(meeting)
+      .where(eq(meetings.id, id))
+      .returning();
+    return updatedMeeting || undefined;
+  }
+
   async getMeetingsByContactId(contactId: number): Promise<Meeting[]> {
     return db
       .select()
@@ -384,6 +395,10 @@ export class DatabaseStorage implements IStorage {
       ))
       .orderBy(desc(meetings.startTime))
       .limit(limit);
+  }
+  
+  async getAllMeetings(): Promise<Meeting[]> {
+    return db.select().from(meetings).orderBy(desc(meetings.startTime));
   }
 
   // Form operations
