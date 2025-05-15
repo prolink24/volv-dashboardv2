@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useDateRange, DateRange } from "@/providers/date-context";
+import { useDateRange, formatDateRangeForApi, type DateRange } from "@/hooks/use-date-range";
 import { apiRequest } from "@/lib/queryClient";
 
 /**
@@ -161,9 +161,8 @@ export interface DashboardData {
 function getDateRangeParams(dateRange: DateRange, additionalParams: Record<string, string> = {}): string {
   const params = new URLSearchParams();
   
-  // Always add date range parameters
-  params.append('startDate', dateRange.startDate.toISOString());
-  params.append('endDate', dateRange.endDate.toISOString());
+  // Add date range as a single parameter in the format YYYY-MM-DD_YYYY-MM-DD
+  params.append('dateRange', formatDateRangeForApi(dateRange));
   
   // Add any additional parameters
   Object.entries(additionalParams).forEach(([key, value]) => {
