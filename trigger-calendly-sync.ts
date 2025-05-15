@@ -6,10 +6,11 @@
  */
 
 import calendlyAPI from './server/api/calendly';
+import calendlyEnhanced from './server/api/calendly-enhanced';
 import { storage } from './server/storage';
 
 async function triggerCalendlySync() {
-  console.log("=== Starting Full Calendly Sync ===\n");
+  console.log("=== Starting Full Calendly Sync with Enhanced Processor ===\n");
   
   try {
     // First, test API connection
@@ -28,16 +29,29 @@ async function triggerCalendlySync() {
     const beforeCount = await getMeetingCounts();
     console.log(`\nBefore sync - Total meetings: ${beforeCount.total}, Calendly meetings: ${beforeCount.calendly}`);
     
-    // Trigger full sync
-    console.log("\n⏳ Starting full Calendly events sync...");
+    // Trigger full sync with enhanced version
+    console.log("\n⏳ Starting full Calendly sync with batch processing and resume capability...");
     console.log("This may take a few minutes depending on the number of events...");
     
-    const syncResult = await calendlyAPI.syncAllEvents();
+    // Configure the sync with optimized settings
+    const syncOptions = {
+      batchSize: 5,        // Process 5 events at a time to avoid timeouts
+      timeout: 540000,     // 9 minutes (allow for clean shutdown before Replit's 10-minute limit)
+      resumeFromToken: null // Start from the beginning
+    };
     
-    console.log(`\n✅ Sync completed!`);
-    console.log(`Processed ${syncResult.total} events`);
+    const syncResult = await calendlyEnhanced.syncAllEvents(syncOptions);
+    
+    console.log(`\n${syncResult.completed ? '✅ Sync completed!' : '⚠️ Sync partially completed (can be resumed)'}`);
+    console.log(`Total events found: ${syncResult.total}`);
+    console.log(`Processed ${syncResult.processed} events`);
     console.log(`Imported ${syncResult.count} meetings`);
     console.log(`Errors: ${syncResult.errors}`);
+    
+    if (!syncResult.completed && syncResult.resumeToken) {
+      console.log(`\n⚠️ Sync was incomplete due to timeout or size limits`);
+      console.log(`To resume the sync, use resume token: ${syncResult.resumeToken}`);
+    }
     
     // Count meetings after sync
     const afterCount = await getMeetingCounts();
