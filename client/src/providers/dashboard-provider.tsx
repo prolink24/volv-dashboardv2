@@ -20,12 +20,13 @@ interface DashboardProviderProps {
 export function DashboardProvider({ children }: DashboardProviderProps) {
   const [activeTab, setActiveTab] = useState<string>("team-performance");
   
-  // Calculate current month and year
+  // Calculate current date with full format
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth() + 1;
+  const day = now.getDate();
   const monthName = new Intl.DateTimeFormat('en-US', { month: 'long' }).format(now);
-  const currentMonthFilter = `${year}-${month < 10 ? '0' + month : month} | ${monthName}`;
+  const currentMonthFilter = `${year}-${month < 10 ? '0' + month : month}-${day < 10 ? '0' + day : day} | ${monthName} ${day}`;
   
   const [dateFilter, setDateFilter] = useState<string>(currentMonthFilter);
   const [userFilter, setUserFilter] = useState<string>("All Users");

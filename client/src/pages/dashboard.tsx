@@ -57,7 +57,7 @@ const Dashboard = () => {
     isError, 
     error 
   } = useDashboardData({ 
-    date: apiDate.toISOString(), 
+    date: dateFilter, // Just pass the dateFilter directly - our hook will handle the parsing
     userId: userFilter !== "All Users" ? userFilter : undefined,
     useEnhanced: true
   });
