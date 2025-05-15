@@ -148,14 +148,20 @@ export default function SalesDashboard() {
     [key: string]: any; // Allow for any additional properties
   }
   
+  interface KPIMetric {
+    current: number;
+    previous: number;
+    change: number;
+  }
+  
   interface KPIData {
-    closedDeals?: number;
-    cashCollected?: number;
-    revenueGenerated?: number;
-    totalCalls?: number;
-    call1Taken?: number;
-    call2Taken?: number;
-    closingRate?: number;
+    closedDeals?: number | KPIMetric;
+    cashCollected?: number | KPIMetric;
+    revenueGenerated?: number | KPIMetric;
+    totalCalls?: number | KPIMetric;
+    call1Taken?: number | KPIMetric;
+    call2Taken?: number | KPIMetric;
+    closingRate?: number | KPIMetric;
     [key: string]: any; // Allow for any additional properties
   }
   
@@ -319,7 +325,11 @@ export default function SalesDashboard() {
             <CardTitle className="text-sm font-medium"># of Call 1 Taken</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold">{kpis.call1Taken}</div>
+            <div className="text-4xl font-bold">
+              {typeof kpis.call1Taken === 'object' && kpis.call1Taken !== null
+                ? kpis.call1Taken.current
+                : kpis.call1Taken}
+            </div>
           </CardContent>
         </Card>
         <Card>
@@ -327,7 +337,11 @@ export default function SalesDashboard() {
             <CardTitle className="text-sm font-medium"># Call 2 Taken</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold">{kpis.call2Taken}</div>
+            <div className="text-4xl font-bold">
+              {typeof kpis.call2Taken === 'object' && kpis.call2Taken !== null
+                ? kpis.call2Taken.current
+                : kpis.call2Taken}
+            </div>
           </CardContent>
         </Card>
         <Card>
@@ -335,7 +349,11 @@ export default function SalesDashboard() {
             <CardTitle className="text-sm font-medium">Closing Rate</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold">{kpis.closingRate}%</div>
+            <div className="text-4xl font-bold">
+              {typeof kpis.closingRate === 'object' && kpis.closingRate !== null
+                ? kpis.closingRate.current
+                : kpis.closingRate}%
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -444,7 +462,11 @@ export default function SalesDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {formatCurrency(kpis.cashCollected && kpis.cashCollected > 0 ? kpis.cashCollected / 26 : 0)}
+                  {formatCurrency(
+                    typeof kpis.cashCollected === 'object' && kpis.cashCollected !== null
+                      ? (kpis.cashCollected.current > 0 ? kpis.cashCollected.current / 26 : 0)
+                      : (kpis.cashCollected && kpis.cashCollected > 0 ? kpis.cashCollected / 26 : 0)
+                  )}
                 </div>
               </CardContent>
             </Card>
