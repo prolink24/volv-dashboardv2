@@ -302,8 +302,8 @@ export async function getContactStatsByDateRange(dateRange: DateRange): Promise<
     .from(deals)
     .where(
       and(
-        gte(deals.created_date, dateRange.startDate),
-        lte(deals.created_date, dateRange.endDate)
+        gte(deals.createdAt, dateRange.startDate),
+        lte(deals.createdAt, dateRange.endDate)
       )
     )
     .groupBy(deals.contactId);
@@ -326,21 +326,21 @@ export async function getContactStatsByDateRange(dateRange: DateRange): Promise<
     .from(meetings)
     .where(
       and(
-        gte(meetings.date, dateRange.startDate),
-        lte(meetings.date, dateRange.endDate)
+        gte(meetings.meetingDate, dateRange.startDate),
+        lte(meetings.meetingDate, dateRange.endDate)
       )
     )
     .groupBy(meetings.contactId);
   
   // Count contacts with multiple sources
   const contactsWithMultipleSources = contactsInRange.filter(contact => 
-    (contact.sources_count || 0) > 1
+    (contact.sourcesCount || 0) > 1
   );
   
   // Calculate source distribution
   const sourceDistribution: Record<string, number> = {};
   contactsInRange.forEach(contact => {
-    const source = contact.source || 'unknown';
+    const source = contact.leadSource || 'unknown';
     sourceDistribution[source] = (sourceDistribution[source] || 0) + 1;
   });
   
@@ -388,8 +388,8 @@ export async function getDealStatsByDateRange(dateRange: DateRange): Promise<{
   
   dealsInRange.forEach(deal => {
     totalValue += Number(deal.value) || 0;
-    cashCollected += Number(deal.cash_collected) || 0;
-    contractedValue += Number(deal.contracted_value) || 0;
+    cashCollected += Number(deal.cashCollected) || 0;
+    contractedValue += Number(deal.contractedValue) || 0;
   });
   
   // Calculate average deal size
@@ -398,13 +398,13 @@ export async function getDealStatsByDateRange(dateRange: DateRange): Promise<{
   // Calculate average days to close
   // This assumes deals have created_date and close_date
   const closedDeals = dealsInRange.filter(deal => 
-    deal.status === 'won' && deal.created_date && deal.close_date
+    deal.status === 'won' && deal.createdAt && deal.closeDate
   );
   
   let totalDaysToClose = 0;
   closedDeals.forEach(deal => {
-    if (deal.created_date && deal.close_date) {
-      const daysToClose = Math.round((deal.close_date.getTime() - deal.created_date.getTime()) / (1000 * 60 * 60 * 24));
+    if (deal.createdAt && deal.closeDate) {
+      const daysToClose = Math.round((deal.closeDate.getTime() - deal.createdAt.getTime()) / (1000 * 60 * 60 * 24));
       totalDaysToClose += daysToClose;
     }
   });
