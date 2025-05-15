@@ -33,8 +33,11 @@ export function formatPercentage(value: number): string {
 
 /**
  * Get initials from name
+ * Safely handles undefined or empty names
  */
-export function getInitials(name: string): string {
+export function getInitials(name?: string): string {
+  if (!name) return 'NA';
+  
   return name
     .split(' ')
     .map(part => part.charAt(0))

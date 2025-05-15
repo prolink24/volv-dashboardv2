@@ -1,0 +1,52 @@
+[DashboardDebugWrapper] Component stack: 
+    at PerformanceTable (https://7ffb862e-d8f1-4648-87da-c3a85da31094-00-2mf6khyiwglf6.worf.replit.dev/src/components/dashboard/performance-table.tsx:34:29)
+    at main
+    at ErrorBoundary (https://7ffb862e-d8f1-4648-87da-c3a85da31094-00-2mf6khyiwglf6.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-error-boundary.js?v=703f0112:18:5)
+    at DashboardDebugWrapper (https://7ffb862e-d8f1-4648-87da-c3a85da31094-00-2mf6khyiwglf6.worf.replit.dev/src/components/debug/dashboard-debug-wrapper.tsx:119:3)
+    at Dashboard (https://7ffb862e-d8f1-4648-87da-c3a85da31094-00-2mf6khyiwglf6.worf.replit.dev/src/pages/dashboard.tsx:43:78)
+    at Route (https://7ffb862e-d8f1-4648-87da-c3a85da31094-00-2mf6khyiwglf6.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=703f0112:338:16)
+    at Switch (https://7ffb862e-d8f1-4648-87da-c3a85da31094-00-2mf6khyiwglf6.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=703f0112:394:17)
+    at div
+    at div
+    at Router
+    at DashboardProvider (https://7ffb862e-d8f1-4648-87da-c3a85da31094-00-2mf6khyiwglf6.worf.replit.dev/src/providers/dashboard-provider.tsx:22:37)
+    at DateProvider (https://7ffb862e-d8f1-4648-87da-c3a85da31094-00-2mf6khyiwglf6.worf.replit.dev/src/providers/date-context.tsx:80:32)
+    at Provider (https://7ffb862e-d8f1-4648-87da-c3a85da31094-00-2mf6khyiwglf6.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=703f0112:38:15)
+    at TooltipProvider (https://7ffb862e-d8f1-4648-87da-c3a85da31094-00-2mf6khyiwglf6.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=703f0112:64:5)
+    at QueryClientProvider (https://7ffb862e-d8f1-4648-87da-c3a85da31094-00-2mf6khyiwglf6.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=703f0112:2881:3)
+    at App
+    at ThemeProvider (https://7ffb862e-d8f1-4648-87da-c3a85da31094-00-2mf6khyiwglf6.worf.replit.dev/src/providers/theme-provider.tsx?v=RV8pkKgT2rTn9-O8qlNQ6:25:3)
+at PerformanceTable (https://7ffb862e-d8f1-4648-87da-c3a85da31094-00-2mf6khyiwglf6.worf.replit.dev/src/components/dashboard/performance-table.tsx:34:29)
+at main
+at ErrorBoundary (https://7ffb862e-d8f1-4648-87da-c3a85da31094-00-2mf6khyiwglf6.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/react-error-boundary.js?v=703f0112:18:5)
+at DashboardDebugWrapper (https://7ffb862e-d8f1-4648-87da-c3a85da31094-00-2mf6khyiwglf6.worf.replit.dev/src/components/debug/dashboard-debug-wrapper.tsx:119:3)
+at Dashboard (https://7ffb862e-d8f1-4648-87da-c3a85da31094-00-2mf6khyiwglf6.worf.replit.dev/src/pages/dashboard.tsx:43:78)
+at Route (https://7ffb862e-d8f1-4648-87da-c3a85da31094-00-2mf6khyiwglf6.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=703f0112:338:16)
+at Switch (https://7ffb862e-d8f1-4648-87da-c3a85da31094-00-2mf6khyiwglf6.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=703f0112:394:17)
+at div
+at div
+at Router
+at DashboardProvider (https://7ffb862e-d8f1-4648-87da-c3a85da31094-00-2mf6khyiwglf6.worf.replit.dev/src/providers/dashboard-provider.tsx:22:37)
+at DateProvider (https://7ffb862e-d8f1-4648-87da-c3a85da31094-00-2mf6khyiwglf6.worf.replit.dev/src/providers/date-context.tsx:80:32)
+at Provider (https://7ffb862e-d8f1-4648-87da-c3a85da31094-00-2mf6khyiwglf6.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=703f0112:38:15)
+at TooltipProvider (https://7ffb862e-d8f1-4648-87da-c3a85da31094-00-2mf6khyiwglf6.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=703f0112:64:5)
+at QueryClientProvider (https://7ffb862e-d8f1-4648-87da-c3a85da31094-00-2mf6khyiwglf6.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=703f0112:2881:3)
+at App
+at ThemeProvider (https://7ffb862e-d8f1-4648-87da-c3a85da31094-00-2mf6khyiwglf6.worf.replit.dev/src/providers/theme-provider.tsx?v=RV8pkKgT2rTn9-O8qlNQ6:25:3)
+at t.value (https://7ffb862e-d8f1-4648-87da-c3a85da31094-00-2mf6khyiwglf6.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://7ffb862e-d8f1-4648-87da-c3a85da31094-00-2mf6khyiwglf6.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://7ffb862e-d8f1-4648-87da-c3a85da31094-00-2mf6khyiwglf6.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://7ffb862e-d8f1-4648-87da-c3a85da31094-00-2mf6khyiwglf6.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400
+[DashboardDebugWrapper] Dashboard data structure: 
+(16) ["date", "userId", "success", "salesTeam", "stats", "kpis", "dashboardType", "title", "timestamp", "attribution", "activities", "deals", "contacts", "meetings", "usingCachedAttribution", "refreshedAt"]
+[DashboardDebugWrapper] salesTeam is present and is an array with 50 items
+[DashboardDebugWrapper] First salesTeam item keys: 
+(11) ["id", "role", "deals", "meetings", "activities", "performance", "closed", "cashCollected", "contractedValue", "calls", "closingRate"]
+[DashboardDebugWrapper] salesTeam is present and is an array with 50 items
+[DashboardDebugWrapper] activities is present and is an array with 0 items
+[DashboardDebugWrapper] deals is present and is an array with 0 items
+[DashboardDebugWrapper] contacts is present and is an array with 0 items
+[DashboardDebugWrapper] meetings is present and is an array with 0 items
+[DashboardDebugWrapper] Raw API response data available
+[Dashboard] Current date range: Thu May 01 2025 to Thu May 15 2025
+[Dashboard] Current date range label: May 1 - 15, 2025

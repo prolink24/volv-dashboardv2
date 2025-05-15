@@ -17,7 +17,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { formatCurrency, getInitials, cn } from "@/lib/utils";
 
 interface SalesTeamMember {
-  name: string;
+  name?: string;
   id: string;
   role: string;
   deals: number;
@@ -60,7 +60,7 @@ const PerformanceTable = ({ data, className }: PerformanceTableProps) => {
     );
   };
   
-  const getAvatarColor = (name: string) => {
+  const getAvatarColor = (name: string | undefined) => {
     const colors = [
       "bg-blue-100 text-blue-700",
       "bg-green-100 text-green-700",
@@ -68,6 +68,11 @@ const PerformanceTable = ({ data, className }: PerformanceTableProps) => {
       "bg-orange-100 text-orange-700",
       "bg-red-100 text-red-700",
     ];
+    
+    if (!name) {
+      // Default color for undefined or empty names
+      return colors[0];
+    }
     
     // Simple hash function to consistently assign colors
     const index = name.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
