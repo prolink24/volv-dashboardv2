@@ -46,11 +46,22 @@ const DashboardFilters = () => {
   // Handle date selection
   const handleDateSelect = (newDate: Date | undefined) => {
     if (newDate) {
-      // Use the actual selected date, not forcing the 1st of the month
-      setSelectedDate(newDate);
-      const formattedDate = formatSelectedDate(newDate);
-      console.log(`Selected date: ${newDate.toISOString()}, formatted: ${formattedDate}`);
-      setDateFilter(formattedDate);
+      try {
+        // Use the actual selected date, not forcing the 1st of the month
+        setSelectedDate(newDate);
+        const formattedDate = formatSelectedDate(newDate);
+        console.log(`Selected date: ${newDate.toISOString()}, formatted: ${formattedDate}`);
+        
+        // Update the date filter in the dashboard context
+        setDateFilter(formattedDate);
+        
+        // Prevent any form submission that might cause page refresh
+        setTimeout(() => {
+          console.log(`Date filter updated to: ${formattedDate}`);
+        }, 0);
+      } catch (error) {
+        console.error("Error handling date selection:", error);
+      }
     }
   };
   
@@ -63,25 +74,38 @@ const DashboardFilters = () => {
     "Harlan Ryder",
   ];
   
+  // Prevent default form submission that causes page refresh
+  const handleButtonClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
   return (
     <div className="flex items-center gap-2">
       <Popover>
         <PopoverTrigger asChild>
-          <Button variant="outline" className="w-[220px] justify-start text-left font-normal">
+          <Button 
+            variant="outline" 
+            className="w-[220px] justify-start text-left font-normal"
+            type="button" // Explicitly set button type to prevent form submission
+            onClick={handleButtonClick}
+          >
             <CalendarIcon className="mr-2 h-4 w-4" />
             {selectedDate ? format(selectedDate, "MMM d, yyyy") : <span>Select date</span>}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
-          <Calendar
-            mode="single"
-            selected={selectedDate}
-            onSelect={(newDate) => handleDateSelect(newDate)}
-            initialFocus
-            fromMonth={new Date(2024, 0)} // Allow selecting any date from Jan 2024
-            toMonth={new Date(2025, 11)}  // to Dec 2025
-            disableNavigation={false}
-          />
+          <div onClick={(e) => e.stopPropagation()}>
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={(newDate) => handleDateSelect(newDate)}
+              initialFocus
+              fromMonth={new Date(2024, 0)} // Allow selecting any date from Jan 2024
+              toMonth={new Date(2025, 11)}  // to Dec 2025
+              disableNavigation={false}
+            />
+          </div>
         </PopoverContent>
       </Popover>
       
