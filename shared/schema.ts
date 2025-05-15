@@ -214,13 +214,10 @@ export const meetings = pgTable("meetings", {
   // Location and joining details
   location: text("location"), // Can be URL or physical address
   conferenceUrl: text("conference_url"), // URL for video conference
-  conferenceData: jsonb("conference_data"), // Conference-specific data (Zoom, Teams, etc.)
   // Rescheduling and cancellation
   rescheduled: boolean("rescheduled").default(false),
   canceledAt: timestamp("canceled_at"),
   cancelReason: text("cancel_reason"),
-  // Calendar information
-  calendarEvent: jsonb("calendar_event"), // Calendar event data
   // Custom questions and answers
   questions: jsonb("questions"), // Questions asked during booking
   answers: jsonb("answers"), // Answers to questions
@@ -276,7 +273,7 @@ export const forms = pgTable("forms", {
   utmTerm: text("utm_term"),
   utmContent: text("utm_content"),
   // Field tracking
-  fieldCoverage: integer("field_coverage"), // Percentage of fields filled (0-100)
+  fieldCoverage: integer("fieldcoverage"), // Percentage of fields filled (0-100)
   // Additional metadata
   metadata: jsonb("metadata"),
 });
