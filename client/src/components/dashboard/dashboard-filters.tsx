@@ -46,10 +46,9 @@ const DashboardFilters = () => {
   // Handle date selection
   const handleDateSelect = (newDate: Date | undefined) => {
     if (newDate) {
-      // Update the date to the 1st of the month for consistency
-      const firstOfMonth = new Date(newDate.getFullYear(), newDate.getMonth(), 1);
-      setSelectedDate(firstOfMonth);
-      const formattedDate = formatSelectedDate(firstOfMonth);
+      // Use the actual selected date, not forcing the 1st of the month
+      setSelectedDate(newDate);
+      const formattedDate = formatSelectedDate(newDate);
       console.log(`Selected date: ${newDate.toISOString()}, formatted: ${formattedDate}`);
       setDateFilter(formattedDate);
     }
@@ -68,9 +67,9 @@ const DashboardFilters = () => {
     <div className="flex items-center gap-2">
       <Popover>
         <PopoverTrigger asChild>
-          <Button variant="outline" className="w-[200px] justify-start text-left font-normal">
+          <Button variant="outline" className="w-[220px] justify-start text-left font-normal">
             <CalendarIcon className="mr-2 h-4 w-4" />
-            {selectedDate ? format(selectedDate, "MMMM yyyy") : <span>Select month</span>}
+            {selectedDate ? format(selectedDate, "MMM d, yyyy") : <span>Select date</span>}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
