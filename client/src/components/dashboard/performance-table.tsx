@@ -19,15 +19,21 @@ import { formatCurrency, getInitials, cn } from "@/lib/utils";
 interface SalesTeamMember {
   name: string;
   id: string;
-  closed: number;
-  cashCollected: number;
-  contractedValue: number;
-  calls: number;
-  call1: number;
-  call2: number;
-  call2Sits: number;
-  closingRate: number;
-  adminMissingPercent: number;
+  role: string;
+  deals: number;
+  meetings: number;
+  activities: number;
+  performance: number;
+  closed?: number;
+  cashCollected?: number;
+  contractedValue?: number;
+  calls?: number;
+  closingRate?: number;
+  // Optional fields that might not be available yet
+  call1?: number;
+  call2?: number;
+  call2Sits?: number;
+  adminMissingPercent?: number;
 }
 
 interface PerformanceTableProps {
@@ -37,12 +43,12 @@ interface PerformanceTableProps {
 
 const PerformanceTable = ({ data, className }: PerformanceTableProps) => {
   const getClosingRateBadge = (rate: number) => {
-    let variant: "default" | "success" | "warning" | "destructive" = "default";
+    let variant: "default" | "destructive" | "secondary" | "outline" = "default";
     
     if (rate >= 80) {
-      variant = "success";
+      variant = "secondary"; // Using secondary instead of success
     } else if (rate >= 40) {
-      variant = "warning";
+      variant = "outline"; // Using outline instead of warning
     } else if (rate >= 0) {
       variant = "destructive";
     }
@@ -102,14 +108,14 @@ const PerformanceTable = ({ data, className }: PerformanceTableProps) => {
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell>{member.closed}</TableCell>
-                  <TableCell>{formatCurrency(member.cashCollected)}</TableCell>
-                  <TableCell>{formatCurrency(member.contractedValue)}</TableCell>
-                  <TableCell>{member.calls}</TableCell>
-                  <TableCell>{member.call1}</TableCell>
-                  <TableCell>{member.call2}</TableCell>
-                  <TableCell>{member.call2Sits}</TableCell>
-                  <TableCell>{getClosingRateBadge(member.closingRate)}</TableCell>
+                  <TableCell>{member.closed || 0}</TableCell>
+                  <TableCell>{formatCurrency(member.cashCollected || 0)}</TableCell>
+                  <TableCell>{formatCurrency(member.contractedValue || 0)}</TableCell>
+                  <TableCell>{member.calls || 0}</TableCell>
+                  <TableCell>{member.call1 || 0}</TableCell>
+                  <TableCell>{member.call2 || 0}</TableCell>
+                  <TableCell>{member.call2Sits || 0}</TableCell>
+                  <TableCell>{getClosingRateBadge(member.closingRate || 0)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
