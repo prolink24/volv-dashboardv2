@@ -436,9 +436,48 @@ async function syncAllEvents() {
                   console.log(`Using existing contact for Calendly invitee: ${contact.name} (${contact.email}) - ${reason}`);
                 }
                 
-                // Create the meeting record
+                // Create the meeting record with enhanced field capture
                 const startTime = new Date(event.start_time);
                 const endTime = new Date(event.end_time);
+                
+                // Determine meeting duration in minutes
+                const durationMinutes = Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60));
+                
+                // Extract location information
+                let locationType = 'virtual';
+                let locationUrl = '';
+                let locationAddress = '';
+                let locationNotes = '';
+                
+                if (event.location && event.location.length > 0) {
+                  // Try to determine location type
+                  const locationString = Array.isArray(event.location) ? event.location.join(' ') : String(event.location);
+                  
+                  if (locationString.toLowerCase().includes('zoom')) {
+                    locationType = 'zoom';
+                    locationUrl = locationString.match(/https:\/\/[^\s]+/)?.[0] || '';
+                  } else if (locationString.toLowerCase().includes('google meet') || locationString.toLowerCase().includes('gmeet')) {
+                    locationType = 'google_meet';
+                    locationUrl = locationString.match(/https:\/\/[^\s]+/)?.[0] || '';
+                  } else if (locationString.toLowerCase().includes('teams')) {
+                    locationType = 'microsoft_teams';
+                    locationUrl = locationString.match(/https:\/\/[^\s]+/)?.[0] || '';
+                  } else if (locationString.toLowerCase().includes('phone')) {
+                    locationType = 'phone';
+                    locationNotes = locationString;
+                  } else if (locationString.match(/^(http|https):\/\//)) {
+                    locationType = 'virtual';
+                    locationUrl = locationString.match(/https?:\/\/[^\s]+/)?.[0] || '';
+                  } else {
+                    // Assume physical address if not obviously a URL or virtual meeting
+                    locationType = 'in_person';
+                    locationAddress = locationString;
+                  }
+                }
+                
+                // Get host information
+                const hostName = event.event_memberships?.[0]?.user_name || '';
+                const hostEmail = event.event_memberships?.[0]?.user_email || '';
                 
                 const meetingData = {
                   contactId: contact.id,
@@ -448,10 +487,67 @@ async function syncAllEvents() {
                   calendlyEventId: event.uri,
                   startTime,
                   endTime,
-                  assignedTo: null,
+                  assignedTo: hostName || null,
+                  // Enhanced fields for better data capture
+                  duration: durationMinutes,
+                  timezone: event.invitee_timezone || '',
+                  canceled: event.canceled_at ? true : false,
+                  canceledAt: event.canceled_at ? new Date(event.canceled_at) : null,
+                  cancelReason: event.cancellation_reason || '',
+                  rescheduled: event.rescheduled ? true : false,
+                  eventType: event.event_type_name || '',
+                  eventTypeUuid: event.event_type || '',
+                  // Detailed location information
+                  locationType: locationType,
+                  locationUrl: locationUrl,
+                  locationAddress: locationAddress,
+                  locationNotes: locationNotes,
+                  // Host information
+                  hostName: hostName,
+                  hostEmail: hostEmail,
+                  // Advanced metadata object
                   metadata: {
+                    // Basic event information
+                    event_uuid: event.uri.split('/').pop() || '',
+                    event_name: event.name || '',
+                    event_type: event.event_type_name || '',
+                    event_description: eventDetails.description || '',
+                    
+                    // Location details
                     location: event.location?.join(', ') || 'Virtual',
-                    description: eventDetails.description || '',
+                    location_type: locationType,
+                    location_url: locationUrl,
+                    location_address: locationAddress,
+                    
+                    // Time information
+                    timezone: event.invitee_timezone || '',
+                    duration_minutes: durationMinutes,
+                    
+                    // Status information
+                    status: event.status,
+                    canceled: event.canceled_at ? true : false,
+                    canceled_at: event.canceled_at || null,
+                    cancellation_reason: event.cancellation_reason || '',
+                    rescheduled: event.rescheduled || false,
+                    
+                    // Host information
+                    host_name: hostName,
+                    host_email: hostEmail,
+                    
+                    // Invitee information
+                    invitee_name: invitee.name || '',
+                    invitee_email: email,
+                    invitee_timezone: invitee.timezone || '',
+                    invitee_questions: invitee.questions_and_answers || [],
+                    
+                    // UTM parameters for attribution
+                    utm_source: invitee.utm_source || '',
+                    utm_medium: invitee.utm_medium || '',
+                    utm_campaign: invitee.utm_campaign || '',
+                    utm_content: invitee.utm_content || '',
+                    utm_term: invitee.utm_term || '',
+                    
+                    // Full raw data for reference
                     event: event,
                     invitee: invitee,
                     details: eventDetails

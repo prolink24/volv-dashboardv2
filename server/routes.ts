@@ -1342,6 +1342,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Test endpoint failed" });
     }
   });
+  
+  // Field coverage report endpoint
+  apiRouter.get("/field-coverage-report", async (req: Request, res: Response) => {
+    try {
+      const entityType = req.query.entityType as 'contacts' | 'deals' | 'activities' | 'meetings' | 'users' | undefined;
+      const platform = req.query.platform as 'close' | 'calendly' | undefined;
+      
+      const fieldCoverageService = await import('./services/field-coverage-report');
+      
+      if (entityType && platform) {
+        // Get field coverage for specific entity and platform
+        const report = await fieldCoverageService.getFieldCoverageByPlatform(entityType, platform);
+        res.json(report);
+      } else if (entityType) {
+        // Get field coverage for specific entity
+        const report = await fieldCoverageService.getFieldCoverageForEntity(entityType);
+        res.json(report);
+      } else {
+        // Get full coverage report
+        const report = await fieldCoverageService.generateFullCoverageReport();
+        res.json(report);
+      }
+    } catch (error) {
+      console.error("Error generating field coverage report:", error);
+      res.status(500).json({ 
+        error: "Failed to generate field coverage report", 
+        message: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
 
   // Register API routes with prefix
   app.use("/api", apiRouter);
