@@ -459,7 +459,9 @@ async function syncAllEvents(options = {}) {
           errors,
           resumeToken: currentPageToken,
           completed: false,
-          message: 'Sync timeout reached while fetching pages, resumable'
+          message: syncOptions.isResuming 
+            ? `Continuing Calendly sync: processed ${processedEvents}/${totalEvents} events so far. Resume token saved.`
+            : 'Sync timeout reached while fetching pages, resumable'
         };
       }
       
@@ -771,7 +773,8 @@ async function syncAllEvents(options = {}) {
       total: totalEvents,
       processed: processedEvents,
       errors: errors + 1,
-      resumeToken: syncState.nextPageToken
+      resumeToken: syncState.nextPageToken,
+      message: `Calendly sync failed after processing ${processedEvents}/${totalEvents} events. Error: ${error.message || 'Unknown error'}`
     };
   }
 }
@@ -784,16 +787,23 @@ async function resumeSync(resumeToken, options = {}) {
     console.error('No resume token provided, cannot resume sync');
     return {
       success: false,
-      error: 'No resume token provided'
+      error: 'No resume token provided',
+      message: 'Cannot resume Calendly sync: No resume token was provided',
+      count: 0,
+      total: 0,
+      processed: 0,
+      errors: 1,
+      completed: false
     };
   }
   
   console.log(`Resuming Calendly sync from token: ${resumeToken}`);
   
-  // Call normal sync with the resume token
+  // Call normal sync with the resume token and flag that we're resuming
   return syncAllEvents({
     ...options,
-    resumeFromToken: resumeToken
+    resumeFromToken: resumeToken,
+    isResuming: true
   });
 }
 
