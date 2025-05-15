@@ -75,19 +75,50 @@ export const insertDealUserAssignmentSchema = createInsertSchema(dealToUserAssig
 // Contact schema - core entity that links across systems
 export const contacts = pgTable("contacts", {
   id: serial("id").primaryKey(),
+  // Basic contact information
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
   phone: text("phone"),
   company: text("company"),
   title: text("title"),
-  sourceId: text("source_id"),           // External ID from the source system
-  sourceData: jsonb("source_data"),      // Raw data from the source system
+  // Source tracking
+  sourceId: text("source_id"),
+  leadSource: text("lead_source"), // "close", "calendly", "typeform" or comma-separated combination
+  sourcesCount: integer("sources_count"), // Number of platforms this contact appears in
+  // Timing and activity fields
   lastActivityDate: timestamp("last_activity_date"),
   createdAt: timestamp("created_at").defaultNow(),
-  leadSource: text("lead_source"),       // "close", "calendly", "typeform"
-  status: text("status").default("lead"),
-  assignedTo: text("assigned_to"),
+  firstTouchDate: timestamp("first_touch_date"), // When first encountered
+  // Status and assignment
+  status: text("status").default("lead"), // lead, customer, churned, etc.
+  assignedTo: text("assigned_to"), // User ID or name
+  assignmentDate: timestamp("assignment_date"), // When assigned
+  // Communication preferences
+  preferredContactMethod: text("preferred_contact_method"), // email, phone, text
+  timezone: text("timezone"), // Contact's timezone for scheduling
+  language: text("language"), // Preferred language
+  // Lead qualification
+  leadScore: integer("lead_score"), // 0-100 score
+  qualificationStatus: text("qualification_status"), // qualified, disqualified, etc.
+  leadTemperature: text("lead_temperature"), // hot, warm, cold
+  // Social media and additional contacts
+  linkedInUrl: text("linkedin_url"),
+  twitterHandle: text("twitter_handle"),
+  secondaryEmail: text("secondary_email"),
+  secondaryPhone: text("secondary_phone"),
+  // Marketing and attribution
+  utmSource: text("utm_source"),
+  utmMedium: text("utm_medium"),
+  utmCampaign: text("utm_campaign"),
+  referralSource: text("referral_source"),
+  // Notes and additional information
   notes: text("notes"),
+  tags: text("tags").array(), // Array of tags
+  // Field tracking
+  fieldCoverage: integer("field_coverage"), // Percentage of fields filled (0-100)
+  requiredFieldsComplete: boolean("required_fields_complete").default(false),
+  // All raw source data
+  sourceData: jsonb("source_data"),
 });
 
 export const insertContactSchema = createInsertSchema(contacts).omit({
@@ -167,12 +198,42 @@ export const meetings = pgTable("meetings", {
   id: serial("id").primaryKey(),
   contactId: integer("contact_id").notNull(),
   calendlyEventId: text("calendly_event_id").notNull().unique(),
+  // Basic meeting info
   type: text("type").notNull(), // triage, solution, follow-up, etc.
   title: text("title").notNull(),
   startTime: timestamp("start_time").notNull(),
   endTime: timestamp("end_time").notNull(),
+  duration: integer("duration"), // Duration in minutes
   status: text("status").notNull(), // scheduled, completed, canceled, etc.
+  // Assignment and invitee tracking
   assignedTo: text("assigned_to"),
+  assigneeEmail: text("assignee_email"),
+  assigneeTimezone: text("assignee_timezone"),
+  inviteeEmail: text("invitee_email"),
+  inviteeName: text("invitee_name"),
+  inviteeTimezone: text("invitee_timezone"),
+  // Location and joining details
+  location: text("location"), // Can be URL or physical address
+  conferenceUrl: text("conference_url"), // URL for video conference
+  conferenceData: jsonb("conference_data"), // Conference-specific data (Zoom, Teams, etc.)
+  // Rescheduling and cancellation
+  rescheduled: boolean("rescheduled").default(false),
+  canceledAt: timestamp("canceled_at"),
+  cancelReason: text("cancel_reason"),
+  // Calendar information
+  calendarEvent: jsonb("calendar_event"), // Calendar event data
+  // Custom questions and answers
+  questions: jsonb("questions"), // Questions asked during booking
+  answers: jsonb("answers"), // Answers to questions
+  // UTM and tracking
+  utmSource: text("utm_source"),
+  utmMedium: text("utm_medium"),
+  utmCampaign: text("utm_campaign"),
+  utmContent: text("utm_content"),
+  utmTerm: text("utm_term"),
+  // Field tracking
+  fieldCoverage: integer("field_coverage"), // Percentage of fields filled (0-100)
+  // All other metadata
   metadata: jsonb("metadata"),
 });
 
@@ -185,9 +246,40 @@ export const forms = pgTable("forms", {
   id: serial("id").primaryKey(),
   contactId: integer("contact_id").notNull(),
   typeformResponseId: text("typeform_response_id").notNull().unique(),
+  // Basic form info
   formName: text("form_name").notNull(),
+  formId: text("form_id"), // Typeform form ID
   submittedAt: timestamp("submitted_at").notNull(),
-  answers: jsonb("answers"),
+  // Respondent information
+  respondentEmail: text("respondent_email"),
+  respondentName: text("respondent_name"),
+  respondentIp: text("respondent_ip"),
+  // Form completion metrics
+  completionTime: integer("completion_time"), // Time to complete in seconds
+  completionPercentage: integer("completion_percentage"), // How much of the form was completed
+  lastPageSeen: integer("last_page_seen"), // Last page viewed
+  // Classification and scoring
+  formScore: integer("form_score"), // Total score (calculated)
+  formCategory: text("form_category"), // Category (qualification, feedback, etc.)
+  formTags: text("form_tags").array(), // Array of tags
+  // All answer data
+  questionCount: integer("question_count"), // Total questions in form
+  answeredCount: integer("answered_count"), // Number of questions answered
+  answers: jsonb("answers"), // All answers with structure
+  // Hidden fields (prefilled data from URL parameters)
+  hiddenFields: jsonb("hidden_fields"),
+  // Calculated fields (calculations performed by Typeform)
+  calculatedFields: jsonb("calculated_fields"),
+  // UTM tracking
+  utmSource: text("utm_source"),
+  utmMedium: text("utm_medium"),
+  utmCampaign: text("utm_campaign"),
+  utmTerm: text("utm_term"),
+  utmContent: text("utm_content"),
+  // Field tracking
+  fieldCoverage: integer("field_coverage"), // Percentage of fields filled (0-100)
+  // Additional metadata
+  metadata: jsonb("metadata"),
 });
 
 export const insertFormSchema = createInsertSchema(forms).omit({
@@ -198,17 +290,72 @@ export const insertFormSchema = createInsertSchema(forms).omit({
 export const metrics = pgTable("metrics", {
   id: serial("id").primaryKey(),
   date: date("date").notNull(),
+  // Filters
   userId: text("user_id"),
+  dateRange: text("date_range"), // Format: "YYYY-MM-DD_YYYY-MM-DD"
+  leadSource: text("lead_source"), // For source-specific metrics
+  
+  // Sales Performance Metrics
   closedDeals: integer("closed_deals").default(0),
+  wonDeals: integer("won_deals").default(0),
+  lostDeals: integer("lost_deals").default(0),
+  openDeals: integer("open_deals").default(0),
   cashCollected: text("cash_collected").default("0"),
+  contractedValue: text("contracted_value").default("0"),
   revenueGenerated: text("revenue_generated").default("0"),
+  
+  // Call Metrics
   totalCalls: integer("total_calls").default(0),
   call1Taken: integer("call1_taken").default(0),
   call2Taken: integer("call2_taken").default(0),
+  callsToClose: numeric("calls_to_close").default("0"),
+  callsAnswered: integer("calls_answered").default(0),
+  callsUnanswered: integer("calls_unanswered").default(0),
+  
+  // Meeting Metrics
+  totalMeetings: integer("total_meetings").default(0),
+  meetingsAttended: integer("meetings_attended").default(0),
+  meetingsCanceled: integer("meetings_canceled").default(0),
+  meetingsRescheduled: integer("meetings_rescheduled").default(0),
+  
+  // Form Metrics
+  totalForms: integer("total_forms").default(0),
+  formsCompleted: integer("forms_completed").default(0),
+  formConversionRate: numeric("form_conversion_rate").default("0"),
+  
+  // Efficiency Metrics
   closingRate: text("closing_rate").default("0"),
   avgCashCollected: text("avg_cash_collected").default("0"),
+  avgDealSize: text("avg_deal_size").default("0"),
   solutionCallShowRate: text("solution_call_show_rate").default("0"),
   earningPerCall2: text("earning_per_call2").default("0"),
+  salesCycleDays: integer("sales_cycle_days").default(0),
+  
+  // Attribution Metrics
+  attributionAccuracy: integer("attribution_accuracy").default(0), // Percentage 0-100
+  multiSourceRate: numeric("multi_source_rate").default("0"),
+  fieldCoverage: integer("field_coverage").default(0),
+  contactsWithMultipleSources: integer("contacts_with_multiple_sources").default(0),
+  
+  // Lead Metrics
+  newLeads: integer("new_leads").default(0),
+  qualifiedLeads: integer("qualified_leads").default(0),
+  disqualifiedLeads: integer("disqualified_leads").default(0),
+  leadQualificationTime: integer("lead_qualification_time").default(0), // In hours
+  leadConversionRate: numeric("lead_conversion_rate").default("0"),
+  costPerLead: numeric("cost_per_lead").default("0"),
+  costPerClosedWon: numeric("cost_per_closed_won").default("0"),
+  
+  // Source Distribution
+  sourceDistribution: jsonb("source_distribution"), // JSON with source->count mapping
+  channelEfficiency: jsonb("channel_efficiency"), // JSON with source->efficiency score
+  
+  // Team Metrics
+  adminsMissing: integer("admins_missing").default(0),
+  slotUtilization: numeric("slot_utilization").default("0"),
+  
+  // Additional data and metadata
+  kpis: jsonb("kpis"), // For any custom KPIs not in dedicated fields
   metadata: jsonb("metadata"),
 });
 
