@@ -180,29 +180,76 @@ async function processCalendlyEvent(event, userId, eventDetails = null) {
  * Process a batch of Calendly events
  * This allows us to break the work into smaller chunks to avoid timeouts
  */
-async function processEventBatch(events, userId, batchNumber, batchSize) {
+async function processEventBatch(events, userId, batchNumber, batchSize, options = {}) {
   console.log(`Processing batch ${batchNumber} with ${events.length} events...`);
+  
+  // Default options for processing
+  const processingOptions = {
+    initialDelay: 100,         // Initial delay between event processing in ms
+    maxDelay: 5000,            // Maximum delay between events in ms
+    adaptiveDelay: true,       // Increase delay if errors occur
+    retryAttempts: 2,          // Number of retry attempts for failed event processing
+    ...options
+  };
   
   let batchImportedMeetings = 0;
   let batchErrors = 0;
+  let consecutiveErrors = 0;
+  let currentDelay = processingOptions.initialDelay;
+  
+  // Helper function to delay execution
+  const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
   
   // Process each event in the batch
   for (let i = 0; i < events.length; i++) {
     const event = events[i];
     console.log(`Processing event ${i+1}/${events.length} in batch ${batchNumber}: ${event.uri}`);
     
-    // Process the event
-    const result = await processCalendlyEvent(event, userId);
+    // Try to process with retries
+    let result = null;
+    let attempts = 0;
+    let success = false;
     
-    if (result.success) {
-      batchImportedMeetings += result.importedMeetings;
-    } else {
-      batchErrors++;
+    while (attempts <= processingOptions.retryAttempts && !success) {
+      if (attempts > 0) {
+        console.log(`Retry attempt ${attempts}/${processingOptions.retryAttempts} for event ${event.uri}`);
+        // Wait longer between retries
+        await delay(currentDelay * 2);
+      }
+      
+      // Process the event
+      result = await processCalendlyEvent(event, userId);
+      success = result.success;
+      
+      attempts++;
     }
     
-    // Sleep briefly between events to avoid API rate limits
+    if (success) {
+      batchImportedMeetings += result.importedMeetings;
+      consecutiveErrors = 0;
+      
+      // If we've had success, gradually reduce the delay (but keep it above initial)
+      if (currentDelay > processingOptions.initialDelay && processingOptions.adaptiveDelay) {
+        currentDelay = Math.max(processingOptions.initialDelay, currentDelay * 0.8);
+      }
+    } else {
+      batchErrors++;
+      consecutiveErrors++;
+      
+      // If we have consecutive errors and adaptive delay is enabled, increase the delay
+      if (consecutiveErrors > 1 && processingOptions.adaptiveDelay) {
+        // Increase delay exponentially based on consecutive errors, up to max
+        currentDelay = Math.min(
+          processingOptions.maxDelay,
+          currentDelay * (1 + (0.5 * consecutiveErrors))
+        );
+        console.warn(`Increasing delay to ${currentDelay}ms after ${consecutiveErrors} consecutive errors`);
+      }
+    }
+    
+    // Sleep between events to avoid API rate limits
     if (i < events.length - 1) {
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await delay(currentDelay);
     }
   }
   
@@ -290,7 +337,6 @@ async function getNextEventBatch(userId, minStartTime, maxStartTime, pageToken =
     nextPageToken: null,
     totalCount: 0
   };
-}
 }
 
 /**
