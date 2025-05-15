@@ -632,50 +632,72 @@ const CustomerJourneyPage: React.FC = () => {
                 
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-lg">Recent Touchpoints</CardTitle>
+                    <CardTitle className="text-lg">Customer Journey Timeline</CardTitle>
+                    <CardDescription>Visual representation of all customer touchpoints and interactions</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <ScrollArea className="h-[400px] pr-4">
-                      <div className="space-y-6">
+                    <Tabs defaultValue="visual" className="w-full">
+                      <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="visual">Visual Timeline</TabsTrigger>
+                        <TabsTrigger value="list">Chronological List</TabsTrigger>
+                      </TabsList>
+                      
+                      <TabsContent value="visual" className="mt-4">
                         {timelineEvents.length > 0 ? (
-                          timelineEvents.map((event) => (
-                            <div key={`${event.type}-${event.id}`} className="flex gap-4">
-                              <div className="mt-1">
-                                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
-                                  {getEventIcon(event.type)}
-                                </div>
-                              </div>
-                              <div className="space-y-1 flex-1">
-                                <div className="flex items-center gap-2">
-                                  <Badge variant="outline" className="text-xs">
-                                    {event.source}
-                                  </Badge>
-                                  <span className="text-xs text-muted-foreground">
-                                    {formatDate(event.timestamp)}
-                                  </span>
-                                </div>
-                                <h4 className="font-medium">{event.title}</h4>
-                                {event.description && (
-                                  <p className="text-sm text-muted-foreground">{event.description}</p>
-                                )}
-                                {event.userName && (
-                                  <div className="flex items-center gap-2 mt-1">
-                                    <Avatar className="h-6 w-6">
-                                      <AvatarFallback className="text-xs">{event.userName.substring(0, 2).toUpperCase()}</AvatarFallback>
-                                    </Avatar>
-                                    <span className="text-xs">{event.userName}</span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          ))
+                          <div className="bg-accent/10 rounded-lg p-4 overflow-hidden">
+                            <VisualJourneyTimeline events={timelineEvents} />
+                          </div>
                         ) : (
-                          <div className="flex items-center justify-center h-24">
-                            <p className="text-muted-foreground">No timeline events found</p>
+                          <div className="text-center py-8 text-muted-foreground">
+                            No timeline events found for this contact
                           </div>
                         )}
-                      </div>
-                    </ScrollArea>
+                      </TabsContent>
+                      
+                      <TabsContent value="list" className="mt-4">
+                        <ScrollArea className="h-[400px] pr-4">
+                          <div className="space-y-6">
+                            {timelineEvents.length > 0 ? (
+                              timelineEvents.map((event) => (
+                                <div key={`${event.type}-${event.id}`} className="flex gap-4">
+                                  <div className="mt-1">
+                                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
+                                      {getEventIcon(event.type)}
+                                    </div>
+                                  </div>
+                                  <div className="space-y-1 flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <Badge variant="outline" className="text-xs">
+                                        {event.source}
+                                      </Badge>
+                                      <span className="text-xs text-muted-foreground">
+                                        {formatDate(event.timestamp)}
+                                      </span>
+                                    </div>
+                                    <h4 className="font-medium">{event.title}</h4>
+                                    {event.description && (
+                                      <p className="text-sm text-muted-foreground">{event.description}</p>
+                                    )}
+                                    {event.userName && (
+                                      <div className="flex items-center gap-2 mt-1">
+                                        <Avatar className="h-6 w-6">
+                                          <AvatarFallback className="text-xs">{event.userName.substring(0, 2).toUpperCase()}</AvatarFallback>
+                                        </Avatar>
+                                        <span className="text-xs">{event.userName}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="flex items-center justify-center h-24">
+                                <p className="text-muted-foreground">No timeline events found</p>
+                              </div>
+                            )}
+                          </div>
+                        </ScrollArea>
+                      </TabsContent>
+                    </Tabs>
                   </CardContent>
                 </Card>
               </TabsContent>
