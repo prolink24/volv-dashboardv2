@@ -1,29 +1,14 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { format, isEqual, addDays, subDays, subMonths, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, isSameMonth, isSameYear } from "date-fns";
 import { CalendarIcon, RotateCw, FilterIcon, ArrowRightIcon } from "lucide-react";
-import { 
-  Popover, 
-  PopoverContent, 
-  PopoverTrigger,
-  Button,
-  ButtonGroup, 
-  Calendar, 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-  Badge,
-  Separator
-} from "@/components/ui";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { useDateRange, DateRange } from "@/providers/date-context";
 
 /**
@@ -199,11 +184,14 @@ export function DateRangePicker() {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("range");
   
-  // Local state for date selection
-  const [selectedRange, setSelectedRange] = useState<{
+  // Define interface for calendar selection
+  interface CalendarDateRange {
     from: Date | undefined;
     to: Date | undefined;
-  }>({
+  }
+  
+  // Local state for date selection
+  const [selectedRange, setSelectedRange] = useState<CalendarDateRange>({
     from: dateRange.startDate,
     to: dateRange.endDate
   });
@@ -214,7 +202,7 @@ export function DateRangePicker() {
       from: dateRange.startDate,
       to: dateRange.endDate
     });
-  }, [dateRange]);
+  }, [dateRange.startDate, dateRange.endDate]);
   
   // Apply the selected date range
   const applyDateRange = useCallback(() => {
@@ -430,7 +418,7 @@ export function DateRangePicker() {
                       from: selectedRange.from,
                       to: selectedRange.to
                     }}
-                    onSelect={range => setSelectedRange(range || { from: undefined, to: undefined })}
+                    onSelect={(range: CalendarDateRange | undefined) => setSelectedRange(range || { from: undefined, to: undefined })}
                     initialFocus
                     numberOfMonths={1}
                     className="rounded-md border"

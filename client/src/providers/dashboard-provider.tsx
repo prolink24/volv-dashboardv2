@@ -1,10 +1,10 @@
-import { createContext, useState, useContext, ReactNode } from "react";
+import { createContext, useState, useContext, ReactNode, useEffect } from "react";
+import { useDateRange } from "@/providers/date-context";
+import { invalidateDashboardData } from "@/hooks/use-dashboard-data";
 
 interface DashboardContextType {
   activeTab: string;
   setActiveTab: (tab: string) => void;
-  dateFilter: string;
-  setDateFilter: (date: string) => void;
   userFilter: string;
   setUserFilter: (user: string) => void;
   refreshData: () => void;
@@ -19,44 +19,42 @@ interface DashboardProviderProps {
 
 export function DashboardProvider({ children }: DashboardProviderProps) {
   const [activeTab, setActiveTab] = useState<string>("team-performance");
-  
-  // Calculate current date with full format
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth() + 1;
-  const day = now.getDate();
-  const monthName = new Intl.DateTimeFormat('en-US', { month: 'long' }).format(now);
-  const currentMonthFilter = `${year}-${month < 10 ? '0' + month : month}-${day < 10 ? '0' + day : day} | ${monthName} ${day}`;
-  
-  const [dateFilter, setDateFilter] = useState<string>(currentMonthFilter);
   const [userFilter, setUserFilter] = useState<string>("All Users");
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   
-  // Add a wrapper for setDateFilter to include debugging
-  const updateDateFilter = (newDate: string) => {
-    console.log(`[DashboardProvider] Updating date filter to: ${newDate}`);
-    setDateFilter(newDate);
-    // Force a rerender/refresh when date filter changes
-    setTimeout(() => {
-      console.log(`[DashboardProvider] Date filter updated, value is now: ${newDate}`);
-    }, 100);
-  };
-  
+  // Get the date context
+  const { refreshData: refreshDateData } = useDateRange();
+
+  // Refresh all data
   const refreshData = async () => {
+    console.log("[DashboardProvider] Refreshing all dashboard data");
     setIsRefreshing(true);
     
     try {
-      // Make API call to refresh data here
-      await fetch("/api/sync/all", {
+      // Invalidate cache first
+      await invalidateDashboardData();
+      
+      // Make API call to refresh data
+      const response = await fetch("/api/sync/all", {
         method: "POST",
         credentials: "include",
       });
       
-      // Invalidate queries or refresh data as needed
+      if (!response.ok) {
+        throw new Error(`API sync failed: ${response.status} ${response.statusText}`);
+      }
+      
+      // Trigger refresh in date context too
+      refreshDateData();
+      
+      console.log("[DashboardProvider] Data refresh complete");
     } catch (error) {
-      console.error("Error refreshing data:", error);
+      console.error("[DashboardProvider] Error refreshing data:", error);
     } finally {
-      setIsRefreshing(false);
+      // Debounce to avoid UI flicker
+      setTimeout(() => {
+        setIsRefreshing(false);
+      }, 300);
     }
   };
   
@@ -65,8 +63,6 @@ export function DashboardProvider({ children }: DashboardProviderProps) {
       value={{
         activeTab,
         setActiveTab,
-        dateFilter,
-        setDateFilter: updateDateFilter, // Use our enhanced version with debugging
         userFilter,
         setUserFilter,
         refreshData,

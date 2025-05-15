@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useDateRange } from "@/providers/date-context";
+import { useDateRange, DateRange } from "@/providers/date-context";
 import { apiRequest } from "@/lib/queryClient";
 
 /**
@@ -14,6 +14,11 @@ export interface DashboardData {
     meetings: number;
     activities: number;
     performance: number;
+    closed?: number;
+    cashCollected?: number;
+    contractedValue?: number;
+    calls?: number;
+    closingRate?: number;
   }>;
   stats: {
     totalContacts: number;
@@ -57,6 +62,56 @@ export interface DashboardData {
       previous: number;
       change: number;
     };
+    closedDeals?: {
+      current: number;
+      previous: number;
+      change: number;
+    };
+    cashCollected?: {
+      current: number;
+      previous: number;
+      change: number;
+    };
+    revenueGenerated?: {
+      current: number;
+      previous: number;
+      change: number;
+    };
+    totalCalls?: {
+      current: number;
+      previous: number;
+      change: number;
+    };
+    call1Taken?: {
+      current: number;
+      previous: number;
+      change: number;
+    };
+    call2Taken?: {
+      current: number;
+      previous: number;
+      change: number;
+    };
+    closingRate?: {
+      current: number;
+      previous: number;
+      change: number;
+    };
+    avgCashCollected?: {
+      current: number;
+      previous: number;
+      change: number;
+    };
+    solutionCallShowRate?: {
+      current: number;
+      previous: number;
+      change: number;
+    };
+    earningPerCall2?: {
+      current: number;
+      previous: number;
+      change: number;
+    };
   };
   advancedMetrics: {
     timeToFirstMeeting: number;
@@ -66,6 +121,12 @@ export interface DashboardData {
     averageMeetingsPerDeal: number;
     averageActivitiesPerDeal: number;
     conversionRate: number;
+    costPerClosedWon?: number;
+    closerSlotUtilization?: number;
+    solutionCallCloseRate?: number;
+    salesCycle?: number;
+    callsToClose?: number;
+    profitPerSolutionCall?: number;
   };
   triageMetrics: {
     contactsNeedingAssignment: number;
@@ -73,6 +134,12 @@ export interface DashboardData {
     upcomingMeetings: number;
     pendingActivities: number;
     stuckDeals: number;
+    booked?: number;
+    sits?: number;
+    showRate?: string;
+    bookingsPerDay?: number;
+    setterShowRate?: string;
+    setterCloseRate?: string;
   };
   leadMetrics: {
     newLeadsToday: number;
@@ -84,6 +151,28 @@ export interface DashboardData {
     };
   };
   missingAdmins: number;
+  timestamp?: string;
+  refreshedAt?: string;
+}
+
+/**
+ * Constructs a query string with date range parameters
+ */
+function getDateRangeParams(dateRange: DateRange, additionalParams: Record<string, string> = {}): string {
+  const params = new URLSearchParams();
+  
+  // Always add date range parameters
+  params.append('startDate', dateRange.startDate.toISOString());
+  params.append('endDate', dateRange.endDate.toISOString());
+  
+  // Add any additional parameters
+  Object.entries(additionalParams).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      params.append(key, value);
+    }
+  });
+  
+  return `?${params.toString()}`;
 }
 
 /**
@@ -92,30 +181,49 @@ export interface DashboardData {
  * @param options Optional parameters (date, userId, useEnhanced)
  * @returns Query result with dashboard data
  */
-export function useDashboardData(options?: string | { date?: string; userId?: string; useEnhanced?: boolean }) {
-  const { dateRange, isLoading: isDateLoading } = useDateRange();
+export function useDashboardData(options?: string | { date?: string; userId?: string; useEnhanced?: boolean; skipAttribution?: boolean }) {
+  const { dateRange, isLoading: isDateLoading, refreshData } = useDateRange();
   let userId: string | undefined;
+  let skipAttribution: boolean | undefined;
   
   // Handle both string and object parameters for backward compatibility
   if (typeof options === 'string') {
     userId = options;
   } else if (options && typeof options === 'object') {
     userId = options.userId;
-    // We could use the date parameter here if needed, but we'll prioritize the global date context
+    skipAttribution = options.skipAttribution;
   }
   
+  // Construct additional parameters
+  const additionalParams: Record<string, string> = {};
+  if (userId) additionalParams.userId = userId;
+  if (skipAttribution) additionalParams.skipAttribution = 'true';
+  
   return useQuery<DashboardData>({
-    queryKey: ['/api/enhanced-dashboard', dateRange.startDate.toISOString(), dateRange.endDate.toISOString(), userId],
+    queryKey: ['/api/enhanced-dashboard', dateRange.startDate.toISOString(), dateRange.endDate.toISOString(), userId, skipAttribution],
     enabled: !isDateLoading,
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
-    // Add specific query parameters for date range
     queryFn: async () => {
-      const response = await fetch(`/api/enhanced-dashboard?startDate=${encodeURIComponent(dateRange.startDate.toISOString())}&endDate=${encodeURIComponent(dateRange.endDate.toISOString())}${userId ? `&userId=${encodeURIComponent(userId)}` : ''}`);
+      console.log(`[DashboardData] Fetching data for date range: ${dateRange.startDate.toDateString()} to ${dateRange.endDate.toDateString()}`);
+      
+      const apiUrl = `/api/enhanced-dashboard${getDateRangeParams(dateRange, additionalParams)}`;
+      console.log(`[DashboardData] API URL: ${apiUrl}`);
+      
+      const response = await fetch(apiUrl);
+      
       if (!response.ok) {
-        throw new Error('Failed to fetch dashboard data');
+        console.error(`[DashboardData] Error response: ${response.status} ${response.statusText}`);
+        throw new Error(`Failed to fetch dashboard data: ${response.status} ${response.statusText}`);
       }
-      return response.json();
+      
+      const data = await response.json();
+      
+      // Add a client-side timestamp to track when the data was loaded
+      return {
+        ...data,
+        refreshedAt: new Date().toISOString()
+      };
     }
   });
 }
@@ -125,23 +233,29 @@ export function useDashboardData(options?: string | { date?: string; userId?: st
  * 
  * @param queryClient QueryClient instance to use for prefetching
  */
-export function usePrefetchDashboardData(queryClient: any) {
+export function usePrefetchDashboardData() {
   const { dateRange } = useDateRange();
+  const queryClient = useQueryClient();
   
   // Prefetch dashboard data for all users
-  queryClient.prefetchQuery({
-    queryKey: ['/api/enhanced-dashboard', dateRange.startDate.toISOString(), dateRange.endDate.toISOString(), 'all'],
-    staleTime: 5 * 60 * 1000,
-    queryFn: async () => {
-      const response = await fetch(`/api/enhanced-dashboard?startDate=${encodeURIComponent(dateRange.startDate.toISOString())}&endDate=${encodeURIComponent(dateRange.endDate.toISOString())}&userId=all`);
-      if (!response.ok) {
-        throw new Error('Failed to prefetch dashboard data');
+  const prefetchDashboardData = () => {
+    queryClient.prefetchQuery({
+      queryKey: ['/api/enhanced-dashboard', dateRange.startDate.toISOString(), dateRange.endDate.toISOString(), 'all'],
+      staleTime: 5 * 60 * 1000,
+      queryFn: async () => {
+        const apiUrl = `/api/enhanced-dashboard${getDateRangeParams(dateRange, { userId: 'all' })}`;
+        const response = await fetch(apiUrl);
+        
+        if (!response.ok) {
+          throw new Error('Failed to prefetch dashboard data');
+        }
+        
+        return response.json();
       }
-      return response.json();
-    }
-  });
+    });
+  };
   
-  // You could add additional prefetching for specific users or other common queries
+  return { prefetchDashboardData };
 }
 
 /**
@@ -150,6 +264,7 @@ export function usePrefetchDashboardData(queryClient: any) {
 export interface AttributionStatsData {
   success?: boolean;
   attributionAccuracy?: number;
+  timedOut?: boolean;
   totalContacts?: number;
   contactsWithMeetings?: number;
   contactsWithDeals?: number;
@@ -167,6 +282,7 @@ export interface AttributionStatsData {
     multiSourceRate: number;
     dealAttributionRate: number;
     fieldCoverage: number;
+    highCertaintyContacts?: number;
     channelDistribution: {
       [channel: string]: number;
     }
@@ -179,7 +295,7 @@ export interface AttributionStatsData {
  * @returns Query result with attribution stats data
  */
 export function useAttributionStats() {
-  const { dateRange } = useDateRange();
+  const { dateRange, refreshData } = useDateRange();
   
   return useQuery<AttributionStatsData>({
     queryKey: ['/api/attribution/stats', dateRange.startDate.toISOString(), dateRange.endDate.toISOString()],
@@ -194,11 +310,12 @@ export function useAttributionStats() {
       const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 seconds timeout
       
       try {
-        console.log("[AttributionStats] Fetching data...");
-        const response = await fetch(
-          `/api/attribution/stats?startDate=${encodeURIComponent(dateRange.startDate.toISOString())}&endDate=${encodeURIComponent(dateRange.endDate.toISOString())}`,
-          { signal: controller.signal }
-        );
+        console.log(`[AttributionStats] Fetching data for date range: ${dateRange.startDate.toDateString()} to ${dateRange.endDate.toDateString()}`);
+        
+        const apiUrl = `/api/attribution/stats${getDateRangeParams(dateRange)}`;
+        console.log(`[AttributionStats] API URL: ${apiUrl}`);
+        
+        const response = await fetch(apiUrl, { signal: controller.signal });
         
         clearTimeout(timeoutId);
         
@@ -211,13 +328,22 @@ export function useAttributionStats() {
         const data = await response.json();
         console.log("[AttributionStats] Data received:", data ? "Success" : "No data");
         
-        // If the API response doesn't include certain fields, add default values
+        // Debug stats structure
+        if (data.stats) {
+          console.log("Stats Structure:", Object.keys(data.stats));
+        }
+        
+        if (data.attributionAccuracy) {
+          console.log("Attribution Accuracy:", data.attributionAccuracy);
+        }
+        
+        // Normalize for consistent structure in components, especially with fallback data
         return {
           ...data,
           channelBreakdown: data.channelBreakdown || (data.stats?.channelDistribution || {}),
           totalTouchpoints: data.totalTouchpoints || 
             (data.stats?.channelDistribution ? 
-              Object.values(data.stats.channelDistribution).reduce((sum, val) => sum + (val as number), 0) : 0)
+              Object.values(data.stats.channelDistribution).reduce((sum, val) => sum + (typeof val === 'number' ? val : 0), 0) : 0)
         };
       } catch (error) {
         clearTimeout(timeoutId);
@@ -238,6 +364,7 @@ export function useAttributionStats() {
  * @returns Promise resolving to the sync result
  */
 export async function syncData() {
+  console.log("[API] Triggering a manual data sync");
   const result = await apiRequest('/api/sync/all', 'POST');
   return result;
 }
@@ -248,6 +375,8 @@ export async function syncData() {
  * @returns Promise resolving to cache invalidation result
  */
 export async function invalidateDashboardData() {
+  console.log("[Cache] Invalidating dashboard data");
+  
   // Import queryClient directly from lib
   const queryClient = require('@/lib/queryClient').queryClient;
   if (!queryClient) {

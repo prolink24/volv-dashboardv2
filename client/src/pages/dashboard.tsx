@@ -4,6 +4,7 @@ import {
   HelpCircle, LayoutDashboard 
 } from "lucide-react";
 import { useDashboard } from "@/providers/dashboard-provider";
+import { useDateRange } from "@/providers/date-context";
 import { useDashboardData, syncData, invalidateDashboardData, useAttributionStats } from "@/hooks/use-dashboard-data";
 import { useToast } from "@/hooks/use-toast";
 import { DashboardDebugWrapper } from "@/components/debug/dashboard-debug-wrapper";
@@ -24,33 +25,14 @@ import AttributionInsights from "@/components/dashboard/attribution-insights";
 import { formatCurrency } from "@/lib/utils";
 
 const Dashboard = () => {
-  const { dateFilter, userFilter, refreshData, isRefreshing, activeTab, setActiveTab } = useDashboard();
+  const { userFilter, refreshData, isRefreshing, activeTab, setActiveTab } = useDashboard();
+  const { dateRange, isLoading: isDateLoading } = useDateRange();
   const { toast } = useToast();
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-  // Extract date from dateFilter for logging purposes only
-  console.log(`[Dashboard] Current date filter: "${dateFilter}"`);
-  
-  // We no longer need to parse the date here since useDashboardData does it
-  // This is just for debugging purposes
-  try {
-    const datePart = dateFilter.split('|')[0].trim();
-    const dateParts = datePart.split('-');
-    
-    if (dateParts.length === 3) {
-      const year = parseInt(dateParts[0]);
-      const month = parseInt(dateParts[1]) - 1;
-      const day = parseInt(dateParts[2]);
-      const parsedDate = new Date(year, month, day);
-      
-      console.log(`[Dashboard] Parsed date from filter: year=${year}, month=${month}, day=${day}`);
-      console.log(`[Dashboard] Date object: ${parsedDate.toISOString()}`);
-    } else {
-      console.log(`[Dashboard] Unable to parse date parts from: ${datePart}`);
-    }
-  } catch (error) {
-    console.error(`[Dashboard] Error parsing date filter for logging: ${error}`);
-  }
+  // Log the current date range
+  console.log(`[Dashboard] Current date range: ${dateRange.startDate.toDateString()} to ${dateRange.endDate.toDateString()}`);
+  console.log(`[Dashboard] Current date range label: ${dateRange.label}`);
   
   // Fetch dashboard data with enhanced attribution
   const { 
@@ -59,7 +41,6 @@ const Dashboard = () => {
     isError, 
     error 
   } = useDashboardData({ 
-    date: dateFilter, // Just pass the dateFilter directly - our hook will handle the parsing
     userId: userFilter !== "All Users" ? userFilter : undefined,
     useEnhanced: true
   });
