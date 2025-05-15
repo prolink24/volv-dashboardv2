@@ -633,13 +633,13 @@ export class DatabaseStorage implements IStorage {
     
     // Get average deal cycle (days from created to closed)
     const avgDealCycleResult = await db.select({
-      avg: sql<number>`COALESCE(AVG(EXTRACT(DAY FROM ${deals.closedAt} - ${deals.createdAt})), 0)`
+      avg: sql<number>`COALESCE(AVG(EXTRACT(DAY FROM ${deals.closeDate} - ${deals.createdAt})), 0)`
     })
     .from(deals)
     .where(and(
-      gte(deals.createdAt, startDate.toISOString()),
-      lte(deals.createdAt, endDate.toISOString()),
-      isNotNull(deals.closedAt)
+      gte(deals.createdAt, sql`${startDate}`),
+      lte(deals.createdAt, sql`${endDate}`),
+      isNotNull(deals.closeDate)
     ));
     const averageDealCycle = Math.round(avgDealCycleResult[0]?.avg || 0);
     
@@ -682,8 +682,8 @@ export class DatabaseStorage implements IStorage {
           .innerJoin(deals, eq(dealToUserAssignments.dealId, deals.id))
           .where(and(
             eq(dealToUserAssignments.closeUserId, user.id),
-            gte(deals.createdAt, startDate.toISOString()),
-            lte(deals.createdAt, endDate.toISOString())
+            gte(deals.createdAt, sql`${startDate}`),
+            lte(deals.createdAt, sql`${endDate}`)
           ));
         
         // Get activities assigned to this user
@@ -692,8 +692,8 @@ export class DatabaseStorage implements IStorage {
           .innerJoin(contactToUserAssignments, eq(activities.contactId, contactToUserAssignments.contactId))
           .where(and(
             eq(contactToUserAssignments.closeUserId, user.id),
-            gte(activities.date, startDate.toISOString()),
-            lte(activities.date, endDate.toISOString())
+            gte(activities.date, sql`${startDate}`),
+            lte(activities.date, sql`${endDate}`)
           ));
         
         // Get meetings related to this user's contacts
@@ -702,8 +702,8 @@ export class DatabaseStorage implements IStorage {
           .innerJoin(contactToUserAssignments, eq(meetings.contactId, contactToUserAssignments.contactId))
           .where(and(
             eq(contactToUserAssignments.closeUserId, user.id),
-            gte(meetings.startTime, startDate.toISOString()),
-            lte(meetings.startTime, endDate.toISOString())
+            gte(meetings.startTime, sql`${startDate}`),
+            lte(meetings.startTime, sql`${endDate}`)
           ));
         
         // Calculate performance score (simple algorithm: deals + activities + meetings)
@@ -741,23 +741,23 @@ export class DatabaseStorage implements IStorage {
     
     // Create date range filters for previous period
     const previousContactsDateFilter = and(
-      gte(contacts.createdAt, previousStartDate.toISOString()),
-      lte(contacts.createdAt, previousEndDate.toISOString())
+      gte(contacts.createdAt, sql`${previousStartDate}`),
+      lte(contacts.createdAt, sql`${previousEndDate}`)
     );
     
     const previousDealsDateFilter = and(
-      gte(deals.createdAt, previousStartDate.toISOString()),
-      lte(deals.createdAt, previousEndDate.toISOString())
+      gte(deals.createdAt, sql`${previousStartDate}`),
+      lte(deals.createdAt, sql`${previousEndDate}`)
     );
     
     const previousActivitiesDateFilter = and(
-      gte(activities.date, previousStartDate.toISOString()),
-      lte(activities.date, previousEndDate.toISOString())
+      gte(activities.date, sql`${previousStartDate}`),
+      lte(activities.date, sql`${previousEndDate}`)
     );
     
     const previousMeetingsDateFilter = and(
-      gte(meetings.startTime, previousStartDate.toISOString()),
-      lte(meetings.startTime, previousEndDate.toISOString())
+      gte(meetings.startTime, sql`${previousStartDate}`),
+      lte(meetings.startTime, sql`${previousEndDate}`)
     );
     
     // Get previous period metrics for comparison
