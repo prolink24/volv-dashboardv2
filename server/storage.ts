@@ -212,8 +212,8 @@ export class DatabaseStorage implements IStorage {
     return db.select()
       .from(contacts)
       .where(and(
-        gte(contacts.createdAt, startDate),
-        lte(contacts.createdAt, endDate)
+        sql`${contacts.createdAt}::text >= ${startDate}::text`,
+        sql`${contacts.createdAt}::text <= ${endDate}::text`
       ))
       .orderBy(desc(contacts.createdAt))
       .limit(limit);
@@ -272,8 +272,8 @@ export class DatabaseStorage implements IStorage {
     return db.select()
       .from(activities)
       .where(and(
-        gte(activities.date, startDate),
-        lte(activities.date, endDate)
+        sql`${activities.date}::text >= ${startDate}::text`,
+        sql`${activities.date}::text <= ${endDate}::text`
       ))
       .orderBy(desc(activities.date))
       .limit(limit);
@@ -327,6 +327,17 @@ export class DatabaseStorage implements IStorage {
     const result = await db.select({ count: sql<number>`COUNT(*)` }).from(deals);
     return result[0]?.count || 0;
   }
+  
+  async getRecentDeals(limit: number, startDate: string, endDate: string): Promise<Deal[]> {
+    return db.select()
+      .from(deals)
+      .where(and(
+        sql`${deals.createdAt}::text >= ${startDate}::text`,
+        sql`${deals.createdAt}::text <= ${endDate}::text`
+      ))
+      .orderBy(desc(deals.createdAt))
+      .limit(limit);
+  }
 
   // Meeting operations
   async getMeeting(id: number): Promise<Meeting | undefined> {
@@ -361,6 +372,17 @@ export class DatabaseStorage implements IStorage {
   async getMeetingsCount(): Promise<number> {
     const result = await db.select({ count: sql<number>`COUNT(*)` }).from(meetings);
     return result[0]?.count || 0;
+  }
+  
+  async getRecentMeetings(limit: number, startDate: string, endDate: string): Promise<Meeting[]> {
+    return db.select()
+      .from(meetings)
+      .where(and(
+        sql`${meetings.startTime}::text >= ${startDate}::text`,
+        sql`${meetings.startTime}::text <= ${endDate}::text`
+      ))
+      .orderBy(desc(meetings.startTime))
+      .limit(limit);
   }
 
   // Form operations
@@ -552,25 +574,29 @@ export class DatabaseStorage implements IStorage {
     }
     
     // Get counts for the date range
-    // Create date range filters for different tables using and() instead of SQL template literals
+    // Format dates for PostgreSQL
+    const startDateString = startDate.toISOString().split('T')[0];
+    const endDateString = endDate.toISOString().split('T')[0];
+    
+    // Create date range filters using SQL template literals
     const contactsDateFilter = and(
-      gte(contacts.createdAt, startDate.toISOString()),
-      lte(contacts.createdAt, endDate.toISOString())
+      sql`${contacts.createdAt}::text >= ${startDateString}::text`,
+      sql`${contacts.createdAt}::text <= ${endDateString}::text`
     );
     
     const dealsDateFilter = and(
-      gte(deals.createdAt, startDate.toISOString()),
-      lte(deals.createdAt, endDate.toISOString())
+      sql`${deals.createdAt}::text >= ${startDateString}::text`,
+      sql`${deals.createdAt}::text <= ${endDateString}::text`
     );
     
     const activitiesDateFilter = and(
-      gte(activities.date, startDate.toISOString()),
-      lte(activities.date, endDate.toISOString())
+      sql`${activities.date}::text >= ${startDateString}::text`,
+      sql`${activities.date}::text <= ${endDateString}::text`
     );
     
     const meetingsDateFilter = and(
-      gte(meetings.startTime, startDate.toISOString()),
-      lte(meetings.startTime, endDate.toISOString())
+      sql`${meetings.startTime}::text >= ${startDateString}::text`,
+      sql`${meetings.startTime}::text <= ${endDateString}::text`
     );
     
     // Get contact counts
