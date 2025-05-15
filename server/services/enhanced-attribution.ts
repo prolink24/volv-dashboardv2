@@ -514,23 +514,27 @@ const enhancedAttributionService = {
         // Use the preloaded deals
         const contactDeals = allDeals[contact.id] || [];
         if (contactDeals.length > 0) {
-          totalDeals += contactDeals.length;
-          
           // Check if deals have attribution data
           for (const deal of contactDeals) {
-            // Set all deals to have attribution regardless of metadata (100% attribution rate)
-            dealsWithAttribution++;
+            totalDeals++; // Count each deal only once
             
-            /* Original logic that was checking for metadata
+            // Check deal metadata for attribution data
             if (deal.metadata) {
-              const metadataStr = JSON.stringify(deal.metadata).toLowerCase();
+              const metadataStr = typeof deal.metadata === 'string' 
+                ? deal.metadata.toLowerCase() 
+                : JSON.stringify(deal.metadata).toLowerCase();
+              
               if (metadataStr.includes('attribution') || 
                   metadataStr.includes('source') || 
-                  metadataStr.includes('touchpoint')) {
+                  metadataStr.includes('touchpoint') ||
+                  metadataStr.includes('lead_source') ||
+                  metadataStr.includes('channel')) {
                 dealsWithAttribution++;
               }
+            } else if (contact.leadSource || contact.sourceId) {
+              // If the contact has source information, consider the deal attributed
+              dealsWithAttribution++;
             }
-            */
           }
         }
         
