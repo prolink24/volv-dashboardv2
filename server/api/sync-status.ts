@@ -1,195 +1,119 @@
 /**
- * Sync Status API
+ * Sync Status Tracking Module
  * 
- * This module tracks the status of all sync operations across
- * Close CRM, Calendly, and Typeform. It maintains real-time
- * state about progress, errors, and completion for each platform.
+ * This module provides tracking and status reporting for sync operations
+ * to help monitor progress and enable resume functionality.
  */
 
-// Initial sync status
-let syncStatus = {
+// In-memory store for sync status
+let calendlySyncStatus = {
+  totalEvents: 0,
+  processedEvents: 0,
+  importedMeetings: 0,
+  errors: 0,
+  completed: false,
   inProgress: false,
-  startTime: null as string | null,
-  endTime: null as string | null,
-  currentPhase: null as string | null,
-  error: null as string | null,
-  overallProgress: 0,
-  totalContactsAfterSync: 0,
-  
-  // Close CRM sync status
-  close: {
-    totalLeads: 0,
-    processedLeads: 0,
-    importedContacts: 0,
-    errors: 0
-  },
-  
-  // Calendly sync status
-  calendly: {
-    totalEvents: 0,
-    processedEvents: 0,
-    importedMeetings: 0,
-    errors: 0
-  },
-  
-  // Typeform sync status
-  typeform: {
-    totalForms: 0,
-    totalResponses: 0,
-    processedResponses: 0,
-    importedSubmissions: 0,
-    errors: 0
+  startTime: null,
+  endTime: null,
+  error: null,
+  syncState: {
+    nextPageToken: null,
+    batchNumber: 0,
+    hasMore: true
   }
 };
 
-/**
- * Start a sync operation
- * @param phase The current phase of sync (e.g., "close", "calendly", "typeform")
- */
-export function startSync(phase: string) {
-  syncStatus.inProgress = true;
-  syncStatus.startTime = new Date().toISOString();
-  syncStatus.endTime = null;
-  syncStatus.currentPhase = phase;
-  syncStatus.error = null;
-  syncStatus.overallProgress = 0;
+// Status tracking functions
+export function updateCalendlySyncStatus(status) {
+  calendlySyncStatus = {
+    ...calendlySyncStatus,
+    ...status,
+    lastUpdated: new Date()
+  };
   
-  // Reset counters for the specific phase
-  if (phase === 'close') {
-    syncStatus.close = {
-      totalLeads: 0,
-      processedLeads: 0,
-      importedContacts: 0,
-      errors: 0
-    };
-  } else if (phase === 'calendly') {
-    syncStatus.calendly = {
-      totalEvents: 0,
-      processedEvents: 0,
-      importedMeetings: 0,
-      errors: 0
-    };
-  } else if (phase === 'typeform') {
-    syncStatus.typeform = {
-      totalForms: 0,
-      totalResponses: 0,
-      processedResponses: 0,
-      importedSubmissions: 0,
-      errors: 0
-    };
+  // Mark as in progress if not completed
+  if (!status.completed) {
+    calendlySyncStatus.inProgress = true;
+  } else {
+    calendlySyncStatus.inProgress = false;
+    calendlySyncStatus.endTime = new Date();
+  }
+  
+  // Set start time if not already set
+  if (!calendlySyncStatus.startTime && calendlySyncStatus.inProgress) {
+    calendlySyncStatus.startTime = new Date();
   }
 }
 
-/**
- * Complete a sync operation
- * @param totalContacts The total number of contacts after sync
- */
-export function completeSync(totalContacts: number) {
-  syncStatus.inProgress = false;
-  syncStatus.endTime = new Date().toISOString();
-  syncStatus.overallProgress = 100;
-  syncStatus.totalContactsAfterSync = totalContacts;
+export function getCalendlySyncStatus() {
+  return {
+    ...calendlySyncStatus,
+    runningTime: calendlySyncStatus.startTime 
+      ? Math.floor((new Date().getTime() - calendlySyncStatus.startTime.getTime()) / 1000) 
+      : 0,
+    canBeResumed: !calendlySyncStatus.completed && calendlySyncStatus.syncState?.nextPageToken !== null
+  };
 }
 
-/**
- * Set error state for sync
- * @param error The error message
- */
-export function setSyncError(error: string) {
-  syncStatus.inProgress = false;
-  syncStatus.endTime = new Date().toISOString();
-  syncStatus.error = error;
-}
-
-/**
- * Update Close CRM sync status
- */
-export function updateCloseSyncStatus(status: {
-  totalLeads: number;
-  processedLeads: number;
-  importedContacts: number;
-  errors: number;
-}) {
-  syncStatus.close = status;
-  
-  // Calculate progress percentage
-  if (status.totalLeads > 0) {
-    const progress = Math.min(
-      Math.round((status.processedLeads / status.totalLeads) * 100),
-      100
-    );
-    
-    // Update overall progress (weighted by phase)
-    if (syncStatus.currentPhase === 'close') {
-      syncStatus.overallProgress = progress;
+export function resetCalendlySyncStatus() {
+  calendlySyncStatus = {
+    totalEvents: 0,
+    processedEvents: 0,
+    importedMeetings: 0,
+    errors: 0,
+    completed: false,
+    inProgress: false,
+    startTime: null,
+    endTime: null,
+    error: null,
+    syncState: {
+      nextPageToken: null,
+      batchNumber: 0,
+      hasMore: true
     }
-  }
+  };
 }
 
-/**
- * Update Calendly sync status
- */
-export function updateCalendlySyncStatus(status: {
-  totalEvents: number;
-  processedEvents: number;
-  importedMeetings: number;
-  errors: number;
-}) {
-  syncStatus.calendly = status;
+// Progress calculation helpers
+export function getCalendlySyncProgress() {
+  if (calendlySyncStatus.totalEvents === 0) {
+    return 0;
+  }
   
-  // Calculate progress percentage
-  if (status.totalEvents > 0) {
-    const progress = Math.min(
-      Math.round((status.processedEvents / status.totalEvents) * 100),
-      100
-    );
-    
-    // Update overall progress (weighted by phase)
-    if (syncStatus.currentPhase === 'calendly') {
-      syncStatus.overallProgress = progress;
-    }
-  }
+  const progress = (calendlySyncStatus.processedEvents / calendlySyncStatus.totalEvents) * 100;
+  return Math.min(Math.floor(progress), 100); // Cap at 100%
 }
 
-/**
- * Update Typeform sync status
- */
-export function updateTypeformSyncStatus(status: {
-  totalForms: number;
-  totalResponses: number;
-  processedResponses: number;
-  importedSubmissions: number;
-  errors: number;
-}) {
-  syncStatus.typeform = status;
-  
-  // Calculate progress percentage
-  if (status.totalResponses > 0) {
-    const progress = Math.min(
-      Math.round((status.processedResponses / status.totalResponses) * 100),
-      100
-    );
+export function getCalendlySyncSummary() {
+  const progress = getCalendlySyncProgress();
+  const runningTime = calendlySyncStatus.startTime 
+    ? Math.floor((
+        (calendlySyncStatus.endTime || new Date()).getTime() - 
+        calendlySyncStatus.startTime.getTime()
+      ) / 1000) 
+    : 0;
     
-    // Update overall progress (weighted by phase)
-    if (syncStatus.currentPhase === 'typeform') {
-      syncStatus.overallProgress = progress;
-    }
-  }
-}
-
-/**
- * Get the current sync status
- */
-export function getSyncStatus() {
-  return { ...syncStatus };
+  return {
+    progress,
+    runningTime,
+    eventsPerSecond: runningTime > 0 
+      ? (calendlySyncStatus.processedEvents / runningTime).toFixed(2) 
+      : 0,
+    inProgress: calendlySyncStatus.inProgress,
+    completed: calendlySyncStatus.completed,
+    totalEvents: calendlySyncStatus.totalEvents,
+    processedEvents: calendlySyncStatus.processedEvents,
+    importedMeetings: calendlySyncStatus.importedMeetings,
+    errors: calendlySyncStatus.errors,
+    resumeToken: calendlySyncStatus.syncState?.nextPageToken,
+    canBeResumed: !calendlySyncStatus.completed && calendlySyncStatus.syncState?.nextPageToken !== null
+  };
 }
 
 export default {
-  startSync,
-  completeSync,
-  setSyncError,
-  updateCloseSyncStatus,
   updateCalendlySyncStatus,
-  updateTypeformSyncStatus,
-  getSyncStatus
+  getCalendlySyncStatus,
+  resetCalendlySyncStatus,
+  getCalendlySyncProgress,
+  getCalendlySyncSummary
 };
