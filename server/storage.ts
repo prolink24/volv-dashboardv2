@@ -211,6 +211,10 @@ export class DatabaseStorage implements IStorage {
     return result[0]?.count || 0;
   }
   
+  async getAllContacts(): Promise<Contact[]> {
+    return db.select().from(contacts).orderBy(desc(contacts.createdAt));
+  }
+  
   async getRecentContacts(limit: number, startDate: string, endDate: string): Promise<Contact[]> {
     return db.select()
       .from(contacts)
