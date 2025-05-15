@@ -1262,8 +1262,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const statsPromise = enhancedAttributionService.getAttributionStats(startDate, endDate);
       
       // Set a timeout to ensure we return in a reasonable time
+      // Extended timeout for large dataset test
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Attribution stats generation timed out")), 8000);
+        setTimeout(() => reject(new Error("Attribution stats generation timed out")), 60000);
       });
       
       // Race the promises to ensure we respond quickly

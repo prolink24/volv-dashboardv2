@@ -371,8 +371,9 @@ export function useAttributionStats() {
     retryDelay: (attemptIndex) => Math.min(1000 * (2 ** attemptIndex), 30000), // Exponential backoff with max of 30 seconds
     queryFn: async () => {
       // Create an abort controller with timeout
+      // Extended timeout for large dataset test (1000 deals)
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 seconds timeout
+      const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 seconds timeout
       
       try {
         console.log(`[AttributionStats] Fetching data for date range: ${dateRange.startDate.toDateString()} to ${dateRange.endDate.toDateString()}`);
