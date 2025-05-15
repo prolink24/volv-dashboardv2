@@ -414,16 +414,16 @@ const Dashboard = () => {
       {/* Tabs and Data Tables */}
       <DashboardTabs activeTab={activeTab} setActiveTab={setActiveTab} />
       
-      {activeTab === "team-performance" && (
+      {activeTab === "team-performance" && dashboardData?.salesTeam && (
         <PerformanceTable data={dashboardData.salesTeam} className="mb-6" />
       )}
       
-      {activeTab === "missing-admins" && (
+      {activeTab === "missing-admins" && dashboardData?.missingAdmins && (
         <AdminList data={dashboardData.missingAdmins} className="mb-6" />
       )}
       
       {/* Triage Metrics */}
-      {dashboardData.triageMetrics && (
+      {dashboardData?.triageMetrics && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="col-span-1 md:col-span-2 bg-card rounded-lg shadow-sm border border-border p-4">
             <h3 className="text-base font-medium mb-4">Triage Performance Metrics</h3>

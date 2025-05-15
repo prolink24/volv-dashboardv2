@@ -89,11 +89,20 @@ export interface DashboardData {
 /**
  * Custom hook for fetching dashboard data with the current date range
  * 
- * @param userId Optional user ID to filter dashboard data by user
+ * @param options Optional parameters (date, userId, useEnhanced)
  * @returns Query result with dashboard data
  */
-export function useDashboardData(userId?: string) {
+export function useDashboardData(options?: string | { date?: string; userId?: string; useEnhanced?: boolean }) {
   const { dateRange, isLoading: isDateLoading } = useDateRange();
+  let userId: string | undefined;
+  
+  // Handle both string and object parameters for backward compatibility
+  if (typeof options === 'string') {
+    userId = options;
+  } else if (options && typeof options === 'object') {
+    userId = options.userId;
+    // We could use the date parameter here if needed, but we'll prioritize the global date context
+  }
   
   return useQuery<DashboardData>({
     queryKey: ['/api/enhanced-dashboard', dateRange.startDate.toISOString(), dateRange.endDate.toISOString(), userId],
