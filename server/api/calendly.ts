@@ -269,8 +269,189 @@ async function syncAllEvents() {
           }
         }
         
-        // Let's skip the organization-wide fetch if we've succeeded with user events
-        console.log('Successfully processed events via user endpoint, skipping organization-wide fetch');
+        // Continue processing if we have more pages through pagination
+        if (hasMore && pageToken) {
+          console.log('First batch of events processed successfully, continuing with pagination...');
+          
+          // Continue with pagination until we've fetched all events
+          while (hasMore && pageToken) {
+            try {
+              console.log(`Fetching additional events with page token: ${pageToken}`);
+              
+              const nextPageResponse = await calendlyApiClient.get('/scheduled_events', {
+                params: {
+                  user: userId,
+                  min_start_time: minStartTime,
+                  max_start_time: maxStartTime,
+                  count: 100,
+                  page_token: pageToken
+                }
+              });
+              
+              const nextPageEvents = nextPageResponse.data.collection || [];
+              console.log(`Fetched ${nextPageEvents.length} additional events from pagination`);
+              
+              // Process the additional events
+              for (const event of nextPageEvents) {
+                processedEvents++;
+                console.log('Processing event from pagination:', event.uri);
+                
+                try {
+                  // Fetch event details with invitees
+                  const eventDetails = await getEventDetails(event.uri);
+                  const invitees = await getEventInvitees(event.uri);
+                  
+                  console.log(`Event has ${invitees.length} invitees`);
+                  
+                  // Process each invitee (identical to the code above)
+                  for (const invitee of invitees) {
+                    // Reusing the same invitee processing logic as above
+                    const email = invitee.email;
+                    if (!email) {
+                      console.log(`Skipping invitee without email for event ${event.uri}`);
+                      continue;
+                    }
+                    
+                    // Use the imported contact matcher
+                    // Prepare contact data from Calendly invitee
+                    const contactData = {
+                      name: invitee.name || email.split('@')[0],
+                      email: email,
+                      // Try to extract phone from questions if available
+                      phone: extractPhoneFromInvitee(invitee),
+                      company: extractCompanyFromInvitee(invitee),
+                      leadSource: 'calendly',
+                      status: 'lead',
+                      sourceId: invitee.uri,
+                      sourceData: invitee,
+                      createdAt: new Date(invitee.created_at)
+                    };
+                    
+                    // Find or create the contact using same approach as above
+                    let contact;
+                    try {
+                      const result = await contactMatcher.createOrUpdateContact(
+                        contactData, 
+                        true, // Update existing contacts
+                        contactMatcher.MatchConfidence.MEDIUM // Use medium confidence for better matching rates
+                      );
+                      
+                      contact = result.contact;
+                      
+                      if (result.created) {
+                        console.log(`Created new contact for Calendly invitee: ${contact.name} (${contact.email})`);
+                      } else {
+                        console.log(`Matched Calendly invitee to existing contact: ${contact.name} (${contact.email}) - ${result.reason}`);
+                      }
+                    } catch (error) {
+                      console.error(`Error matching contact for Calendly invitee: ${email}`, error);
+                      // Fallback to simple lookup by email
+                      contact = await storage.getContactByEmail(email);
+                      if (!contact) {
+                        // Create minimal contact as fallback
+                        contact = await storage.createContact(contactData);
+                        console.log(`Created new contact for Calendly invitee (fallback): ${contactData.name} (${contactData.email})`);
+                      }
+                    }
+                    
+                    // Create meeting record - identical to above
+                    const meetingData = {
+                      contactId: contact.id,
+                      title: event.name || 'Calendly Meeting',
+                      type: event.event_type || 'meeting',
+                      status: event.status,
+                      calendlyEventId: event.uri,
+                      startTime: new Date(event.start_time),
+                      endTime: new Date(event.end_time),
+                      assignedTo: null,
+                      // Include all event and invitee data for complete attribution
+                      metadata: {
+                        location: typeof event.location === 'string' ? event.location : 
+                                 Array.isArray(event.location) ? event.location.join(', ') : 'Virtual',
+                        description: eventDetails.description || '',
+                        invitee: invitee,
+                        event: event,
+                        eventDetails: eventDetails,
+                        attribution: {
+                          platform: 'calendly',
+                          eventType: event.event_type,
+                          scheduledBy: invitee.name,
+                          contactId: contact.id,
+                          timestamp: new Date().toISOString()
+                        }
+                      }
+                    };
+                    
+                    // Check if meeting already exists - same as above
+                    const existingMeeting = await storage.getMeetingByCalendlyEventId(event.uri);
+                    if (existingMeeting) {
+                      await storage.updateMeeting(existingMeeting.id, meetingData);
+                      console.log(`Updated existing meeting for contact ${contact.name}`);
+                      
+                      // Update contact with activity info
+                      try {
+                        const contactUpdateData = {
+                          lastActivityDate: new Date(),
+                          lastActivityType: 'calendly_meeting',
+                          notes: contact.notes ? 
+                            `${contact.notes}\n\nCalendly Meeting: ${event.name} on ${new Date(event.start_time).toLocaleDateString()}` : 
+                            `Calendly Meeting: ${event.name} on ${new Date(event.start_time).toLocaleDateString()}`
+                        };
+                        
+                        await storage.updateContact(contact.id, contactUpdateData);
+                        console.log(`Updated contact ${contact.name} with meeting activity`);
+                      } catch (err) {
+                        console.error(`Error updating contact with meeting activity: ${err}`);
+                      }
+                    } else {
+                      await storage.createMeeting(meetingData);
+                      importedMeetings++;
+                      console.log(`Created new meeting for contact ${contact.name}`);
+                      
+                      // Update contact with activity info
+                      try {
+                        const contactUpdateData = {
+                          lastActivityDate: new Date(),
+                          lastActivityType: 'calendly_meeting',
+                          notes: contact.notes ? 
+                            `${contact.notes}\n\nCalendly Meeting: ${event.name} on ${new Date(event.start_time).toLocaleDateString()}` : 
+                            `Calendly Meeting: ${event.name} on ${new Date(event.start_time).toLocaleDateString()}`
+                        };
+                        
+                        await storage.updateContact(contact.id, contactUpdateData);
+                        console.log(`Updated contact ${contact.name} with meeting activity`);
+                      } catch (err) {
+                        console.error(`Error updating contact with meeting activity: ${err}`);
+                      }
+                    }
+                  }
+                } catch (error) {
+                  console.error(`Error processing event ${event.uri} from pagination:`, error);
+                  errors++;
+                }
+              }
+              
+              // Update the pagination token for next page
+              const pagination = nextPageResponse.data.pagination;
+              pageToken = pagination && pagination.next_page_token ? pagination.next_page_token : null;
+              hasMore = !!pageToken;
+              
+              // Update sync status after each page
+              syncStatus.updateCalendlySyncStatus({
+                totalEvents,
+                processedEvents,
+                importedMeetings,
+                errors
+              });
+            } catch (error) {
+              console.error('Error fetching events with pagination:', error);
+              hasMore = false;
+              errors++;
+            }
+          }
+        }
+        
+        console.log('Successfully processed all Calendly events via user endpoint');
         
         // Final status update
         syncStatus.updateCalendlySyncStatus({
