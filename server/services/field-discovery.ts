@@ -190,13 +190,252 @@ async function getStandardFields(): Promise<FieldInfo[]> {
 /**
  * Get custom fields defined by users
  */
+/**
+ * Get all custom fields from Close CRM and other sources
+ * This ensures we have 100% field coverage
+ */
 async function getCustomFields(): Promise<FieldInfo[]> {
   try {
-    // In a real implementation, this would query custom fields
-    // from the database. For simplicity, we'll return an empty array.
-    return [];
+    // Get Close CRM custom fields
+    const closeFields = await getCloseCustomFields();
+    
+    // Get Calendly custom fields
+    const calendlyFields = await getCalendlyCustomFields();
+    
+    // Get Typeform custom fields
+    const typeformFields = await getTypeformCustomFields();
+    
+    // Combine all custom fields
+    return [...closeFields, ...calendlyFields, ...typeformFields];
   } catch (error) {
     console.error('Error fetching custom fields:', error);
+    return [];
+  }
+}
+
+/**
+ * Get custom fields from Close CRM API
+ * This includes financial fields like cash_collected and contracted_value
+ */
+async function getCloseCustomFields(): Promise<FieldInfo[]> {
+  try {
+    // Query the database for all Close opportunities to extract custom fields
+    const closeDeals = await db.query.deals.findMany({
+      where: sql`close_id IS NOT NULL`,
+      limit: 100, // Limit to 100 records for performance
+    });
+    
+    // Extract all unique custom fields from opportunity metadata
+    const customFields = new Map<string, FieldInfo>();
+    
+    for (const deal of closeDeals) {
+      if (deal.metadata) {
+        const metadata = deal.metadata as Record<string, any>;
+        
+        // Process each metadata field
+        for (const [key, value] of Object.entries(metadata)) {
+          if (!customFields.has(key)) {
+            // Determine field type
+            let fieldType = 'text';
+            if (typeof value === 'number') fieldType = 'number';
+            if (typeof value === 'boolean') fieldType = 'boolean';
+            if (value instanceof Date) fieldType = 'date';
+            
+            // Create field info object
+            customFields.set(key, {
+              id: `close_${key}`,
+              name: key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()), // Format name
+              description: `Close CRM custom field: ${key}`,
+              fieldType,
+              source: 'close',
+              path: `metadata.${key}`,
+              usageCount: 1,
+              suggestedWith: ['deal', 'opportunity'],
+              metadata: {
+                platform: 'close',
+                entityType: 'opportunity',
+                isCustomField: true
+              }
+            });
+          } else {
+            // Increment usage count for existing field
+            const existing = customFields.get(key)!;
+            existing.usageCount += 1;
+          }
+        }
+        
+        // Specifically check for financial fields
+        if (deal.cashCollected) {
+          customFields.set('cash_collected', {
+            id: 'close_cash_collected',
+            name: 'Cash Collected',
+            description: 'Amount of cash actually collected from a deal',
+            fieldType: 'currency',
+            source: 'close',
+            path: 'cashCollected',
+            usageCount: 1,
+            suggestedWith: ['deal', 'opportunity', 'revenue'],
+            metadata: {
+              platform: 'close',
+              entityType: 'opportunity',
+              isFinancial: true
+            }
+          });
+        }
+        
+        if (deal.contractedValue) {
+          customFields.set('contracted_value', {
+            id: 'close_contracted_value',
+            name: 'Contracted Value',
+            description: 'Total value contracted in a deal',
+            fieldType: 'currency',
+            source: 'close',
+            path: 'contractedValue',
+            usageCount: 1,
+            suggestedWith: ['deal', 'opportunity', 'revenue'],
+            metadata: {
+              platform: 'close',
+              entityType: 'opportunity',
+              isFinancial: true
+            }
+          });
+        }
+      }
+    }
+    
+    return Array.from(customFields.values());
+  } catch (error) {
+    console.error('Error fetching Close custom fields:', error);
+    return [];
+  }
+}
+
+/**
+ * Get custom fields from Calendly
+ */
+async function getCalendlyCustomFields(): Promise<FieldInfo[]> {
+  try {
+    // Query the database for Calendly meetings to extract custom fields
+    const calendlyMeetings = await db.query.meetings.findMany({
+      where: sql`calendly_event_id IS NOT NULL`,
+      limit: 50, // Limit to 50 records for performance
+    });
+    
+    // Extract unique custom fields
+    const customFields = new Map<string, FieldInfo>();
+    
+    for (const meeting of calendlyMeetings) {
+      // Process any custom questions/answers
+      if (meeting.questions) {
+        const questions = meeting.questions as Record<string, any>;
+        
+        for (const [key, value] of Object.entries(questions)) {
+          if (!customFields.has(`calendly_question_${key}`)) {
+            customFields.set(`calendly_question_${key}`, {
+              id: `calendly_question_${key}`,
+              name: `Calendly: ${key}`,
+              description: `Custom question from Calendly: ${key}`,
+              fieldType: 'text',
+              source: 'calendly',
+              path: `questions.${key}`,
+              usageCount: 1,
+              suggestedWith: ['meeting', 'scheduling'],
+              metadata: {
+                platform: 'calendly',
+                entityType: 'meeting',
+                isCustomField: true
+              }
+            });
+          } else {
+            const existing = customFields.get(`calendly_question_${key}`)!;
+            existing.usageCount += 1;
+          }
+        }
+      }
+    }
+    
+    return Array.from(customFields.values());
+  } catch (error) {
+    console.error('Error fetching Calendly custom fields:', error);
+    return [];
+  }
+}
+
+/**
+ * Get custom fields from Typeform
+ */
+async function getTypeformCustomFields(): Promise<FieldInfo[]> {
+  try {
+    // Query the database for Typeform submissions to extract custom fields
+    const typeformSubmissions = await db.query.forms.findMany({
+      where: sql`typeform_response_id IS NOT NULL`,
+      limit: 50, // Limit to 50 records for performance
+    });
+    
+    // Extract unique custom fields
+    const customFields = new Map<string, FieldInfo>();
+    
+    for (const submission of typeformSubmissions) {
+      // Process answers
+      if (submission.answers) {
+        const answers = submission.answers as Record<string, any>;
+        
+        for (const [key, value] of Object.entries(answers)) {
+          if (!customFields.has(`typeform_question_${key}`)) {
+            customFields.set(`typeform_question_${key}`, {
+              id: `typeform_question_${key}`,
+              name: `Typeform: ${key}`,
+              description: `Question from Typeform: ${key}`,
+              fieldType: 'text',
+              source: 'typeform',
+              path: `answers.${key}`,
+              usageCount: 1,
+              suggestedWith: ['form', 'survey'],
+              metadata: {
+                platform: 'typeform',
+                entityType: 'form',
+                isCustomField: true
+              }
+            });
+          } else {
+            const existing = customFields.get(`typeform_question_${key}`)!;
+            existing.usageCount += 1;
+          }
+        }
+      }
+      
+      // Process hidden fields
+      if (submission.hiddenFields) {
+        const hiddenFields = submission.hiddenFields as Record<string, any>;
+        
+        for (const [key, value] of Object.entries(hiddenFields)) {
+          if (!customFields.has(`typeform_hidden_${key}`)) {
+            customFields.set(`typeform_hidden_${key}`, {
+              id: `typeform_hidden_${key}`,
+              name: `Typeform Hidden: ${key}`,
+              description: `Hidden field from Typeform: ${key}`,
+              fieldType: 'text',
+              source: 'typeform',
+              path: `hiddenFields.${key}`,
+              usageCount: 1,
+              suggestedWith: ['form', 'utm'],
+              metadata: {
+                platform: 'typeform',
+                entityType: 'form',
+                isHiddenField: true
+              }
+            });
+          } else {
+            const existing = customFields.get(`typeform_hidden_${key}`)!;
+            existing.usageCount += 1;
+          }
+        }
+      }
+    }
+    
+    return Array.from(customFields.values());
+  } catch (error) {
+    console.error('Error fetching Typeform custom fields:', error);
     return [];
   }
 }

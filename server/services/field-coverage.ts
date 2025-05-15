@@ -325,7 +325,7 @@ export async function updateAllContactsFieldCoverage(): Promise<void> {
     
     await db.update(contacts)
       .set({ 
-        field_coverage: coverage, 
+        fieldCoverage: coverage, 
         required_fields_complete: requiredFieldsComplete 
       })
       .where(eq(contacts.id, contact.id));
