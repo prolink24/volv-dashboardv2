@@ -195,6 +195,121 @@ const CustomerJourneyPage: React.FC = () => {
       return `${Math.round(minutes / 1440)} days`;
     }
   };
+  
+  // Component for the visual journey timeline
+  const VisualJourneyTimeline: React.FC<{ events: TimelineEvent[] }> = ({ events }) => {
+    if (!events || events.length === 0) {
+      return <div className="text-center py-8 text-muted-foreground">No timeline events available</div>;
+    }
+    
+    const sortedEvents = [...events].sort((a, b) => 
+      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+    
+    // Get the earliest and latest dates
+    const earliestDate = new Date(sortedEvents[0].timestamp);
+    const latestDate = new Date(sortedEvents[sortedEvents.length - 1].timestamp);
+    const totalTimespan = latestDate.getTime() - earliestDate.getTime();
+    
+    return (
+      <div className="relative mt-8 mb-12">
+        {/* Timeline line */}
+        <div className="absolute left-1/2 transform -translate-x-1/2 h-full w-1 bg-muted-foreground/20 rounded"></div>
+        
+        {/* Timeline events */}
+        {sortedEvents.map((event, index) => {
+          // Calculate position percentage based on time
+          const eventTime = new Date(event.timestamp).getTime();
+          const timeSinceStart = eventTime - earliestDate.getTime();
+          const positionPercentage = Math.min(Math.max((timeSinceStart / totalTimespan) * 100, 5), 95);
+          
+          // Alternate events on left and right
+          const isLeft = index % 2 === 0;
+          
+          return (
+            <div 
+              key={event.id} 
+              className={`relative mb-16 ${isLeft ? 'pr-1/2 text-right' : 'pl-1/2'}`}
+              style={{ marginTop: index === 0 ? '0' : '2rem' }}
+            >
+              {/* Event marker */}
+              <div 
+                className={`absolute top-0 w-6 h-6 rounded-full bg-primary flex items-center justify-center z-10`}
+                style={{ 
+                  left: 'calc(50% - 12px)', 
+                  boxShadow: '0 0 0 4px rgba(255, 255, 255, 0.8)'
+                }}
+              >
+                {getEventIcon(event.type)}
+              </div>
+              
+              {/* Event content */}
+              <div 
+                className={`bg-card border rounded-lg p-4 shadow-md ${isLeft ? 'mr-6' : 'ml-6'}`}
+                style={{ 
+                  width: 'calc(100% - 3rem)',
+                  marginLeft: isLeft ? 'auto' : '3rem',
+                  marginRight: isLeft ? '3rem' : 'auto',
+                  position: 'relative',
+                  zIndex: 1
+                }}
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <Badge variant={
+                      event.type === 'meeting' ? 'default' :
+                      event.type === 'deal' ? 'secondary' :
+                      event.type === 'form' ? 'outline' :
+                      'default'
+                    }>
+                      {event.type} {event.subtype ? `- ${event.subtype}` : ''}
+                    </Badge>
+                    <h4 className="text-lg font-semibold mt-1">{event.title}</h4>
+                  </div>
+                  <div className="text-xs text-muted-foreground whitespace-nowrap">
+                    {formatDate(event.timestamp)}
+                  </div>
+                </div>
+                
+                {event.description && (
+                  <p className="text-sm text-muted-foreground mb-2">{event.description}</p>
+                )}
+                
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-1">
+                    <span className="font-medium">Source:</span> 
+                    <Badge variant="outline" className="px-1 py-0 h-auto text-xs">
+                      {event.source}
+                    </Badge>
+                  </div>
+                  
+                  {event.userName && (
+                    <div className="flex items-center gap-1">
+                      <span className="font-medium">User:</span>
+                      <span>{event.userName}</span>
+                    </div>
+                  )}
+                  
+                  {event.score !== undefined && (
+                    <div className="flex items-center gap-1">
+                      <span className="font-medium">Score:</span>
+                      <Badge variant={event.score > 75 ? "default" : 
+                                      event.score > 50 ? "secondary" : 
+                                      event.score > 25 ? "outline" : 
+                                      "destructive"} 
+                             className="px-1 py-0 h-auto text-xs">
+                        {event.score}
+                      </Badge>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
 
   if (isLoading) {
     return (
