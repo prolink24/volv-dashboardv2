@@ -115,8 +115,8 @@ export const contacts = pgTable("contacts", {
   notes: text("notes"),
   tags: text("tags").array(), // Array of tags
   // Field tracking
-  fieldCoverage: integer("field_coverage"), // Percentage of fields filled (0-100)
-  requiredFieldsComplete: boolean("required_fields_complete").default(false),
+  fieldCoverage: integer("fieldCoverage"), // Percentage of fields filled (0-100)
+  requiredFieldsComplete: boolean("requiredFieldsComplete").default(false),
   // All raw source data
   sourceData: jsonb("source_data"),
 });
@@ -153,7 +153,7 @@ export const activities = pgTable("activities", {
   taskAssignedTo: text("task_assigned_to"),
   taskPriority: text("task_priority"), // high, medium, low
   // Field tracking
-  fieldCoverage: integer("field_coverage"), // Percentage of fields filled (0-100)
+  fieldCoverage: integer("fieldCoverage"), // Percentage of fields filled (0-100)
   // Additional metadata
   metadata: jsonb("metadata"),
 });
@@ -183,7 +183,7 @@ export const deals = pgTable("deals", {
   leadName: text("lead_name"), // Associated lead name
   statusLabel: text("status_label"), // Human-readable status
   // Field tracking
-  fieldCoverage: integer("field_coverage"), // Percentage of fields filled (0-100)
+  fieldCoverage: integer("fieldCoverage"), // Percentage of fields filled (0-100)
   // All other custom fields stored in metadata
   metadata: jsonb("metadata"),
 });
