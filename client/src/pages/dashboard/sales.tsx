@@ -263,7 +263,11 @@ export default function SalesDashboard() {
             <CardTitle className="text-sm font-medium">Closed Deals</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold">{kpis.closedDeals}</div>
+            <div className="text-4xl font-bold">
+              {typeof kpis.closedDeals === 'object' && kpis.closedDeals !== null 
+                ? kpis.closedDeals.current 
+                : kpis.closedDeals}
+            </div>
           </CardContent>
         </Card>
         <Card>
@@ -271,7 +275,13 @@ export default function SalesDashboard() {
             <CardTitle className="text-sm font-medium">Cash Collected</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold">{formatCurrency(kpis.cashCollected)}</div>
+            <div className="text-4xl font-bold">
+              {formatCurrency(
+                typeof kpis.cashCollected === 'object' && kpis.cashCollected !== null
+                  ? kpis.cashCollected.current
+                  : kpis.cashCollected
+              )}
+            </div>
           </CardContent>
         </Card>
         <Card>
@@ -279,7 +289,13 @@ export default function SalesDashboard() {
             <CardTitle className="text-sm font-medium">Revenue Generated</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold">{formatCurrency(kpis.revenueGenerated)}</div>
+            <div className="text-4xl font-bold">
+              {formatCurrency(
+                typeof kpis.revenueGenerated === 'object' && kpis.revenueGenerated !== null
+                  ? kpis.revenueGenerated.current
+                  : kpis.revenueGenerated
+              )}
+            </div>
           </CardContent>
         </Card>
         <Card>
@@ -287,7 +303,11 @@ export default function SalesDashboard() {
             <CardTitle className="text-sm font-medium">Total Calls</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold">{kpis.totalCalls}</div>
+            <div className="text-4xl font-bold">
+              {typeof kpis.totalCalls === 'object' && kpis.totalCalls !== null
+                ? kpis.totalCalls.current
+                : kpis.totalCalls}
+            </div>
           </CardContent>
         </Card>
       </div>
