@@ -274,21 +274,30 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         <KpiCard 
           title="Closed Deals" 
-          value={dashboardData.kpis.closedDeals} 
+          value={dashboardData.kpis.closedDeals?.current || dashboardData.kpis.deals.current} 
           subValue="/10 target" 
-          trend={{ value: 20, label: "vs. last month" }}
+          trend={{ 
+            value: dashboardData.kpis.closedDeals?.change || dashboardData.kpis.deals.change, 
+            label: "vs. last month" 
+          }}
         />
         <KpiCard 
           title="Cash Collected" 
-          value={formatCurrency(dashboardData.kpis.cashCollected)} 
+          value={formatCurrency(dashboardData.kpis.cashCollected?.current || dashboardData.kpis.revenue.current)} 
           subValue="/150k target"
-          trend={{ value: 15, label: "vs. last month" }}
+          trend={{ 
+            value: dashboardData.kpis.cashCollected?.change || dashboardData.kpis.revenue.change, 
+            label: "vs. last month" 
+          }}
         />
         <KpiCard 
           title="Revenue Generated" 
-          value={formatCurrency(dashboardData.kpis.revenueGenerated)} 
+          value={formatCurrency(dashboardData.kpis.revenueGenerated?.current || dashboardData.kpis.revenue.current)} 
           subValue="/250k target"
-          trend={{ value: 12, label: "vs. last month" }}
+          trend={{ 
+            value: dashboardData.kpis.revenueGenerated?.change || dashboardData.kpis.revenue.change, 
+            label: "vs. last month" 
+          }}
         />
         <KpiCard 
           title="Total Calls" 
