@@ -152,18 +152,22 @@ const Dashboard = () => {
 
   if (!dashboardData) return null;
 
-  // Prepare chart data
-  const cashCollectedData = dashboardData.salesTeam ? dashboardData.salesTeam.map(person => ({
-    name: person.name.split(' ')[0],
-    value: person.cashCollected || 0,
-    color: "var(--primary)"
-  })) : [];
+  // Prepare chart data with safe access to properties
+  const cashCollectedData = dashboardData?.salesTeam && Array.isArray(dashboardData.salesTeam) 
+    ? dashboardData.salesTeam.map(person => ({
+        name: person?.name ? person.name.split(' ')[0] : 'Unknown',
+        value: person?.cashCollected || 0,
+        color: "var(--primary)"
+      })) 
+    : [];
 
-  const closingRateData = dashboardData.salesTeam ? dashboardData.salesTeam.map(person => ({
-    name: person.name.split(' ')[0],
-    value: person.closingRate || 0,
-    color: (person.closingRate || 0) > 0 ? "var(--primary)" : "var(--muted)"
-  })) : [];
+  const closingRateData = dashboardData?.salesTeam && Array.isArray(dashboardData.salesTeam) 
+    ? dashboardData.salesTeam.map(person => ({
+        name: person?.name ? person.name.split(' ')[0] : 'Unknown',
+        value: person?.closingRate || 0,
+        color: (person?.closingRate || 0) > 0 ? "var(--primary)" : "var(--muted)"
+      })) 
+    : [];
 
   // Generate attribution channel data from our actual stats
   const channelData = attributionStatsData?.stats 
@@ -351,20 +355,25 @@ const Dashboard = () => {
         <div className="bg-card rounded-lg shadow-sm p-4 border border-border">
           <h3 className="text-base font-medium mb-4">Cash Collected by Rep</h3>
           <div className="space-y-4">
-            {dashboardData.salesTeam.map((person, index) => (
-              <div key={index}>
-                <div className="flex justify-between mb-1">
-                  <span className="text-sm">{person.name}</span>
-                  <span className="text-sm font-medium">{formatCurrency(person.cashCollected)}</span>
+            {dashboardData?.salesTeam && Array.isArray(dashboardData.salesTeam) ? 
+              dashboardData.salesTeam.map((person, index) => (
+                <div key={index}>
+                  <div className="flex justify-between mb-1">
+                    <span className="text-sm">{person?.name || 'Unknown'}</span>
+                    <span className="text-sm font-medium">{formatCurrency(person?.cashCollected || 0)}</span>
+                  </div>
+                  <ProgressBar 
+                    value={person?.cashCollected || 0} 
+                    max={dashboardData.salesTeam && dashboardData.salesTeam.length > 0 
+                      ? Math.max(...dashboardData.salesTeam.map(p => p?.cashCollected || 0)) 
+                      : 100} 
+                  />
                 </div>
-                <ProgressBar 
-                  value={person.cashCollected || 0} 
-                  max={dashboardData.salesTeam && dashboardData.salesTeam.length > 0 
-                    ? Math.max(...dashboardData.salesTeam.map(p => p.cashCollected || 0)) 
-                    : 100} 
-                />
-              </div>
-            ))}
+              )) 
+              : (
+                <div className="text-sm text-muted-foreground">No sales team data available</div>
+              )
+            }
           </div>
         </div>
         

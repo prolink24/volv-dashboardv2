@@ -401,19 +401,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         } else {
           try {
-            // Set a very short timeout for attribution data (3 seconds)
-            // This still allows the dashboard to render quickly
+            // Set a longer timeout for attribution data (10 seconds)
+            // This gives more time for the data to be generated
             console.time('get-fresh-attribution');
             const attributionPromise = attributionService.attributeAllContacts();
             
             // Create a timeout promise
             const timeoutPromise = new Promise((_, reject) => {
-              setTimeout(() => reject(new Error("Attribution data fetch timed out")), 3000);
+              setTimeout(() => reject(new Error("Attribution data fetch timed out")), 10000);
             });
             
-            // Race the attribution promise against the timeout
-            const attributionData = await Promise.race([attributionPromise, timeoutPromise]) as any;
-            console.timeEnd('get-fresh-attribution');
+            let attributionData;
+            try {
+              // Race the attribution promise against the timeout
+              attributionData = await Promise.race([attributionPromise, timeoutPromise]) as any;
+              console.timeEnd('get-fresh-attribution');
+              console.log("Successfully fetched attribution data");
+            } catch (error) {
+              console.error("Attribution data fetch error:", error instanceof Error ? error.message : String(error));
+              console.timeEnd('get-fresh-attribution');
+              // Continue with partial data
+            }
             
             // Update the attribution data if we got it in time
             if (attributionData && attributionData.detailedAnalytics) {
