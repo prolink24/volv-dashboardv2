@@ -10,9 +10,43 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { AttributionStatsDebug } from "@/components/debug/attribution-stats-debug";
+import { safeMap } from "@/utils/debug-logger";
 
 export const AttributionStats = () => {
   const { data, isLoading, error, isError, refetch } = useAttributionStats();
+  
+  // Include the debug component (renders nothing visually)
+  return (
+    <>
+      <AttributionStatsDebug 
+        isLoading={isLoading}
+        isError={isError}
+        error={error}
+        data={data}
+      />
+      <AttributionStatsContent 
+        data={data}
+        isLoading={isLoading}
+        error={error}
+        isError={isError}
+      />
+    </>
+  );
+};
+
+const AttributionStatsContent = ({ 
+  data, 
+  isLoading, 
+  error, 
+  isError 
+}: { 
+  data: any; 
+  isLoading: boolean; 
+  error: any; 
+  isError: boolean; 
+}) => {
+  const refetch = useAttributionStats().refetch;
   
   // Log data flow for debugging
   useEffect(() => {
