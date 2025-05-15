@@ -217,8 +217,19 @@ async function processEventBatch(events, userId, batchNumber, batchSize) {
 /**
  * Get the next batch of events using pagination
  */
-async function getNextEventBatch(userId, minStartTime, maxStartTime, pageToken = null, count = 100) {
-  try {
+async function getNextEventBatch(userId, minStartTime, maxStartTime, pageToken = null, count = 100, options = {}) {
+  // Default retry options
+  const retryOptions = {
+    retryCount: 3,
+    retryDelay: 1000,
+    ...options
+  };
+  
+  // Helper function to delay execution
+  const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+  
+  // Helper function for the actual API call
+  const fetchEvents = async () => {
     const params: any = {
       user: userId,
       min_start_time: minStartTime,
@@ -239,16 +250,47 @@ async function getNextEventBatch(userId, minStartTime, maxStartTime, pageToken =
       totalCount: response.data.pagination?.count || 0,
       nextPageToken: response.data.pagination?.next_page_token || null
     };
-  } catch (error) {
-    console.error('Error fetching event batch:', error);
-    return {
-      success: false,
-      events: [],
-      error: error.message,
-      pagination: null,
-      nextPageToken: null
-    };
+  };
+  
+  // Try the request with retries
+  let retries = 0;
+  let lastError = null;
+  
+  while (retries <= retryOptions.retryCount) {
+    try {
+      return await fetchEvents();
+    } catch (error) {
+      lastError = error;
+      
+      // If we've reached max retries, break out
+      if (retries >= retryOptions.retryCount) {
+        break;
+      }
+      
+      // If it's a rate limit error (429), wait longer
+      const retryDelay = error.response?.status === 429 
+        ? retryOptions.retryDelay * 2 * (retries + 1) // Exponential backoff for rate limits
+        : retryOptions.retryDelay * (retries + 1);
+        
+      console.warn(`API request failed (attempt ${retries + 1}/${retryOptions.retryCount + 1}), retrying in ${retryDelay/1000}s...`);
+      
+      // Wait before retrying
+      await delay(retryDelay);
+      retries++;
+    }
   }
+  
+  // If we got here, all retries failed
+  console.error('Error fetching event batch after retries:', lastError);
+  return {
+    success: false,
+    events: [],
+    error: lastError?.message || 'Unknown error after retries',
+    pagination: null,
+    nextPageToken: null,
+    totalCount: 0
+  };
+}
 }
 
 /**
@@ -258,10 +300,12 @@ async function getNextEventBatch(userId, minStartTime, maxStartTime, pageToken =
 async function syncAllEvents(options = {}) {
   // Default options for sync
   const defaultOptions = {
-    batchSize: 5,           // How many events to process in one batch
+    batchSize: 10,          // How many events to process in one batch (increased from 5)
     resumeFromToken: null,  // Resume from a specific page token
     syncLimit: 0,           // Limit number of events to sync (0 = all)
-    timeout: 540000         // Timeout in ms (9 minutes to allow for clean shutdown)
+    timeout: 540000,        // Timeout in ms (9 minutes to allow for clean shutdown)
+    retryCount: 3,          // Number of retry attempts for failed requests
+    retryDelay: 1000        // Delay between retries in ms
   };
   
   const syncOptions = { ...defaultOptions, ...options };
