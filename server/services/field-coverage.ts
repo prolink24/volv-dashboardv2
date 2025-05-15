@@ -352,7 +352,7 @@ export async function updateAllActivitiesFieldCoverage(): Promise<void> {
     const coverage = calculateActivityFieldCoverage(activity);
     
     await db.update(activities)
-      .set({ field_coverage: coverage })
+      .set({ fieldCoverage: coverage })
       .where(eq(activities.id, activity.id));
     
     updatedCount++;
@@ -377,7 +377,7 @@ export async function updateAllDealsFieldCoverage(): Promise<void> {
     const coverage = calculateDealFieldCoverage(deal);
     
     await db.update(deals)
-      .set({ field_coverage: coverage })
+      .set({ fieldCoverage: coverage })
       .where(eq(deals.id, deal.id));
     
     updatedCount++;
@@ -402,7 +402,7 @@ export async function updateAllMeetingsFieldCoverage(): Promise<void> {
     const coverage = calculateMeetingFieldCoverage(meeting);
     
     await db.update(meetings)
-      .set({ field_coverage: coverage })
+      .set({ fieldCoverage: coverage })
       .where(eq(meetings.id, meeting.id));
     
     updatedCount++;
@@ -427,7 +427,7 @@ export async function updateAllFormsFieldCoverage(): Promise<void> {
     const coverage = calculateFormFieldCoverage(form);
     
     await db.update(forms)
-      .set({ field_coverage: coverage })
+      .set({ fieldCoverage: coverage })
       .where(eq(forms.id, form.id));
     
     updatedCount++;
