@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTheme } from "@/providers/theme-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DateRangePicker } from "@/components/global/DateRangePicker";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -70,6 +71,10 @@ const Header = () => {
         </div>
 
         <div className="flex items-center gap-3">
+          <div className="hidden md:block">
+            <DateRangePicker />
+          </div>
+          
           <div className="relative w-48 lg:w-64 hidden sm:block">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input 

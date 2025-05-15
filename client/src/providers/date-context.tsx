@@ -20,6 +20,11 @@ export function DateRangeProvider({ children }: { children: ReactNode }) {
 }
 
 /**
+ * DateProvider is an alias for DateRangeProvider for backward compatibility
+ */
+export const DateProvider = DateRangeProvider;
+
+/**
  * useDateRangeContext is a hook to access the date range context
  */
 export function useDateRangeContext() {
