@@ -325,8 +325,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // 1. First get basic dashboard data which should be fast
       console.time('get-dashboard-data');
+      
+      // Ensure we're sending proper date objects to the database
+      // This fixes the 'value.toISOString is not a function' error
+      let dateParam;
+      if (startDate === endDate) {
+        // Format as ISO string, which is what Postgres expects
+        dateParam = startDate.toISOString();
+      } else {
+        dateParam = { 
+          startDate: startDate.toISOString(), 
+          endDate: endDate.toISOString() 
+        };
+      }
+      
+      console.log(`Using date param format: ${typeof dateParam === 'string' ? 'single date' : 'date range'}`);
       const dashboardData = await storage.getDashboardData(
-        startDate === endDate ? startDate : { startDate, endDate }, 
+        dateParam, 
         userId
       );
       console.timeEnd('get-dashboard-data');
