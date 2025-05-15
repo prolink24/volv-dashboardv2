@@ -348,7 +348,7 @@ async function syncAllEvents() {
                 // Import the contact matcher service
                 const contactMatcher = await import('../services/contact-matcher');
                 
-                // Prepare contact data for matching/creation
+                // Prepare contact data for matching/creation with enhanced field mapping
                 const contactData = {
                   name: invitee.name || email.split('@')[0],
                   email: email,
@@ -358,8 +358,70 @@ async function syncAllEvents() {
                   status: 'lead',
                   sourceId: invitee.uri,
                   sourceData: invitee,
-                  createdAt: new Date(invitee.created_at)
+                  createdAt: new Date(invitee.created_at),
+                  // Additional fields from form data if available in custom questions
+                  title: '', // Will be populated from custom questions if available
+                  address: '',
+                  city: '',
+                  state: '',
+                  country: '',
+                  zipcode: '',
+                  linkedInUrl: '',
+                  twitterHandle: '',
+                  notes: '',
+                  // Store metadata
+                  metadata: {
+                    timezone: invitee.timezone || '',
+                    locale: invitee.locale || '',
+                    event_type: event.event_type || '',
+                    questions_and_answers: invitee.questions_and_answers || [],
+                    tracking: invitee.tracking || {},
+                    utm_source: invitee.utm_source || '',
+                    utm_medium: invitee.utm_medium || '',
+                    utm_campaign: invitee.utm_campaign || '',
+                    utm_content: invitee.utm_content || '',
+                    utm_term: invitee.utm_term || '',
+                    canceled: invitee.canceled || false,
+                    rescheduled: invitee.rescheduled || false
+                  }
                 };
+                
+                // Parse custom questions to extract more contact data
+                if (invitee.questions_and_answers && Array.isArray(invitee.questions_and_answers)) {
+                  for (const qa of invitee.questions_and_answers) {
+                    // Skip if question or answer is missing
+                    if (!qa.question || !qa.answer) continue;
+                    
+                    const questionLower = qa.question.toLowerCase();
+                    const answer = qa.answer.trim();
+                    
+                    // Skip empty answers
+                    if (!answer) continue;
+                    
+                    // Map common questions to contact fields
+                    if (questionLower.includes('job title') || questionLower.includes('position') || questionLower.includes('role')) {
+                      contactData.title = answer;
+                    } else if (questionLower.includes('company') || questionLower.includes('organization') || questionLower.includes('business')) {
+                      contactData.company = contactData.company || answer;
+                    } else if (questionLower.includes('linkedin')) {
+                      contactData.linkedInUrl = answer;
+                    } else if (questionLower.includes('twitter')) {
+                      contactData.twitterHandle = answer;
+                    } else if (questionLower.includes('address')) {
+                      contactData.address = answer;
+                    } else if (questionLower.includes('city')) {
+                      contactData.city = answer;
+                    } else if (questionLower.includes('state') || questionLower.includes('province')) {
+                      contactData.state = answer;
+                    } else if (questionLower.includes('zip') || questionLower.includes('postal')) {
+                      contactData.zipcode = answer;
+                    } else if (questionLower.includes('country')) {
+                      contactData.country = answer;
+                    } else if (questionLower.includes('note') || questionLower.includes('comments') || questionLower.includes('message')) {
+                      contactData.notes = answer;
+                    }
+                  }
+                }
                 
                 // Use the enhanced contact matcher to find or create contact
                 const { contact, created, reason } = await contactMatcher.createOrUpdateContact(

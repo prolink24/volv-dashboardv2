@@ -718,7 +718,7 @@ async function syncLeadActivities(leadId: string, contactId: number) {
         
         for (const activity of activities) {
           try {
-            // Extract relevant activity data
+            // Extract relevant activity data with expanded field coverage
             const activityData = {
               contactId,
               type: type,
@@ -727,12 +727,68 @@ async function syncLeadActivities(leadId: string, contactId: number) {
               date: new Date(activity.date_created),
               source: 'close',
               sourceId: activity.id,
-              metadata: {
-                status: activity.is_complete ? 'completed' : 'pending',
-                activityType: type,
-                activityData: activity
-              }
+              // Additional fields for enhanced data collection
+              assignedTo: activity.assigned_to_name || null,
+              completedBy: activity.completed_by_name || null,
+              completedDate: activity.date_completed ? new Date(activity.date_completed) : null,
+              dueDate: activity.due_date ? new Date(activity.due_date) : null,
+              priority: activity.priority || null,
+              status: activity.is_complete ? 'completed' : 'pending',
+              duration: activity.duration_seconds || null,
+              direction: type === 'call' ? (activity.direction || null) : null,
+              outcome: activity.outcome_id || null,
+              // Activity-specific fields based on type
+              metadata: {}
             };
+            
+            // Populate metadata with all raw data and add type-specific processing
+            const metadataObj = {
+              status: activity.is_complete ? 'completed' : 'pending',
+              activityType: type,
+              activityData: activity,
+              // Extract any custom fields
+              custom_fields: activity.custom || {}
+            };
+            
+            // Add type-specific metadata fields
+            if (type === 'call') {
+              // Add call-specific fields to metadata
+              metadataObj.call_direction = activity.direction || null;
+              metadataObj.call_disposition = activity.disposition || null;
+              metadataObj.call_duration = activity.duration_seconds || null;
+              metadataObj.recording_url = activity.recording_url || null;
+              metadataObj.phone_number = activity.phone || null;
+              metadataObj.voicemail = activity.voicemail === true || false;
+            } else if (type === 'email') {
+              // Add email-specific fields to metadata
+              metadataObj.email_subject = activity.subject || null;
+              metadataObj.email_body_html = activity.body_html || null;
+              metadataObj.email_body_text = activity.body_text || null;
+              metadataObj.email_sender = activity.sender || null;
+              metadataObj.email_to = activity.to || [];
+              metadataObj.email_cc = activity.cc || [];
+              metadataObj.email_bcc = activity.bcc || [];
+              metadataObj.email_attachments = activity.attachments || [];
+              metadataObj.email_thread_id = activity.thread_id || null;
+              metadataObj.email_message_id = activity.message_id || null;
+              metadataObj.email_in_reply_to = activity.in_reply_to || null;
+              metadataObj.email_template_id = activity.template_id || null;
+              metadataObj.email_opens = activity.opens || [];
+              metadataObj.email_clicks = activity.clicks || [];
+            } else if (type === 'task') {
+              // Add task-specific fields to metadata
+              metadataObj.task_due_date = activity.due_date || null;
+              metadataObj.task_reminder_date = activity.reminder_date || null;
+              metadataObj.task_assigned_by = activity.assigned_by_name || null;
+              metadataObj.task_completed_by = activity.completed_by_name || null;
+            } else if (type === 'note') {
+              // Add note-specific fields to metadata
+              metadataObj.note_content = activity.note || null;
+              metadataObj.note_mentions = activity.mentions || [];
+            }
+            
+            // Update the activityData metadata with enhanced metadata
+            activityData.metadata = metadataObj;
             
             // Check if activity exists by external ID
             const existingActivity = await storage.getActivityBySourceId('close', activity.id);
