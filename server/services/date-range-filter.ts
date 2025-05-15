@@ -326,8 +326,8 @@ export async function getContactStatsByDateRange(dateRange: DateRange): Promise<
     .from(meetings)
     .where(
       and(
-        gte(meetings.meetingDate, dateRange.startDate),
-        lte(meetings.meetingDate, dateRange.endDate)
+        gte(meetings.startTime, dateRange.startDate),
+        lte(meetings.startTime, dateRange.endDate)
       )
     )
     .groupBy(meetings.contactId);
@@ -469,11 +469,11 @@ export async function getActivityStatsByDateRange(dateRange: DateRange): Promise
   let callsUnanswered = 0;
   
   callActivities.forEach(call => {
-    totalCallDuration += Number(call.call_duration) || 0;
+    totalCallDuration += Number(call.callDuration) || 0;
     
-    if (call.call_outcome === 'answered' || call.call_outcome === 'completed') {
+    if (call.callOutcome === 'answered' || call.callOutcome === 'completed') {
       callsAnswered++;
-    } else if (call.call_outcome === 'no-answer' || call.call_outcome === 'voicemail' || call.call_outcome === 'busy') {
+    } else if (call.callOutcome === 'no-answer' || call.callOutcome === 'voicemail' || call.callOutcome === 'busy') {
       callsUnanswered++;
     }
   });
