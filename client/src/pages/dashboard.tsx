@@ -169,23 +169,39 @@ const Dashboard = () => {
       })) 
     : [];
 
-  // Generate attribution channel data from our actual stats
-  const channelData = attributionStatsData?.stats 
+  // Generate attribution channel data from our actual API data
+  const channelData = attributionStatsData
     ? {
-        channels: [
-          {
-            name: 'Close CRM',
-            value: attributionStatsData.stats.totalContacts - attributionStatsData.stats.multiSourceContacts,
-            percentage: 100 - attributionStatsData.stats.multiSourceRate,
-            color: '#4CAF50'
-          },
-          {
-            name: 'Multi-Source',
-            value: attributionStatsData.stats.multiSourceContacts,
-            percentage: attributionStatsData.stats.multiSourceRate,
-            color: '#FF8A65'
-          }
-        ],
+        channels: attributionStatsData.channelBreakdown 
+          ? Object.entries(attributionStatsData.channelBreakdown).map(([name, value], index) => {
+              // Calculate percentage based on total touchpoints
+              const totalTouchpoints = attributionStatsData.totalTouchpoints || 1;
+              const percentage = (value / totalTouchpoints) * 100;
+              
+              // Assign colors based on channel name
+              let color;
+              switch(name.toLowerCase()) {
+                case 'close':
+                  color = '#4CAF50'; // Green
+                  break;
+                case 'calendly':
+                  color = '#FF8A65'; // Orange
+                  break;
+                case 'typeform':
+                  color = '#42A5F5'; // Blue
+                  break;
+                default:
+                  color = `hsl(${index * 40}, 70%, 50%)`;
+              }
+              
+              return {
+                name: name.charAt(0).toUpperCase() + name.slice(1), // Capitalize channel name
+                value: value as number,
+                percentage,
+                color
+              };
+            })
+          : [],
         title: "Channel Attribution",
         description: "Contact attribution by source channel"
       }
@@ -269,8 +285,8 @@ const Dashboard = () => {
         <AttributionStats />
         {channelData && <AttributionChannels data={channelData} />}
         {attributionInsights.length > 0 && <AttributionInsights insights={attributionInsights} />}
-        {!channelData && <AttributionChannels isLoading={!attributionStatsData} />}
-        {attributionInsights.length === 0 && <AttributionInsights isLoading={!attributionStatsData} />}
+        {!channelData && <AttributionChannels data={{ isLoading: !attributionStatsData }} />}
+        {attributionInsights.length === 0 && <AttributionInsights insights={[]} loading={!attributionStatsData} />}
       </div>
       
       {/* KPI Cards */}
