@@ -396,7 +396,7 @@ const CustomerJourneyPage: React.FC = () => {
             <CardHeader className="pb-2">
               <div className="flex justify-between items-start">
                 <CardTitle>Contact Details</CardTitle>
-                <Badge variant={contactStatus === 'Active' ? 'success' : contactStatus === 'Inactive' ? 'destructive' : 'secondary'}>
+                <Badge variant={contactStatus === 'Active' ? 'default' : contactStatus === 'Inactive' ? 'destructive' : 'secondary'}>
                   {contactStatus}
                 </Badge>
               </div>
@@ -480,6 +480,7 @@ const CustomerJourneyPage: React.FC = () => {
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList>
                 <TabsTrigger value="timeline">Timeline</TabsTrigger>
+                <TabsTrigger value="analytics">Advanced Analytics</TabsTrigger>
                 <TabsTrigger value="metrics">Metrics</TabsTrigger>
                 <TabsTrigger value="attribution">Attribution</TabsTrigger>
               </TabsList>
@@ -493,6 +494,45 @@ const CustomerJourneyPage: React.FC = () => {
                   </CardHeader>
                   <CardContent className="max-h-[600px] overflow-y-auto pr-2">
                     <VisualJourneyTimeline events={journeyData.timelineEvents} />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              
+              <TabsContent value="analytics" className="mt-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Advanced Customer Analytics</CardTitle>
+                    <CardDescription>
+                      Comprehensive analytics and engagement metrics
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <JourneyAnalytics 
+                      contactId={journeyData.contactId}
+                      engagementScore={journeyData.journeyMetrics.engagementScore}
+                      lastActivityGap={journeyData.journeyMetrics.lastActivityGap}
+                      averageResponseTime={journeyData.journeyMetrics.averageResponseTime}
+                      conversionRate={journeyData.journeyMetrics.conversionRate}
+                      leadStatus={journeyData.journeyMetrics.leadStatus}
+                      journeyLength={journeyData.journeyMetrics.journeyLength}
+                      stageTransitions={journeyData.journeyMetrics.stageTransitions}
+                      callMetrics={{
+                        totalCalls: journeyData.callMetrics.totalCalls,
+                        callsToClose: journeyData.callMetrics.callsToClose,
+                        solutionCallShowRate: journeyData.callMetrics.solutionCallShowRate,
+                        triageShowRate: journeyData.callMetrics.triageShowRate,
+                        pickUpRate: journeyData.callMetrics.pickUpRate,
+                        speedToLead: journeyData.callMetrics.speedToLead
+                      }}
+                      salesMetrics={{
+                        closedWon: journeyData.salesMetrics.closedWon,
+                        salesCycleDays: journeyData.salesMetrics.salesCycleDays,
+                        solutionCallCloseRate: journeyData.salesMetrics.solutionCallCloseRate
+                      }}
+                      sources={journeyData.sources}
+                      assignedUsers={journeyData.assignedUsers}
+                      totalTouchpoints={journeyData.totalTouchpoints}
+                    />
                   </CardContent>
                 </Card>
               </TabsContent>
