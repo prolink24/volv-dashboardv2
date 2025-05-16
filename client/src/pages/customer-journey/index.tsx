@@ -567,7 +567,11 @@ const CustomerJourneyPage: React.FC = () => {
                       </Card>
                       <Card className="bg-muted/20">
                         <CardContent className="pt-6">
-                          <div className="text-2xl font-bold">{formatDuration(journeyData.callMetrics.speedToLead)}</div>
+                          <div className="text-2xl font-bold">
+                            {journeyData.callMetrics.speedToLead !== null 
+                              ? `${Math.round(journeyData.callMetrics.speedToLead)} min` 
+                              : 'N/A'}
+                          </div>
                           <p className="text-xs text-muted-foreground">Speed to Lead</p>
                         </CardContent>
                       </Card>
