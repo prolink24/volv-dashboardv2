@@ -741,11 +741,42 @@ export class DatabaseStorage implements IStorage {
         
         // Sum up deal values
         const closedDeals = userDeals.filter(d => d.deals.status === 'won').length;
-        const totalValue = userDeals.reduce((sum, d) => sum + (d.deals.value || 0), 0);
+        
+        // Properly parse and validate deal values to prevent extreme values
+        const totalValue = userDeals.reduce((sum, d) => {
+          if (!d.deals.value) return sum;
+          
+          try {
+            // Convert to string first to ensure consistent handling
+            const valueStr = String(d.deals.value);
+            
+            // Basic validation to ignore obviously incorrect values
+            if (valueStr.length > 20 || valueStr.includes('e') || valueStr.includes('E')) {
+              console.warn(`[STORAGE] Ignoring extreme deal value: ${valueStr}`);
+              return sum;
+            }
+            
+            // Parse the value safely
+            const numValue = parseFloat(valueStr.replace(/[^0-9.-]/g, ''));
+            
+            // Apply reasonable limits
+            if (!isFinite(numValue) || isNaN(numValue)) return sum;
+            if (Math.abs(numValue) > 500000) {
+              console.warn(`[STORAGE] Capping extreme deal value: ${numValue} to 500000`);
+              return sum + (numValue > 0 ? 500000 : -500000);
+            }
+            
+            return sum + numValue;
+          } catch (e) {
+            console.error(`[STORAGE] Error parsing deal value: ${d.deals.value}`, e);
+            return sum;
+          }
+        }, 0);
         
         return {
           id: user.closeId,
-          name: user.name,
+          // Properly format the user's name from first and last name fields
+          name: `${user.first_name || ''} ${user.last_name || ''}`.trim(),
           role: user.role || 'Sales Rep',
           deals: userDeals.length,
           meetings: userMeetings[0]?.count || 0,
@@ -821,13 +852,45 @@ export class DatabaseStorage implements IStorage {
     const previousMeetings = previousMeetingsResult[0]?.count || 0;
     const previousRevenue = previousRevenueResult[0]?.sum || 0;
     
-    // Calculate total revenue for current period
-    const revenueResult = await db.select({ 
-      sum: sql<number>`COALESCE(SUM(${deals.value}), 0)` 
+    // Calculate total revenue for current period - with safe validation
+    // Instead of using raw SQL SUM which can't handle validation,
+    // we'll fetch the values and aggregate them in JS with proper validation
+    const dealsInPeriod = await db.select({
+      value: deals.value
     })
     .from(deals)
     .where(sql`${deals.createdAt} BETWEEN ${startDate.toISOString()} AND ${endDate.toISOString()}`);
-    const totalRevenue = revenueResult[0]?.sum || 0;
+    
+    // Process deal values with the same validation as the individual user calculations
+    const totalRevenue = dealsInPeriod.reduce((sum, deal) => {
+      if (!deal.value) return sum;
+      
+      try {
+        // Convert to string for consistent handling
+        const valueStr = String(deal.value);
+        
+        // Skip extremely large or scientific notation values 
+        if (valueStr.length > 20 || valueStr.includes('e') || valueStr.includes('E')) {
+          console.warn(`[STORAGE] Skipping extreme revenue value: ${valueStr}`);
+          return sum;
+        }
+        
+        // Parse safely
+        const numValue = parseFloat(valueStr.replace(/[^0-9.-]/g, ''));
+        
+        // Apply safety limits
+        if (!isFinite(numValue) || isNaN(numValue)) return sum;
+        if (Math.abs(numValue) > 500000) {
+          console.warn(`[STORAGE] Capping extreme revenue value: ${numValue} to 500000`);
+          return sum + (numValue > 0 ? 500000 : -500000);
+        }
+        
+        return sum + numValue;
+      } catch (e) {
+        console.error(`[STORAGE] Error parsing revenue value: ${deal.value}`, e);
+        return sum;
+      }
+    }, 0);
     
     // Calculate performance metrics
     const overallPerformance = salesTeam.reduce((sum, user) => sum + user.performance, 0);
