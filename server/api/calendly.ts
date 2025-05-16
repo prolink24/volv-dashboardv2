@@ -282,7 +282,7 @@ async function syncAllEvents() {
               
               const nextPageResponse = await calendlyApiClient.get('/scheduled_events', {
                 params: {
-                  user: userId,
+                  organization: organizationUri,
                   min_start_time: minStartTime,
                   max_start_time: maxStartTime,
                   count: 100,
@@ -453,7 +453,7 @@ async function syncAllEvents() {
           }
         }
         
-        console.log('Successfully processed all Calendly events via user endpoint');
+        console.log('Successfully processed all Calendly events organization-wide');
         
         // Final status update
         syncStatus.updateCalendlySyncStatus({
@@ -472,11 +472,11 @@ async function syncAllEvents() {
       }
       
     } catch (error) {
-      console.error('Error fetching user events, falling back to organization events:', error);
+      console.error('Error fetching organization events:', error);
+      
+      // If we fail to fetch organization events, still attempt to continue with batch processing
+      console.log('Continuing with batch processing despite initial error...');
     }
-    
-    // Fallback to organization-wide fetch
-    console.log('Falling back to organization-wide fetch...');
     
     // Process events in batches using pagination
     while (hasMore) {
