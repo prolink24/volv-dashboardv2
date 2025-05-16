@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { Link } from "wouter";
 import { useContactsData } from "@/hooks/use-contacts-data";
 import { formatDate } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { Activity, Gauge } from "lucide-react";
 
 import {
   Table,
@@ -290,9 +292,24 @@ const Contacts = () => {
           </DialogHeader>
           
           <div className="grid gap-4 py-4">
-            <p className="text-center text-muted-foreground">
+            <p className="text-center text-muted-foreground mb-4">
               This would show detailed contact information and attribution data
             </p>
+            
+            <div className="flex justify-center gap-4">
+              <Link href={`/customer-journey?contactId=${selectedContactId}`}>
+                <Button variant="default">
+                  <Gauge className="mr-2 h-4 w-4" />
+                  View Customer Journey
+                </Button>
+              </Link>
+              <Link href={`/attribution-journey/${selectedContactId}`}>
+                <Button variant="outline">
+                  <Activity className="mr-2 h-4 w-4" />
+                  View Attribution Journey
+                </Button>
+              </Link>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
