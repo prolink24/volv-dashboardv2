@@ -79,26 +79,36 @@ export interface CustomerJourney {
 }
 
 export async function getCustomerJourney(contactId: number, dateRange?: string): Promise<CustomerJourney | null> {
+  console.time(`customer-journey-${contactId}`);
   try {
     // Get the contact
     const contact = await storage.getContact(contactId);
     
     if (!contact) {
+      console.log(`Contact ${contactId} not found`);
+      console.timeEnd(`customer-journey-${contactId}`);
       return null;
     }
     
-    // Get related data
-    const activities = await storage.getActivitiesByContactId(contactId);
-    let meetings = await storage.getMeetingsByContactId(contactId);
-    const deals = await storage.getDealsByContactId(contactId);
+    console.log(`Fetching journey data for contact ${contactId} (${contact.name})`);
+    
+    // Get related data in parallel for better performance
+    const [activities, initialMeetings, deals, emailMeetings] = await Promise.all([
+      storage.getActivitiesByContactId(contactId),
+      storage.getMeetingsByContactId(contactId),
+      storage.getDealsByContactId(contactId),
+      contact.email ? storage.getMeetingsByInviteeEmail(contact.email) : Promise.resolve([])
+    ]);
+    
+    console.log(`Found data for contact ${contactId}: ${activities.length} activities, ${initialMeetings.length} meetings, ${deals.length} deals`);
+    
+    // Process meetings more efficiently
+    let meetings = [...initialMeetings];
     
     // If contact has an email, also look for meetings by email to ensure we catch all Calendly meetings
-    if (contact.email) {
-      // Get additional meetings that might be linked by email but not contactId
-      const emailMeetings = await storage.getMeetingsByInviteeEmail(contact.email);
-      
-      // Create a Set of existing meeting IDs to avoid duplicates
-      const existingMeetingIds = new Set(meetings.map(m => m.id));
+    if (contact.email && emailMeetings.length > 0) {
+      // Create a Set of existing meeting IDs to avoid duplicates (more efficient lookup)
+      const existingMeetingIds = new Set(initialMeetings.map(m => m.id));
       
       // Add only new meetings that aren't already included
       const additionalMeetings = emailMeetings.filter(meeting => !existingMeetingIds.has(meeting.id));
@@ -106,11 +116,10 @@ export async function getCustomerJourney(contactId: number, dateRange?: string):
       if (additionalMeetings.length > 0) {
         console.log(`Found ${additionalMeetings.length} additional meetings for ${contact.email} using email matching`);
         
-        // Update these meetings to link them to this contact for future queries
-        for (const meeting of additionalMeetings) {
-          await storage.updateMeeting(meeting.id, { contactId });
-          console.log(`Linked meeting ${meeting.id} to contact ${contactId} (${contact.name})`);
-        }
+        // Update these meetings in parallel without blocking the response
+        Promise.all(additionalMeetings.map(meeting => 
+          storage.updateMeeting(meeting.id, { contactId })
+        )).catch(err => console.error('Error updating meetings:', err));
         
         // Add these to our meetings array
         meetings = [...meetings, ...additionalMeetings];
