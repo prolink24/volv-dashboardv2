@@ -699,18 +699,21 @@ export function VisualJourneyTimeline({ events }: VisualJourneyTimelineProps) {
                                     
                                     {/* Form Submission display */}
                                     {event.type === 'form_submission' && (
-                                      <div>
-                                        <h4 className="text-sm font-medium mb-1">Application Details</h4>
-                                        <div className="space-y-1 text-sm">
+                                      <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-md border border-purple-200 dark:border-purple-800 mt-2">
+                                        <h4 className="text-sm font-medium mb-2 flex items-center">
+                                          <Sparkles className="h-4 w-4 mr-1 text-purple-500" />
+                                          Application Details
+                                        </h4>
+                                        <div className="space-y-2 text-sm">
                                           <div className="flex items-center">
-                                            <FileText className="h-3.5 w-3.5 mr-1 text-blue-500" />
+                                            <FileText className="h-3.5 w-3.5 mr-1 text-purple-500" />
                                             <span className="text-muted-foreground">Form:</span>{' '}
                                             <span className="ml-1 font-medium">{event.title?.replace('Form Submitted: ', '') || 'Application Form'}</span>
                                           </div>
                                           <div className="flex items-center">
                                             <CheckCircle className="h-3.5 w-3.5 mr-1 text-green-500" />
                                             <span className="text-muted-foreground">Status:</span>{' '}
-                                            <Badge variant="default" className="text-xs ml-1 bg-green-500">Completed</Badge>
+                                            <Badge variant="default" className="text-xs ml-1 bg-green-500 hover:bg-green-600">Completed</Badge>
                                           </div>
                                           <div className="flex items-center">
                                             <Clock className="h-3.5 w-3.5 mr-1 text-amber-500" />
