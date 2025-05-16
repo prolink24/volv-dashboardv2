@@ -18,7 +18,7 @@ export async function updateHealthMetrics() {
     // Get counts for won deals with and without cash collected values
     const [wonDealsStats] = await db.select({
       total: sql<number>`count(*)`,
-      withCashCollected: sql<number>`count(case when cash_collected IS NOT NULL AND cash_collected != '' AND cash_collected != '0' then 1 end)`
+      withCashCollected: sql<number>`count(case when "cashCollected" IS NOT NULL AND "cashCollected" != '' AND "cashCollected" != '0' then 1 end)`
     }).from(deals)
       .where(eq(deals.status, 'won'));
     
