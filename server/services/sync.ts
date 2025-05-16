@@ -8,7 +8,7 @@
 
 import closeAPI from '../api/close';
 import calendlyAPI from '../api/calendly';
-import typeformAPI from '../api/typeform';
+import * as typeformAPI from '../api/typeform';
 import * as syncStatus from '../api/sync-status';
 import { storage } from '../storage';
 
@@ -378,7 +378,7 @@ export async function syncTypeform() {
     syncStatus.startSync('typeform');
     console.log('Starting Typeform sync...');
     
-    const syncResult = await typeformAPI.syncAllResponses();
+    const syncResult = await typeformAPI.syncTypeformResponses();
     
     if (!syncResult.success) {
       syncStatus.setSyncError(syncResult.error || 'Unknown Typeform sync error');

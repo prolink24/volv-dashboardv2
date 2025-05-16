@@ -4,7 +4,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import closeApi from "./api/close";
 import calendlyApi from "./api/calendly";
-import typeformApi from "./api/typeform";
+import * as typeformApi from "./api/typeform";
 import attributionService from "./services/attribution";
 import enhancedAttributionService from "./services/enhanced-attribution";
 import syncService from "./services/sync";
@@ -16,6 +16,7 @@ import cacheService from "./services/cache";
 import settingsRouter from "./api/settings";
 import kpiConfiguratorRouter from "./api/kpi-configurator";
 import customerJourneyRoutes from "./routes/customer-journey";
+import typeformRoutes from "./routes/typeform";
 import { CloseUser } from "@shared/schema";
 
 // Enhanced attribution response types
@@ -1376,6 +1377,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Mount customer journey routes
   apiRouter.use('/customer-journey', customerJourneyRoutes);
+  apiRouter.use('/typeform', typeformRoutes);
   
   // Register API routes with prefix
   app.use("/api", apiRouter);
