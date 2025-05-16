@@ -119,20 +119,24 @@ export async function getCustomerJourney(contactId: number, dateRange?: string):
     
     // Create timeline events
     const timelineEvents = [
-      ...activities.map(activity => ({
-        id: activity.id,
-        type: 'activity',
-        subtype: activity.type,
-        title: activity.title || 'Activity',
-        description: activity.notes || '',
-        timestamp: new Date(activity.date),
-        source: 'Close CRM',
-        sourceId: activity.sourceId,
-        data: activity,
-        userId: activity.userId,
-        userName: activity.userName || 'Unknown',
-        score: 5
-      })),
+      ...activities.map(activity => {
+        // Check if the activity is a form submission from Typeform
+        const isFormSubmission = activity.type === 'form_submission';
+        return {
+          id: activity.id,
+          type: isFormSubmission ? 'form_submission' : 'activity',
+          subtype: activity.type,
+          title: activity.title || 'Activity',
+          description: activity.description || activity.notes || '',
+          timestamp: new Date(activity.date),
+          source: isFormSubmission ? 'Typeform' : 'Close CRM',
+          sourceId: activity.sourceId,
+          data: activity,
+          userId: activity.userId,
+          userName: activity.userName || 'Unknown',
+          score: isFormSubmission ? 7 : 5
+        };
+      }),
       ...meetings.map(meeting => {
         // Extract scheduler's name from metadata if it exists
         let scheduledBy = 'Unknown';
