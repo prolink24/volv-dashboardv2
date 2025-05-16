@@ -23,20 +23,20 @@ export async function getDatabaseHealthMetrics() {
       .where(sql`value IS NOT NULL AND value != '0'`);
     
     const [wonDealsWithCashCollected] = await db.select({ count: sql<number>`count(*)` }).from(deals)
-      .where(sql`status = 'won' AND cash_collected IS NOT NULL AND cash_collected != '0'`);
+      .where(sql`status = 'won' AND "cashCollected" IS NOT NULL AND "cashCollected" != '0'`);
     
     const [wonDealsTotal] = await db.select({ count: sql<number>`count(*)` }).from(deals)
       .where(sql`status = 'won'`);
     
     const [dealsWithCloseId] = await db.select({ count: sql<number>`count(*)` }).from(deals)
-      .where(sql`close_id IS NOT NULL`);
+      .where(sql`"closeId" IS NOT NULL`);
     
     const [contactsWithEmail] = await db.select({ count: sql<number>`count(*)` }).from(contacts)
       .where(sql`email IS NOT NULL`);
 
     // Calculate sync stats
     const [recentSyncs] = await db.select({ count: sql<number>`count(*)` }).from(deals)
-      .where(sql`created_at > NOW() - INTERVAL '24 hours'`);
+      .where(sql`"createdAt" > NOW() - INTERVAL '24 hours'`);
     
     // Calculate field mapping metrics for common fields
     const fieldMappingCompleteness = {
@@ -218,7 +218,7 @@ export async function getFieldMappings() {
     {
       id: '2',
       sourceField: 'custom.payment_received',
-      destinationField: 'cash_collected',
+      destinationField: 'cashCollected',
       dataType: 'Currency',
       coverage: 72.4,
       status: 'mismatched'
@@ -243,7 +243,7 @@ export async function getValidationErrors() {
       title: deals.title,
       value: deals.value
     }).from(deals)
-      .where(sql`status = 'won' AND (cash_collected IS NULL OR cash_collected = '0')`);
+      .where(sql`status = 'won' AND ("cashCollected" IS NULL OR "cashCollected" = '0')`);
     
     // Generate validation errors
     const errors = wonDealsWithoutCashCollected.map((deal, index) => ({
