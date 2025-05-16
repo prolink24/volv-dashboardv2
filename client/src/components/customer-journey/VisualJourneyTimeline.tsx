@@ -546,6 +546,11 @@ export function VisualJourneyTimeline({ events }: VisualJourneyTimelineProps) {
                                         </Tooltip>
                                       </TooltipProvider>
                                     )}
+                                    {event.type === 'form_submission' && (
+                                      <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800">
+                                        Form Submission
+                                      </Badge>
+                                    )}
                                   </div>
                                   <div className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
                                     <span className="flex items-center gap-1">
