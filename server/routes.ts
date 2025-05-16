@@ -670,44 +670,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   let inputValue = String(valueStr);
                   console.log(`${logPrefix} Step 1 - String conversion: "${inputValue}"`);
                   
-                  // Step 2: Handle extremely large values and scientific notation
-                  // First check for obvious extreme values (common pattern in the error data)
-                  if (inputValue.length > 20 || inputValue.includes('e') || inputValue.includes('E')) {
-                    console.warn(`${logPrefix} EXTREME VALUE DETECTED: "${inputValue}"`);
-                    
-                    // For extreme scientific notation or extremely long numbers, 
-                    // don't even try to parse - just return a reasonable default
-                    if (inputValue.length > 40 || 
-                        (inputValue.includes('e+') && parseInt(inputValue.split('e+')[1]) > 10) ||
-                        (inputValue.includes('E+') && parseInt(inputValue.split('E+')[1]) > 10)) {
-                      console.warn(`${logPrefix} Value is astronomically large, forcing to $5,000`);
-                      return 5000; // Return a reasonable default for clearly erroneous data
-                    }
-                    
-                    // For more manageable scientific notation
-                    const origValue = inputValue;
+                  // Check for empty strings or just whitespace after conversion
+                  if (!inputValue.trim()) {
+                    console.log(`${logPrefix} Empty string after normalization, returning 0`);
+                    return 0;
+                  }
+                  
+                  // Step 2: Extract value from metadata if it's a JSON string
+                  // This is crucial because we found the real values are in metadata
+                  if (inputValue.includes('{') && inputValue.includes('}')) {
                     try {
-                      const num = Number(inputValue);
-                      if (!isNaN(num)) {
-                        if (num > 1000000) {
-                          console.warn(`${logPrefix} Scientific notation resolves to large value: ${num}, capping at $5,000`);
-                          return 5000;
-                        }
-                        inputValue = num.toFixed(2);
-                        console.log(`${logPrefix} Scientific notation converted: ${origValue} -> ${inputValue}`);
+                      const metadataObj = JSON.parse(inputValue);
+                      
+                      // Check known patterns in metadata from Close CRM
+                      if (metadataObj.opportunity_data && metadataObj.opportunity_data.value !== undefined) {
+                        const rawValue = metadataObj.opportunity_data.value;
+                        console.log(`${logPrefix} Found opportunity value in metadata: ${rawValue}`);
+                        inputValue = String(rawValue);
+                      } else if (metadataObj.value !== undefined) {
+                        console.log(`${logPrefix} Found direct value in metadata: ${metadataObj.value}`);
+                        inputValue = String(metadataObj.value);
                       }
-                    } catch (e) {
-                      console.warn(`${logPrefix} Failed to convert scientific notation: ${e.message}, using default $5,000`);
-                      return 5000;
+                    } catch (jsonErr) {
+                      // Not valid JSON, continue with regular parsing
+                      console.log(`${logPrefix} Not valid JSON, continuing with regular parsing`);
                     }
                   }
                   
-                  // Step 3: Handle common currency formatting
-                  // Remove common non-numeric characters keeping only digits, decimal point, minus sign
-                  const cleanValue = inputValue.replace(/[^0-9.-]/g, '');
-                  console.log(`${logPrefix} Step 3 - Cleaned value: "${cleanValue}"`);
+                  // Step 3: Handle extremely large values and scientific notation
+                  if (inputValue.length > 20 || inputValue.includes('e') || inputValue.includes('E')) {
+                    console.warn(`${logPrefix} EXTREME VALUE DETECTED: "${inputValue}"`);
+                    
+                    // For extremely large numbers, just cap them at a safe value
+                    // This prevents the scientific notation explosion
+                    if (inputValue.length > 40 || 
+                        (inputValue.includes('e+') && parseInt(inputValue.split('e+')[1]) > 10) ||
+                        (inputValue.includes('E+') && parseInt(inputValue.split('E+')[1]) > 10)) {
+                      console.warn(`${logPrefix} Value is astronomically large, capping at $5,000`);
+                      return 5000;
+                    }
+                    
+                    // For more manageable scientific notation, convert carefully
+                    try {
+                      const num = Number(inputValue);
+                      
+                      // Ensure we actually got a valid number
+                      if (isFinite(num) && !isNaN(num)) {
+                        if (num > 1000000) {
+                          console.warn(`${logPrefix} Scientific notation resolves to large value: ${num}, capping at $10,000`);
+                          return 10000;
+                        }
+                        inputValue = String(num);
+                        console.log(`${logPrefix} Scientific notation converted: ${inputValue} -> ${num}`);
+                      } else {
+                        console.warn(`${logPrefix} Non-finite or NaN result from scientific notation: ${num}, using $0`);
+                        return 0;
+                      }
+                    } catch (e) {
+                      console.warn(`${logPrefix} Failed to convert scientific notation: ${e.message}, using $0`);
+                      return 0;
+                    }
+                  }
                   
-                  // Step 4: Handle multiple decimal points (invalid format but could happen)
+                  // Step 4: Handle common currency formatting
+                  // First remove currency symbols and commas
+                  const cleanValue = inputValue.replace(/[$,€£¥₹\s]/g, '');
+                  console.log(`${logPrefix} Step 4 - Removed currency symbols: "${cleanValue}"`);
+                  
+                  // Step 5: Handle multiple decimal points (invalid format but could happen)
                   let normalizedValue = cleanValue;
                   const decimalPoints = (cleanValue.match(/\./g) || []).length;
                   if (decimalPoints > 1) {
@@ -717,40 +747,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     console.log(`${logPrefix} Multiple decimal points fixed: ${cleanValue} -> ${normalizedValue}`);
                   }
                   
-                  // Step 5: Convert to number with careful validation
-                  let numValue = parseFloat(normalizedValue);
-                  console.log(`${logPrefix} Step 5 - Parsed to number: ${numValue}`);
+                  // Remove any remaining non-numeric characters except decimal point and negative sign
+                  normalizedValue = normalizedValue.replace(/[^0-9.-]/g, '');
                   
-                  // Step 6: Apply NaN check
-                  if (isNaN(numValue)) {
-                    console.warn(`${logPrefix} Invalid number after parsing: "${valueStr}" -> NaN`);
+                  // Ensure only one negative sign at the beginning
+                  if (normalizedValue.indexOf('-') !== -1 && normalizedValue.indexOf('-') > 0) {
+                    normalizedValue = normalizedValue.replace(/-/g, '');
+                    normalizedValue = '-' + normalizedValue;
+                  }
+                  
+                  console.log(`${logPrefix} Final normalized value: "${normalizedValue}"`);
+                  
+                  // Step 6: Convert to number with careful validation
+                  let numValue = parseFloat(normalizedValue);
+                  console.log(`${logPrefix} Step 6 - Parsed to number: ${numValue}`);
+                  
+                  // Step 7: Final checks and validation
+                  if (!isFinite(numValue) || isNaN(numValue)) {
+                    console.warn(`${logPrefix} Invalid number after parsing: "${valueStr}" -> ${numValue}`);
                     return 0;
                   }
                   
-                  // Step 7: Apply sanity checks with extremely aggressive limits
-                  // For deal values in CRM systems, anything over $1M might be realistic
-                  // but errors often create values in the billions or more
-                  const MAX_REASONABLE_VALUE = 1000000; // $1 million
+                  // Apply sanity checks with reasonable limits
+                  const MAX_REASONABLE_VALUE = 500000; // $500,000 cap as a safety measure
                   
                   if (Math.abs(numValue) > MAX_REASONABLE_VALUE) {
-                    console.warn(`${logPrefix} UNREALISTIC VALUE DETECTED: ${numValue} > ${MAX_REASONABLE_VALUE}`);
-                    console.warn(`${logPrefix} Original value: "${valueStr}" -> Normalized: "${normalizedValue}" -> Number: ${numValue}`);
-                    
-                    // For values that are clearly errors, cap at a reasonable maximum
+                    console.warn(`${logPrefix} Extremely large value detected: ${numValue} > ${MAX_REASONABLE_VALUE}`);
+                    console.warn(`${logPrefix} Original: "${valueStr}" -> Final: ${numValue}`);
                     return numValue > 0 ? MAX_REASONABLE_VALUE : -MAX_REASONABLE_VALUE;
                   }
                   
-                  // Step 8: Handle edge case - value too small (might be a formatting error)
-                  if (Math.abs(numValue) < 0.01 && numValue !== 0) {
-                    console.warn(`${logPrefix} Suspiciously small value: ${numValue}, treating as zero`);
-                    return 0;
-                  }
-                  
-                  // Success! Log the final result
+                  // Success! Return the final value
                   console.log(`${logPrefix} SUCCESS: "${valueStr}" -> ${numValue}`);
                   return numValue;
                 } catch (err) {
-                  console.error(`${logPrefix} FATAL ERROR: "${valueStr}"`, err);
+                  console.error(`${logPrefix} FATAL ERROR parsing "${valueStr}":`, err);
                   return 0;
                 }
               }
