@@ -82,6 +82,8 @@ const getEventIcon = (type: string, subtype?: string) => {
       return <DollarSign className="h-4 w-4" />;
     case 'note':
       return <FileText className="h-4 w-4" />;
+    case 'form_submission':
+      return <FileText className="h-4 w-4 text-purple-500" />;
     case 'form':
       return <MessageSquare className="h-4 w-4" />;
     default:
@@ -130,6 +132,7 @@ const getImpactScore = (event: TimelineEvent) => {
   let typeScore = 0;
   if (event.type === 'meeting') typeScore = 8;
   else if (event.type === 'deal') typeScore = 10;
+  else if (event.type === 'form_submission') typeScore = 7;
   else if (event.type === 'form') typeScore = 6;
   else if (event.type === 'activity') {
     if (event.subtype === 'call') typeScore = 7;
@@ -154,6 +157,7 @@ export function VisualJourneyTimeline({ events }: VisualJourneyTimelineProps) {
     activity: true,
     deal: true,
     form: true,
+    form_submission: true,
     note: true
   });
   

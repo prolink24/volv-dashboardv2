@@ -128,7 +128,7 @@ export async function syncAll() {
       syncStatus.startSync('typeform');
       console.log('Starting Typeform sync...');
       
-      const typeformSyncResult = await typeformAPI.syncAllResponses();
+      const typeformSyncResult = await typeformAPI.syncTypeformResponses();
       
       if (!typeformSyncResult.success) {
         throw new Error(`Typeform sync failed: ${typeformSyncResult.error}`);
