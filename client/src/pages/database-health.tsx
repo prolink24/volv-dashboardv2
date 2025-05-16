@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import DataCompletenessCard from "@/components/database-health/data-completeness-card";
 
 // Types
 interface HealthMetric {
@@ -244,30 +245,12 @@ const DatabaseHealth = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {data.healthMetrics.map((metric) => (
-          <Card key={metric.id} className="overflow-hidden">
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                {getStatusIcon(metric.status)}
-                {metric.name}
-              </CardTitle>
-              <CardDescription>{metric.description}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="mt-1">
-                <div className="flex justify-between mb-1">
-                  <span className="text-2xl font-bold">{metric.value.toFixed(1)}%</span>
-                  <Badge variant={metric.status === 'healthy' ? 'default' : metric.status === 'warning' ? 'warning' : 'destructive'}>
-                    {metric.status}
-                  </Badge>
-                </div>
-                <Progress value={metric.value} max={100} className="h-2" />
-                <div className="text-xs text-muted-foreground mt-1 flex justify-between">
-                  <span>Target: {metric.target}%</span>
-                  <span>Last checked: {formatDate(metric.lastChecked)}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <DataCompletenessCard 
+            key={metric.id}
+            completeness={metric.value}
+            target={metric.target}
+            description={metric.description}
+          />
         ))}
       </div>
 
