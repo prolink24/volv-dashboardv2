@@ -121,7 +121,7 @@ export function DataCompletenessCard({
                       {field.importance}
                     </Badge>
                   </div>
-                  <span className="font-medium">{field.completionRate.toFixed(1)}%</span>
+                  <span className="font-medium">{field.completionRate?.toFixed(1) || '0.0'}%</span>
                 </div>
                 <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
                   <div 

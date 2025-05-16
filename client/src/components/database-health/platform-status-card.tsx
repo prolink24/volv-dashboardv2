@@ -180,8 +180,7 @@ export function PlatformStatusCard({
               <span className={getResponseQuality(responseTime)}>{responseTime} ms</span>
             </div>
             <Progress value={Math.min(100, (responseTime / 1000) * 100)} max={100} 
-              className="h-1" 
-              indicatorClassName={getResponseQuality(responseTime)} />
+              className={`h-1 ${getResponseQuality(responseTime).replace('text-', 'bg-')}`} />
           </div>
           
           {/* Error rate */}
