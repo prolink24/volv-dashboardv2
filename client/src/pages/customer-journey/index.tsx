@@ -458,7 +458,7 @@ const CustomerJourneyPage: React.FC = () => {
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">Status:</span>
                             <Badge variant={
-                              deal.status === 'won' ? 'success' : 
+                              deal.status === 'won' ? 'default' : 
                               deal.status === 'lost' ? 'destructive' : 
                               'secondary'
                             } className="text-xs">
