@@ -743,7 +743,7 @@ export class DatabaseStorage implements IStorage {
         const closedDeals = userDeals.filter(d => d.deals.status === 'won').length;
         
         // Properly parse and validate deal values to prevent extreme values
-        const totalValue = userDeals.reduce((sum, d) => {
+        const totalRevenueValue = userDeals.reduce((sum, d) => {
           if (!d.deals.value) return sum;
           
           try {
@@ -773,6 +773,68 @@ export class DatabaseStorage implements IStorage {
           }
         }, 0);
         
+        // Separately calculate cash collected from the cashCollected field
+        const totalCashCollected = userDeals.reduce((sum, d) => {
+          if (!d.deals.cashCollected) return sum;
+          
+          try {
+            // Convert to string first to ensure consistent handling
+            const valueStr = String(d.deals.cashCollected);
+            
+            // Basic validation to ignore obviously incorrect values
+            if (valueStr.length > 20 || valueStr.includes('e') || valueStr.includes('E')) {
+              console.warn(`[STORAGE] Ignoring extreme cash collected value: ${valueStr}`);
+              return sum;
+            }
+            
+            // Parse the value safely
+            const numValue = parseFloat(valueStr.replace(/[^0-9.-]/g, ''));
+            
+            // Apply reasonable limits
+            if (!isFinite(numValue) || isNaN(numValue)) return sum;
+            if (Math.abs(numValue) > 500000) {
+              console.warn(`[STORAGE] Capping extreme cash collected value: ${numValue} to 500000`);
+              return sum + (numValue > 0 ? 500000 : -500000);
+            }
+            
+            return sum + numValue;
+          } catch (e) {
+            console.error(`[STORAGE] Error parsing cash collected value: ${d.deals.cashCollected}`, e);
+            return sum;
+          }
+        }, 0);
+        
+        // Separately calculate contracted value from the contractedValue field
+        const totalContractedValue = userDeals.reduce((sum, d) => {
+          if (!d.deals.contractedValue) return sum;
+          
+          try {
+            // Convert to string first to ensure consistent handling
+            const valueStr = String(d.deals.contractedValue);
+            
+            // Basic validation to ignore obviously incorrect values
+            if (valueStr.length > 20 || valueStr.includes('e') || valueStr.includes('E')) {
+              console.warn(`[STORAGE] Ignoring extreme contracted value: ${valueStr}`);
+              return sum;
+            }
+            
+            // Parse the value safely
+            const numValue = parseFloat(valueStr.replace(/[^0-9.-]/g, ''));
+            
+            // Apply reasonable limits
+            if (!isFinite(numValue) || isNaN(numValue)) return sum;
+            if (Math.abs(numValue) > 500000) {
+              console.warn(`[STORAGE] Capping extreme contracted value: ${numValue} to 500000`);
+              return sum + (numValue > 0 ? 500000 : -500000);
+            }
+            
+            return sum + numValue;
+          } catch (e) {
+            console.error(`[STORAGE] Error parsing contracted value: ${d.deals.contractedValue}`, e);
+            return sum;
+          }
+        }, 0);
+        
         return {
           id: user.closeId,
           // Properly format the user's name from first and last name fields
@@ -783,8 +845,9 @@ export class DatabaseStorage implements IStorage {
           activities: userActivities[0]?.count || 0,
           performance,
           closed: closedDeals,
-          cashCollected: totalValue,
-          contractedValue: totalValue,
+          cashCollected: totalCashCollected,
+          revenue: totalRevenueValue,
+          contractedValue: totalContractedValue,
           calls: userActivities[0]?.count || 0,
           closingRate: closedDeals > 0 && userDeals.length > 0 ? Math.round((closedDeals / userDeals.length) * 100) : 0
         };
@@ -957,6 +1020,11 @@ export class DatabaseStorage implements IStorage {
           current: salesTeam.reduce((sum, user) => sum + (user.cashCollected || 0), 0),
           previous: Math.round(salesTeam.reduce((sum, user) => sum + (user.cashCollected || 0), 0) * 0.85),
           change: 15 // Estimated for comparison
+        },
+        revenueGenerated: {
+          current: salesTeam.reduce((sum, user) => sum + (user.revenue || 0), 0),
+          previous: Math.round(salesTeam.reduce((sum, user) => sum + (user.revenue || 0), 0) * 0.88),
+          change: 12 // Estimated for comparison
         }
       },
       dashboardType: role || 'default',

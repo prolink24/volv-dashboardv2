@@ -319,10 +319,10 @@ const Dashboard = () => {
         />
         <KpiCard 
           title="Cash Collected" 
-          value={formatCurrency(safeData.kpis.cashCollected?.current || safeData.kpis.revenue.current)} 
+          value={formatCurrency(safeData.kpis.cashCollected?.current || 0)} 
           subValue="/150k target"
           trend={{ 
-            value: safeData.kpis.cashCollected?.change || safeData.kpis.revenue.change, 
+            value: safeData.kpis.cashCollected?.change || 0, 
             label: "vs. last month" 
           }}
         />
