@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Sparkles, TrendingUp, TrendingDown, Users, Clock, Calendar, Layers, DollarSign, Info } from 'lucide-react';
+import { Sparkles, TrendingUp, TrendingDown, Users, Clock, Calendar, Layers, DollarSign, Info, MessageSquare } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -224,7 +224,7 @@ export function JourneyAnalytics({
                 <h4 className="text-sm font-medium">Current Status</h4>
                 <div className="flex items-center gap-2">
                   <Badge variant={
-                    leadStatus === 'customer' ? 'success' : 
+                    leadStatus === 'customer' ? 'default' : 
                     leadStatus === 'qualified' ? 'outline' :
                     leadStatus === 'disqualified' ? 'destructive' : 'secondary'
                   } className="capitalize">
@@ -780,7 +780,7 @@ export function JourneyAnalytics({
                       {Object.keys(sources).length} sources
                     </div>
                     <Badge 
-                      variant={Object.keys(sources).length > 1 ? 'success' : 'outline'}
+                      variant={Object.keys(sources).length > 1 ? 'default' : 'outline'}
                       className="capitalize"
                     >
                       {Object.keys(sources).length > 1 ? 'Multi-Source' : 'Single Source'}

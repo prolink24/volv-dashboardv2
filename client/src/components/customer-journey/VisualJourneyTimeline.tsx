@@ -135,7 +135,8 @@ const getImpactScore = (event: TimelineEvent) => {
   }
   
   // Calculate total score (0-10 scale)
-  return Math.min(10, Math.max(1, Math.round((baseScore + typeScore) / 2)));
+  const combinedScore = (baseScore + typeScore) / 2;
+  return Math.min(10, Math.max(1, Math.round(combinedScore)));
 };
 
 export function VisualJourneyTimeline({ events }: VisualJourneyTimelineProps) {
@@ -633,7 +634,7 @@ export function VisualJourneyTimeline({ events }: VisualJourneyTimelineProps) {
                                           {event.data.status && (
                                             <div>
                                               <span className="text-muted-foreground">Status:</span>{' '}
-                                              <Badge variant={event.data.status === 'completed' ? 'success' : 
+                                              <Badge variant={event.data.status === 'completed' ? 'default' : 
                                                       event.data.status === 'canceled' ? 'destructive' : 'secondary'} className="text-xs">
                                                 {event.data.status}
                                               </Badge>
@@ -655,7 +656,7 @@ export function VisualJourneyTimeline({ events }: VisualJourneyTimelineProps) {
                                           {event.data.status && (
                                             <div>
                                               <span className="text-muted-foreground">Status:</span>{' '}
-                                              <Badge variant={event.data.status === 'won' ? 'success' : 
+                                              <Badge variant={event.data.status === 'won' ? 'default' : 
                                                       event.data.status === 'lost' ? 'destructive' : 'secondary'} className="text-xs">
                                                 {event.data.status}
                                               </Badge>
