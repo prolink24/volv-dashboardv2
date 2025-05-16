@@ -71,6 +71,7 @@ export interface IStorage {
   // Meeting operations
   getMeeting(id: number): Promise<Meeting | undefined>;
   getMeetingByCalendlyEventId(eventId: string): Promise<Meeting | undefined>;
+  getMeetingsByInviteeEmail(email: string): Promise<Meeting[]>;
   createMeeting(meeting: InsertMeeting): Promise<Meeting>;
   updateMeeting(id: number, meeting: Partial<InsertMeeting>): Promise<Meeting | undefined>;
   getMeetingsByContactId(contactId: number): Promise<Meeting[]>;
@@ -358,6 +359,15 @@ export class DatabaseStorage implements IStorage {
       .from(meetings)
       .where(eq(meetings.calendlyEventId, eventId));
     return meeting || undefined;
+  }
+  
+  async getMeetingsByInviteeEmail(email: string): Promise<Meeting[]> {
+    // Use SQL ILIKE for case-insensitive matching of invitee email
+    return db
+      .select()
+      .from(meetings)
+      .where(sql`${meetings.inviteeEmail} ILIKE ${email}`)
+      .orderBy(desc(meetings.startTime));
   }
 
   async createMeeting(meeting: InsertMeeting): Promise<Meeting> {
