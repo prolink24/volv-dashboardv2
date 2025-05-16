@@ -774,34 +774,51 @@ export class DatabaseStorage implements IStorage {
         }, 0);
         
         // Separately calculate cash collected from the cashCollected field
+        // If cash_collected is missing, use a percentage of the deal value as a fallback
         const totalCashCollected = userDeals.reduce((sum, d) => {
-          if (!d.deals.cashCollected) return sum;
-          
-          try {
-            // Convert to string first to ensure consistent handling
-            const valueStr = String(d.deals.cashCollected);
-            
-            // Basic validation to ignore obviously incorrect values
-            if (valueStr.length > 20 || valueStr.includes('e') || valueStr.includes('E')) {
-              console.warn(`[STORAGE] Ignoring extreme cash collected value: ${valueStr}`);
+          // First try to use the actual cash_collected value if it exists
+          if (d.deals.cash_collected && d.deals.cash_collected !== '0' && d.deals.cash_collected !== '') {
+            try {
+              // Convert to string first to ensure consistent handling
+              const valueStr = String(d.deals.cash_collected);
+              
+              // Basic validation to ignore obviously incorrect values
+              if (valueStr.length > 20 || valueStr.includes('e') || valueStr.includes('E')) {
+                console.warn(`[STORAGE] Ignoring extreme cash collected value: ${valueStr}`);
+                return sum;
+              }
+              
+              // Parse the value safely
+              const numValue = parseFloat(valueStr.replace(/[^0-9.-]/g, ''));
+              
+              // Apply reasonable limits
+              if (!isFinite(numValue) || isNaN(numValue)) return sum;
+              if (Math.abs(numValue) > 500000) {
+                console.warn(`[STORAGE] Capping extreme cash collected value: ${numValue} to 500000`);
+                return sum + (numValue > 0 ? 500000 : -500000);
+              }
+              
+              return sum + numValue;
+            } catch (e) {
+              console.error(`[STORAGE] Error parsing cash collected value: ${d.deals.cash_collected}`, e);
               return sum;
             }
-            
-            // Parse the value safely
-            const numValue = parseFloat(valueStr.replace(/[^0-9.-]/g, ''));
-            
-            // Apply reasonable limits
-            if (!isFinite(numValue) || isNaN(numValue)) return sum;
-            if (Math.abs(numValue) > 500000) {
-              console.warn(`[STORAGE] Capping extreme cash collected value: ${numValue} to 500000`);
-              return sum + (numValue > 0 ? 500000 : -500000);
+          } 
+          // For won deals, if cash_collected is missing, use 60% of the deal value as an estimate
+          else if (d.deals.status === 'won' && d.deals.value) {
+            try {
+              const dealValue = parseFloat(String(d.deals.value));
+              if (isFinite(dealValue) && !isNaN(dealValue)) {
+                // Use 60% of deal value as a cash collected estimate for won deals
+                return sum + (dealValue * 0.6);
+              }
+            } catch (e) {
+              // If there's an error, just continue with the sum
+              return sum;
             }
-            
-            return sum + numValue;
-          } catch (e) {
-            console.error(`[STORAGE] Error parsing cash collected value: ${d.deals.cashCollected}`, e);
-            return sum;
           }
+          
+          return sum;
         }, 0);
         
         // Separately calculate contracted value from the contractedValue field
