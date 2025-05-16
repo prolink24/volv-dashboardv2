@@ -521,54 +521,181 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       try {
-        console.log('Adding sample users for dashboard display...');
+        console.log('Importing real users from the database...');
         
-        // Create sample users directly
-        enhancedDashboard.salesTeam = [
-          {
-            id: "user_1",
-            name: "Sarah Johnson",
-            role: "Sales Manager",
-            kpis: {
-              deals_created: 27,
-              deals_won: 18,
-              calls_made: 145,
-              meetings_scheduled: 32,
-              meetings_completed: 29,
-              revenue: 95250
-            }
-          },
-          {
-            id: "user_2",
-            name: "Michael Chen",
-            role: "Account Executive",
-            kpis: {
-              deals_created: 34,
-              deals_won: 22,
-              calls_made: 215,
-              meetings_scheduled: 42,
-              meetings_completed: 38,
-              revenue: 78400
-            }
-          },
-          {
-            id: "user_3",
-            name: "Jessica Williams",
-            role: "Sales Development Rep",
-            kpis: {
-              deals_created: 21,
-              deals_won: 12,
-              calls_made: 302,
-              meetings_scheduled: 28,
-              meetings_completed: 22,
-              revenue: 43200
-            }
-          }
-        ];
+        // Import the user resolver service for handling real users
+        const { resolveDashboardUsers } = await import('./services/user-resolver');
         
-        console.log(`Added ${enhancedDashboard.salesTeam.length} sample users to dashboard`);
+        // Get real users and their KPIs from the database
+        enhancedDashboard = await resolveDashboardUsers(enhancedDashboard);
+        
+        // Add real KPI data to the users based on database metrics
+        const userMetrics = await importUserKpiData(dateFrom, dateTo);
+        
+        if (enhancedDashboard.salesTeam && enhancedDashboard.salesTeam.length > 0) {
+          // Apply real KPI data to each user
+          enhancedDashboard.salesTeam = enhancedDashboard.salesTeam.map(user => {
+            const metrics = userMetrics.find(m => m.userId === user.id);
+            
+            if (metrics) {
+              return {
+                ...user,
+                kpis: {
+                  deals_created: metrics.dealsCreated || 0,
+                  deals_won: metrics.dealsWon || 0,
+                  calls_made: metrics.callsMade || 0,
+                  meetings_scheduled: metrics.meetingsScheduled || 0,
+                  meetings_completed: metrics.meetingsCompleted || 0,
+                  revenue: metrics.revenue || 0
+                }
+              };
+            }
+            
+            return user;
+          });
+          
+          console.log(`Imported ${enhancedDashboard.salesTeam.length} real users with KPI data`);
+        } else {
+          console.warn('No users found in the database. Dashboard will show empty team.');
+        }
       } catch (userError) {
-        console.error('Error adding sample users:', userError);
+        console.error('Error importing real users:', userError);
+      }
+      
+      /**
+       * Import user KPI data from the database for a date range
+       */
+      async function importUserKpiData(startDate: Date, endDate: Date) {
+        try {
+          // Import the DB module
+          const { db } = await import('./db');
+          const { metrics, deals, activities, meetings } = await import('@shared/schema');
+          const { eq, and, gte, lte } = await import('drizzle-orm');
+          
+          // Get metrics data for the date range if available
+          const metricsData = await db.select()
+            .from(metrics)
+            .where(
+              and(
+                gte(metrics.date, startDate),
+                lte(metrics.date, endDate)
+              )
+            );
+            
+          // If we have metrics data, use it
+          if (metricsData && metricsData.length > 0) {
+            return metricsData.map(metric => ({
+              userId: metric.userId || '',
+              dealsCreated: metric.openDeals || 0,
+              dealsWon: metric.wonDeals || 0,
+              callsMade: metric.totalCalls || 0,
+              meetingsScheduled: metric.totalMeetings || 0,
+              meetingsCompleted: metric.meetingsAttended || 0,
+              revenue: parseFloat(metric.revenueGenerated || '0')
+            }));
+          }
+            
+          // If no metrics data, calculate directly from raw data
+          console.log('No metrics data available, calculating KPIs from raw data...');
+          
+          // Get all user assignments and calculate KPIs
+          const { contactToUserAssignments, dealToUserAssignments, closeUsers } = await import('@shared/schema');
+          
+          // Get unique user IDs from assignments
+          const userAssignments = await db.select()
+            .from(contactToUserAssignments)
+            .leftJoin(
+              closeUsers,
+              eq(contactToUserAssignments.closeUserId, closeUsers.id)
+            );
+            
+          // Extract unique user IDs
+          const userIds = [...new Set(userAssignments.map(a => a.close_users.closeId))];
+          
+          // Calculate KPIs for each user
+          return await Promise.all(userIds.map(async userId => {
+            // Get user's deals
+            const userDeals = await db.select()
+              .from(dealToUserAssignments)
+              .leftJoin(
+                deals, 
+                eq(dealToUserAssignments.dealId, deals.id)
+              )
+              .leftJoin(
+                closeUsers,
+                eq(dealToUserAssignments.closeUserId, closeUsers.id)
+              )
+              .where(eq(closeUsers.closeId, userId))
+              .where(
+                and(
+                  gte(deals.createdAt, startDate),
+                  lte(deals.createdAt, endDate)
+                )
+              );
+              
+            // Get user's activities
+            const userActivities = await db.select()
+              .from(activities)
+              .leftJoin(
+                contactToUserAssignments,
+                eq(activities.contactId, contactToUserAssignments.contactId)
+              )
+              .leftJoin(
+                closeUsers,
+                eq(contactToUserAssignments.closeUserId, closeUsers.id)
+              )
+              .where(eq(closeUsers.closeId, userId))
+              .where(
+                and(
+                  gte(activities.date, startDate),
+                  lte(activities.date, endDate)
+                )
+              );
+              
+            // Get user's meetings
+            const userMeetings = await db.select()
+              .from(meetings)
+              .leftJoin(
+                contactToUserAssignments,
+                eq(meetings.contactId, contactToUserAssignments.contactId)
+              )
+              .leftJoin(
+                closeUsers,
+                eq(contactToUserAssignments.closeUserId, closeUsers.id)
+              )
+              .where(eq(closeUsers.closeId, userId))
+              .where(
+                and(
+                  gte(meetings.startTime, startDate),
+                  lte(meetings.startTime, endDate)
+                )
+              );
+                
+            // Calculate revenue from deals
+            const revenue = userDeals.reduce((total, deal) => {
+              const dealValue = deal.deals?.value;
+              if (dealValue) {
+                const numValue = parseFloat(dealValue.replace(/[^0-9.-]+/g, '') || '0');
+                return total + (isNaN(numValue) ? 0 : numValue);
+              }
+              return total;
+            }, 0);
+              
+            // Return KPI data
+            return {
+              userId: userId,
+              dealsCreated: userDeals.length,
+              dealsWon: userDeals.filter(d => d.deals?.status === 'won').length,
+              callsMade: userActivities.filter(a => a.activities?.type === 'call').length,
+              meetingsScheduled: userMeetings.length,
+              meetingsCompleted: userMeetings.filter(m => m.meetings?.status === 'completed').length,
+              revenue: revenue
+            };
+          }));
+        } catch (error) {
+          console.error('Error importing user KPI data:', error);
+          return [];
+        }
       }
       
       // Log total request time for performance monitoring
