@@ -153,7 +153,7 @@ export function StorageGrowthCard({
                 />
                 <YAxis 
                   tick={{ fontSize: 11 }}
-                  tickFormatter={(value) => formatValue(value)}
+                  tickFormatter={(value) => formatValue(value).toString()}
                   width={40}
                   tickLine={false}
                 />
