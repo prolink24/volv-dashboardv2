@@ -83,7 +83,7 @@ const getEventIcon = (type: string, subtype?: string) => {
     case 'note':
       return <FileText className="h-4 w-4" />;
     case 'form_submission':
-      return <FileText className="h-4 w-4 text-purple-500" />;
+      return <FileText className="h-4 w-4 text-purple-500 animate-pulse" />;
     case 'form':
       return <MessageSquare className="h-4 w-4" />;
     default:
@@ -94,6 +94,7 @@ const getEventIcon = (type: string, subtype?: string) => {
 const getSourceColor = (source: string) => {
   switch (source.toLowerCase()) {
     case 'close':
+    case 'close crm':
       return 'bg-blue-500';
     case 'calendly':
       return 'bg-green-500';
@@ -107,6 +108,7 @@ const getSourceColor = (source: string) => {
 const getSourceBgColor = (source: string) => {
   switch (source.toLowerCase()) {
     case 'close':
+    case 'close crm':
       return 'bg-blue-100 dark:bg-blue-900/20';
     case 'calendly':
       return 'bg-green-100 dark:bg-green-900/20';
