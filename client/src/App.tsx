@@ -19,6 +19,7 @@ import Settings from "@/pages/settings";
 import NotFound from "@/pages/not-found";
 import AttributionJourney from "@/pages/attribution-journey";
 import CustomerJourney from "@/pages/customer-journey";
+import DatabaseHealth from "@/pages/database-health";
 import KpiConfigurationPage from "@/pages/settings/kpi-configuration";
 import KpiConfigurator from "@/pages/settings/KpiConfiguratorNew";
 
@@ -52,6 +53,7 @@ function Router() {
           <Route path="/attribution-journey" component={AttributionJourney} />
           <Route path="/attribution-journey/:id" component={AttributionJourney} />
           <Route path="/customer-journey" component={CustomerJourney} />
+          <Route path="/database-health" component={DatabaseHealth} />
           <Route component={NotFound} />
         </Switch>
       </div>
