@@ -14,6 +14,18 @@ let cachedUsers: any[] | null = null;
 let cacheTime: Date | null = null;
 const CACHE_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
 
+function formatUserName(firstName: string | null, lastName: string | null): string {
+  if (firstName && lastName) {
+    return `${firstName} ${lastName}`;
+  } else if (firstName) {
+    return firstName;
+  } else if (lastName) {
+    return lastName;
+  } else {
+    return "Unknown";
+  }
+}
+
 /**
  * Get a user by their Close CRM ID
  */
@@ -63,13 +75,19 @@ export async function getAllUsers(): Promise<any[]> {
   
   try {
     // Fetch users from database
-    const users = await db.select().from(closeUsers).orderBy(desc(closeUsers.createdAt));
+    const dbUsers = await db.select().from(closeUsers).orderBy(desc(closeUsers.createdAt));
+    
+    // Format user data to ensure name property exists
+    const formattedUsers = dbUsers.map(user => ({
+      ...user,
+      name: formatUserName(user.first_name, user.last_name)
+    }));
     
     // Update cache
-    cachedUsers = users;
+    cachedUsers = formattedUsers;
     cacheTime = new Date();
     
-    return users;
+    return formattedUsers;
   } catch (error) {
     console.error('Error fetching users:', error);
     
@@ -99,11 +117,18 @@ export async function resolveDashboardUsers(dashboardData: any): Promise<any> {
   if (!dashboardData) return dashboardData;
   
   try {
+    console.log('Resolving dashboard users...');
+    
     // Get all users for reference
     const users = await getAllUsers();
+    console.log(`Retrieved ${users.length} users for resolution`);
     
     // Process salesTeam array if it exists
     if (dashboardData.salesTeam && Array.isArray(dashboardData.salesTeam)) {
+      // Log initial state for debugging
+      console.log(`Processing ${dashboardData.salesTeam.length} sales team members`);
+      
+      // Transform the sales team data with actual names
       dashboardData.salesTeam = await Promise.all(dashboardData.salesTeam.map(async (member) => {
         // Skip if member already has a valid name
         if (member.name && member.name !== 'Unknown') {
@@ -116,13 +141,27 @@ export async function resolveDashboardUsers(dashboardData: any): Promise<any> {
         if (user) {
           return {
             ...member,
-            name: user.name || 'Unknown',
+            name: user.name || formatUserName(user.first_name, user.last_name),
             role: user.role || 'Sales Rep'
           };
         }
         
-        return member;
+        // If we can't find a matching user, create a name from the ID
+        return {
+          ...member,
+          name: `User ${member.id.substring(0, 8)}`,
+          role: member.role || 'Sales Rep'
+        };
       }));
+      
+      console.log(`Resolved ${dashboardData.salesTeam.length} sales team members`);
+    } else {
+      console.log('No sales team data found in dashboard data');
+      
+      // Initialize an empty sales team array if none exists
+      if (!dashboardData.salesTeam) {
+        dashboardData.salesTeam = [];
+      }
     }
     
     return dashboardData;
