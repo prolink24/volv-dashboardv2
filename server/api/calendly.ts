@@ -50,6 +50,7 @@ async function testApiConnection() {
 /**
  * Sync all events from Calendly
  * Fetches a full year of calendar data (past and future events)
+ * Uses organization-wide access to get meetings from all team members
  */
 async function syncAllEvents() {
   // Initialize counters for sync status
@@ -57,6 +58,7 @@ async function syncAllEvents() {
   let processedEvents = 0;
   let importedMeetings = 0;
   let errors = 0;
+  let teamMemberMeetings: {[key: string]: number} = {};
 
   try {
     // First, test the API connection
@@ -70,7 +72,7 @@ async function syncAllEvents() {
     const organizationUri = currentUser.current_organization;
     const userId = currentUser.uri;
     
-    console.log('Fetching events from Calendly API...');
+    console.log('Fetching organization-wide events from Calendly API...');
     console.log('Current user organization URI:', organizationUri);
     console.log('Current user ID:', userId);
     
