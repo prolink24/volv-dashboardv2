@@ -2,7 +2,7 @@
  * Contact Matcher Service
  * 
  * This service provides advanced contact matching functionality to ensure we properly
- * identify the same contact across different systems (Close CRM, Calendly, Typeform).
+ * identify the same contact across different systems (Close, Calendly, Typeform).
  * 
  * It includes:
  * - Email normalization for handling case differences, Gmail aliases, etc.
@@ -13,9 +13,6 @@
 
 import { storage } from '../storage';
 import { InsertContact, Contact } from '@shared/schema';
-import { eq, or, ilike, and } from 'drizzle-orm';
-import { db } from '../db';
-import { contacts } from '@shared/schema';
 
 export enum MatchConfidence {
   EXACT = 'exact',
@@ -25,676 +22,588 @@ export enum MatchConfidence {
   NONE = 'none'
 }
 
-export interface MatchResult {
-  contact?: Contact;
+type MatchResult = {
+  contact: Contact | null;
   confidence: MatchConfidence;
-  reason?: string;
-  score?: number;
-}
+  reason: string | null;
+};
 
 /**
- * Normalize email address for consistent matching
- * Handles case, Gmail aliases (+), dots in Gmail, etc.
+ * Normalize email addresses to standardize comparisons
+ * - Makes email lowercase
+ * - Removes Gmail dots (since gmail ignores dots)
+ * - Removes Gmail plus aliases (user+alias@gmail.com -> user@gmail.com)
  */
 export function normalizeEmail(email: string): string {
   if (!email) return '';
   
-  email = email.toLowerCase().trim();
+  // Convert to lowercase
+  let normalized = email.toLowerCase();
   
-  // Handle Gmail aliases (remove everything after +)
-  if (email.includes('@gmail.com')) {
-    const [localPart, domain] = email.split('@');
-    
-    // Remove dots in Gmail local part (they're ignored by Gmail)
-    let normalizedLocal = localPart.replace(/\./g, '');
-    
-    // Remove everything after + for Gmail aliases
-    if (normalizedLocal.includes('+')) {
-      normalizedLocal = normalizedLocal.split('+')[0];
-    }
-    
-    return `${normalizedLocal}@${domain}`;
+  // Handle invalid emails with multiple @ symbols
+  const atSymbolCount = (normalized.match(/@/g) || []).length;
+  if (atSymbolCount !== 1) {
+    return normalized; // Return as-is for invalid emails
   }
   
-  // Handle other email providers with + aliases
-  if (email.includes('+') && email.includes('@')) {
-    const [localPart, domain] = email.split('@');
+  // Handle Gmail-specific normalization
+  if (normalized.endsWith('@gmail.com')) {
+    // Remove dots from username part for Gmail (johnd.oe@gmail.com === johndo.e@gmail.com)
+    const [username, domain] = normalized.split('@');
+    const usernameWithoutDots = username.replace(/\./g, '');
     
-    // Remove everything after + for aliases
-    const normalizedLocal = localPart.split('+')[0];
+    // Remove everything after + in Gmail (john+calendly@gmail.com === john@gmail.com)
+    const usernameWithoutPlus = usernameWithoutDots.split('+')[0];
     
-    return `${normalizedLocal}@${domain}`;
+    normalized = `${usernameWithoutPlus}@${domain}`;
   }
   
-  return email;
+  return normalized;
 }
 
 /**
- * Normalize phone number for consistent matching
- * Keeps only digits and adds standardized formatting
+ * Normalize phone numbers to standardized format
+ * Strips all non-digit characters and ensures consistent format
  */
-export function normalizePhone(phone: string): string {
+function normalizePhone(phone: string): string {
   if (!phone) return '';
   
   // Remove all non-digit characters
-  const digitsOnly = phone.replace(/\D/g, '');
-  
-  // Handle country codes
-  if (digitsOnly.length > 10) {
-    // If US number with country code
-    if (digitsOnly.startsWith('1') && digitsOnly.length === 11) {
-      return digitsOnly.substring(1); // remove leading 1
-    }
-    return digitsOnly; // Keep international format for other countries
-  }
-  
-  return digitsOnly;
+  return phone.replace(/\D/g, '');
 }
 
 /**
- * Calculate string similarity score (0-1)
- * Uses Levenshtein distance with length normalization
+ * Calculate string similarity between two strings (0-1 scale)
+ * Uses a simple but effective approach - good for names
  */
-export function stringSimilarity(str1: string, str2: string): number {
+function calculateStringSimilarity(str1: string, str2: string): number {
   if (!str1 || !str2) return 0;
-  if (str1 === str2) return 1;
   
-  str1 = str1.toLowerCase().trim();
-  str2 = str2.toLowerCase().trim();
+  // Convert to lowercase for comparison
+  const a = str1.toLowerCase();
+  const b = str2.toLowerCase();
   
-  // Calculate Levenshtein distance
-  const len1 = str1.length;
-  const len2 = str2.length;
-  const matrix: number[][] = Array(len1 + 1).fill(null).map(() => Array(len2 + 1).fill(null));
+  // Calculate Jaccard index using character bigrams
+  const createBigrams = (str: string) => {
+    const result = new Set<string>();
+    for (let i = 0; i < str.length - 1; i++) {
+      result.add(str.substring(i, i + 2));
+    }
+    return result;
+  };
   
-  for (let i = 0; i <= len1; i++) {
-    matrix[i][0] = i;
-  }
+  const aBigrams = createBigrams(a);
+  const bBigrams = createBigrams(b);
   
-  for (let j = 0; j <= len2; j++) {
-    matrix[0][j] = j;
-  }
-  
-  for (let i = 1; i <= len1; i++) {
-    for (let j = 1; j <= len2; j++) {
-      const cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
-      matrix[i][j] = Math.min(
-        matrix[i - 1][j] + 1, // deletion
-        matrix[i][j - 1] + 1, // insertion
-        matrix[i - 1][j - 1] + cost // substitution
-      );
+  let intersection = 0;
+  for (const bigram of Array.from(aBigrams)) {
+    if (bBigrams.has(bigram)) {
+      intersection++;
     }
   }
   
-  const distance = matrix[len1][len2];
-  const maxLen = Math.max(len1, len2);
+  const union = aBigrams.size + bBigrams.size - intersection;
   
-  // Normalize to a similarity score (0-1)
-  return maxLen === 0 ? 1 : 1 - (distance / maxLen);
+  return union === 0 ? 0 : intersection / union;
 }
 
 /**
- * Calculate name similarity with special handling
- * Accounts for nicknames, name order, and partial matches
+ * Determine if two names are similar enough to be the same person
  */
-export function nameSimilarity(name1: string, name2: string): number {
-  if (!name1 || !name2) return 0;
-  if (name1 === name2) return 1;
+function areNamesSimilar(name1: string, name2: string): {
+  areSimilar: boolean;
+  similarity: number;
+  isFuzzyMatch: boolean;
+} {
+  if (!name1 || !name2) {
+    return { areSimilar: false, similarity: 0, isFuzzyMatch: false };
+  }
   
-  // Normalize and split into parts
-  const parts1 = name1.toLowerCase().trim().split(/\s+/);
-  const parts2 = name2.toLowerCase().trim().split(/\s+/);
+  const normalizedName1 = name1.toLowerCase().trim();
+  const normalizedName2 = name2.toLowerCase().trim();
   
-  // Common nickname mappings
-  const nicknames: {[key: string]: string[]} = {
+  // Exact match
+  if (normalizedName1 === normalizedName2) {
+    return { areSimilar: true, similarity: 1, isFuzzyMatch: false };
+  }
+  
+  // Check if one name is contained within the other
+  // (e.g., "John Doe" vs "John" or "John D.")
+  if (normalizedName1.includes(normalizedName2) || normalizedName2.includes(normalizedName1)) {
+    return { areSimilar: true, similarity: 0.9, isFuzzyMatch: true };
+  }
+  
+  // Check for nickname matches (e.g., "Jen" vs "Jennifer")
+  const nicknameMap: Record<string, string[]> = {
+    'jennifer': ['jen', 'jenny'],
     'robert': ['rob', 'bob', 'bobby'],
+    'michael': ['mike', 'mikey'],
     'william': ['will', 'bill', 'billy'],
     'richard': ['rick', 'rich', 'dick'],
-    'michael': ['mike', 'mikey'],
-    'james': ['jim', 'jimmy'],
-    'thomas': ['tom', 'tommy'],
+    'elizabeth': ['liz', 'beth', 'betty'],
+    'katherine': ['kate', 'kathy', 'katie'],
     'christopher': ['chris', 'topher'],
+    'nicholas': ['nick', 'nicky'],
+    'alexander': ['alex', 'al'],
+    'matthew': ['matt', 'matty'],
     'joseph': ['joe', 'joey'],
     'daniel': ['dan', 'danny'],
-    'david': ['dave', 'davy'],
-    'nicholas': ['nick', 'nicky'],
-    'matthew': ['matt', 'matty'],
-    'elizabeth': ['liz', 'beth', 'betty'],
-    'margaret': ['maggie', 'peggy'],
-    'katherine': ['kathy', 'kate', 'katy'],
-    'jennifer': ['jen', 'jenny'],
-    'deborah': ['deb', 'debbie'],
-    'susan': ['sue', 'susie'],
-    'patricia': ['pat', 'patty', 'trish'],
-    'catherine': ['cathy', 'kate'],
-    'alexandria': ['alex', 'lexi']
+    'samuel': ['sam', 'sammy'],
+    'jonathan': ['jon', 'jonny']
   };
   
-  // Create expanded sets of name parts with nicknames
-  const expandedParts1 = [...parts1];
-  const expandedParts2 = [...parts2];
+  // Extract first names
+  const firstName1 = normalizedName1.split(' ')[0];
+  const firstName2 = normalizedName2.split(' ')[0];
   
-  // Add potential nicknames for better matching
-  for (const part of parts1) {
-    if (nicknames[part]) {
-      expandedParts1.push(...nicknames[part]);
+  // Check for matching nicknames
+  const matchesNickname = Object.entries(nicknameMap).some(([fullName, nicknames]) => {
+    // Full name to nickname
+    if (firstName1 === fullName && nicknames.includes(firstName2)) {
+      return true;
     }
-    for (const [name, nicks] of Object.entries(nicknames)) {
-      if (nicks.includes(part)) {
-        expandedParts1.push(name);
-      }
+    // Nickname to full name
+    if (firstName2 === fullName && nicknames.includes(firstName1)) {
+      return true;
     }
+    // Nickname to nickname (same full name)
+    if (nicknames.includes(firstName1) && nicknames.includes(firstName2)) {
+      return true;
+    }
+    return false;
+  });
+  
+  if (matchesNickname) {
+    // If last names also match, this is a strong match
+    const lastName1 = normalizedName1.split(' ').slice(-1)[0];
+    const lastName2 = normalizedName2.split(' ').slice(-1)[0];
+    
+    if (lastName1 && lastName2 && lastName1 === lastName2) {
+      return { areSimilar: true, similarity: 0.95, isFuzzyMatch: true };
+    }
+    
+    // Even with just the first name nickname match, it's pretty good
+    return { areSimilar: true, similarity: 0.8, isFuzzyMatch: true };
   }
   
-  for (const part of parts2) {
-    if (nicknames[part]) {
-      expandedParts2.push(...nicknames[part]);
-    }
-    for (const [name, nicks] of Object.entries(nicknames)) {
-      if (nicks.includes(part)) {
-        expandedParts2.push(name);
-      }
-    }
-  }
+  // Handle initial format (e.g., "J. Doe" vs "John Doe")
+  const nameParts1 = normalizedName1.split(' ');
+  const nameParts2 = normalizedName2.split(' ');
   
-  // Calculate maximum similarity between any name parts
-  let maxPartSimilarity = 0;
-  let exactMatches = 0;
-  
-  for (const part1 of expandedParts1) {
-    for (const part2 of expandedParts2) {
-      if (part1 === part2) {
-        exactMatches++;
-        continue;
+  // Check if last names match and first initial matches
+  if (nameParts1.length >= 2 && nameParts2.length >= 2) {
+    const lastName1 = nameParts1[nameParts1.length - 1];
+    const lastName2 = nameParts2[nameParts2.length - 1];
+    
+    // If last names match exactly
+    if (lastName1 === lastName2) {
+      const firstPart1 = nameParts1[0];
+      const firstPart2 = nameParts2[0];
+      
+      // Check for initial format like "J." or "J"
+      if ((firstPart1.length === 1 || (firstPart1.length === 2 && firstPart1.endsWith('.'))) && 
+          firstPart2.startsWith(firstPart1.charAt(0))) {
+        return { areSimilar: true, similarity: 0.85, isFuzzyMatch: true };
       }
       
-      const similarity = stringSimilarity(part1, part2);
-      maxPartSimilarity = Math.max(maxPartSimilarity, similarity);
+      if ((firstPart2.length === 1 || (firstPart2.length === 2 && firstPart2.endsWith('.'))) && 
+          firstPart1.startsWith(firstPart2.charAt(0))) {
+        return { areSimilar: true, similarity: 0.85, isFuzzyMatch: true };
+      }
     }
   }
   
-  // Calculate overall name similarity
-  const uniqueParts1 = new Set(parts1).size;
-  const uniqueParts2 = new Set(parts2).size;
-  const totalUniqueParts = Math.max(uniqueParts1, uniqueParts2);
+  // Calculate similarity score
+  const similarity = calculateStringSimilarity(normalizedName1, normalizedName2);
   
-  // Weight exact matches more heavily
-  const exactMatchScore = totalUniqueParts > 0 ? exactMatches / totalUniqueParts : 0;
-  
-  // Final score combines exact matches with fuzzy matching
-  return Math.max(
-    exactMatchScore,
-    maxPartSimilarity * 0.8 // Fuzzy matches are worth 80% of exact matches
-  );
+  // Names are similar if similarity is >= 0.7
+  return { 
+    areSimilar: similarity >= 0.7, 
+    similarity, 
+    isFuzzyMatch: true 
+  };
 }
 
 /**
- * Find the best matching contact in the database
- * Performs multi-criteria matching with configurable confidence thresholds
+ * Find the best matching contact based on a comprehensive matching strategy
+ * Attempts various matching techniques with different confidence levels
  */
-export async function findBestMatchingContact(
-  contactInfo: Partial<InsertContact>,
-  options: {
-    minConfidence?: MatchConfidence,
-    includeLinks?: boolean
-  } = {}
-): Promise<MatchResult> {
-  const { minConfidence = MatchConfidence.LOW, includeLinks = true } = options;
+export async function findBestMatchingContact(contactData: Partial<InsertContact>): Promise<MatchResult> {
+  // Helper to create match results
+  const createResult = (
+    contact: Contact | null,
+    confidence: MatchConfidence,
+    reason?: string
+  ): MatchResult => ({
+    contact,
+    confidence,
+    reason: reason || null
+  });
   
-  const minConfidenceScores = {
-    [MatchConfidence.EXACT]: 1.0,
-    [MatchConfidence.HIGH]: 0.8,
-    [MatchConfidence.MEDIUM]: 0.6,
-    [MatchConfidence.LOW]: 0.4,
-    [MatchConfidence.NONE]: 0
-  };
-  
-  const minRequiredScore = minConfidenceScores[minConfidence];
-  let bestMatch: Contact | undefined;
-  let bestScore = 0;
-  let matchReason = '';
-  let matchConfidence = MatchConfidence.NONE;
-  
-  try {
-    // Step 1: Try to find by exact email match
-    if (contactInfo.email) {
-      const normalizedEmail = normalizeEmail(contactInfo.email);
-      const emailMatchQuery = await db.select().from(contacts).where(eq(contacts.email, normalizedEmail));
-      if (emailMatchQuery.length > 0) {
-        bestMatch = emailMatchQuery[0];
-        bestScore = 1.0;
-        matchReason = 'Exact email match';
-        matchConfidence = MatchConfidence.EXACT;
-        
-        return {
-          contact: bestMatch,
-          confidence: matchConfidence,
-          reason: matchReason,
-          score: bestScore
-        };
-      }
+  // 1. Try exact email match first (most reliable)
+  if (contactData.email) {
+    const normalizedEmail = normalizeEmail(contactData.email);
+    
+    // Find all contacts to do detailed matching
+    const allContacts = await storage.getContacts(5000, 0); // Get up to 5000 contacts for matching
+    
+    // Find exact email match (normalized)
+    const exactMatch = allContacts.find(contact => 
+      normalizeEmail(contact.email) === normalizedEmail
+    );
+    
+    if (exactMatch) {
+      const isSameEmail = exactMatch.email.toLowerCase() === contactData.email?.toLowerCase();
+      const reason = isSameEmail
+        ? 'Exact email match'
+        : 'Normalized Gmail match (ignoring dots and aliases)';
       
-      // Try fuzzy email matching (for common typos)
-      const emailParts = normalizedEmail.split('@');
-      if (emailParts.length === 2) {
-        const [localPart, domain] = emailParts;
-        // Only do fuzzy matching if local part is long enough
-        if (localPart.length > 3) {
-          // Look for emails with up to 1 character difference in local part but same domain
-          const fuzzyEmailMatches = await db.select().from(contacts).where(
-            and(
-              eq(contacts.email, ilike(`%@${domain}`)),
-              contacts.email !== normalizedEmail
-            )
-          );
+      return createResult(exactMatch, MatchConfidence.EXACT, reason);
+    }
+  }
+  
+  // 2. Try phone + name matching (high confidence)
+  if (contactData.phone && contactData.name) {
+    const normalizedPhone = normalizePhone(contactData.phone);
+    const contactName = contactData.name; // Store in a local variable to avoid TypeScript issues
+    
+    // Get all contacts with this phone
+    const allContacts = await storage.getAllContacts();
+    const phoneMatches = allContacts.filter(contact => 
+      normalizePhone(contact.phone || '') === normalizedPhone && 
+      normalizedPhone.length > 5 // Make sure it's a valid phone number
+    );
+    
+    if (phoneMatches.length > 0) {
+      // First, check for initial format matches
+      // For example "J. Doe" should match "Jane Doe" if phones match
+      const initialFormatMatches = phoneMatches.filter(contact => {
+        // Extract last names from both
+        const contactNameParts = contact.name.toLowerCase().trim().split(' ');
+        const dataNameParts = contactName.toLowerCase().trim().split(' ');
+        
+        // Check if both have at least last name
+        if (contactNameParts.length >= 1 && dataNameParts.length >= 1) {
+          const contactLastName = contactNameParts[contactNameParts.length - 1];
+          const dataLastName = dataNameParts[dataNameParts.length - 1];
           
-          for (const contact of fuzzyEmailMatches) {
-            const contactEmailParts = contact.email.split('@');
-            if (contactEmailParts.length === 2) {
-              const contactLocalPart = contactEmailParts[0];
-              const similarity = stringSimilarity(localPart, contactLocalPart);
-              if (similarity > 0.9) { // Very close match
-                bestMatch = contact;
-                bestScore = 0.95;
-                matchReason = 'Very similar email (possible typo)';
-                matchConfidence = MatchConfidence.HIGH;
-                
-                return {
-                  contact: bestMatch,
-                  confidence: matchConfidence,
-                  reason: matchReason,
-                  score: bestScore
-                };
-              }
+          // If last names match
+          if (contactLastName === dataLastName) {
+            // Get first part of names
+            const contactFirstPart = contactNameParts[0];
+            const dataFirstPart = dataNameParts[0];
+            
+            // Check if either is an initial (e.g., "J." or "J")
+            const isContactInitial = 
+              contactFirstPart.length === 1 || 
+              (contactFirstPart.length === 2 && contactFirstPart.endsWith('.'));
+              
+            const isDataInitial = 
+              dataFirstPart.length === 1 || 
+              (dataFirstPart.length === 2 && dataFirstPart.endsWith('.'));
+            
+            // Check if initial matches first letter of the other name
+            if (isContactInitial && dataFirstPart.startsWith(contactFirstPart.charAt(0))) {
+              return true;
+            }
+            
+            if (isDataInitial && contactFirstPart.startsWith(dataFirstPart.charAt(0))) {
+              return true;
             }
           }
         }
-      }
-    }
-    
-    // Step 2: Try to find by phone number
-    if (contactInfo.phone) {
-      const normalizedPhone = normalizePhone(contactInfo.phone);
-      if (normalizedPhone.length >= 10) { // Only match if we have enough digits
-        const phoneMatches = await storage.getContactsByPhone(normalizedPhone);
-        
-        if (phoneMatches.length > 0) {
-          bestMatch = phoneMatches[0];
-          bestScore = 0.9;
-          matchReason = 'Phone number match';
-          matchConfidence = MatchConfidence.HIGH;
-          
-          // If we have a name to compare, verify it's a closer match
-          if (contactInfo.name && bestMatch.name) {
-            const nameSim = nameSimilarity(contactInfo.name, bestMatch.name);
-            if (nameSim > 0.6) {
-              bestScore = 0.95; // Increase confidence when name also matches
-              matchReason = 'Phone number match with similar name';
-            } else if (nameSim < 0.2) {
-              bestScore = 0.6; // Decrease confidence if names are very different
-              matchReason = 'Phone number match with different name';
-              matchConfidence = MatchConfidence.MEDIUM;
-            }
-          }
-          
-          return {
-            contact: bestMatch,
-            confidence: matchConfidence,
-            reason: matchReason,
-            score: bestScore
-          };
-        }
-      }
-    }
-    
-    // Step 3: Try name + company matching
-    if (contactInfo.name && contactInfo.company) {
-      const possibleMatches = await db.select().from(contacts).where(
-        and(
-          contacts.name !== '',
-          contacts.company !== '',
-          or(
-            ilike(contacts.name, `%${contactInfo.name}%`),
-            ilike(contacts.company, `%${contactInfo.company}%`)
-          )
-        )
-      );
+        return false;
+      });
       
-      for (const match of possibleMatches) {
-        // Calculate combined similarity score 
-        const nameSim = nameSimilarity(contactInfo.name, match.name);
-        const companySim = stringSimilarity(contactInfo.company, match.company || '');
+      // If we found an initial format match with phone, return high confidence
+      if (initialFormatMatches.length > 0) {
+        return createResult(
+          initialFormatMatches[0],
+          MatchConfidence.HIGH,
+          'Initial format name + Phone match'
+        );
+      }
+      
+      // Find the contact with the most similar name
+      let bestMatch = null;
+      let bestSimilarity = 0;
+      
+      for (const contact of phoneMatches) {
+        const { similarity, areSimilar } = areNamesSimilar(
+          contact.name,
+          contactName
+        );
         
-        // Weight name more heavily than company
-        const combinedScore = (nameSim * 0.7) + (companySim * 0.3);
-        
-        if (combinedScore > bestScore && combinedScore >= 0.7) {
-          bestMatch = match;
-          bestScore = combinedScore;
-          matchReason = `Name and company match (${Math.round(combinedScore * 100)}% similarity)`;
-          
-          // Set confidence level based on score
-          if (combinedScore >= 0.9) {
-            matchConfidence = MatchConfidence.HIGH;
-          } else if (combinedScore >= 0.7) {
-            matchConfidence = MatchConfidence.MEDIUM;
-          } else {
-            matchConfidence = MatchConfidence.LOW;
-          }
+        if (areSimilar && similarity > bestSimilarity) {
+          bestMatch = contact;
+          bestSimilarity = similarity;
         }
       }
       
       if (bestMatch) {
-        return {
-          contact: bestMatch,
-          confidence: matchConfidence,
-          reason: matchReason,
-          score: bestScore
-        };
+        return createResult(
+          bestMatch,
+          MatchConfidence.HIGH,
+          'Very strong name similarity + Phone match'
+        );
       }
+      
+      // If we have a phone match but names aren't similar enough,
+      // return the first matching contact with medium confidence
+      return createResult(
+        phoneMatches[0],
+        MatchConfidence.MEDIUM,
+        'Phone match but different name - possible household member'
+      );
     }
+  }
+  
+  // 3. Try fuzzy name + company match (medium confidence)
+  if (contactData.name && contactData.company) {
+    const allContacts = await storage.getAllContacts();
+    const possibleMatches = allContacts.filter(
+      contact => contact.company && 
+      contact.company.toLowerCase() === contactData.company?.toLowerCase()
+    );
     
-    // Step 4: Try just name matching if score is still low and we have a name
-    if (contactInfo.name && (!bestMatch || bestScore < 0.5)) {
-      const nameMatches = await db.select().from(contacts).where(
-        ilike(contacts.name, `%${contactInfo.name}%`)
+    // Find the contact with the most similar name
+    let bestMatch = null;
+    let bestSimilarity = 0;
+    
+    for (const contact of possibleMatches) {
+      const { similarity, areSimilar } = areNamesSimilar(
+        contact.name,
+        contactData.name || ''
       );
       
-      for (const match of nameMatches) {
-        const nameSim = nameSimilarity(contactInfo.name, match.name);
-        
-        if (nameSim > bestScore && nameSim >= 0.8) { // Need high confidence for name-only matches
-          bestMatch = match;
-          bestScore = nameSim;
-          matchReason = `Strong name match (${Math.round(nameSim * 100)}% similarity)`;
-          
-          if (nameSim >= 0.9) {
-            matchConfidence = MatchConfidence.HIGH;
-          } else {
-            matchConfidence = MatchConfidence.MEDIUM;
-          }
-        }
+      if (areSimilar && similarity > bestSimilarity) {
+        bestMatch = contact;
+        bestSimilarity = similarity;
       }
     }
     
-    // Return the best match if it meets the minimum confidence threshold
-    if (bestMatch && bestScore >= minRequiredScore) {
-      return {
-        contact: bestMatch,
-        confidence: matchConfidence,
-        reason: matchReason,
-        score: bestScore
-      };
+    if (bestMatch) {
+      return createResult(
+        bestMatch,
+        MatchConfidence.MEDIUM,
+        'Name similarity + Company match'
+      );
+    }
+  }
+  
+  // 4. Try strong name similarity by itself (low confidence)
+  if (contactData.name) {
+    const allContacts = await storage.getAllContacts();
+    let bestMatch = null;
+    let bestSimilarity = 0;
+    
+    for (const contact of allContacts) {
+      const { similarity } = areNamesSimilar(
+        contact.name,
+        contactData.name
+      );
+      
+      // Higher threshold for name-only matches
+      if (similarity > 0.85 && similarity > bestSimilarity) {
+        bestMatch = contact;
+        bestSimilarity = similarity;
+      }
     }
     
-    // No good match found
-    return {
-      confidence: MatchConfidence.NONE,
-      reason: 'No matching contact found',
-      score: bestScore
-    };
-  } catch (error) {
-    console.error('Error in findBestMatchingContact:', error);
-    return {
-      confidence: MatchConfidence.NONE,
-      reason: `Error during matching: ${(error as Error).message}`,
-      score: 0
-    };
+    if (bestMatch) {
+      return createResult(
+        bestMatch,
+        MatchConfidence.LOW,
+        'Very strong name similarity only'
+      );
+    }
   }
+  
+  // No match found
+  return createResult(null, MatchConfidence.NONE, 'No match found');
 }
 
 /**
- * Create a new contact or update an existing one based on matching
+ * Create a new contact or update an existing one if a match is found
+ * Returns the contact, whether it was created, and the reason for match
+ * Implements smart field merging when combining data from multiple sources
  */
 export async function createOrUpdateContact(
-  contactInfo: InsertContact,
-  updateExisting: boolean = true,
-  minConfidence: MatchConfidence = MatchConfidence.MEDIUM
-): Promise<{ 
-  contact: Contact, 
-  created: boolean, 
-  merged: boolean,
-  reason: string 
-}> {
-  try {
-    // Normalize email for better matching
-    if (contactInfo.email) {
-      contactInfo.email = normalizeEmail(contactInfo.email);
-    }
-    
-    // Try to find matching contact
-    const matchResult = await findBestMatchingContact(contactInfo, { 
-      minConfidence 
-    });
-    
-    if (matchResult.confidence !== MatchConfidence.NONE && matchResult.contact) {
-      // We found a matching contact
-      if (updateExisting) {
-        // Prepare merged data
-        const mergedData: Partial<InsertContact> = {};
+  contactData: InsertContact,
+  updateIfFound: boolean = true,
+  minimumConfidence: MatchConfidence = MatchConfidence.MEDIUM
+): Promise<{ contact: Contact; created: boolean; reason: string | null }> {
+  // Try to find a matching contact
+  const matchResult = await findBestMatchingContact(contactData);
+  
+  // Check if match meets minimum confidence level
+  const confidenceLevels = [
+    MatchConfidence.EXACT,
+    MatchConfidence.HIGH, 
+    MatchConfidence.MEDIUM,
+    MatchConfidence.LOW,
+    MatchConfidence.NONE
+  ];
+  
+  const matchIndex = confidenceLevels.indexOf(matchResult.confidence);
+  const minimumIndex = confidenceLevels.indexOf(minimumConfidence);
+  
+  const acceptableMatch = matchIndex <= minimumIndex;
+  
+  // If we found an acceptable match
+  if (matchResult.contact && acceptableMatch) {
+    // Update the contact if requested with smart field merging
+    if (updateIfFound) {
+      // Smart merging - only update fields if they provide more information
+      const existingContact = matchResult.contact;
+      const mergedData: Partial<InsertContact> = {};
+      
+      // Merge fields with smart logic
+      // Name - implement smarter name merging
+      if (contactData.name && existingContact.name) {
+        // Rule 1: Full name (first + last with space) is better than partial name
+        const existingHasFullName = existingContact.name.includes(' ');
+        const newHasFullName = contactData.name.includes(' ');
         
-        // Track if fields were actually merged
-        let fieldsMerged = false;
-        
-        // Merge lead source
-        if (contactInfo.leadSource && 
-            (!matchResult.contact.leadSource || 
-             !matchResult.contact.leadSource.includes(contactInfo.leadSource))) {
-          
-          const updatedSource = matchResult.contact.leadSource 
-            ? `${matchResult.contact.leadSource},${contactInfo.leadSource}` 
-            : contactInfo.leadSource;
-          
-          mergedData.leadSource = updatedSource;
-          
-          // Update sources count
-          mergedData.sourcesCount = (matchResult.contact.sourcesCount || 1) + 1;
-          
-          fieldsMerged = true;
+        if (newHasFullName && !existingHasFullName) {
+          // New contact has full name but existing doesn't
+          mergedData.name = contactData.name;
+        } else if (!newHasFullName && existingHasFullName) {
+          // Existing contact has full name but new doesn't
+          mergedData.name = existingContact.name;
+        } else if (newHasFullName && existingHasFullName) {
+          // Both have full names, prefer the longer one as it may have middle names or suffixes
+          mergedData.name = contactData.name.length > existingContact.name.length ? 
+                            contactData.name : existingContact.name;
+        } else {
+          // Neither has full name, prefer the longer one as it may have more letters in a nickname
+          mergedData.name = contactData.name.length > existingContact.name.length ? 
+                            contactData.name : existingContact.name;
         }
-        
-        // Prefer non-empty fields from the new contact data
-        const fieldsToConsider = [
-          'name', 'phone', 'company', 'title', 'linkedInUrl', 
-          'status', 'notes', 'preferredContactMethod', 'timezone'
-        ] as const;
-        
-        for (const field of fieldsToConsider) {
-          if (contactInfo[field] && 
-              (!matchResult.contact[field] || matchResult.contact[field] === '')) {
-            (mergedData as any)[field] = contactInfo[field];
-            fieldsMerged = true;
-          }
-        }
-        
-        // Special handling for notes - append instead of replace
-        if (contactInfo.notes && matchResult.contact.notes) {
-          // Don't duplicate notes if they're exactly the same
-          if (contactInfo.notes !== matchResult.contact.notes) {
-            mergedData.notes = `${matchResult.contact.notes}\n\n${contactInfo.notes}`;
-            fieldsMerged = true;
-          }
-        }
-        
-        // Update existing contact if we have fields to merge
-        if (fieldsMerged) {
-          // Ensure last updated time is set
-          mergedData.lastUpdateDate = new Date();
-          
-          const updatedContact = await storage.updateContact(
-            matchResult.contact.id, 
-            mergedData
-          );
-          
-          return {
-            contact: updatedContact,
-            created: false,
-            merged: true,
-            reason: `${matchResult.reason} - Data merged from multiple sources`
-          };
-        }
-        
-        return {
-          contact: matchResult.contact,
-          created: false,
-          merged: false,
-          reason: matchResult.reason || 'Matched to existing contact (no data merged)'
-        };
+      } else {
+        // One or both names are empty, use the non-empty one
+        mergedData.name = contactData.name || existingContact.name;
       }
       
-      // Just return the existing contact without updating
+      // Email - prefer the existing one unless empty
+      mergedData.email = existingContact.email || contactData.email;
+      
+      // Phone - prefer the one with more digits or special formatting
+      if (contactData.phone && (!existingContact.phone || 
+          (contactData.phone.replace(/\D/g, '').length > existingContact.phone.replace(/\D/g, '').length))) {
+        mergedData.phone = contactData.phone;
+      } else {
+        mergedData.phone = existingContact.phone;
+      }
+      
+      // Company - prefer non-empty value
+      mergedData.company = existingContact.company || contactData.company;
+      
+      // Title - prefer non-empty value
+      mergedData.title = existingContact.title || contactData.title;
+      
+      // Source - preserve existing source if present
+      mergedData.sourceId = existingContact.sourceId || contactData.sourceId;
+      
+      // Source data - merge JSON if possible, otherwise take the new one
+      if (existingContact.sourceData && contactData.sourceData) {
+        try {
+          const existingSourceData = JSON.parse(existingContact.sourceData.toString());
+          const newSourceData = JSON.parse(contactData.sourceData.toString());
+          mergedData.sourceData = {...existingSourceData, ...newSourceData};
+        } catch (e) {
+          mergedData.sourceData = contactData.sourceData;
+        }
+      } else {
+        mergedData.sourceData = existingContact.sourceData || contactData.sourceData;
+      }
+      
+      // Last activity - take the most recent
+      if (existingContact.lastActivityDate && contactData.lastActivityDate) {
+        const existingDate = new Date(existingContact.lastActivityDate);
+        const newDate = new Date(contactData.lastActivityDate);
+        mergedData.lastActivityDate = newDate > existingDate ? newDate : existingDate;
+      } else {
+        mergedData.lastActivityDate = contactData.lastActivityDate || existingContact.lastActivityDate;
+      }
+      
+      // Status - prioritize sales stages over marketing stages
+      const salesStages = ['opportunity', 'customer', 'deal'];
+      if (existingContact.status && salesStages.includes(existingContact.status)) {
+        mergedData.status = existingContact.status;
+      } else {
+        mergedData.status = contactData.status || existingContact.status;
+      }
+      
+      // Lead source - track both sources if different
+      if (existingContact.leadSource && contactData.leadSource) {
+        // Check if the existing leadSource already contains the new source
+        if (!existingContact.leadSource.includes(contactData.leadSource)) {
+          mergedData.leadSource = `${existingContact.leadSource},${contactData.leadSource}`;
+        } else {
+          // Keep existing if it already contains the new source
+          mergedData.leadSource = existingContact.leadSource;
+        }
+      } else {
+        // Use whichever is not null/undefined
+        mergedData.leadSource = existingContact.leadSource || contactData.leadSource;
+      }
+      
+      // Assignment - preserve existing assignment
+      mergedData.assignedTo = existingContact.assignedTo || contactData.assignedTo;
+      
+      // Notes - concatenate notes from both sources with a separator if both exist
+      if (existingContact.notes && contactData.notes) {
+        // Check if one note contains the other to avoid duplication
+        if (existingContact.notes.includes(contactData.notes)) {
+          mergedData.notes = existingContact.notes;
+        } else if (contactData.notes.includes(existingContact.notes)) {
+          mergedData.notes = contactData.notes;
+        } else {
+          // Both have unique notes, combine them
+          mergedData.notes = `${existingContact.notes}\n---\n${contactData.notes}`;
+        }
+      } else {
+        // One or both notes are empty, use the non-empty one
+        mergedData.notes = existingContact.notes || contactData.notes;
+      }
+      
+      const updatedContact = await storage.updateContact(
+        existingContact.id,
+        mergedData as InsertContact
+      );
+      
+      if (updatedContact) {
+        return {
+          contact: updatedContact,
+          created: false,
+          reason: `${matchResult.reason} - Data merged from multiple sources`
+        };
+      }
+    } else {
+      // Return the existing contact without updating
       return {
         contact: matchResult.contact,
         created: false,
-        merged: false,
-        reason: matchResult.reason || 'Matched to existing contact'
+        reason: matchResult.reason
       };
     }
-    
-    // No match found, create new contact
-    // Set appropriate metadata and timestamp
-    const newContact = {
-      ...contactInfo,
-      createdAt: new Date(),
-      lastUpdateDate: new Date()
-    };
-    
-    const createdContact = await storage.createContact(newContact);
-    
-    return {
-      contact: createdContact,
-      created: true,
-      merged: false,
-      reason: 'Created new contact'
-    };
-  } catch (error) {
-    console.error('Error in createOrUpdateContact:', error);
-    throw error;
   }
+  
+  // No acceptable match found, create a new contact
+  const newContact = await storage.createContact(contactData);
+  
+  return {
+    contact: newContact,
+    created: true,
+    reason: 'New contact created'
+  };
 }
 
-/**
- * Merge multiple contacts into a single contact
- * Useful for manual merging or cleanup operations
- */
-export async function mergeContacts(
-  primaryContactId: number,
-  secondaryContactIds: number[]
-): Promise<Contact> {
-  try {
-    // Get primary contact
-    const primaryContact = await storage.getContact(primaryContactId);
-    if (!primaryContact) {
-      throw new Error(`Primary contact with ID ${primaryContactId} not found`);
-    }
-    
-    // Get all secondary contacts
-    const secondaryContacts: Contact[] = [];
-    for (const id of secondaryContactIds) {
-      const contact = await storage.getContact(id);
-      if (contact) {
-        secondaryContacts.push(contact);
-      }
-    }
-    
-    if (secondaryContacts.length === 0) {
-      return primaryContact; // Nothing to merge
-    }
-    
-    // Prepare merged data
-    const mergedData: Partial<InsertContact> = {
-      lastUpdateDate: new Date()
-    };
-    
-    // Combine lead sources
-    const leadSources = new Set<string>();
-    if (primaryContact.leadSource) {
-      primaryContact.leadSource.split(',').forEach(s => leadSources.add(s.trim()));
-    }
-    
-    // Track total sources for sourcesCount
-    let totalSources = primaryContact.sourcesCount || 1;
-    
-    // Merge data from secondary contacts
-    for (const contact of secondaryContacts) {
-      // Merge lead sources
-      if (contact.leadSource) {
-        contact.leadSource.split(',').forEach(s => leadSources.add(s.trim()));
-      }
-      
-      // Update sources count
-      totalSources += (contact.sourcesCount || 1);
-      
-      // Prefer non-empty fields from secondary contacts only if primary is empty
-      const fieldsToConsider = [
-        'phone', 'company', 'title', 'linkedInUrl', 
-        'status', 'preferredContactMethod', 'timezone'
-      ] as const;
-      
-      for (const field of fieldsToConsider) {
-        if ((!primaryContact[field] || primaryContact[field] === '') && 
-            contact[field] && contact[field] !== '') {
-          (mergedData as any)[field] = contact[field];
-        }
-      }
-      
-      // Special handling for notes - append instead of replace
-      if (contact.notes && contact.notes !== '') {
-        if (!mergedData.notes) {
-          mergedData.notes = primaryContact.notes || '';
-        }
-        
-        if (!mergedData.notes.includes(contact.notes)) {
-          mergedData.notes = mergedData.notes 
-            ? `${mergedData.notes}\n\n${contact.notes}` 
-            : contact.notes;
-        }
-      }
-    }
-    
-    // Update merged lead sources and count
-    mergedData.leadSource = Array.from(leadSources).join(',');
-    mergedData.sourcesCount = totalSources;
-    
-    // Update primary contact with merged data
-    const updatedContact = await storage.updateContact(
-      primaryContact.id,
-      mergedData
-    );
-    
-    // Move all related records (activities, deals, meetings)
-    for (const contact of secondaryContacts) {
-      // Move activities
-      await storage.reassignActivities(contact.id, primaryContact.id);
-      
-      // Move deals
-      await storage.reassignDeals(contact.id, primaryContact.id);
-      
-      // Move meetings
-      await storage.reassignMeetings(contact.id, primaryContact.id);
-      
-      // Move forms
-      await storage.reassignForms(contact.id, primaryContact.id);
-      
-      // Delete the secondary contact
-      await storage.deleteContact(contact.id);
-    }
-    
-    return updatedContact;
-  } catch (error) {
-    console.error('Error merging contacts:', error);
-    throw error;
-  }
-}
-
-// Default export of all functions
+// Export default object for convenient imports
 export default {
   findBestMatchingContact,
   createOrUpdateContact,
-  mergeContacts,
   normalizeEmail,
-  normalizePhone,
-  stringSimilarity,
-  nameSimilarity,
   MatchConfidence
 };

@@ -1,729 +1,436 @@
 /**
  * Attribution Service
  * 
- * This service analyzes contact data across all platforms (Close CRM, Calendly, Typeform)
- * to provide accurate attribution metrics and insights.
- * 
- * It tracks:
- * - Touch points across platforms
- * - First and last touch attribution
- * - Multi-platform journeys
- * - Attribution certainty scores
+ * This service is responsible for attributing contacts across
+ * multiple platforms (Close CRM, Calendly, Typeform) to create
+ * a unified view of the customer journey.
  */
 
 import { storage } from '../storage';
-import { db } from '../db';
-import { 
-  contacts, 
-  activities, 
-  deals, 
-  meetings, 
-  forms,
-  Contact
-} from '@shared/schema';
-import { and, eq, count, sql, or, gte, lte, desc } from 'drizzle-orm';
-import * as contactMatcher from './contact-matcher';
-
-// Channel definitions
-export enum Channel {
-  CLOSE = 'close',
-  CALENDLY = 'calendly',
-  TYPEFORM = 'typeform',
-  EMAIL = 'email',
-  CALL = 'call',
-  FORM = 'form',
-  MEETING = 'meeting',
-  DEAL = 'deal',
-  OTHER = 'other'
-}
-
-// Define the structure for attribution stats
-export interface AttributionStats {
-  totalContacts: string | number;
-  contactsAnalyzed: number;
-  highCertaintyContacts: number;
-  multiSourceContacts: number;
-  multiSourceRate: number;
-  totalDeals: number;
-  dealsWithAttribution: number;
-  dealAttributionRate: number;
-  fieldMappingSuccess: number;
-  fieldCoverage: number;
-}
-
-export interface AttributionSummary {
-  success: boolean;
-  attributionAccuracy: number;
-  stats: AttributionStats;
-  timedOut?: boolean;
-  error?: string;
-  channelBreakdown: Record<string, number>;
-  totalTouchpoints: number;
-  mostEffectiveChannel: string;
-}
 
 /**
- * Calculate attribution metrics based on contact data
- * Uses a sampling approach for performance with large datasets
+ * Attribute a single contact across all platforms
+ * 
+ * This function:
+ * 1. Retrieves all activities, meetings, forms related to a contact
+ * 2. Creates a timeline of events
+ * 3. Establishes attribution chains across platforms
+ * 
+ * @param contactId The ID of the contact to attribute
  */
-export async function calculateAttributionStats(
-  dateRange?: { startDate: Date; endDate: Date },
-  sampleSize: number = 1000, // Default to analyzing 1000 contacts for performance
-  userId?: string
-): Promise<AttributionSummary> {
+export async function attributeContact(contactId: number) {
   try {
-    console.log(`Calculating attribution stats with small sample size for faster dashboard loading (date range: ${dateRange ? dateRange.startDate.toISOString() + ' to ' + dateRange.endDate.toISOString() : 'all-time to all-time'})`);
-    
-    // Get total contact count
-    const [contactCount] = await db.select({
-      count: count()
-    }).from(contacts);
-    
-    // Get enhanced distribution of platforms
-    const platformCounts = await db.select({
-      platforms: sql<string>`lead_source`,
-      count: count()
-    })
-    .from(contacts)
-    .groupBy(sql`lead_source`);
-    
-    // Query for multi-source contacts
-    const [multiSourceCount] = await db.select({
-      count: count()
-    })
-    .from(contacts)
-    .where(sql`(sources_count > 1 OR lead_source LIKE '%,%')`);
-    
-    // Sample contacts for detailed analysis
-    console.log(`Getting sample of ${sampleSize} contacts for attribution analysis`);
-    const sampleContacts = await db.select()
-      .from(contacts)
-      .limit(sampleSize)
-      .orderBy(desc(contacts.lastActivityDate));
-
-    console.log(`Attribution stats using sample of ${sampleContacts.length} contacts for analysis`);
-    
-    // Get total deals count
-    const [dealsCount] = await db.select({
-      count: count()
-    }).from(deals);
-    
-    // Get deals with attribution (linked to contacts)
-    const [dealsWithAttributionCount] = await db.select({
-      count: count()
-    })
-    .from(deals)
-    .where(sql`contact_id IS NOT NULL`);
-
-    // Calculate channel distribution
-    const channelBreakdown: Record<string, number> = {};
-    
-    // Map each source to its own channel
-    for (const item of platformCounts) {
-      if (item.platforms) {
-        // Handle multi-platform contacts
-        const sources = item.platforms.split(',');
-        for (const source of sources) {
-          const trimmedSource = source.trim().toLowerCase();
-          channelBreakdown[trimmedSource] = (channelBreakdown[trimmedSource] || 0) + item.count;
-        }
-      }
-    }
-    
-    // Calculate field coverage statistics
-    const fieldCoverageResults = await calculateFieldCoverage(sampleContacts);
-    
-    // Determine most effective channel
-    let mostEffectiveChannel = "unknown";
-    let maxChannelCount = 0;
-    
-    for (const [channel, count] of Object.entries(channelBreakdown)) {
-      if (count > maxChannelCount) {
-        maxChannelCount = count;
-        mostEffectiveChannel = channel;
-      }
-    }
-    
-    // Calculate overall attribution accuracy
-    // This is a weighted composite of several factors:
-    // 1. Multi-source rate (weight: 0.3)
-    // 2. Deal attribution rate (weight: 0.3) 
-    // 3. Field coverage completeness (weight: 0.2)
-    // 4. Contact matching confidence (weight: 0.2)
-    
-    const multiSourceRate = multiSourceCount.count / Number(contactCount.count);
-    const dealAttributionRate = dealsWithAttributionCount.count / dealsCount.count;
-    const fieldCoverageRate = fieldCoverageResults.overallCoverage / 100;
-    
-    // Sample attribution rate is based on sample
-    const attributionAccuracy = (
-      (multiSourceRate * 0.3) + 
-      (dealAttributionRate * 0.3) + 
-      (fieldCoverageRate * 0.2) + 
-      (1.0 * 0.2) // Assuming 100% matching confidence
-    ) * 100;
-    
-    return {
-      success: true,
-      attributionAccuracy: attributionAccuracy,
-      stats: {
-        totalContacts: contactCount.count.toString(), 
-        contactsAnalyzed: sampleContacts.length,
-        highCertaintyContacts: sampleContacts.length, // All contacts in sample are analyzed
-        multiSourceContacts: multiSourceCount.count,
-        multiSourceRate: Math.round(multiSourceRate * 100 * 10) / 10, // Round to 1 decimal place
-        totalDeals: dealsCount.count,
-        dealsWithAttribution: dealsWithAttributionCount.count,
-        dealAttributionRate: Math.round(dealAttributionRate * 100),
-        fieldMappingSuccess: fieldCoverageResults.completedFields,
-        fieldCoverage: Math.round(fieldCoverageResults.overallCoverage)
-      },
-      channelBreakdown,
-      totalTouchpoints: 0, // This would require more complex calculation
-      mostEffectiveChannel
-    };
-  } catch (error) {
-    console.error('Error calculating attribution stats:', error);
-    return {
-      success: false,
-      attributionAccuracy: 0,
-      stats: {
-        totalContacts: 0,
-        contactsAnalyzed: 0,
-        highCertaintyContacts: 0,
-        multiSourceContacts: 0,
-        multiSourceRate: 0,
-        totalDeals: 0,
-        dealsWithAttribution: 0,
-        dealAttributionRate: 0,
-        fieldMappingSuccess: 0,
-        fieldCoverage: 0
-      },
-      error: (error as Error).message,
-      channelBreakdown: {},
-      totalTouchpoints: 0,
-      mostEffectiveChannel: 'unknown'
-    };
-  }
-}
-
-/**
- * Calculate field coverage metrics for contacts
- * Analyzes completeness of contact data
- */
-async function calculateFieldCoverage(contacts: Contact[]) {
-  // Define important fields to track
-  const importantFields = [
-    'name', 'email', 'phone', 'company', 'title', 
-    'leadSource', 'status', 'assignedTo'
-  ];
-  
-  let totalFields = contacts.length * importantFields.length;
-  let completedFields = 0;
-  
-  // Count completed fields
-  for (const contact of contacts) {
-    for (const field of importantFields) {
-      if (contact[field as keyof Contact] && 
-          contact[field as keyof Contact] !== '' && 
-          contact[field as keyof Contact] !== null) {
-        completedFields++;
-      }
-    }
-  }
-  
-  // Calculate overall coverage percentage
-  const overallCoverage = totalFields > 0 
-    ? (completedFields / totalFields) * 100
-    : 0;
-  
-  return {
-    totalFields,
-    completedFields,
-    overallCoverage
-  };
-}
-
-/**
- * Analyze attribution for a specific contact
- * Returns detailed attribution information
- */
-export async function analyzeContactAttribution(contactId: number) {
-  try {
-    // Get the contact
+    // Get the contact and related data
     const contact = await storage.getContact(contactId);
+    
     if (!contact) {
-      return {
-        success: false,
-        error: 'Contact not found'
+      return { 
+        success: false, 
+        error: "Contact not found" 
       };
     }
     
-    // Get all activities for this contact
-    const activities = await db.select()
-      .from(activities)
-      .where(eq(activities.contactId, contactId))
-      .orderBy(activities.date);
+    // Get all data points for this contact
+    const activities = await storage.getActivitiesByContactId(contactId);
+    const meetings = await storage.getMeetingsByContactId(contactId);
+    const forms = await storage.getFormsByContactId(contactId);
+    const deals = await storage.getDealsByContactId(contactId);
     
-    // Get all meetings for this contact
-    const meetings = await db.select()
-      .from(meetings)
-      .where(eq(meetings.contactId, contactId))
-      .orderBy(meetings.startTime);
-    
-    // Get all forms for this contact
-    const forms = await db.select()
-      .from(forms)
-      .where(eq(forms.contactId, contactId))
-      .orderBy(forms.submittedAt);
-    
-    // Get all deals for this contact
-    const deals = await db.select()
-      .from(deals)
-      .where(eq(deals.contactId, contactId))
-      .orderBy(deals.createdAt);
-    
-    // Build timeline of all touchpoints
-    const touchpoints = [
+    // Sort all events by date to create an ordered timeline
+    const timeline = [
       ...activities.map(a => ({
         type: 'activity',
-        source: a.source,
         date: a.date,
-        title: a.title,
+        sourceId: a.sourceId,
+        source: 'close',
         data: a
       })),
       ...meetings.map(m => ({
         type: 'meeting',
+        date: m.startTime, // Use startTime instead of date for meetings
+        sourceId: m.calendlyEventId, // Use calendlyEventId as sourceId
         source: 'calendly',
-        date: m.startTime,
-        title: m.title,
         data: m
       })),
       ...forms.map(f => ({
         type: 'form',
+        date: f.submittedAt, // Use submittedAt for form submission date
+        sourceId: f.typeformResponseId, // Use typeformResponseId as sourceId
         source: 'typeform',
-        date: f.submittedAt,
-        title: `Submitted form: ${f.formName}`,
         data: f
       })),
       ...deals.map(d => ({
         type: 'deal',
+        date: d.createdAt || new Date(), // Use createdAt for deal creation date
+        sourceId: d.closeId || `deal_${d.id}`, // Use closeId or generate an ID
         source: 'close',
-        date: d.createdAt || new Date(),
-        title: d.title,
         data: d
       }))
-    ].sort((a, b) => a.date.getTime() - b.date.getTime());
+    ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     
-    // Determine first and last touch
-    const firstTouch = touchpoints.length > 0 ? touchpoints[0] : null;
-    const lastTouch = touchpoints.length > 0 ? touchpoints[touchpoints.length - 1] : null;
+    // Perform attribution logic
+    // Analyze the timeline to establish attribution chains
+    // Determining if a form submission led to a meeting, which then led to a deal, etc.
     
-    // Source breakdown
-    const sourceBreakdown: Record<string, number> = {};
-    touchpoints.forEach(tp => {
-      const source = tp.source || 'unknown';
-      sourceBreakdown[source] = (sourceBreakdown[source] || 0) + 1;
-    });
+    // Build attribution chains - sequence of events that led to deals
+    const attributionChains = [];
     
-    // Determine all sources
-    const allSources = Object.keys(sourceBreakdown);
-    
-    // Calculate attribution quality/certainty
-    const hasSufficientTouchpoints = touchpoints.length >= 2;
-    const hasMultipleSources = allSources.length > 1;
-    
-    // Calculate certainty score (0-100)
-    let certaintyScore = 0;
-    
-    // Base score: having any data
-    if (touchpoints.length > 0) certaintyScore += 20;
-    
-    // Having multiple touchpoints
-    if (touchpoints.length >= 3) {
-      certaintyScore += 25;
-    } else if (touchpoints.length === 2) {
-      certaintyScore += 15;
+    // If we have deals, build an attribution chain for each one
+    for (const deal of deals) {
+      // Get events that happened before the deal was created
+      const dealCreatedAt = deal.createdAt || new Date();
+      const eventsPriorToDeal = timeline.filter(
+        event => new Date(event.date) <= dealCreatedAt && event.type !== 'deal'
+      );
+      
+      // Get the most recent meeting before the deal
+      const lastMeetingBeforeDeal = [...eventsPriorToDeal]
+        .filter(event => event.type === 'meeting')
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+      
+      // Get the most recent form submission before the deal
+      const lastFormBeforeDeal = [...eventsPriorToDeal]
+        .filter(event => event.type === 'form')
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+      
+      // Get the most recent activity before the deal
+      const lastActivityBeforeDeal = [...eventsPriorToDeal]
+        .filter(event => event.type === 'activity')
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+      
+      // Calculate time between touchpoints
+      const timeToConversion = lastMeetingBeforeDeal ? 
+        dealCreatedAt.getTime() - new Date(lastMeetingBeforeDeal.date).getTime() : null;
+      
+      // Create attribution chain
+      const attributionChain = {
+        dealId: deal.id,
+        dealValue: typeof deal.value === 'string' ? parseFloat(deal.value) : (deal.value || 0),
+        dealStatus: deal.status,
+        events: eventsPriorToDeal,
+        // Attribution model: Last touch gets 100% credit if it's a meeting
+        // Otherwise credit is distributed: 40% first touch, 40% last touch, 20% middle touches
+        attributionModel: lastMeetingBeforeDeal ? 'last-touch' : 'multi-touch',
+        firstTouch: eventsPriorToDeal[0] || null,
+        lastTouchBeforeDeal: eventsPriorToDeal.length > 0 ? eventsPriorToDeal[eventsPriorToDeal.length - 1] : null,
+        conversionPoint: {
+          type: 'deal',
+          date: dealCreatedAt,
+          value: deal.value
+        },
+        meetingInfluence: lastMeetingBeforeDeal ? {
+          meeting: lastMeetingBeforeDeal,
+          daysToConversion: timeToConversion ? Math.floor(timeToConversion / (1000 * 60 * 60 * 24)) : null
+        } : null,
+        formInfluence: lastFormBeforeDeal ? {
+          form: lastFormBeforeDeal
+        } : null,
+        activityInfluence: lastActivityBeforeDeal ? {
+          activity: lastActivityBeforeDeal
+        } : null,
+        totalTouchpoints: eventsPriorToDeal.length,
+        channelAttribution: {
+          calendly: eventsPriorToDeal.filter(e => e.source === 'calendly').length,
+          close: eventsPriorToDeal.filter(e => e.source === 'close').length,
+          typeform: eventsPriorToDeal.filter(e => e.source === 'typeform').length
+        }
+      };
+      
+      attributionChains.push(attributionChain);
     }
-    
-    // Having multiple sources
-    if (allSources.length >= 3) {
-      certaintyScore += 35;
-    } else if (allSources.length === 2) {
-      certaintyScore += 25;
-    }
-    
-    // Having deal data
-    if (deals.length > 0) certaintyScore += 20;
     
     return {
       success: true,
       contact,
-      touchpoints,
-      firstTouch,
-      lastTouch,
-      sourceBreakdown,
-      allSources,
-      touchpointCount: touchpoints.length,
-      hasSufficientTouchpoints,
-      hasMultipleSources,
-      certaintyScore,
-      deals
+      timeline,
+      attributionChains,
+      touchpointCount: timeline.length,
+      firstTouch: timeline.length > 0 ? timeline[0] : null,
+      lastTouch: timeline.length > 0 ? timeline[timeline.length - 1] : null,
+      conversionPoint: deals.length > 0 ? {
+        type: 'deal',
+        date: deals[0].createdAt || new Date(),
+        value: typeof deals[0].value === 'string' ? parseFloat(deals[0].value) : (deals[0].value || 0)
+      } : null,
+      // Channel statistics
+      channelBreakdown: {
+        calendly: timeline.filter(e => e.source === 'calendly').length,
+        close: timeline.filter(e => e.source === 'close').length,
+        typeform: timeline.filter(e => e.source === 'typeform').length
+      }
     };
   } catch (error) {
-    console.error('Error analyzing contact attribution:', error);
+    console.error(`Error attributing contact ${contactId}:`, error);
     return {
       success: false,
-      error: (error as Error).message
+      error: error instanceof Error ? error.message : "Unknown error"
     };
   }
 }
 
 /**
- * Run attribution process for all contacts
- * Improves multi-source attribution rates
+ * Attribute all contacts in the system and collect analytics
+ * This is used for bulk attribution processing and generating insights
+ * 
+ * Performance optimized with:
+ * - Parallel processing with concurrency limits
+ * - Mutex for thread-safe counter updates
+ * - Sample-based attribution for fast insights
+ * - Optimized batch size based on system capabilities
  */
-export async function runBulkAttributionProcess(options: {
-  enhanceMultiSource?: boolean,
-  resolveUnattributed?: boolean,
-  matchThreshold?: contactMatcher.MatchConfidence,
-  limit?: number
-} = {}) {
-  const {
-    enhanceMultiSource = true,
-    resolveUnattributed = true,
-    matchThreshold = contactMatcher.MatchConfidence.MEDIUM,
-    limit = 1000
-  } = options;
+export async function attributeAllContacts() {
+  const attributionStartTime = performance.now(); // For performance monitoring
+  console.time('attribution-stats-generation');
   
   try {
-    console.log('Starting bulk attribution process...');
+    // Option to use a sample of contacts for faster attribution in dashboard contexts
+    // We can process a limited subset of contacts for quick stats generation
+    const MAX_CONTACTS_FOR_DASHBOARD = 250; // Limit to 250 contacts for dashboard view
+    const isFullAttribution = process.env.FULL_ATTRIBUTION === 'true';
     
-    // Track metrics
-    let contactsProcessed = 0;
-    let contactsEnhanced = 0;
-    let contactsMerged = 0;
-    let errorsEncountered = 0;
+    // Get contact count before fetching all contacts
+    const contactCount = await storage.getContactsCount();
     
-    // Step 1: Find and enhance multi-source attribution
-    if (enhanceMultiSource) {
-      console.log('Finding potential multi-source contacts to enhance...');
-      
-      // Get single-source contacts
-      const singleSourceContacts = await db.select()
-        .from(contacts)
-        .where(sql`(sources_count = 1 OR sources_count IS NULL)`)
-        .limit(limit);
-      
-      console.log(`Found ${singleSourceContacts.length} single-source contacts to analyze`);
-      
-      for (const contact of singleSourceContacts) {
-        try {
-          contactsProcessed++;
-          
-          // Skip contacts with no email (we can't reliably match)
-          if (!contact.email) continue;
-          
-          // Case 1: Close contact with no Calendly/Typeform integration
-          if (contact.leadSource === 'close') {
-            // Look for matching Calendly meeting invitees
-            const inviteeEmail = contactMatcher.normalizeEmail(contact.email);
-            const matchingMeetings = await db.select()
-              .from(meetings)
-              .where(eq(meetings.inviteeEmail, inviteeEmail));
-            
-            if (matchingMeetings.length > 0) {
-              // We found meetings for this contact that aren't linked
-              console.log(`Found ${matchingMeetings.length} unlinked Calendly meetings for ${contact.name}`);
-              
-              // Update lead source
-              await storage.updateContact(contact.id, {
-                leadSource: 'close,calendly',
-                sourcesCount: 2
-              });
-              
-              // Link meetings to this contact
-              for (const meeting of matchingMeetings) {
-                if (!meeting.contactId || meeting.contactId === 0) {
-                  await storage.updateMeeting(meeting.id, {
-                    contactId: contact.id
-                  });
-                  console.log(`Linked meeting ${meeting.title} to contact ${contact.name}`);
-                }
-              }
-              
-              contactsEnhanced++;
-            }
-            
-            // Look for matching Typeform submissions
-            const formSubmissions = await db.select()
-              .from(forms)
-              .where(eq(forms.respondentEmail, inviteeEmail));
-            
-            if (formSubmissions.length > 0) {
-              // We found forms for this contact that aren't linked
-              console.log(`Found ${formSubmissions.length} unlinked Typeform submissions for ${contact.name}`);
-              
-              // Update lead source if not already updated
-              if (!contact.leadSource?.includes('typeform')) {
-                const currentLeadSource = contact.leadSource || 'close';
-                await storage.updateContact(contact.id, {
-                  leadSource: `${currentLeadSource},typeform`,
-                  sourcesCount: (contact.sourcesCount || 1) + 1
-                });
-              }
-              
-              // Link forms to this contact
-              for (const form of formSubmissions) {
-                if (!form.contactId || form.contactId === 0) {
-                  await storage.updateForm(form.id, {
-                    contactId: contact.id
-                  });
-                  console.log(`Linked form ${form.formName} to contact ${contact.name}`);
-                }
-              }
-              
-              contactsEnhanced++;
-            }
-          }
-          
-          // Case 2: Calendly contact with no Close integration
-          else if (contact.leadSource === 'calendly') {
-            // Look for matching Close contacts
-            const normalizedEmail = contactMatcher.normalizeEmail(contact.email);
-            
-            // Try to find a matching Close contact
-            const matchResult = await contactMatcher.findBestMatchingContact({
-              email: normalizedEmail,
-              name: contact.name,
-              phone: contact.phone
-            }, {
-              minConfidence: matchThreshold
-            });
-            
-            if (matchResult.confidence !== contactMatcher.MatchConfidence.NONE && 
-                matchResult.contact && 
-                matchResult.contact.id !== contact.id) {
-              
-              // We found a matching Close contact
-              console.log(`Found matching Close contact for Calendly contact ${contact.name}: ${matchResult.contact.name}`);
-              
-              // Merge the contacts
-              await contactMatcher.mergeContacts(
-                matchResult.contact.id, 
-                [contact.id]
-              );
-              
-              console.log(`Merged Calendly contact ${contact.name} into Close contact ${matchResult.contact.name}`);
-              contactsMerged++;
-            }
-          }
-          
-          // Case 3: Typeform contact with no other integrations
-          else if (contact.leadSource === 'typeform') {
-            // Similar approach as with Calendly contacts
-            const normalizedEmail = contactMatcher.normalizeEmail(contact.email);
-            
-            // Try to find a matching contact
-            const matchResult = await contactMatcher.findBestMatchingContact({
-              email: normalizedEmail,
-              name: contact.name,
-              phone: contact.phone
-            }, {
-              minConfidence: matchThreshold
-            });
-            
-            if (matchResult.confidence !== contactMatcher.MatchConfidence.NONE && 
-                matchResult.contact && 
-                matchResult.contact.id !== contact.id) {
-              
-              // We found a matching contact
-              console.log(`Found matching contact for Typeform contact ${contact.name}: ${matchResult.contact.name}`);
-              
-              // Merge the contacts
-              await contactMatcher.mergeContacts(
-                matchResult.contact.id, 
-                [contact.id]
-              );
-              
-              console.log(`Merged Typeform contact ${contact.name} into contact ${matchResult.contact.name}`);
-              contactsMerged++;
-            }
-          }
-          
-          // Log progress
-          if (contactsProcessed % 100 === 0) {
-            console.log(`Processed ${contactsProcessed}/${singleSourceContacts.length} contacts`);
-          }
-        } catch (error) {
-          console.error(`Error processing contact ${contact.id}:`, error);
-          errorsEncountered++;
-        }
-      }
+    // Decide if we should use a sample or all contacts
+    const useSample = !isFullAttribution && contactCount > MAX_CONTACTS_FOR_DASHBOARD;
+    
+    // Get either all contacts or a sample based on our decision
+    let contacts = [];
+    if (useSample) {
+      // Get a representative sample of contacts for faster processing
+      contacts = await storage.getContactSample(MAX_CONTACTS_FOR_DASHBOARD);
+      console.log(`Using a sample of ${contacts.length} contacts for attribution stats`);
+    } else {
+      // Get all contacts for complete attribution
+      contacts = await storage.getAllContacts();
+      console.log(`Processing all ${contacts.length} contacts for full attribution`);
     }
     
-    // Log completion
-    console.log('\nAttribution process completed:');
-    console.log(`- Contacts processed: ${contactsProcessed}`);
-    console.log(`- Contacts enhanced with multi-source: ${contactsEnhanced}`);
-    console.log(`- Contacts merged: ${contactsMerged}`);
-    console.log(`- Errors encountered: ${errorsEncountered}`);
+    // Basic processing results
+    const results = {
+      total: contacts.length,
+      processed: 0,
+      attributed: 0,
+      errors: 0
+    };
+    
+    // Advanced analytics containers
+    const channelStats = {
+      calendly: 0,
+      close: 0,
+      typeform: 0
+    };
+    
+    const modelStats = {
+      lastTouch: 0,
+      multiTouch: 0,
+      noAttribution: 0
+    };
+    
+    const dealStats = {
+      total: 0,
+      withMeeting: 0,
+      withForm: 0,
+      withActivity: 0,
+      averageValue: 0,
+      totalValue: 0,
+      averageTouchpoints: 0,
+      totalTouchpoints: 0,
+      averageDaysToConversion: 0
+    };
+    
+    let contactsWithDeals = 0;
+    let contactsWithMeetings = 0;
+    let contactsWithForms = 0;
+    let totalTouchpoints = 0;
+    let totalMeetings = 0;
+    let totalActivities = 0;
+    let totalForms = 0;
+    let daysToConversionValues = [];
+    
+    // Performance optimization parameters
+    // Adjust concurrency based on system resources, higher for more cores
+    const concurrencyLimit = 20; // Increased from 10 to 20 for better parallelization
+    const batchSize = 100; // Increased from 50 to 100 for less batch processing overhead
+    
+    // Initialize a mutex for thread-safe updates to shared counters
+    const mutex = {
+      lock: async () => {
+        while (mutex.isLocked) {
+          await new Promise(resolve => setTimeout(resolve, 0));
+        }
+        mutex.isLocked = true;
+      },
+      unlock: () => {
+        mutex.isLocked = false;
+      },
+      isLocked: false
+    };
+    
+    // Process batches of contacts
+    for (let i = 0; i < contacts.length; i += batchSize) {
+      const batch = contacts.slice(i, i + batchSize);
+      
+      // Start time for batch processing
+      const batchStartTime = performance.now();
+      
+      // Process all contacts in this batch with Promise.all for maximum parallelization
+      await Promise.all(
+        // Split batch into chunks based on concurrency limit
+        Array.from({ length: Math.ceil(batch.length / concurrencyLimit) }, (_, chunkIndex) => {
+          // Get current chunk of contacts
+          const startIdx = chunkIndex * concurrencyLimit;
+          const endIdx = Math.min(startIdx + concurrencyLimit, batch.length);
+          const chunk = batch.slice(startIdx, endIdx);
+          
+          // Process this chunk in parallel
+          return Promise.all(chunk.map(async (contact) => {
+            try {
+              const attribution = await attributeContact(contact.id);
+              
+              // Use mutex to safely update shared counters
+              await mutex.lock();
+              try {
+                results.processed++;
+                
+                if (attribution.success) {
+                  results.attributed++;
+                  totalTouchpoints += attribution.touchpointCount || 0;
+                  
+                  // Channel stats
+                  if (attribution.channelBreakdown) {
+                    channelStats.calendly += attribution.channelBreakdown.calendly || 0;
+                    channelStats.close += attribution.channelBreakdown.close || 0;
+                    channelStats.typeform += attribution.channelBreakdown.typeform || 0;
+                    
+                    if (attribution.channelBreakdown.calendly > 0) {
+                      contactsWithMeetings++;
+                      totalMeetings += attribution.channelBreakdown.calendly;
+                    }
+                    
+                    if (attribution.channelBreakdown.typeform > 0) {
+                      contactsWithForms++;
+                      totalForms += attribution.channelBreakdown.typeform;
+                    }
+                    
+                    if (attribution.channelBreakdown.close > 0) {
+                      totalActivities += attribution.channelBreakdown.close;
+                    }
+                  }
+                  
+                  // Deal attribution stats
+                  if (attribution.attributionChains && attribution.attributionChains.length > 0) {
+                    contactsWithDeals++;
+                    
+                    for (const chain of attribution.attributionChains) {
+                      dealStats.total++;
+                      const dealValue = typeof chain.dealValue === 'string' ? parseFloat(chain.dealValue) : (chain.dealValue || 0);
+                      dealStats.totalValue += dealValue;
+                      dealStats.totalTouchpoints += chain.totalTouchpoints ? Number(chain.totalTouchpoints) : 0;
+                      
+                      if (chain.attributionModel === 'last-touch') {
+                        modelStats.lastTouch++;
+                      } else if (chain.attributionModel === 'multi-touch') {
+                        modelStats.multiTouch++;
+                      } else {
+                        modelStats.noAttribution++;
+                      }
+                      
+                      if (chain.meetingInfluence) {
+                        dealStats.withMeeting++;
+                        if (chain.meetingInfluence.daysToConversion) {
+                          daysToConversionValues.push(chain.meetingInfluence.daysToConversion);
+                        }
+                      }
+                      
+                      if (chain.formInfluence) {
+                        dealStats.withForm++;
+                      }
+                      
+                      if (chain.activityInfluence) {
+                        dealStats.withActivity++;
+                      }
+                    }
+                  }
+                } else {
+                  results.errors++;
+                }
+              } finally {
+                mutex.unlock();
+              }
+            } catch (error) {
+              console.error(`Error attributing contact ${contact.id}:`, error);
+              
+              await mutex.lock();
+              try {
+                results.processed++;
+                results.errors++;
+              } finally {
+                mutex.unlock();
+              }
+            }
+          }));
+        })
+      );
+      
+      // Log batch processing time for performance monitoring
+      const batchEndTime = performance.now();
+      console.log(`Processed batch of ${batch.length} contacts in ${((batchEndTime - batchStartTime) / 1000).toFixed(2)}s`);
+    }
+    
+    // Calculate averages and percentages
+    if (dealStats.total > 0) {
+      dealStats.averageValue = Math.round(dealStats.totalValue / dealStats.total);
+      dealStats.averageTouchpoints = Math.round((dealStats.totalTouchpoints / dealStats.total) * 100) / 100;
+    }
+    
+    if (daysToConversionValues.length > 0) {
+      dealStats.averageDaysToConversion = Math.round(
+        (daysToConversionValues.reduce((sum, val) => sum + val, 0) / daysToConversionValues.length) * 10
+      ) / 10;
+    }
     
     return {
       success: true,
-      contactsProcessed,
-      contactsEnhanced,
-      contactsMerged,
-      errorsEncountered
-    };
-  } catch (error) {
-    console.error('Error in bulk attribution process:', error);
-    return {
-      success: false,
-      error: (error as Error).message
-    };
-  }
-}
-
-/**
- * Run attribution analysis for a specific date range
- */
-export async function analyzeAttributionByDateRange(
-  dateRange: { startDate: Date, endDate: Date },
-  userId?: string
-) {
-  try {
-    // Step 1: Get contacts created or updated in the date range
-    const contactsInRange = await db.select()
-      .from(contacts)
-      .where(
-        or(
-          and(
-            gte(contacts.createdAt, dateRange.startDate),
-            lte(contacts.createdAt, dateRange.endDate)
-          ),
-          and(
-            gte(contacts.lastUpdateDate, dateRange.startDate),
-            lte(contacts.lastUpdateDate, dateRange.endDate)
-          )
-        )
-      )
-      .limit(1000); // Limit for performance
-    
-    // Step 2: Get activities in the date range
-    const activitiesInRange = await db.select()
-      .from(activities)
-      .where(
-        and(
-          gte(activities.date, dateRange.startDate),
-          lte(activities.date, dateRange.endDate)
-        )
-      )
-      .limit(1000);
-    
-    // Step 3: Get meetings in the date range
-    const meetingsInRange = await db.select()
-      .from(meetings)
-      .where(
-        and(
-          gte(meetings.startTime, dateRange.startDate),
-          lte(meetings.endTime, dateRange.endDate)
-        )
-      )
-      .limit(1000);
-    
-    // Step 4: Get forms in the date range
-    const formsInRange = await db.select()
-      .from(forms)
-      .where(
-        and(
-          gte(forms.submittedAt, dateRange.startDate),
-          lte(forms.submittedAt, dateRange.endDate)
-        )
-      )
-      .limit(1000);
-    
-    // Step 5: Get deals in the date range
-    const dealsInRange = await db.select()
-      .from(deals)
-      .where(
-        or(
-          and(
-            gte(deals.createdAt, dateRange.startDate),
-            lte(deals.createdAt, dateRange.endDate)
-          ),
-          and(
-            gte(deals.closeDate, dateRange.startDate),
-            lte(deals.closeDate, dateRange.endDate)
-          )
-        )
-      )
-      .limit(1000);
-    
-    // Step 6: Calculate attribution metrics
-    
-    // Multi-source contacts in date range
-    const multiSourceContacts = contactsInRange.filter(
-      c => (c.sourcesCount || 0) > 1 || (c.leadSource && c.leadSource.includes(','))
-    );
-    
-    // Get platform distribution
-    const platformDistribution: Record<string, number> = {};
-    
-    contactsInRange.forEach(contact => {
-      if (contact.leadSource) {
-        const sources = contact.leadSource.split(',');
-        sources.forEach(source => {
-          const trimmedSource = source.trim();
-          platformDistribution[trimmedSource] = (platformDistribution[trimmedSource] || 0) + 1;
-        });
+      baseResults: results,
+      detailedAnalytics: {
+        contactStats: {
+          totalContacts: contacts.length,
+          contactsWithDeals,
+          contactsWithMeetings,
+          contactsWithForms,
+          conversionRate: Math.round((contactsWithDeals / Math.max(contacts.length, 1)) * 1000) / 10 // percentage with 1 decimal
+        },
+        touchpointStats: {
+          totalTouchpoints,
+          totalMeetings,
+          totalActivities,
+          totalForms,
+          averageTouchpointsPerContact: Math.round((totalTouchpoints / Math.max(results.attributed, 1)) * 10) / 10
+        },
+        channelStats,
+        modelStats,
+        dealStats,
+        insights: {
+          meetingConversionRate: dealStats.withMeeting > 0 && totalMeetings > 0 ? 
+            Math.round((dealStats.withMeeting / totalMeetings) * 1000) / 10 : 0, // percentage
+          averageSalesCycle: dealStats.averageDaysToConversion || 0,
+          mostEffectiveChannel: channelStats.calendly >= channelStats.close && channelStats.calendly >= channelStats.typeform ? 
+            'calendly' : channelStats.close >= channelStats.typeform ? 'close' : 'typeform',
+          averageDealValue: dealStats.averageValue || 0
+        }
       }
-    });
-    
-    // Get activity type distribution
-    const activityTypeDistribution: Record<string, number> = {};
-    
-    activitiesInRange.forEach(activity => {
-      activityTypeDistribution[activity.type] = (activityTypeDistribution[activity.type] || 0) + 1;
-    });
-    
-    return {
-      success: true,
-      dateRange,
-      contacts: {
-        total: contactsInRange.length,
-        multiSource: multiSourceContacts.length,
-        multiSourceRate: contactsInRange.length > 0 
-          ? (multiSourceContacts.length / contactsInRange.length) * 100 
-          : 0
-      },
-      activities: {
-        total: activitiesInRange.length,
-        typeDistribution: activityTypeDistribution
-      },
-      meetings: {
-        total: meetingsInRange.length
-      },
-      forms: {
-        total: formsInRange.length
-      },
-      deals: {
-        total: dealsInRange.length
-      },
-      platformDistribution
     };
   } catch (error) {
-    console.error('Error analyzing attribution by date range:', error);
+    console.error("Error attributing all contacts:", error);
     return {
       success: false,
-      error: (error as Error).message
+      error: error instanceof Error ? error.message : "Unknown error"
     };
   }
 }
 
 export default {
-  calculateAttributionStats,
-  analyzeContactAttribution,
-  runBulkAttributionProcess,
-  analyzeAttributionByDateRange
+  attributeContact,
+  attributeAllContacts
 };

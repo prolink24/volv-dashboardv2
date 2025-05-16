@@ -1,83 +1,24 @@
-/**
- * Typeform API Integration
- * 
- * This module handles integration with Typeform API to sync:
- * - Form definitions and structure
- * - Form responses/submissions
- * - Custom fields
- * 
- * It maps Typeform submissions to contacts in our database and creates
- * appropriate form and activity records.
- */
-
 import axios from 'axios';
-import { storage } from '../storage';
 import { db } from '../db';
-import { 
-  InsertForm, 
-  InsertActivity,
-  forms,
-  activities
-} from '@shared/schema';
+import { activities, type InsertActivity } from '@shared/schema';
 import { eq } from 'drizzle-orm';
-import { normalizeEmail } from '../services/contact-matcher';
+import { contacts } from '@shared/schema';
 
-// API Configuration
-const TYPEFORM_API_KEY = process.env.TYPEFORM_API_KEY;
-const TYPEFORM_BASE_URL = 'https://api.typeform.com';
-
-// Create axios instance with authentication
-const apiClient = axios.create({
-  baseURL: TYPEFORM_BASE_URL,
+// Typeform API Client
+const typeformClient = axios.create({
+  baseURL: 'https://api.typeform.com',
   headers: {
-    'Authorization': `Bearer ${TYPEFORM_API_KEY}`,
-    'Content-Type': 'application/json'
+    'Authorization': `Bearer ${process.env.TYPEFORM_API_TOKEN}`
   }
 });
 
 /**
- * Test Typeform API connection
- * Returns user account information if successful
- */
-export async function testApiConnection() {
-  try {
-    if (!TYPEFORM_API_KEY) {
-      return {
-        success: false,
-        error: 'Typeform API key is not configured'
-      };
-    }
-
-    const response = await apiClient.get('/me');
-    
-    if (response.status === 200) {
-      return {
-        success: true,
-        user: response.data,
-        message: 'Typeform API connection successful'
-      };
-    } else {
-      return {
-        success: false,
-        error: `API connection failed with status ${response.status}`
-      };
-    }
-  } catch (error: any) {
-    console.error('Typeform API connection test error:', error);
-    return {
-      success: false,
-      error: error.response?.data?.message || error.message || 'Unknown error'
-    };
-  }
-}
-
-/**
- * Get all available forms
+ * Get all forms from Typeform
  */
 export async function getForms() {
   try {
-    const response = await apiClient.get('/forms');
-    return response.data.items || [];
+    const response = await typeformClient.get('/forms');
+    return response.data;
   } catch (error) {
     console.error('Error fetching Typeform forms:', error);
     throw error;
@@ -85,68 +26,225 @@ export async function getForms() {
 }
 
 /**
- * Get detailed information about a specific form
+ * Get form responses for a specific form
+ * @param formId The ID of the form to fetch responses for
+ * @param params Additional query parameters for pagination
  */
-export async function getForm(formId: string) {
+export async function getFormResponses(formId: string, params: Record<string, any> = {}) {
   try {
-    const response = await apiClient.get(`/forms/${formId}`);
+    const response = await typeformClient.get(`/forms/${formId}/responses`, {
+      params: {
+        page_size: 100,
+        ...params
+      }
+    });
     return response.data;
   } catch (error) {
-    console.error(`Error fetching Typeform form ${formId}:`, error);
+    console.error(`Error fetching responses for form ${formId}:`, error);
     throw error;
   }
 }
 
 /**
- * Get form responses/submissions
+ * Extract email from form response
+ * @param response The form response object
  */
-export async function getFormResponses(formId: string, options: { 
-  pageSize?: number,
-  since?: string, 
-  until?: string, 
-  after?: string,
-  before?: string
-} = {}) {
+function extractEmailFromResponse(response: any): string | null {
   try {
-    const { pageSize = 50, since, until, after, before } = options;
+    // Try to find an email field in the answers
+    if (response.answers) {
+      for (const answer of response.answers) {
+        // Check for email type questions
+        if (answer.type === 'email' && answer.email) {
+          return answer.email;
+        }
+        
+        // Sometimes emails might be in text fields
+        if (answer.type === 'text' && answer.text) {
+          const text = answer.text.toLowerCase();
+          // Basic email pattern check
+          if (text.includes('@') && text.includes('.')) {
+            return text;
+          }
+        }
+      }
+    }
     
-    const params: any = {
-      page_size: pageSize
-    };
+    // If no email found in answers, check the hidden fields
+    if (response.hidden && response.hidden.email) {
+      return response.hidden.email;
+    }
     
-    if (since) params.since = since;
-    if (until) params.until = until;
-    if (after) params.after = after;
-    if (before) params.before = before;
-    
-    const response = await apiClient.get(`/forms/${formId}/responses`, { params });
-    return response.data;
+    return null;
   } catch (error) {
-    console.error(`Error fetching Typeform responses for form ${formId}:`, error);
-    throw error;
+    console.error('Error extracting email from response:', error);
+    return null;
   }
 }
 
 /**
- * Sync a single form and its responses
+ * Extract name from form response
+ * @param response The form response object
  */
-export async function syncSingleForm(formId: string) {
+function extractNameFromResponse(response: any): string | null {
   try {
-    // Get form details
-    const formDetails = await getForm(formId);
+    // Try to find name fields in the answers
+    if (response.answers) {
+      // First look for specific name field types
+      const nameFields = response.answers.filter((answer: any) => 
+        answer.type === 'text' && 
+        (answer.field?.ref?.toLowerCase().includes('name') || 
+         (answer.field?.title && answer.field.title.toLowerCase().includes('name')))
+      );
+      
+      if (nameFields.length > 0) {
+        return nameFields[0].text;
+      }
+      
+      // If no specific name field, try to find first and last name fields
+      const firstNameField = response.answers.find((answer: any) => 
+        answer.type === 'text' && 
+        (answer.field?.ref?.toLowerCase().includes('first') || 
+         (answer.field?.title && answer.field.title.toLowerCase().includes('first')))
+      );
+      
+      const lastNameField = response.answers.find((answer: any) => 
+        answer.type === 'text' && 
+        (answer.field?.ref?.toLowerCase().includes('last') || 
+         (answer.field?.title && answer.field.title.toLowerCase().includes('last')))
+      );
+      
+      if (firstNameField && lastNameField) {
+        return `${firstNameField.text} ${lastNameField.text}`;
+      }
+    }
     
-    // Get form responses
-    const responses = await syncFormResponses(formId, formDetails.title);
+    // If no name found in answers, check hidden fields
+    if (response.hidden) {
+      if (response.hidden.name) {
+        return response.hidden.name;
+      }
+      
+      if (response.hidden.first_name && response.hidden.last_name) {
+        return `${response.hidden.first_name} ${response.hidden.last_name}`;
+      }
+    }
     
+    return null;
+  } catch (error) {
+    console.error('Error extracting name from response:', error);
+    return null;
+  }
+}
+
+/**
+ * Get all form responses and sync them to the database
+ */
+export async function syncTypeformResponses() {
+  console.log('Starting Typeform response sync...');
+  try {
+    // Get all forms
+    const formsData = await getForms();
+    const forms = formsData.items || [];
+    console.log(`Found ${forms.length} forms`);
+    
+    let totalResponsesProcessed = 0;
+    let totalResponsesSynced = 0;
+    
+    // Process each form
+    for (const form of forms) {
+      console.log(`Processing form: ${form.title} (${form.id})`);
+      let hasMoreResponses = true;
+      let beforeParam = '';
+      
+      // Paginate through all responses
+      while (hasMoreResponses) {
+        const params: Record<string, any> = { completed: true };
+        if (beforeParam) {
+          params.before = beforeParam;
+        }
+        
+        const responsesData = await getFormResponses(form.id, params);
+        const responses = responsesData.items || [];
+        
+        console.log(`Processing ${responses.length} responses from form ${form.title}`);
+        totalResponsesProcessed += responses.length;
+        
+        for (const response of responses) {
+          const email = extractEmailFromResponse(response);
+          if (!email) {
+            console.log(`No email found for response ${response.response_id}`);
+            continue;
+          }
+          
+          // Find contact by email
+          const existingContact = await db.select()
+            .from(contacts)
+            .where(eq(contacts.email, email))
+            .limit(1);
+          
+          if (existingContact.length === 0) {
+            console.log(`No matching contact found for email: ${email}`);
+            
+            // Option: create a new contact if needed
+            const name = extractNameFromResponse(response) || 'Unknown';
+            // -- Implementation for creating contact would go here --
+            
+            continue;
+          }
+          
+          const contact = existingContact[0];
+          
+          // Check if activity for this response already exists
+          const existingActivity = await db.select()
+            .from(activities)
+            .where(eq(activities.sourceId, `typeform_${response.response_id}`))
+            .limit(1);
+          
+          if (existingActivity.length > 0) {
+            console.log(`Activity already exists for response ${response.response_id}`);
+            continue;
+          }
+          
+          // Create activity for form submission
+          const submissionDate = new Date(response.submitted_at);
+          const activityData = {
+            type: 'form_submission',
+            source: 'Typeform',
+            title: `Form Submitted: ${form.title}`,
+            date: submissionDate,
+            contactId: contact.id,
+            sourceId: `typeform_${response.response_id}`,
+            description: `Submitted application form: ${form.title}`,
+            metadata: response,
+            fieldCoverage: 100
+          };
+          
+          await db.insert(activities).values(activityData);
+          totalResponsesSynced++;
+          
+          console.log(`Added Typeform submission activity for contact: ${contact.name} (${contact.email})`);
+        }
+        
+        // Check if there are more responses to fetch
+        if (responsesData.page_count > 1 && responsesData.items.length > 0) {
+          // Get the last response's token for pagination
+          const lastResponse = responses[responses.length - 1];
+          beforeParam = lastResponse.token;
+        } else {
+          hasMoreResponses = false;
+        }
+      }
+    }
+    
+    console.log(`Typeform sync completed. Processed ${totalResponsesProcessed} responses, synced ${totalResponsesSynced} activities.`);
     return {
       success: true,
-      formId,
-      formTitle: formDetails.title,
-      processed: responses.processed,
-      synced: responses.synced
+      processed: totalResponsesProcessed,
+      synced: totalResponsesSynced
     };
   } catch (error) {
-    console.error(`Error syncing form ${formId}:`, error);
+    console.error('Error syncing Typeform responses:', error);
     return {
       success: false,
       error: (error as Error).message
@@ -155,170 +253,78 @@ export async function syncSingleForm(formId: string) {
 }
 
 /**
- * Sync responses for a specific form
+ * Sync a single form's responses
+ * @param formId The ID of the form to sync
  */
-async function syncFormResponses(formId: string, formTitle: string) {
-  let totalResponsesProcessed = 0;
-  let totalResponsesSynced = 0;
-  let hasMoreResponses = true;
-  let beforeParam: string | undefined;
-  
-  while (hasMoreResponses) {
-    const options: any = {
-      pageSize: 100
-    };
+export async function syncSingleForm(formId: string) {
+  console.log(`Starting sync for form ${formId}...`);
+  try {
+    let totalResponsesProcessed = 0;
+    let totalResponsesSynced = 0;
+    let hasMoreResponses = true;
+    let beforeParam = '';
     
-    if (beforeParam) {
-      options.before = beforeParam;
-    }
-    
-    const responsesData = await getFormResponses(formId, options);
-    const responses = responsesData.items || [];
-    
-    if (responses.length === 0) {
-      hasMoreResponses = false;
-      continue;
-    }
-    
-    totalResponsesProcessed += responses.length;
-    
-    for (const response of responses) {
-      // Find or create contact based on email
-      let contact = null;
-      let email = null;
-      let name = null;
-      
-      // Extract email and name from hidden fields or answers
-      if (response.hidden && response.hidden.email) {
-        email = normalizeEmail(response.hidden.email);
+    // Paginate through all responses
+    while (hasMoreResponses) {
+      const params: Record<string, any> = { completed: true };
+      if (beforeParam) {
+        params.before = beforeParam;
       }
       
-      if (response.hidden && response.hidden.name) {
-        name = response.hidden.name;
-      }
+      const responsesData = await getFormResponses(formId, params);
+      const responses = responsesData.items || [];
       
-      // Look for email and name in answers if not found in hidden fields
-      if (!email || !name) {
-        for (const answer of response.answers || []) {
-          if (answer.type === 'email' && !email) {
-            email = normalizeEmail(answer.email);
-          }
-          
-          if ((answer.type === 'short_text' || answer.type === 'text') && !name) {
-            // Check if this field might contain a name
-            const fieldRef = answer.field.ref;
-            const questionText = answer.field.title.toLowerCase();
-            
-            if (questionText.includes('name') || 
-                questionText.includes('full name') || 
-                fieldRef.includes('name')) {
-              name = answer.text;
-            }
-          }
+      console.log(`Processing ${responses.length} responses from form ${formId}`);
+      totalResponsesProcessed += responses.length;
+      
+      for (const response of responses) {
+        const email = extractEmailFromResponse(response);
+        if (!email) {
+          console.log(`No email found for response ${response.response_id}`);
+          continue;
         }
-      }
-      
-      // Skip if no email (we can't reliably match the contact)
-      if (!email) {
-        console.log(`Skipping Typeform response with no email: ${response.token}`);
-        continue;
-      }
-      
-      // Find contact by email
-      contact = await storage.getContactByEmail(email);
-      
-      // Create new contact if not found and we have enough information
-      if (!contact && email && name) {
-        const newContact = await storage.createContact({
-          name,
-          email,
-          leadSource: 'typeform',
-          sourcesCount: 1,
-          firstTouchDate: new Date(response.submitted_at),
-          status: 'lead',
-          metadata: {
-            source: 'typeform',
-            formId: formId,
-            responseId: response.token
-          }
-        });
         
-        contact = newContact;
-        console.log(`Created new contact from Typeform: ${name} (${email})`);
-      } else if (contact) {
-        // Update existing contact's lead source if it doesn't already include typeform
-        if (!contact.leadSource.includes('typeform')) {
-          const updatedSource = contact.leadSource 
-            ? `${contact.leadSource},typeform` 
-            : 'typeform';
-          
-          await storage.updateContact(contact.id, { 
-            leadSource: updatedSource,
-            sourcesCount: (contact.sourcesCount || 1) + 1
-          });
-          
-          console.log(`Updated contact ${contact.name} lead source to include Typeform`);
+        // Find contact by email
+        const existingContact = await db.select()
+          .from(contacts)
+          .where(eq(contacts.email, email))
+          .limit(1);
+        
+        if (existingContact.length === 0) {
+          console.log(`No matching contact found for email: ${email}`);
+          continue;
         }
-      }
-      
-      if (!contact) {
-        console.log(`Couldn't find or create contact for Typeform response: ${response.token}`);
-        continue;
-      }
-      
-      // Look for existing form entry with this response ID
-      const existingForm = await db.query.forms.findFirst({
-        where: eq(forms.typeformResponseId, response.token)
-      });
-      
-      if (!existingForm) {
-        // Create form entry with all response data
-        const formData: InsertForm = {
-          contactId: contact.id,
-          typeformResponseId: response.token,
-          formName: formTitle,
-          formId: formId,
-          submittedAt: new Date(response.submitted_at),
-          respondentEmail: email,
-          respondentName: name || '',
-          respondentIp: response.metadata.user_agent || '',
-          completionTime: response.metadata.time_to_submit,
-          // Extract answers in a structured way
-          questionCount: (response.answers || []).length,
-          answeredCount: (response.answers || []).length,
-          answers: response.answers || [],
-          // Extract any hidden fields
-          hiddenFields: response.hidden || {},
-          // Extract UTM tracking if available
-          utmSource: response.hidden?.utm_source || '',
-          utmMedium: response.hidden?.utm_medium || '',
-          utmCampaign: response.hidden?.utm_campaign || '',
-          utmTerm: response.hidden?.utm_term || '',
-          utmContent: response.hidden?.utm_content || ''
-        };
         
-        const newForm = await storage.createForm(formData);
+        const contact = existingContact[0];
         
-        // Also create an activity for this form submission
-        const activityData: InsertActivity = {
-          contactId: contact.id,
+        // Check if activity for this response already exists
+        const existingActivity = await db.select()
+          .from(activities)
+          .where(eq(activities.sourceId, `typeform_${response.response_id}`))
+          .limit(1);
+        
+        if (existingActivity.length > 0) {
+          console.log(`Activity already exists for response ${response.response_id}`);
+          continue;
+        }
+        
+        // Create activity for form submission
+        const submissionDate = new Date(response.submitted_at);
+        const formTitle = response.form_title || 'Application Form';
+        
+        const activityData = {
           type: 'form_submission',
-          source: 'typeform',
-          sourceId: response.token,
-          title: `Submitted form: ${formTitle}`,
-          description: `Completed Typeform submission with ${formData.answeredCount} answers`,
-          date: new Date(response.submitted_at),
-          fieldCoverage: 100,
-          metadata: {
-            formId: formId,
-            formTitle: formTitle,
-            responseToken: response.token,
-            hiddenFields: response.hidden || {}
-          }
+          source: 'Typeform',
+          title: `Form Submitted: ${formTitle}`,
+          date: submissionDate,
+          contactId: contact.id,
+          sourceId: `typeform_${response.response_id}`,
+          description: `Submitted application form: ${formTitle}`,
+          metadata: response,
+          fieldCoverage: 100
         };
         
-        await storage.createActivity(activityData);
-        
+        await db.insert(activities).values(activityData);
         totalResponsesSynced++;
         
         console.log(`Added Typeform submission activity for contact: ${contact.name} (${contact.email})`);
@@ -333,57 +339,15 @@ async function syncFormResponses(formId: string, formTitle: string) {
         hasMoreResponses = false;
       }
     }
-  }
-  
-  return {
-    processed: totalResponsesProcessed,
-    synced: totalResponsesSynced
-  };
-}
-
-/**
- * Sync all Typeform forms and responses
- */
-export async function syncTypeformResponses() {
-  try {
-    // Validate API connection
-    const apiTest = await testApiConnection();
-    if (!apiTest.success) {
-      return {
-        success: false,
-        error: apiTest.error
-      };
-    }
     
-    // Get all forms
-    const forms = await getForms();
-    console.log(`Found ${forms.length} forms in Typeform account`);
-    
-    let totalResponsesProcessed = 0;
-    let totalResponsesSynced = 0;
-    
-    // Process each form
-    for (const form of forms) {
-      console.log(`Processing form: ${form.title} (${form.id})`);
-      
-      // Sync responses for this form
-      const results = await syncFormResponses(form.id, form.title);
-      
-      totalResponsesProcessed += results.processed;
-      totalResponsesSynced += results.synced;
-      
-      console.log(`Form ${form.title}: processed ${results.processed} responses, synced ${results.synced}`);
-    }
-    
-    console.log(`Typeform sync completed. Processed ${totalResponsesProcessed} responses, synced ${totalResponsesSynced} activities.`);
+    console.log(`Form sync completed. Processed ${totalResponsesProcessed} responses, synced ${totalResponsesSynced} activities.`);
     return {
       success: true,
       processed: totalResponsesProcessed,
-      synced: totalResponsesSynced,
-      syncedCount: totalResponsesSynced
+      synced: totalResponsesSynced
     };
   } catch (error) {
-    console.error('Error syncing Typeform responses:', error);
+    console.error(`Error syncing form ${formId}:`, error);
     return {
       success: false,
       error: (error as Error).message
