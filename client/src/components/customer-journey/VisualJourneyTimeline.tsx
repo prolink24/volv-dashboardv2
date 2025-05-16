@@ -4,6 +4,7 @@ import {
   Phone, Mail, ExternalLink, AlertCircle, CheckCircle, Filter, 
   Star, StarOff, ChevronDown, ChevronUp, Info, Sparkles
 } from 'lucide-react';
+import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,16 +18,18 @@ import { Progress } from '@/components/ui/progress';
 
 interface TimelineEvent {
   id: number;
-  type: 'meeting' | 'activity' | 'deal' | 'form' | 'note';
+  type: 'meeting' | 'activity' | 'deal' | 'form_submission' | 'form' | 'note';
   subtype?: string;
   title: string;
   description?: string;
   timestamp: Date;
+  date?: Date;
   source: string;
   sourceId?: string;
   data: any;
   userId?: number;
   userName?: string;
+  scheduledBy?: string;
   score?: number;
 }
 
@@ -679,6 +682,30 @@ export function VisualJourneyTimeline({ events }: VisualJourneyTimelineProps) {
                                               </Badge>
                                             </div>
                                           )}
+                                        </div>
+                                      </div>
+                                    )}
+                                    
+                                    {/* Form Submission display */}
+                                    {event.type === 'form_submission' && (
+                                      <div>
+                                        <h4 className="text-sm font-medium mb-1">Application Details</h4>
+                                        <div className="space-y-1 text-sm">
+                                          <div className="flex items-center">
+                                            <FileText className="h-3.5 w-3.5 mr-1 text-blue-500" />
+                                            <span className="text-muted-foreground">Form:</span>{' '}
+                                            <span className="ml-1 font-medium">{event.title?.replace('Form Submitted: ', '') || 'Application Form'}</span>
+                                          </div>
+                                          <div className="flex items-center">
+                                            <CheckCircle className="h-3.5 w-3.5 mr-1 text-green-500" />
+                                            <span className="text-muted-foreground">Status:</span>{' '}
+                                            <Badge variant="default" className="text-xs ml-1 bg-green-500">Completed</Badge>
+                                          </div>
+                                          <div className="flex items-center">
+                                            <Clock className="h-3.5 w-3.5 mr-1 text-amber-500" />
+                                            <span className="text-muted-foreground">Submitted:</span>{' '}
+                                            <span className="ml-1">{format(new Date(event.timestamp), 'MMM d, yyyy h:mm a')}</span>
+                                          </div>
                                         </div>
                                       </div>
                                     )}
