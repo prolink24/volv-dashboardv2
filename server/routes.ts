@@ -9,6 +9,7 @@ import attributionService from "./services/attribution";
 import enhancedAttributionService from "./services/enhanced-attribution";
 import syncService from "./services/sync";
 import * as syncStatus from "./api/sync-status";
+import * as databaseHealth from "./api/database-health";
 import { WebSocketServer } from "ws";
 import { z } from "zod";
 import metricsRouter from "./routes/metrics";
@@ -1794,6 +1795,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Mount customer journey routes
   apiRouter.use('/customer-journey', customerJourneyRoutes);
   apiRouter.use('/typeform', typeformRoutes);
+  
+  // Database Health Monitoring
+  apiRouter.get('/database-health', cacheService.cacheMiddleware(60), async (req: Request, res: Response) => {
+    try {
+      const data = await databaseHealth.getDatabaseHealth();
+      res.json(data);
+    } catch (error) {
+      console.error("Error fetching database health data:", error);
+      res.status(500).json({ 
+        success: false, 
+        error: "Failed to fetch database health data" 
+      });
+    }
+  });
   
   // Register API routes with prefix
   app.use("/api", apiRouter);
