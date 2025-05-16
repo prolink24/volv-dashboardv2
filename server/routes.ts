@@ -276,6 +276,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   apiRouter.get("/enhanced-dashboard", cacheService.cacheMiddleware(600), async (req: Request, res: Response) => {
     try {
       const startTime = performance.now();
+      const dateRangeStr = req.query.dateRange as string;
       const dateStr = req.query.date as string;
       const startDateStr = req.query.startDate as string;
       const endDateStr = req.query.endDate as string;
@@ -283,11 +284,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const skipAttribution = req.query.skipAttribution === 'true';
       const forceFresh = req.query.forceFresh === 'true';
       
-      // Support both single date and date range
+      // Support multiple date formats (including new dateRange format)
       let startDate: Date, endDate: Date;
       
-      if (startDateStr && endDateStr) {
-        // Use date range if provided
+      if (dateRangeStr) {
+        // Parse the new date range format 'YYYY-MM-DD_YYYY-MM-DD'
+        const [start, end] = dateRangeStr.split('_');
+        if (start && end) {
+          startDate = new Date(start);
+          endDate = new Date(end);
+          console.log(`Fetching dashboard data for date range (from dateRange param): ${startDate.toISOString()} to ${endDate.toISOString()}, userId: ${userId || 'all'}`);
+        } else {
+          // Fallback to current date if format is invalid
+          const today = new Date();
+          startDate = today;
+          endDate = today;
+        }
+      } else if (startDateStr && endDateStr) {
+        // Use date range if start and end dates provided separately
         startDate = new Date(startDateStr);
         endDate = new Date(endDateStr);
         console.log(`Fetching dashboard data for date range: ${startDate.toISOString()} to ${endDate.toISOString()}, userId: ${userId || 'all'}`);
