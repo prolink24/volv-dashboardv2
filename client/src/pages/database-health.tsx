@@ -186,7 +186,7 @@ const DatabaseHealth = () => {
   }
 
   return (
-    <div className="p-8 space-y-6">
+    <div className="p-8 space-y-6 max-h-screen overflow-y-auto pb-20">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Database Health</h1>
@@ -300,7 +300,7 @@ const DatabaseHealth = () => {
                       <span className="font-medium">Deals</span>
                       <Badge variant="outline">{data.entityCounts.deals.toLocaleString()}</Badge>
                     </div>
-                    <Progress value={data.entityCounts.deals} max={data.entityCounts.deals} className="h-2 bg-blue-100" />
+                    <Progress value={100} max={100} className="h-2 bg-blue-100" />
                   </div>
                   
                   <div className="border rounded-lg p-4">
@@ -309,7 +309,7 @@ const DatabaseHealth = () => {
                       <span className="font-medium">Contacts</span>
                       <Badge variant="outline">{data.entityCounts.contacts.toLocaleString()}</Badge>
                     </div>
-                    <Progress value={data.entityCounts.contacts} max={data.entityCounts.contacts} className="h-2 bg-green-100" />
+                    <Progress value={100} max={100} className="h-2 bg-green-100" />
                   </div>
                   
                   <div className="border rounded-lg p-4">
@@ -318,7 +318,7 @@ const DatabaseHealth = () => {
                       <span className="font-medium">Activities</span>
                       <Badge variant="outline">{data.entityCounts.activities.toLocaleString()}</Badge>
                     </div>
-                    <Progress value={data.entityCounts.activities} max={data.entityCounts.activities} className="h-2 bg-purple-100" />
+                    <Progress value={100} max={100} className="h-2 bg-purple-100" />
                   </div>
                   
                   <div className="border rounded-lg p-4">
@@ -327,7 +327,7 @@ const DatabaseHealth = () => {
                       <span className="font-medium">Meetings</span>
                       <Badge variant="outline">{data.entityCounts.meetings.toLocaleString()}</Badge>
                     </div>
-                    <Progress value={data.entityCounts.meetings} max={data.entityCounts.meetings} className="h-2 bg-amber-100" />
+                    <Progress value={100} max={100} className="h-2 bg-amber-100" />
                   </div>
                 </div>
               </CardContent>
@@ -611,40 +611,52 @@ const DatabaseHealth = () => {
                 <div>
                   <h3 className="font-medium mb-2">Records Processed Per Sync</h3>
                   <div className="h-60 flex items-end gap-4 justify-between border-b pb-2">
-                    {data.syncHistory.map((sync) => (
-                      <div key={sync.id} className="flex flex-col items-center">
-                        <div className="text-xs mb-1">{sync.recordsProcessed}</div>
-                        <div 
-                          className={`w-14 ${
-                            sync.status === 'success' ? 'bg-green-500' : 
-                            sync.status === 'partial' ? 'bg-yellow-500' : 
-                            'bg-red-500'
-                          } rounded-t`}
-                          style={{ 
-                            height: `${(sync.recordsProcessed / Math.max(...data.syncHistory.map(s => s.recordsProcessed))) * 180}px` 
-                          }}
-                        ></div>
-                        <div className="text-xs mt-2 w-16 text-center truncate">{sync.source}</div>
-                      </div>
-                    ))}
+                    {data.syncHistory.map((sync) => {
+                      // Calculate percentage instead of raw ratio for safer height calculation
+                      const maxRecords = Math.max(...data.syncHistory.map(s => s.recordsProcessed));
+                      const percentage = maxRecords > 0 ? (sync.recordsProcessed / maxRecords) * 100 : 0;
+                      // Scale percentage to a reasonable height (max 180px)
+                      const heightInPx = (percentage / 100) * 180;
+                      
+                      return (
+                        <div key={sync.id} className="flex flex-col items-center">
+                          <div className="text-xs mb-1">{sync.recordsProcessed}</div>
+                          <div 
+                            className={`w-14 ${
+                              sync.status === 'success' ? 'bg-green-500' : 
+                              sync.status === 'partial' ? 'bg-yellow-500' : 
+                              'bg-red-500'
+                            } rounded-t`}
+                            style={{ height: `${heightInPx}px` }}
+                          ></div>
+                          <div className="text-xs mt-2 w-16 text-center truncate">{sync.source}</div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
                 <div>
                   <h3 className="font-medium mb-2">Sync Duration (seconds)</h3>
                   <div className="h-40 flex items-end gap-4 justify-between border-b pb-2">
-                    {data.syncHistory.map((sync) => (
-                      <div key={`duration-${sync.id}`} className="flex flex-col items-center">
-                        <div className="text-xs mb-1">{(sync.duration / 1000).toFixed(0)}s</div>
-                        <div 
-                          className="w-14 bg-blue-500 rounded-t"
-                          style={{ 
-                            height: `${(sync.duration / Math.max(...data.syncHistory.map(s => s.duration))) * 120}px` 
-                          }}
-                        ></div>
-                        <div className="text-xs mt-2 w-16 text-center truncate">{sync.source}</div>
-                      </div>
-                    ))}
+                    {data.syncHistory.map((sync) => {
+                      // Calculate percentage instead of raw ratio for safer height calculation
+                      const maxDuration = Math.max(...data.syncHistory.map(s => s.duration));
+                      const percentage = maxDuration > 0 ? (sync.duration / maxDuration) * 100 : 0;
+                      // Scale percentage to a reasonable height (max 120px)
+                      const heightInPx = (percentage / 100) * 120;
+                      
+                      return (
+                        <div key={`duration-${sync.id}`} className="flex flex-col items-center">
+                          <div className="text-xs mb-1">{(sync.duration / 1000).toFixed(0)}s</div>
+                          <div 
+                            className="w-14 bg-blue-500 rounded-t"
+                            style={{ height: `${heightInPx}px` }}
+                          ></div>
+                          <div className="text-xs mt-2 w-16 text-center truncate">{sync.source}</div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
