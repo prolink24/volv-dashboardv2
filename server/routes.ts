@@ -10,6 +10,7 @@ import enhancedAttributionService from "./services/enhanced-attribution";
 import syncService from "./services/sync";
 import * as syncStatus from "./api/sync-status";
 import * as databaseHealth from "./api/database-health";
+import { updateHealthMetrics } from "./api/update-health-metrics";
 import { WebSocketServer } from "ws";
 import { z } from "zod";
 import metricsRouter from "./routes/metrics";
