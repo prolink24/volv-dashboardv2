@@ -1,38 +1,30 @@
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
 } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { 
+import { cn } from "@/lib/utils";
+import { HelpCircle } from "lucide-react";
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { HelpCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { 
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Legend,
-  Tooltip as RechartsTooltip
-} from "recharts";
+
+interface ConfidenceMetric {
+  name: string;
+  score: number;
+  description?: string;
+}
 
 interface ConfidenceScoreCardProps {
   title: string;
   description: string;
   overallScore: number;
-  confidenceDistribution: {
-    high: number;
-    medium: number;
-    low: number;
-    none: number;
-  };
+  metrics: ConfidenceMetric[];
   className?: string;
 }
 
@@ -40,79 +32,45 @@ export function ConfidenceScoreCard({
   title,
   description,
   overallScore,
-  confidenceDistribution,
+  metrics,
   className
 }: ConfidenceScoreCardProps) {
-  // Colors for confidence levels
-  const COLORS = {
-    high: '#10b981', // green
-    medium: '#f59e0b', // amber
-    low: '#f97316', // orange
-    none: '#ef4444'  // red
-  };
-
-  // Format the distribution data for the pie chart
-  const distributionData = [
-    { name: 'High', value: confidenceDistribution.high * 100, color: COLORS.high },
-    { name: 'Medium', value: confidenceDistribution.medium * 100, color: COLORS.medium },
-    { name: 'Low', value: confidenceDistribution.low * 100, color: COLORS.low },
-    { name: 'None', value: confidenceDistribution.none * 100, color: COLORS.none }
-  ];
-
-  // Score breakdown with descriptions
-  const scoreBreakdown = [
-    { 
-      level: 'High', 
-      percentage: confidenceDistribution.high * 100,
-      description: 'Exact matches across multiple data points',
-      color: COLORS.high
-    },
-    { 
-      level: 'Medium', 
-      percentage: confidenceDistribution.medium * 100,
-      description: 'Strong matches with minor variations',
-      color: COLORS.medium
-    },
-    { 
-      level: 'Low', 
-      percentage: confidenceDistribution.low * 100,
-      description: 'Potential matches requiring verification',
-      color: COLORS.low
-    },
-    { 
-      level: 'None', 
-      percentage: confidenceDistribution.none * 100,
-      description: 'No matching confidence established',
-      color: COLORS.none
-    }
-  ];
-
-  // Function to get appropriate color for overall score
+  // Sort metrics by score (descending)
+  const sortedMetrics = [...metrics].sort((a, b) => b.score - a.score);
+  
+  // Generate color based on score
   const getScoreColor = (score: number) => {
-    if (score >= 80) return COLORS.high;
-    if (score >= 60) return COLORS.medium;
-    if (score >= 40) return COLORS.low;
-    return COLORS.none;
+    if (score >= 90) return "text-green-600";
+    if (score >= 75) return "text-amber-500";
+    if (score >= 60) return "text-orange-500";
+    return "text-red-600";
+  };
+  
+  // Generate ring classes based on score
+  const getRingClasses = (score: number) => {
+    const baseClasses = "rounded-full flex items-center justify-center";
+    const sizeClasses = "w-16 h-16 md:w-20 md:h-20";
+    
+    if (score >= 90) return cn(baseClasses, sizeClasses, "ring-4 ring-green-100 bg-green-50");
+    if (score >= 75) return cn(baseClasses, sizeClasses, "ring-4 ring-amber-100 bg-amber-50");
+    if (score >= 60) return cn(baseClasses, sizeClasses, "ring-4 ring-orange-100 bg-orange-50");
+    return cn(baseClasses, sizeClasses, "ring-4 ring-red-100 bg-red-50");
   };
 
-  // Custom tooltip for pie chart
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-white p-2 border rounded shadow-sm text-xs">
-          <p className="font-medium">{`${payload[0].name}: ${payload[0].value.toFixed(1)}%`}</p>
-          <p className="text-muted-foreground">{
-            scoreBreakdown.find(item => item.level === payload[0].name)?.description
-          }</p>
-        </div>
-      );
-    }
-    return null;
+  // Generate ring text class based on score
+  const getRingTextClass = (score: number) => {
+    if (score >= 90) return "text-green-700 text-2xl font-bold md:text-3xl";
+    if (score >= 75) return "text-amber-700 text-2xl font-bold md:text-3xl";
+    if (score >= 60) return "text-orange-700 text-2xl font-bold md:text-3xl";
+    return "text-red-700 text-2xl font-bold md:text-3xl";
   };
 
-  // Format percentage for display
-  const formatPercentage = (value: number) => {
-    return `${value.toFixed(1)}%`;
+  // Get score label
+  const getScoreLabel = (score: number) => {
+    if (score >= 90) return "Excellent";
+    if (score >= 75) return "Good";
+    if (score >= 60) return "Fair";
+    return "Poor";
   };
 
   return (
@@ -132,76 +90,96 @@ export function ConfidenceScoreCard({
           </TooltipProvider>
         </div>
         <CardDescription>
-          Overall matching confidence: {Math.round(overallScore)}%
+          Measures the reliability and accuracy of data synchronization
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {/* Overall score progress bar */}
-          <div className="space-y-2">
-            <Progress 
-              value={overallScore} 
-              className="h-2" 
-              style={{ 
-                backgroundColor: "rgba(0,0,0,0.1)",
-                "--progress-color": getScoreColor(overallScore) 
-              } as React.CSSProperties}
-            />
-
-            <div className="flex justify-between text-sm text-muted-foreground">
-              <span>Low confidence</span>
-              <span>High confidence</span>
+        <div className="flex flex-col space-y-6">
+          {/* Overall score indicator */}
+          <div className="flex flex-col md:flex-row items-center justify-center md:justify-between space-y-4 md:space-y-0">
+            <div className={getRingClasses(overallScore)}>
+              <span className={getRingTextClass(overallScore)}>{Math.round(overallScore)}%</span>
+            </div>
+            <div className="text-center md:text-left">
+              <h3 className="text-lg font-medium">Overall Confidence</h3>
+              <p className={cn("text-2xl font-bold", getScoreColor(overallScore))}>
+                {getScoreLabel(overallScore)}
+              </p>
+              <p className="text-sm text-muted-foreground max-w-xs">
+                {overallScore >= 90 ? (
+                  "Very high confidence in data accuracy and completeness"
+                ) : overallScore >= 75 ? (
+                  "Good confidence with minor improvements needed"
+                ) : overallScore >= 60 ? (
+                  "Moderate confidence with several areas for improvement"
+                ) : (
+                  "Low confidence with significant data quality issues"
+                )}
+              </p>
             </div>
           </div>
-
-          {/* Confidence distribution pie chart */}
-          <div className="h-[200px] mt-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={distributionData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={2}
-                  dataKey="value"
-                  label={({ name, value }) => `${name}: ${value.toFixed(1)}%`}
-                  labelLine={false}
-                >
-                  {distributionData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Legend verticalAlign="bottom" height={36} />
-                <RechartsTooltip content={<CustomTooltip />} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Score breakdown */}
-          <div className="space-y-3 pt-2">
-            <h4 className="text-sm font-medium">Confidence Distribution</h4>
-            {scoreBreakdown.map((item, i) => (
-              <div key={i} className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2">
-                  <div 
-                    className="h-3 w-3 rounded-full" 
-                    style={{ backgroundColor: item.color }}
-                  />
-                  <span className="font-medium">{item.level}</span>
+          
+          {/* Metrics breakdown */}
+          <div className="space-y-3">
+            {sortedMetrics.map((metric, i) => (
+              <div key={i} className="flex justify-between items-center">
+                <div className="flex-1">
+                  <div className="flex items-center">
+                    <span className="text-sm font-medium mr-2">{metric.name}</span>
+                    {metric.description && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="max-w-xs">{metric.description}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                  </div>
                 </div>
-                <div className="flex space-x-4">
-                  <span className="text-muted-foreground max-w-[180px] hidden sm:block">
-                    {item.description}
-                  </span>
-                  <span className="font-medium">
-                    {formatPercentage(item.percentage)}
+                <div className="flex items-center space-x-2">
+                  <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div 
+                      className={cn("h-full", {
+                        "bg-green-500": metric.score >= 90,
+                        "bg-amber-500": metric.score >= 75 && metric.score < 90,
+                        "bg-orange-500": metric.score >= 60 && metric.score < 75,
+                        "bg-red-500": metric.score < 60
+                      })}
+                      style={{ width: `${metric.score}%` }}
+                    />
+                  </div>
+                  <span className={cn("text-xs font-medium", getScoreColor(metric.score))}>
+                    {metric.score}%
                   </span>
                 </div>
               </div>
             ))}
           </div>
+          
+          {/* Recommendations */}
+          {overallScore < 90 && (
+            <div className="p-3 bg-blue-50 rounded-md text-sm">
+              <p className="font-medium text-blue-700 mb-1">Improvement Recommendations</p>
+              <ul className="list-disc pl-5 text-blue-600 space-y-1">
+                {overallScore < 75 && (
+                  <li>Run the data consistency check to identify mismatched fields</li>
+                )}
+                {overallScore < 60 && (
+                  <li>Verify API connections to all platforms</li>
+                )}
+                {sortedMetrics.find(m => m.score < 80) && (
+                  <li>Review and update contact matching rules</li>
+                )}
+                {sortedMetrics.find(m => m.name.toLowerCase().includes('field') && m.score < 70) && (
+                  <li>Run field coverage analysis and populate missing required fields</li>
+                )}
+              </ul>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

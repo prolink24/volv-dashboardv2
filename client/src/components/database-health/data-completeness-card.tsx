@@ -1,21 +1,22 @@
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { 
+import { HelpCircle } from "lucide-react";
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { HelpCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-export interface DataCompletenessField {
+interface Field {
   name: string;
   completionRate: number;
   importance: 'critical' | 'high' | 'medium' | 'low';
@@ -26,7 +27,8 @@ interface DataCompletenessCardProps {
   description: string;
   entityType: string;
   overallCompleteness: number;
-  fields: DataCompletenessField[];
+  fields: Field[];
+  className?: string;
 }
 
 export function DataCompletenessCard({
@@ -34,49 +36,44 @@ export function DataCompletenessCard({
   description,
   entityType,
   overallCompleteness,
-  fields
+  fields,
+  className
 }: DataCompletenessCardProps) {
-  // Sort fields by importance and then by completion rate (ascending)
-  const sortedFields = [...fields].sort((a, b) => {
-    const importanceOrder = {
-      critical: 0,
-      high: 1,
-      medium: 2,
-      low: 3
-    };
-    
-    if (importanceOrder[a.importance] !== importanceOrder[b.importance]) {
-      return importanceOrder[a.importance] - importanceOrder[b.importance];
-    }
-    
-    return a.completionRate - b.completionRate;
-  });
-
-  const getCompletenessColor = (percentage: number) => {
-    if (percentage >= 95) return "bg-green-500";
-    if (percentage >= 80) return "bg-green-400";
-    if (percentage >= 70) return "bg-yellow-500";
-    if (percentage >= 50) return "bg-yellow-400";
+  // Sort fields by completeness rate (ascending)
+  const sortedFields = [...fields].sort((a, b) => a.completionRate - b.completionRate);
+  
+  // Get classification based on overall completeness
+  const getOverallClass = (value: number) => {
+    if (value >= 90) return "text-green-600";
+    if (value >= 75) return "text-amber-600";
+    return "text-red-600";
+  };
+  
+  // Get color for individual field based on completion rate
+  const getFieldColor = (value: number) => {
+    if (value >= 90) return "bg-green-600";
+    if (value >= 75) return "bg-amber-500";
+    if (value >= 60) return "bg-orange-500";
     return "bg-red-500";
   };
-
+  
+  // Get badge variant for importance
   const getImportanceBadge = (importance: string) => {
     switch (importance) {
       case 'critical':
-        return <Badge variant="destructive">Critical</Badge>;
+        return "destructive";
       case 'high':
-        return <Badge variant="destructive">High</Badge>;
+        return "secondary";
       case 'medium':
-        return <Badge variant="warning">Medium</Badge>;
+        return "outline";
       case 'low':
-        return <Badge variant="secondary">Low</Badge>;
       default:
-        return null;
+        return "outline";
     }
   };
 
   return (
-    <Card>
+    <Card className={cn("overflow-hidden", className)}>
       <CardHeader className="pb-2">
         <div className="flex justify-between items-center">
           <CardTitle className="text-lg font-medium">{title}</CardTitle>
@@ -92,33 +89,72 @@ export function DataCompletenessCard({
           </TooltipProvider>
         </div>
         <CardDescription>
-          Overall completeness: {Math.round(overallCompleteness)}%
+          {entityType} data completeness: <span className={getOverallClass(overallCompleteness)}>
+            {Math.round(overallCompleteness)}%
+          </span>
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Progress 
-          value={overallCompleteness} 
-          className="h-2 mb-4" 
-          color={getCompletenessColor(overallCompleteness)} 
-        />
-        
-        <div className="space-y-3 mt-4">
-          {sortedFields.map((field, index) => (
-            <div key={index} className="space-y-1">
-              <div className="flex justify-between items-center text-sm">
-                <div className="flex items-center space-x-2">
-                  <span>{field.name}</span>
-                  {getImportanceBadge(field.importance)}
-                </div>
-                <span>{Math.round(field.completionRate)}%</span>
-              </div>
-              <Progress 
-                value={field.completionRate} 
-                className="h-1" 
-                color={getCompletenessColor(field.completionRate)} 
-              />
+        <div className="space-y-6">
+          {/* Overall progress bar */}
+          <div className="space-y-2">
+            <Progress 
+              value={overallCompleteness} 
+              className="h-2"
+              style={{ backgroundColor: "rgba(0,0,0,0.1)" }}
+            />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>Poor</span>
+              <span>Excellent</span>
             </div>
-          ))}
+          </div>
+          
+          {/* Field breakdown */}
+          <div className="space-y-3">
+            <h4 className="text-sm font-medium">Field Completeness</h4>
+            {sortedFields.map((field, i) => (
+              <div key={i} className="space-y-1">
+                <div className="flex justify-between items-center text-sm">
+                  <div className="flex items-center gap-2">
+                    <span>{field.name}</span>
+                    <Badge variant={getImportanceBadge(field.importance) as any}>
+                      {field.importance}
+                    </Badge>
+                  </div>
+                  <span className="font-medium">{field.completionRate.toFixed(1)}%</span>
+                </div>
+                <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full ${getFieldColor(field.completionRate)}`}
+                    style={{ width: `${field.completionRate}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {/* Importance legend */}
+          <div className="pt-2 border-t">
+            <h4 className="text-xs font-medium mb-2">Field Importance Guide</h4>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="flex items-center gap-1">
+                <Badge variant="destructive" className="h-5 px-1">critical</Badge>
+                <span className="text-muted-foreground">Required fields</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Badge variant="secondary" className="h-5 px-1">high</Badge>
+                <span className="text-muted-foreground">Primary fields</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Badge variant="outline" className="h-5 px-1">medium</Badge>
+                <span className="text-muted-foreground">Secondary fields</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Badge variant="outline" className="h-5 px-1">low</Badge>
+                <span className="text-muted-foreground">Optional fields</span>
+              </div>
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>
