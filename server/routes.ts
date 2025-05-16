@@ -657,64 +657,161 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               console.log(`Processing ${userDeals.length} deals for user ${user.email}`);
               
-              // Utility function for safe currency parsing with validation
+              // Enhanced utility function for extremely robust currency parsing with validation
               function parseCurrencyValue(valueStr, fieldName, dealId) {
                 if (!valueStr) return 0;
                 
+                // Create detailed debugging log to track the parsing process
+                const logPrefix = `[DEAL-${dealId}][${fieldName}]`;
+                console.log(`${logPrefix} Raw value: "${valueStr}" (${typeof valueStr})`);
+                
                 try {
-                  // Step 1: Normalize the string - remove all non-numeric chars except decimal point
-                  const cleanValue = valueStr.toString().replace(/[^\d.-]/g, '');
+                  // Step 1: Normalize input to string
+                  let inputValue = String(valueStr);
+                  console.log(`${logPrefix} Step 1 - String conversion: "${inputValue}"`);
                   
-                  // Step 2: Convert to float
-                  const numValue = parseFloat(cleanValue);
+                  // Step 2: Check for scientific notation and convert to decimal
+                  if (inputValue.includes('e') || inputValue.includes('E')) {
+                    const origValue = inputValue;
+                    try {
+                      const num = Number(inputValue);
+                      if (!isNaN(num)) {
+                        inputValue = num.toFixed(2);
+                        console.log(`${logPrefix} Scientific notation detected: ${origValue} -> ${inputValue}`);
+                      }
+                    } catch (e) {
+                      console.warn(`${logPrefix} Failed to convert scientific notation: ${e.message}`);
+                    }
+                  }
                   
-                  // Step 3: Validate the result
+                  // Step 3: Handle common currency formatting
+                  // Remove common non-numeric characters keeping only digits, decimal point, minus sign
+                  const cleanValue = inputValue.replace(/[^0-9.-]/g, '');
+                  console.log(`${logPrefix} Step 3 - Cleaned value: "${cleanValue}"`);
+                  
+                  // Step 4: Handle multiple decimal points (invalid format but could happen)
+                  let normalizedValue = cleanValue;
+                  const decimalPoints = (cleanValue.match(/\./g) || []).length;
+                  if (decimalPoints > 1) {
+                    // Keep only the first decimal point
+                    const parts = cleanValue.split('.');
+                    normalizedValue = parts[0] + '.' + parts.slice(1).join('');
+                    console.log(`${logPrefix} Multiple decimal points fixed: ${cleanValue} -> ${normalizedValue}`);
+                  }
+                  
+                  // Step 5: Convert to number with careful validation
+                  let numValue = parseFloat(normalizedValue);
+                  console.log(`${logPrefix} Step 5 - Parsed to number: ${numValue}`);
+                  
+                  // Step 6: Apply NaN check
                   if (isNaN(numValue)) {
-                    console.warn(`Invalid ${fieldName} for deal ${dealId}: "${valueStr}" -> NaN`);
+                    console.warn(`${logPrefix} Invalid number after parsing: "${valueStr}" -> NaN`);
                     return 0;
                   }
                   
-                  // Step 4: Apply sanity checks for unrealistic values (> $1 billion)
-                  if (Math.abs(numValue) > 1000000000) {
-                    console.warn(`Unrealistic ${fieldName} for deal ${dealId}: "${valueStr}" -> ${numValue}`);
-                    // Return a more reasonable maximum value instead
-                    return numValue > 0 ? 1000000000 : -1000000000;
+                  // Step 7: Apply sanity checks with extremely aggressive limits
+                  // For deal values in CRM systems, anything over $1M might be realistic
+                  // but errors often create values in the billions or more
+                  const MAX_REASONABLE_VALUE = 1000000; // $1 million
+                  
+                  if (Math.abs(numValue) > MAX_REASONABLE_VALUE) {
+                    console.warn(`${logPrefix} UNREALISTIC VALUE DETECTED: ${numValue} > ${MAX_REASONABLE_VALUE}`);
+                    console.warn(`${logPrefix} Original value: "${valueStr}" -> Normalized: "${normalizedValue}" -> Number: ${numValue}`);
+                    
+                    // For values that are clearly errors, cap at a reasonable maximum
+                    return numValue > 0 ? MAX_REASONABLE_VALUE : -MAX_REASONABLE_VALUE;
                   }
                   
-                  // Log successful parsing
-                  console.log(`Parsed ${fieldName} from "${valueStr}" to ${numValue}`);
+                  // Step 8: Handle edge case - value too small (might be a formatting error)
+                  if (Math.abs(numValue) < 0.01 && numValue !== 0) {
+                    console.warn(`${logPrefix} Suspiciously small value: ${numValue}, treating as zero`);
+                    return 0;
+                  }
+                  
+                  // Success! Log the final result
+                  console.log(`${logPrefix} SUCCESS: "${valueStr}" -> ${numValue}`);
                   return numValue;
                 } catch (err) {
-                  console.error(`Error parsing ${fieldName}: "${valueStr}"`, err);
+                  console.error(`${logPrefix} FATAL ERROR: "${valueStr}"`, err);
                   return 0;
                 }
               }
               
+              // Initialize deal tracking variables for detailed logging
+              let processedDeals = 0;
+              let skippedDeals = 0;
+              let wonDeals = 0;
+              
+              // Log beginning of deal processing
+              console.log(`\n======== PROCESSING ${userDeals.length} DEALS FOR ${user.email} ========`);
+              
               for (const deal of userDeals) {
-                if (!deal.deals) continue;
+                processedDeals++;
+                
+                if (!deal.deals) {
+                  skippedDeals++;
+                  continue;
+                }
                 
                 const dealId = deal.deals.id || 'unknown';
+                const dealTitle = deal.deals.title || 'Unnamed Deal';
+                
+                // Log each deal processing with clear separation
+                console.log(`\n----- DEAL #${processedDeals}: ${dealTitle} (ID: ${dealId}) -----`);
+                console.log(`Status: ${deal.deals.status || 'unknown'}`);
+                
+                // Track values for this specific deal
+                let dealRevenue = 0;
+                let dealCashCollected = 0;
+                let dealContractedValue = 0;
                 
                 // Parse deal value (revenue)
                 if (deal.deals.value) {
-                  const value = parseCurrencyValue(deal.deals.value, 'value', dealId);
+                  console.log(`Raw value: "${deal.deals.value}" (${typeof deal.deals.value})`);
+                  dealRevenue = parseCurrencyValue(deal.deals.value, 'value', dealId);
+                  
                   if (deal.deals.status === 'won') {
-                    totalRevenue += value;
+                    wonDeals++;
+                    totalRevenue += dealRevenue;
+                    console.log(`Added to revenue: $${dealRevenue} (Running total: $${totalRevenue})`);
+                  } else {
+                    console.log(`Deal not won, no revenue added`);
                   }
+                } else {
+                  console.log(`No value field found`);
                 }
                 
                 // Parse cash collected
                 if (deal.deals.cashCollected) {
-                  const collected = parseCurrencyValue(deal.deals.cashCollected, 'cashCollected', dealId);
-                  cashCollected += collected;
+                  console.log(`Raw cashCollected: "${deal.deals.cashCollected}" (${typeof deal.deals.cashCollected})`);
+                  dealCashCollected = parseCurrencyValue(deal.deals.cashCollected, 'cashCollected', dealId);
+                  cashCollected += dealCashCollected;
+                  console.log(`Added to cashCollected: $${dealCashCollected} (Running total: $${cashCollected})`);
+                } else {
+                  console.log(`No cashCollected field found`);
                 }
                 
                 // Parse contracted value
                 if (deal.deals.contractedValue) {
-                  const contracted = parseCurrencyValue(deal.deals.contractedValue, 'contractedValue', dealId);
-                  contractedValue += contracted;
+                  console.log(`Raw contractedValue: "${deal.deals.contractedValue}" (${typeof deal.deals.contractedValue})`);
+                  dealContractedValue = parseCurrencyValue(deal.deals.contractedValue, 'contractedValue', dealId);
+                  contractedValue += dealContractedValue;
+                  console.log(`Added to contractedValue: $${dealContractedValue} (Running total: $${contractedValue})`);
+                } else {
+                  console.log(`No contractedValue field found`);
                 }
+                
+                // Log deal summary
+                console.log(`Deal summary: Revenue=$${dealRevenue}, Cash=$${dealCashCollected}, Contract=$${dealContractedValue}`);
               }
+              
+              // Log summary of all deals processed
+              console.log(`\n======== DEAL PROCESSING SUMMARY ========`);
+              console.log(`Total deals processed: ${processedDeals}`);
+              console.log(`Deals skipped (no data): ${skippedDeals}`);
+              console.log(`Won deals: ${wonDeals}`);
+              console.log(`Final totals: Revenue=$${totalRevenue}, Cash=$${cashCollected}, Contract=$${contractedValue}`);
+              console.log(`=======================================\n`);
               
               // Apply final sanity check
               console.log(`Final KPI totals for ${user.email}: Revenue=${totalRevenue}, Cash=${cashCollected}, Contract=${contractedValue}`);
