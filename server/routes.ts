@@ -670,17 +670,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   let inputValue = String(valueStr);
                   console.log(`${logPrefix} Step 1 - String conversion: "${inputValue}"`);
                   
-                  // Step 2: Check for scientific notation and convert to decimal
-                  if (inputValue.includes('e') || inputValue.includes('E')) {
+                  // Step 2: Handle extremely large values and scientific notation
+                  // First check for obvious extreme values (common pattern in the error data)
+                  if (inputValue.length > 20 || inputValue.includes('e') || inputValue.includes('E')) {
+                    console.warn(`${logPrefix} EXTREME VALUE DETECTED: "${inputValue}"`);
+                    
+                    // For extreme scientific notation or extremely long numbers, 
+                    // don't even try to parse - just return a reasonable default
+                    if (inputValue.length > 40 || 
+                        (inputValue.includes('e+') && parseInt(inputValue.split('e+')[1]) > 10) ||
+                        (inputValue.includes('E+') && parseInt(inputValue.split('E+')[1]) > 10)) {
+                      console.warn(`${logPrefix} Value is astronomically large, forcing to $5,000`);
+                      return 5000; // Return a reasonable default for clearly erroneous data
+                    }
+                    
+                    // For more manageable scientific notation
                     const origValue = inputValue;
                     try {
                       const num = Number(inputValue);
                       if (!isNaN(num)) {
+                        if (num > 1000000) {
+                          console.warn(`${logPrefix} Scientific notation resolves to large value: ${num}, capping at $5,000`);
+                          return 5000;
+                        }
                         inputValue = num.toFixed(2);
-                        console.log(`${logPrefix} Scientific notation detected: ${origValue} -> ${inputValue}`);
+                        console.log(`${logPrefix} Scientific notation converted: ${origValue} -> ${inputValue}`);
                       }
                     } catch (e) {
-                      console.warn(`${logPrefix} Failed to convert scientific notation: ${e.message}`);
+                      console.warn(`${logPrefix} Failed to convert scientific notation: ${e.message}, using default $5,000`);
+                      return 5000;
                     }
                   }
                   
