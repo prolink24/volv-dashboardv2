@@ -100,27 +100,27 @@ async function syncAllEvents() {
       errors
     });
     
-    // First, try a simpler approach with user events
+    // Fetch all events from the entire organization, not just the current user
     try {
-      console.log('Trying to fetch events directly from user endpoint...');
-      const userEventsResponse = await calendlyApiClient.get('/scheduled_events', {
+      console.log('Fetching events for the entire organization...');
+      const orgEventsResponse = await calendlyApiClient.get('/scheduled_events', {
         params: {
-          user: userId,
+          organization: organizationUri,
           min_start_time: minStartTime,
           max_start_time: maxStartTime,
           count: 100 // Get maximum number of events allowed per page
         }
       });
       
-      const userEvents = userEventsResponse.data.collection || [];
-      console.log(`Found ${userEvents.length} events for the user directly`);
+      const orgEvents = orgEventsResponse.data.collection || [];
+      console.log(`Found ${orgEvents.length} events in the organization`);
       
       // If we got events, process them
-      if (userEvents.length > 0) {
-        totalEvents = userEventsResponse.data.pagination.count || userEvents.length;
+      if (orgEvents.length > 0) {
+        totalEvents = orgEventsResponse.data.pagination.count || orgEvents.length;
         
         // Check if there's pagination for more events
-        const pagination = userEventsResponse.data.pagination;
+        const pagination = orgEventsResponse.data.pagination;
         if (pagination && pagination.next_page_token) {
           console.log(`Found pagination token for more events: ${pagination.next_page_token}`);
           pageToken = pagination.next_page_token;
@@ -128,7 +128,7 @@ async function syncAllEvents() {
         }
         
         // Process these events
-        for (const event of userEvents) {
+        for (const event of orgEvents) {
           processedEvents++;
           console.log('Processing event:', event.uri);
           
