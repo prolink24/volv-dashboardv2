@@ -143,13 +143,95 @@ const CustomerJourneyPage: React.FC = () => {
         queryParams.append('dateRange', dateRange.dateRange);
       }
       
-      const response = await fetch(`/api/customer-journey/${contactId}?${queryParams.toString()}`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to load customer journey data');
+      try {
+        // First try to get the data from the API
+        const response = await fetch(`/api/customer-journey/${contactId}?${queryParams.toString()}`);
+        
+        if (!response.ok) {
+          throw new Error('API request failed');
+        }
+        
+        return response.json() as Promise<CustomerJourney>;
+      } catch (error) {
+        console.error("Error loading customer journey data:", error);
+        
+        // If loading from API fails, try to get the contact data directly
+        // so we can at least show something and not a blank error screen
+        const contactResponse = await fetch(`/api/contacts/${contactId}`);
+        
+        if (!contactResponse.ok) {
+          throw new Error('Failed to load contact data');
+        }
+        
+        const contact = await contactResponse.json();
+        
+        // Return basic customer journey data with just the contact info
+        // This ensures we at least show contact details
+        return {
+          contactId: contactId,
+          contact: contact,
+          firstTouch: null,
+          lastTouch: null,
+          totalTouchpoints: 0,
+          timelineEvents: [],
+          sources: {},
+          assignedUsers: [],
+          deals: [],
+          callMetrics: {
+            solutionCallsBooked: 0,
+            solutionCallsSits: 0,
+            solutionCallShowRate: 0,
+            triageCallsBooked: 0,
+            triageCallsSits: 0,
+            triageShowRate: 0,
+            totalDials: 0,
+            speedToLead: null,
+            pickUpRate: 0,
+            callsToClose: 0,
+            totalCalls: 0,
+            callsPerStage: {},
+            directBookingRate: 0,
+            cancelRate: 0,
+            outboundTriagesSet: 0,
+            leadResponseTime: null
+          },
+          salesMetrics: {
+            closedWon: 0,
+            costPerClosedWon: null,
+            closerSlotUtilization: null,
+            solutionCallCloseRate: 0,
+            salesCycleDays: null,
+            profitPerSolutionCall: null,
+            costPerSolutionCall: null,
+            cashPerSolutionCallBooked: null,
+            revenuePerSolutionCallBooked: null,
+            costPerSolutionCallSit: null,
+            earningPerCall2Sit: null,
+            cashEfficiencyPC2: null,
+            profitEfficiencyPC2: null
+          },
+          adminMetrics: {
+            completedAdmin: 0,
+            missingAdmins: 0,
+            adminMissingPercentage: 0,
+            adminAssignments: []
+          },
+          leadMetrics: {
+            newLeads: 0,
+            leadsDisqualified: 0,
+            totalCallOneShowRate: 0
+          },
+          journeyMetrics: {
+            averageResponseTime: null,
+            engagementScore: 0,
+            lastActivityGap: null,
+            stageTransitions: [],
+            conversionRate: null,
+            leadStatus: contact.status || 'unknown',
+            journeyLength: null
+          }
+        };
       }
-      
-      return response.json() as Promise<CustomerJourney>;
     },
     enabled: contactId !== null,
   });
