@@ -250,6 +250,7 @@ const DatabaseHealth = () => {
             completeness={metric.value}
             target={metric.target}
             description={metric.description}
+            title={metric.name}
           />
         ))}
       </div>

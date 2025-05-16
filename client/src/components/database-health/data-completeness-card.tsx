@@ -7,12 +7,14 @@ interface DataCompletenessCardProps {
   completeness?: number;
   target?: number;
   description?: string;
+  title?: string;
 }
 
 const DataCompletenessCard = ({ 
   completeness, 
   target = 95, 
-  description = "Overall data completeness across all integrated systems"
+  description = "Overall data completeness across all integrated systems",
+  title = "Data Completeness"
 }: DataCompletenessCardProps) => {
   // Handle undefined completeness with a default of 0
   const valueToShow = completeness !== undefined ? completeness : 0;
@@ -57,7 +59,7 @@ const DataCompletenessCard = ({
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-lg">
           {getStatusIcon(status)}
-          Data Completeness
+          {title}
         </CardTitle>
         <CardDescription>{description}</CardDescription>
       </CardHeader>
