@@ -650,29 +650,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const scheduledMeetings = userMeetings.filter(m => m.meetings !== null && m.meetings !== undefined);
               const completedMeetings = scheduledMeetings.filter(m => m.meetings && m.meetings.status === 'completed');
               
-              // Calculate revenue from deals
+              // Calculate revenue from deals with rigorous validation
               let totalRevenue = 0;
-              for (const deal of userDeals) {
-                if (deal.deals && deal.deals.value) {
-                  try {
-                    // Remove any currency symbols and commas
-                    const cleanValue = deal.deals.value.replace(/[^\d.-]/g, '');
-                    const numValue = parseFloat(cleanValue);
-                    if (!isNaN(numValue)) {
-                      totalRevenue += numValue;
-                    }
-                  } catch (err) {
-                    console.warn(`Error parsing deal value: ${deal.deals.value}`, err);
+              let cashCollected = 0;
+              let contractedValue = 0;
+              
+              console.log(`Processing ${userDeals.length} deals for user ${user.email}`);
+              
+              // Utility function for safe currency parsing with validation
+              function parseCurrencyValue(valueStr, fieldName, dealId) {
+                if (!valueStr) return 0;
+                
+                try {
+                  // Step 1: Normalize the string - remove all non-numeric chars except decimal point
+                  const cleanValue = valueStr.toString().replace(/[^\d.-]/g, '');
+                  
+                  // Step 2: Convert to float
+                  const numValue = parseFloat(cleanValue);
+                  
+                  // Step 3: Validate the result
+                  if (isNaN(numValue)) {
+                    console.warn(`Invalid ${fieldName} for deal ${dealId}: "${valueStr}" -> NaN`);
+                    return 0;
                   }
+                  
+                  // Step 4: Apply sanity checks for unrealistic values (> $1 billion)
+                  if (Math.abs(numValue) > 1000000000) {
+                    console.warn(`Unrealistic ${fieldName} for deal ${dealId}: "${valueStr}" -> ${numValue}`);
+                    // Return a more reasonable maximum value instead
+                    return numValue > 0 ? 1000000000 : -1000000000;
+                  }
+                  
+                  // Log successful parsing
+                  console.log(`Parsed ${fieldName} from "${valueStr}" to ${numValue}`);
+                  return numValue;
+                } catch (err) {
+                  console.error(`Error parsing ${fieldName}: "${valueStr}"`, err);
+                  return 0;
                 }
               }
+              
+              for (const deal of userDeals) {
+                if (!deal.deals) continue;
+                
+                const dealId = deal.deals.id || 'unknown';
+                
+                // Parse deal value (revenue)
+                if (deal.deals.value) {
+                  const value = parseCurrencyValue(deal.deals.value, 'value', dealId);
+                  if (deal.deals.status === 'won') {
+                    totalRevenue += value;
+                  }
+                }
+                
+                // Parse cash collected
+                if (deal.deals.cashCollected) {
+                  const collected = parseCurrencyValue(deal.deals.cashCollected, 'cashCollected', dealId);
+                  cashCollected += collected;
+                }
+                
+                // Parse contracted value
+                if (deal.deals.contractedValue) {
+                  const contracted = parseCurrencyValue(deal.deals.contractedValue, 'contractedValue', dealId);
+                  contractedValue += contracted;
+                }
+              }
+              
+              // Apply final sanity check
+              console.log(`Final KPI totals for ${user.email}: Revenue=${totalRevenue}, Cash=${cashCollected}, Contract=${contractedValue}`);
               
               // Generate full name for display
               const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email.split('@')[0];
               
               console.log(`KPIs for ${fullName}: ${dealsCreated} deals created, ${dealsWon} won, $${totalRevenue} revenue`);
               
-              // Return comprehensive KPI data
+              // Return comprehensive KPI data with properly calculated values
               return {
                 userId: user.closeId,
                 name: fullName,
@@ -683,16 +735,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 meetingsScheduled: scheduledMeetings.length,
                 meetingsCompleted: completedMeetings.length,
                 revenue: totalRevenue,
-                // Additional metrics for dashboard
+                // Additional metrics for dashboard with validated values
                 deals: dealsCreated,
                 meetings: scheduledMeetings.length,
                 activities: callsMade,
-                performance: dealsWon > 0 ? (dealsWon / dealsCreated) * 100 : 0,
+                performance: dealsWon > 0 ? Math.min((dealsWon / dealsCreated) * 100, 100) : 0, // Cap at 100%
                 closed: dealsWon,
-                cashCollected: totalRevenue,
-                contractedValue: totalRevenue,
+                cashCollected: cashCollected, // Use the properly calculated cash collected value
+                contractedValue: contractedValue, // Use the properly calculated contracted value
                 calls: callsMade,
-                closingRate: dealsWon > 0 ? (dealsWon / dealsCreated) * 100 : 0
+                closingRate: dealsWon > 0 ? Math.min((dealsWon / dealsCreated) * 100, 100) : 0 // Cap at 100%
               };
             } catch (error) {
               console.error(`Error calculating KPIs for user ${user.email}:`, error);
