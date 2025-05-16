@@ -567,130 +567,156 @@ export async function registerRoutes(app: Express): Promise<Server> {
        */
       async function importUserKpiData(startDate: Date, endDate: Date) {
         try {
-          // Import the DB module
+          // Import required modules
           const { db } = await import('./db');
-          const { metrics, deals, activities, meetings } = await import('@shared/schema');
-          const { eq, and, gte, lte } = await import('drizzle-orm');
+          const { metrics, deals, activities, meetings, closeUsers, contactToUserAssignments, dealToUserAssignments } = await import('@shared/schema');
+          const { eq, and, gte, lte, ne, isNull, desc } = await import('drizzle-orm');
           
-          // Get metrics data for the date range if available
-          const metricsData = await db.select()
-            .from(metrics)
-            .where(
-              and(
-                gte(metrics.date, startDate),
-                lte(metrics.date, endDate)
-              )
-            );
+          console.log(`Calculating real KPI metrics for date range: ${startDate.toISOString()} to ${endDate.toISOString()}`);
+          
+          // Get all active Close CRM users
+          const allUsers = await db.select()
+            .from(closeUsers)
+            .where(ne(closeUsers.status, 'inactive'))
+            .orderBy(desc(closeUsers.createdAt));
             
-          // If we have metrics data, use it
-          if (metricsData && metricsData.length > 0) {
-            return metricsData.map(metric => ({
-              userId: metric.userId || '',
-              dealsCreated: metric.openDeals || 0,
-              dealsWon: metric.wonDeals || 0,
-              callsMade: metric.totalCalls || 0,
-              meetingsScheduled: metric.totalMeetings || 0,
-              meetingsCompleted: metric.meetingsAttended || 0,
-              revenue: parseFloat(metric.revenueGenerated || '0')
-            }));
+          console.log(`Found ${allUsers.length} active users to calculate KPIs for`);
+          
+          // Return empty array if no users found
+          if (!allUsers || allUsers.length === 0) {
+            console.warn('No users found in database, cannot calculate KPIs');
+            return [];
           }
+          
+          // Calculate KPIs for each user from raw data
+          return await Promise.all(allUsers.map(async user => {
+            console.log(`Calculating KPIs for user: ${user.first_name || ''} ${user.last_name || ''} (${user.email})`);
             
-          // If no metrics data, calculate directly from raw data
-          console.log('No metrics data available, calculating KPIs from raw data...');
-          
-          // Get all user assignments and calculate KPIs
-          const { contactToUserAssignments, dealToUserAssignments, closeUsers } = await import('@shared/schema');
-          
-          // Get unique user IDs from assignments
-          const userAssignments = await db.select()
-            .from(contactToUserAssignments)
-            .leftJoin(
-              closeUsers,
-              eq(contactToUserAssignments.closeUserId, closeUsers.id)
-            );
-            
-          // Extract unique user IDs
-          const userIds = [...new Set(userAssignments.map(a => a.close_users.closeId))];
-          
-          // Calculate KPIs for each user
-          return await Promise.all(userIds.map(async userId => {
-            // Get user's deals
-            const userDeals = await db.select()
-              .from(dealToUserAssignments)
-              .leftJoin(
-                deals, 
-                eq(dealToUserAssignments.dealId, deals.id)
-              )
-              .leftJoin(
-                closeUsers,
-                eq(dealToUserAssignments.closeUserId, closeUsers.id)
-              )
-              .where(eq(closeUsers.closeId, userId))
-              .where(
-                and(
-                  gte(deals.createdAt, startDate),
-                  lte(deals.createdAt, endDate)
+            try {
+              // Get all deals assigned to this user in the date range
+              const userDeals = await db.select()
+                .from(dealToUserAssignments)
+                .leftJoin(
+                  deals, 
+                  eq(dealToUserAssignments.dealId, deals.id)
                 )
-              );
+                .where(eq(dealToUserAssignments.closeUserId, user.id))
+                .where(
+                  and(
+                    isNull(deals.createdAt).not(),
+                    gte(deals.createdAt, startDate),
+                    lte(deals.createdAt, endDate)
+                  )
+                );
               
-            // Get user's activities
-            const userActivities = await db.select()
-              .from(activities)
-              .leftJoin(
-                contactToUserAssignments,
-                eq(activities.contactId, contactToUserAssignments.contactId)
-              )
-              .leftJoin(
-                closeUsers,
-                eq(contactToUserAssignments.closeUserId, closeUsers.id)
-              )
-              .where(eq(closeUsers.closeId, userId))
-              .where(
-                and(
-                  gte(activities.date, startDate),
-                  lte(activities.date, endDate)
+              // Get activities for contacts assigned to this user
+              const userActivities = await db.select()
+                .from(contactToUserAssignments)
+                .leftJoin(
+                  activities,
+                  eq(contactToUserAssignments.contactId, activities.contactId)
                 )
-              );
+                .where(eq(contactToUserAssignments.closeUserId, user.id))
+                .where(
+                  and(
+                    isNull(activities.date).not(),
+                    gte(activities.date, startDate),
+                    lte(activities.date, endDate)
+                  )
+                );
               
-            // Get user's meetings
-            const userMeetings = await db.select()
-              .from(meetings)
-              .leftJoin(
-                contactToUserAssignments,
-                eq(meetings.contactId, contactToUserAssignments.contactId)
-              )
-              .leftJoin(
-                closeUsers,
-                eq(contactToUserAssignments.closeUserId, closeUsers.id)
-              )
-              .where(eq(closeUsers.closeId, userId))
-              .where(
-                and(
-                  gte(meetings.startTime, startDate),
-                  lte(meetings.startTime, endDate)
+              // Get meetings for contacts assigned to this user
+              const userMeetings = await db.select()
+                .from(contactToUserAssignments)
+                .leftJoin(
+                  meetings,
+                  eq(contactToUserAssignments.contactId, meetings.contactId)
                 )
-              );
-                
-            // Calculate revenue from deals
-            const revenue = userDeals.reduce((total, deal) => {
-              const dealValue = deal.deals?.value;
-              if (dealValue) {
-                const numValue = parseFloat(dealValue.replace(/[^0-9.-]+/g, '') || '0');
-                return total + (isNaN(numValue) ? 0 : numValue);
+                .where(eq(contactToUserAssignments.closeUserId, user.id))
+                .where(
+                  and(
+                    isNull(meetings.startTime).not(),
+                    gte(meetings.startTime, startDate),
+                    lte(meetings.startTime, endDate)
+                  )
+                );
+              
+              // Calculate KPIs
+              const dealsCreated = userDeals.length;
+              const dealsWon = userDeals.filter(d => d.deals && d.deals.status === 'won').length;
+              const callActivities = userActivities.filter(a => a.activities && a.activities.type === 'call');
+              const callsMade = callActivities.length;
+              
+              const scheduledMeetings = userMeetings.filter(m => m.meetings !== null && m.meetings !== undefined);
+              const completedMeetings = scheduledMeetings.filter(m => m.meetings && m.meetings.status === 'completed');
+              
+              // Calculate revenue from deals
+              let totalRevenue = 0;
+              for (const deal of userDeals) {
+                if (deal.deals && deal.deals.value) {
+                  try {
+                    // Remove any currency symbols and commas
+                    const cleanValue = deal.deals.value.replace(/[^\d.-]/g, '');
+                    const numValue = parseFloat(cleanValue);
+                    if (!isNaN(numValue)) {
+                      totalRevenue += numValue;
+                    }
+                  } catch (err) {
+                    console.warn(`Error parsing deal value: ${deal.deals.value}`, err);
+                  }
+                }
               }
-              return total;
-            }, 0);
               
-            // Return KPI data
-            return {
-              userId: userId,
-              dealsCreated: userDeals.length,
-              dealsWon: userDeals.filter(d => d.deals?.status === 'won').length,
-              callsMade: userActivities.filter(a => a.activities?.type === 'call').length,
-              meetingsScheduled: userMeetings.length,
-              meetingsCompleted: userMeetings.filter(m => m.meetings?.status === 'completed').length,
-              revenue: revenue
-            };
+              // Generate full name for display
+              const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email.split('@')[0];
+              
+              console.log(`KPIs for ${fullName}: ${dealsCreated} deals created, ${dealsWon} won, $${totalRevenue} revenue`);
+              
+              // Return comprehensive KPI data
+              return {
+                userId: user.closeId,
+                name: fullName,
+                email: user.email,
+                dealsCreated,
+                dealsWon,
+                callsMade,
+                meetingsScheduled: scheduledMeetings.length,
+                meetingsCompleted: completedMeetings.length,
+                revenue: totalRevenue,
+                // Additional metrics for dashboard
+                deals: dealsCreated,
+                meetings: scheduledMeetings.length,
+                activities: callsMade,
+                performance: dealsWon > 0 ? (dealsWon / dealsCreated) * 100 : 0,
+                closed: dealsWon,
+                cashCollected: totalRevenue,
+                contractedValue: totalRevenue,
+                calls: callsMade,
+                closingRate: dealsWon > 0 ? (dealsWon / dealsCreated) * 100 : 0
+              };
+            } catch (error) {
+              console.error(`Error calculating KPIs for user ${user.email}:`, error);
+              return {
+                userId: user.closeId,
+                name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email.split('@')[0],
+                email: user.email,
+                dealsCreated: 0,
+                dealsWon: 0,
+                callsMade: 0,
+                meetingsScheduled: 0,
+                meetingsCompleted: 0,
+                revenue: 0,
+                deals: 0,
+                meetings: 0,
+                activities: 0,
+                performance: 0,
+                closed: 0,
+                cashCollected: 0,
+                contractedValue: 0,
+                calls: 0,
+                closingRate: 0
+              };
+            }
           }));
         } catch (error) {
           console.error('Error importing user KPI data:', error);
