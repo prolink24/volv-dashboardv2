@@ -80,13 +80,13 @@ async function updateCashCollectedFields() {
         const cashCollected = extractCashCollected(deal.metadata);
         
         // Skip if we found nothing or if it's already set
-        if (!cashCollected && (!deal.cashCollected || deal.cashCollected === '0')) {
+        if (!cashCollected && (!deal.cash_collected || deal.cash_collected === '0')) {
           continue;
         }
         
         // Update the record
         await db.update(deals)
-          .set({ cashCollected: cashCollected })
+          .set({ cash_collected: cashCollected })
           .where(eq(deals.id, deal.id));
         
         updatedCount++;
