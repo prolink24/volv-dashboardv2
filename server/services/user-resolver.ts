@@ -123,10 +123,30 @@ export async function resolveDashboardUsers(dashboardData: any): Promise<any> {
     const users = await getAllUsers();
     console.log(`Retrieved ${users.length} users for resolution`);
     
-    // Process salesTeam array if it exists
-    if (dashboardData.salesTeam && Array.isArray(dashboardData.salesTeam)) {
-      // Log initial state for debugging
-      console.log(`Processing ${dashboardData.salesTeam.length} sales team members`);
+    // Create a default sales team if it doesn't exist or is empty
+    if (!dashboardData.salesTeam || !Array.isArray(dashboardData.salesTeam) || dashboardData.salesTeam.length === 0) {
+      console.log('No sales team found, creating from user database...');
+      
+      // Create a sales team from known users
+      dashboardData.salesTeam = users.map(user => ({
+        id: user.closeId,
+        name: user.name || formatUserName(user.first_name, user.last_name),
+        role: user.role || 'Sales Rep',
+        kpis: {
+          deals_created: 0,
+          deals_won: 0,
+          calls_made: 0,
+          meetings_scheduled: 0,
+          meetings_completed: 0,
+          revenue: 0
+        }
+      })).filter(user => user.name && user.name !== 'Unknown');
+      
+      console.log(`Created sales team with ${dashboardData.salesTeam.length} members from user database`);
+    } 
+    // Otherwise, fix up the existing sales team data
+    else {
+      console.log(`Processing ${dashboardData.salesTeam.length} existing sales team members`);
       
       // Transform the sales team data with actual names
       dashboardData.salesTeam = await Promise.all(dashboardData.salesTeam.map(async (member) => {
@@ -149,19 +169,34 @@ export async function resolveDashboardUsers(dashboardData: any): Promise<any> {
         // If we can't find a matching user, create a name from the ID
         return {
           ...member,
-          name: `User ${member.id.substring(0, 8)}`,
+          name: `User ${member.id ? member.id.substring(0, 8) : 'Unknown'}`,
           role: member.role || 'Sales Rep'
         };
       }));
       
-      console.log(`Resolved ${dashboardData.salesTeam.length} sales team members`);
-    } else {
-      console.log('No sales team data found in dashboard data');
+      // Make sure all known users are included in the sales team
+      const knownUserIds = dashboardData.salesTeam.map(member => member.id);
       
-      // Initialize an empty sales team array if none exists
-      if (!dashboardData.salesTeam) {
-        dashboardData.salesTeam = [];
+      // Add any users that aren't already in the sales team
+      for (const user of users) {
+        if (!knownUserIds.includes(user.closeId) && user.status !== 'inactive') {
+          dashboardData.salesTeam.push({
+            id: user.closeId,
+            name: user.name || formatUserName(user.first_name, user.last_name),
+            role: user.role || 'Sales Rep',
+            kpis: {
+              deals_created: 0,
+              deals_won: 0, 
+              calls_made: 0,
+              meetings_scheduled: 0,
+              meetings_completed: 0,
+              revenue: 0
+            }
+          });
+        }
       }
+      
+      console.log(`Resolved ${dashboardData.salesTeam.length} sales team members`);
     }
     
     return dashboardData;
