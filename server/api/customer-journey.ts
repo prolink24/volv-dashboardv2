@@ -89,8 +89,33 @@ export async function getCustomerJourney(contactId: number, dateRange?: string):
     
     // Get related data
     const activities = await storage.getActivitiesByContactId(contactId);
-    const meetings = await storage.getMeetingsByContactId(contactId);
+    let meetings = await storage.getMeetingsByContactId(contactId);
     const deals = await storage.getDealsByContactId(contactId);
+    
+    // If contact has an email, also look for meetings by email to ensure we catch all Calendly meetings
+    if (contact.email) {
+      // Get additional meetings that might be linked by email but not contactId
+      const emailMeetings = await storage.getMeetingsByInviteeEmail(contact.email);
+      
+      // Create a Set of existing meeting IDs to avoid duplicates
+      const existingMeetingIds = new Set(meetings.map(m => m.id));
+      
+      // Add only new meetings that aren't already included
+      const additionalMeetings = emailMeetings.filter(meeting => !existingMeetingIds.has(meeting.id));
+      
+      if (additionalMeetings.length > 0) {
+        console.log(`Found ${additionalMeetings.length} additional meetings for ${contact.email} using email matching`);
+        
+        // Update these meetings to link them to this contact for future queries
+        for (const meeting of additionalMeetings) {
+          await storage.updateMeeting(meeting.id, { contactId });
+          console.log(`Linked meeting ${meeting.id} to contact ${contactId} (${contact.name})`);
+        }
+        
+        // Add these to our meetings array
+        meetings = [...meetings, ...additionalMeetings];
+      }
+    }
     
     // Create timeline events
     const timelineEvents = [
