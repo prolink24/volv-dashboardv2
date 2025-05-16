@@ -124,12 +124,27 @@ const CustomerJourneyPage: React.FC = () => {
 
   // Get contact ID from URL
   useEffect(() => {
+    // Try to get contactId from query parameters first
     const urlParams = new URLSearchParams(window.location.search);
     const contactIdParam = urlParams.get('contactId');
     
-    if (contactIdParam) {
+    if (contactIdParam && !isNaN(parseInt(contactIdParam, 10))) {
+      console.log('Found contactId in URL query params:', contactIdParam);
       setContactId(parseInt(contactIdParam, 10));
+      return;
     }
+    
+    // If not in query params, try to extract from the path
+    const pathParts = window.location.pathname.split('/');
+    const lastPathPart = pathParts[pathParts.length - 1];
+    
+    if (lastPathPart && !isNaN(parseInt(lastPathPart, 10))) {
+      console.log('Found contactId in URL path:', lastPathPart);
+      setContactId(parseInt(lastPathPart, 10));
+      return;
+    }
+    
+    console.log('No contactId found in URL');
   }, []);
 
   // Fetch customer journey data
