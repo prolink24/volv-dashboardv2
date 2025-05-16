@@ -10,14 +10,47 @@ export function cn(...inputs: ClassValue[]) {
 
 /**
  * Format number as currency
- * Safely handles undefined values by defaulting to 0
+ * Safely handles undefined values, excessively large values, and formatting errors
  */
-export function formatCurrency(amount: number | undefined): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 2
-  }).format(amount || 0);
+export function formatCurrency(amount: number | undefined | string): string {
+  // Handle undefined values
+  if (amount === undefined) return '$0';
+  
+  try {
+    // Convert to string for validation
+    const valueStr = String(amount);
+    
+    // Prevent scientific notation and extremely large values
+    if (valueStr.length > 20 || valueStr.includes('e') || valueStr.includes('E')) {
+      console.warn(`[Currency] Capping extreme value: ${valueStr}`);
+      return '$500,000'; // Cap to reasonable maximum
+    }
+    
+    // Parse the number safely (removing non-numeric characters)
+    const numValue = parseFloat(valueStr.replace(/[^0-9.-]/g, ''));
+    
+    // Validate the number to prevent NaN
+    if (isNaN(numValue) || !isFinite(numValue)) {
+      console.warn(`[Currency] Invalid numeric value: ${valueStr}`);
+      return '$0';
+    }
+    
+    // Apply reasonable limits to prevent display issues
+    if (Math.abs(numValue) > 500000) {
+      console.warn(`[Currency] Capping large value: ${numValue}`);
+      return '$500,000';
+    }
+    
+    // Format the validated number
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 0
+    }).format(numValue);
+  } catch (error) {
+    console.error(`[Currency] Formatting error:`, error);
+    return '$0';
+  }
 }
 
 /**
