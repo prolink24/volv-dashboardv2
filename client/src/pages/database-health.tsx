@@ -166,7 +166,7 @@ export default function DatabaseHealth() {
   const meetingsProjected = createProjectedData(meetingsHistorical, 90, 'up', 0.10);
 
   return (
-    <div className="container mx-auto py-8 max-w-7xl">
+    <div className="container mx-auto py-8 max-w-7xl h-screen overflow-y-auto">
       <div className="flex justify-between items-start">
         <PageHeader
           heading="Database Health"
