@@ -1811,6 +1811,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Refresh Database Health Metrics
+  apiRouter.post('/refresh-health-metrics', async (_req: Request, res: Response) => {
+    try {
+      console.log('Manually refreshing database health metrics...');
+      const metricsResult = await updateHealthMetrics();
+      
+      // Clear any cached database health data
+      cacheService.clearCache('/api/database-health');
+      
+      // Return the updated metrics
+      res.json({
+        success: true,
+        message: 'Database health metrics updated successfully',
+        metrics: metricsResult.metrics
+      });
+    } catch (error) {
+      console.error('Error refreshing database health metrics:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to refresh database health metrics'
+      });
+    }
+  });
+  
   // Register API routes with prefix
   app.use("/api", apiRouter);
   

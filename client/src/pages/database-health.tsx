@@ -84,12 +84,39 @@ interface DatabaseHealthResponse {
 
 const DatabaseHealth = () => {
   const [activeTab, setActiveTab] = useState("overview");
+  const [isUpdating, setIsUpdating] = useState(false);
   
   // Fetch database health data
   const { data, isLoading, isError, error, refetch } = useQuery<DatabaseHealthResponse>({
     queryKey: ['/api/database-health'],
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
+  
+  // Function to force update the health metrics
+  const updateHealthMetrics = async () => {
+    try {
+      setIsUpdating(true);
+      
+      // Call the endpoint to recalculate health metrics
+      const response = await fetch('/api/refresh-health-metrics', {
+        method: 'POST',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update health metrics');
+      }
+      
+      // Refetch the data after metrics are updated
+      await refetch();
+      
+      // Show success message (you could add toast notification here)
+      console.log('Health metrics updated successfully');
+    } catch (error) {
+      console.error('Error updating health metrics:', error);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -194,10 +221,21 @@ const DatabaseHealth = () => {
             Monitor and maintain data integrity across all your integrated systems.
           </p>
         </div>
-        <Button onClick={() => refetch()} className="gap-2">
-          <RefreshCw className="h-4 w-4" />
-          Refresh
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={updateHealthMetrics} 
+            disabled={isUpdating} 
+            variant="default" 
+            className="gap-2"
+          >
+            <Activity className="h-4 w-4" />
+            {isUpdating ? 'Updating...' : 'Update Metrics'}
+          </Button>
+          <Button onClick={() => refetch()} className="gap-2">
+            <RefreshCw className="h-4 w-4" />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       <div className="text-sm text-muted-foreground">
