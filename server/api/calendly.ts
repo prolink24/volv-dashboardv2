@@ -197,6 +197,8 @@ async function syncAllEvents() {
                 calendlyEventId: event.uri,
                 startTime: new Date(event.start_time),
                 endTime: new Date(event.end_time),
+                invitee_email: email.toLowerCase(), // Store lowercase email for consistent matching
+                invitee_name: invitee.name,
                 assignedTo: null,
                 // Include all event and invitee data for complete attribution
                 metadata: {
