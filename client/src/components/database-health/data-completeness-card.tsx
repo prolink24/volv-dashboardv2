@@ -17,8 +17,11 @@ const DataCompletenessCard = ({
   // Handle undefined completeness with a default of 0
   const valueToShow = completeness !== undefined ? completeness : 0;
   
+  // Define status types for type safety
+  type StatusType = 'healthy' | 'warning' | 'critical';
+  
   // Determine status based on data completeness
-  const getStatus = (value?: number) => {
+  const getStatus = (value?: number): StatusType => {
     if (value === undefined) return 'critical';
     if (value >= 90) return 'healthy';
     if (value >= 70) return 'warning';
@@ -27,8 +30,17 @@ const DataCompletenessCard = ({
   
   const status = getStatus(completeness);
   
+  // Map status to valid badge variant
+  const getBadgeVariant = (status: StatusType): "default" | "secondary" | "destructive" => {
+    switch (status) {
+      case 'healthy': return 'default';
+      case 'warning': return 'secondary';
+      case 'critical': return 'destructive';
+    }
+  };
+  
   // Get icon based on status
-  const getStatusIcon = (status: string) => {
+  const getStatusIcon = (status: StatusType) => {
     switch (status) {
       case 'healthy':
         return <CheckCircle className="h-5 w-5 text-green-500" />;
@@ -53,7 +65,7 @@ const DataCompletenessCard = ({
         <div className="mt-1">
           <div className="flex justify-between mb-1">
             <span className="text-2xl font-bold">{valueToShow.toFixed(1)}%</span>
-            <Badge variant={status === 'healthy' ? 'default' : status === 'warning' ? 'warning' : 'destructive'}>
+            <Badge variant={getBadgeVariant(status)}>
               {status}
             </Badge>
           </div>
