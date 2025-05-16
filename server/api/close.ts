@@ -609,22 +609,38 @@ async function syncLeadOpportunities(leadId: string, contactId: number) {
         let valuePeriod = opportunity.value_period || null;
         let valueCurrency = opportunity.value_currency || 'USD';
         
-        // Look for custom fields related to cash_collected and contracted_value
+        // Debug full opportunity data to understand structure
+        console.log(`DEBUG: Opportunity ${opportunity.id} full data:`, 
+                  JSON.stringify(opportunity, null, 2));
+        
+        // Look for cash collected in various locations in the opportunity data
+        
+        // First try the standard custom fields
         if (opportunity.custom && typeof opportunity.custom === 'object') {
+          console.log(`DEBUG: Opportunity ${opportunity.id} custom fields:`, 
+                    JSON.stringify(opportunity.custom, null, 2));
+          
           // Extract all custom fields from the opportunity
           for (const [fieldId, fieldValue] of Object.entries(opportunity.custom)) {
             // This is the best way to find field values without knowing the field IDs in advance
             const fieldNameLower = fieldId.toLowerCase();
+            console.log(`DEBUG: Custom field ${fieldId} = ${JSON.stringify(fieldValue)}`);
             
-            // Look for cash collected field
+            // Look for cash collected field - expanded to include more potential matches
             if (fieldNameLower.includes('cash_collected') || 
                 fieldNameLower.includes('cash_collection') || 
                 fieldNameLower.includes('collected') || 
-                fieldNameLower.includes('payment')) {
+                fieldNameLower.includes('payment') ||
+                fieldNameLower.includes('cash') ||
+                fieldNameLower.includes('paid') ||
+                fieldNameLower.includes('received') ||
+                fieldNameLower.includes('revenue')) {
               if (fieldValue) {
+                console.log(`DEBUG: Found potential cash collected field: ${fieldId} = ${fieldValue}`);
                 // Clean the value just like we did for the main value
                 const valueString = String(fieldValue).trim();
                 cashCollected = valueString.replace(/[^0-9.]/g, '');
+                console.log(`DEBUG: Cleaned cash collected value: ${cashCollected}`);
               }
             }
             
@@ -640,6 +656,32 @@ async function syncLeadOpportunities(leadId: string, contactId: number) {
               }
             }
           }
+        }
+        
+        // If no cash collected found in custom fields, look directly in opportunity data
+        if (!cashCollected) {
+          // Common field names for cash collected in Close CRM
+          const possibleFields = [
+            'cash_collected', 'cash_collection', 'collected_amount',
+            'payment_received', 'payment_amount', 'paid_amount',
+            'revenue_collected', 'actual_revenue', 'cash_value'
+          ];
+          
+          for (const field of possibleFields) {
+            if (opportunity[field] !== undefined && opportunity[field] !== null) {
+              console.log(`DEBUG: Found potential cash collected in root field ${field}: ${opportunity[field]}`);
+              const valueString = String(opportunity[field]).trim();
+              cashCollected = valueString.replace(/[^0-9.]/g, '');
+              console.log(`DEBUG: Cleaned cash collected value: ${cashCollected}`);
+              break;
+            }
+          }
+        }
+        
+        // If still no cash collected, use deal value as fallback for won deals
+        if (!cashCollected && opportunity.status_type === 'won' && opportunity.value) {
+          console.log(`DEBUG: Using deal value as fallback for cash collected (won deal): ${opportunity.value}`);
+          cashCollected = String(opportunity.value);
         }
         
         // Store original formatted value for display purposes in metadata
