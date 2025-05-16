@@ -649,15 +649,11 @@ export function VisualJourneyTimeline({ events }: VisualJourneyTimelineProps) {
                                             <div className="col-span-2 mt-1 text-green-700 border border-green-200 bg-green-50 dark:bg-green-950/30 dark:border-green-900 p-1.5 rounded-md flex items-center gap-2">
                                               <Avatar className="h-5 w-5 bg-green-100 text-green-700 border border-green-200">
                                                 <AvatarFallback className="text-xs">
-                                                  {typeof event.data.metadata === 'string' 
-                                                    ? JSON.parse(event.data.metadata)?.attribution?.scheduledBy?.substring(0, 2)?.toUpperCase() || 'TM'
-                                                    : event.data.metadata?.attribution?.scheduledBy?.substring(0, 2)?.toUpperCase() || 'TM'}
+                                                  {event.userName ? event.userName.substring(0, 2).toUpperCase() : 'TM'}
                                                 </AvatarFallback>
                                               </Avatar>
                                               <span className="text-xs font-medium">Scheduled by <span className="font-semibold">
-                                                {typeof event.data.metadata === 'string'
-                                                  ? JSON.parse(event.data.metadata)?.attribution?.scheduledBy || 'Team Member'
-                                                  : event.data.metadata?.attribution?.scheduledBy || 'Team Member'}
+                                                {event.userName || event.scheduledBy || 'Team Member'}
                                               </span></span>
                                             </div>
                                           )}

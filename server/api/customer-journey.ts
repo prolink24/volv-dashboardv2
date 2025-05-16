@@ -133,20 +133,39 @@ export async function getCustomerJourney(contactId: number, dateRange?: string):
         userName: activity.userName || 'Unknown',
         score: 5
       })),
-      ...meetings.map(meeting => ({
-        id: meeting.id,
-        type: 'meeting',
-        subtype: meeting.type,
-        title: meeting.name || 'Meeting',
-        description: meeting.notes || '',
-        timestamp: new Date(meeting.startTime),
-        source: 'Calendly',
-        sourceId: meeting.sourceId,
-        data: meeting,
-        userId: meeting.userId,
-        userName: meeting.userName || 'Unknown',
-        score: 10
-      })),
+      ...meetings.map(meeting => {
+        // Extract scheduler's name from metadata if it exists
+        let scheduledBy = 'Unknown';
+        if (meeting.metadata) {
+          try {
+            const metadata = typeof meeting.metadata === 'string' 
+              ? JSON.parse(meeting.metadata) 
+              : meeting.metadata;
+              
+            if (metadata.attribution && metadata.attribution.scheduledBy) {
+              scheduledBy = metadata.attribution.scheduledBy;
+            }
+          } catch (e) {
+            console.error('Error parsing meeting metadata:', e);
+          }
+        }
+        
+        return {
+          id: meeting.id,
+          type: 'meeting',
+          subtype: meeting.type,
+          title: meeting.title || 'Meeting',
+          description: meeting.description || '',
+          timestamp: new Date(meeting.startTime),
+          source: 'Calendly',
+          sourceId: meeting.calendlyEventId,
+          data: meeting,
+          userId: meeting.id, // Use meeting ID as fallback
+          userName: scheduledBy, // Use extracted name
+          scheduledBy: scheduledBy, // Add explicit field
+          score: 10
+        };
+      }),
       ...deals.map(deal => ({
         id: deal.id,
         type: 'deal',
