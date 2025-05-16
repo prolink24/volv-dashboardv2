@@ -520,11 +520,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         enhancedDashboard.attributionSkipped = true;
       }
       
-      // Import user resolver service to fix unknown users issue
-      const userResolverService = require('./services/user-resolver').default;
+      // Use the user resolver service to fix unknown users issue
+      const { resolveDashboardUsers } = await import('./services/user-resolver');
       
       // Apply user resolution to ensure all users are properly displayed
-      enhancedDashboard = await userResolverService.resolveDashboardUsers(enhancedDashboard);
+      enhancedDashboard = await resolveDashboardUsers(enhancedDashboard);
       
       // Log total request time for performance monitoring
       const endTime = performance.now();
