@@ -369,9 +369,14 @@ export function VisualJourneyTimeline({ events }: VisualJourneyTimelineProps) {
             <p className="text-sm text-muted-foreground">Time Span</p>
             <p className="text-2xl font-bold">
               {events.length > 0 ? 
-                `${Math.ceil((new Date(Math.max(...events.map(e => new Date(e.timestamp).getTime()))) - 
-                  new Date(Math.min(...events.map(e => new Date(e.timestamp).getTime())))) / 
-                  (1000 * 60 * 60 * 24))} days` : 
+                (() => {
+                  const timestamps = events.map(e => new Date(e.timestamp).getTime());
+                  const maxDate = new Date(Math.max(...timestamps));
+                  const minDate = new Date(Math.min(...timestamps));
+                  const diffTime = maxDate.getTime() - minDate.getTime();
+                  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                  return `${diffDays} days`;
+                })() : 
                 '0 days'}
             </p>
           </div>

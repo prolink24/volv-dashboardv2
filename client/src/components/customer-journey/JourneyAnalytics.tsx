@@ -83,6 +83,15 @@ const getComparisonColor = (value: number | null, benchmark: number, higherIsBet
   }
 };
 
+// Helper function to get background color for source
+const getSourceColor = (source: string): string => {
+  const sourceLower = source.toLowerCase();
+  if (sourceLower === 'close') return 'bg-blue-500';
+  if (sourceLower === 'calendly') return 'bg-green-500';
+  if (sourceLower === 'typeform') return 'bg-purple-500';
+  return 'bg-gray-500';
+};
+
 export function JourneyAnalytics({
   contactId,
   engagementScore,
