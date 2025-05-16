@@ -569,7 +569,7 @@ const CustomerJourneyPage: React.FC = () => {
                         <CardContent className="pt-6">
                           <div className="text-2xl font-bold">
                             {journeyData.callMetrics.speedToLead !== null 
-                              ? `${Math.round(journeyData.callMetrics.speedToLead)} min` 
+                              ? `${Math.abs(Math.round(journeyData.callMetrics.speedToLead))} min${journeyData.callMetrics.speedToLead < 0 ? ' (proactive)' : ''}` 
                               : 'N/A'}
                           </div>
                           <p className="text-xs text-muted-foreground">Speed to Lead</p>

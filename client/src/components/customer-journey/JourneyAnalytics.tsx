@@ -352,12 +352,15 @@ export function JourneyAnalytics({
                   <div>
                     <div className="flex justify-between mb-1">
                       <span className="text-sm font-medium">Speed To Lead</span>
-                      <span className={`text-sm font-medium ${getComparisonColor(callMetrics.speedToLead, 15, false)}`}>
-                        {callMetrics.speedToLead !== null ? `${Math.round(callMetrics.speedToLead)} min` : 'N/A'}
+                      <span className={`text-sm font-medium ${callMetrics.speedToLead < 0 ? 'text-green-500' : getComparisonColor(callMetrics.speedToLead, 15, false)}`}>
+                        {callMetrics.speedToLead !== null ? `${Math.abs(Math.round(callMetrics.speedToLead))} min${callMetrics.speedToLead < 0 ? ' (proactive)' : ''}` : 'N/A'}
                       </span>
                     </div>
                     {callMetrics.speedToLead !== null && (
-                      <Progress value={Math.min(100, (60 - callMetrics.speedToLead) / 0.6)} className="h-2" />
+                      <Progress 
+                        value={callMetrics.speedToLead < 0 ? 100 : Math.min(100, (60 - callMetrics.speedToLead) / 0.6)} 
+                        className={`h-2 ${callMetrics.speedToLead < 0 ? 'bg-green-500' : ''}`} 
+                      />
                     )}
                     <p className="text-xs text-muted-foreground mt-1">Benchmark: 15 min</p>
                   </div>
