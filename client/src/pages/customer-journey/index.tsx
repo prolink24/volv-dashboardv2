@@ -160,10 +160,12 @@ const CustomerJourneyPage: React.FC = () => {
         const contactResponse = await fetch(`/api/contacts/${contactId}`);
         
         if (!contactResponse.ok) {
+          console.error('Failed to fetch contact data:', contactResponse.status, contactResponse.statusText);
           throw new Error('Failed to load contact data');
         }
         
         const contact = await contactResponse.json();
+        console.log('Successfully loaded contact details:', contact);
         
         // Return basic customer journey data with just the contact info
         // This ensures we at least show contact details

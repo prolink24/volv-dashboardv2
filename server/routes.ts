@@ -1391,6 +1391,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Mount the customer journey router
   app.use("/api/customer-journey", customerJourneyRoutes);
+  
+  // Direct contact details endpoint for customer journey view
+  apiRouter.get("/contacts/:contactId", async (req: Request, res: Response) => {
+    try {
+      const contactId = parseInt(req.params.contactId, 10);
+      
+      if (isNaN(contactId)) {
+        return res.status(400).json({ error: "Invalid contact ID" });
+      }
+      
+      const contact = await storage.getContact(contactId);
+      
+      if (!contact) {
+        return res.status(404).json({ error: "Contact not found" });
+      }
+      
+      // Get additional related data for a richer view
+      const activities = await storage.getActivitiesByContactId(contactId);
+      const meetings = await storage.getMeetingsByContactId(contactId);
+      const deals = await storage.getDealsByContactId(contactId);
+      
+      const result = {
+        ...contact,
+        activities: activities.slice(0, 5), // Show only most recent
+        meetings: meetings.slice(0, 5),
+        deals: deals.slice(0, 5),
+        firstTouchDate: activities.length > 0 ? 
+          new Date(Math.min(...activities.map(a => new Date(a.date).getTime()))) : null,
+        lastTouchDate: activities.length > 0 ? 
+          new Date(Math.max(...activities.map(a => new Date(a.date).getTime()))) : null,
+      };
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error fetching contact details:", error);
+      res.status(500).json({ error: "Failed to fetch contact details" });
+    }
+  });
 
   // Create HTTP server
   const httpServer = createServer(app);
