@@ -14,6 +14,7 @@ import { useDateRange } from '@/hooks/use-date-range';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import VisualJourneyTimeline from '@/components/customer-journey/VisualJourneyTimeline';
+import { JourneyAnalytics } from '@/components/customer-journey/JourneyAnalytics';
 
 // Define interfaces for data types
 interface TimelineEvent {
