@@ -90,6 +90,7 @@ export interface IStorage {
   getMeetingsByContactId(contactId: number): Promise<Meeting[]>;
   getMeetingsCount(): Promise<number>;
   getAllMeetings(): Promise<Meeting[]>;
+  getSampleMeetings(limit: number): Promise<Meeting[]>;
 
   // Form operations
   getForm(id: number): Promise<Form | undefined>;
@@ -463,6 +464,14 @@ export class DatabaseStorage implements IStorage {
   
   async getAllMeetings(): Promise<Meeting[]> {
     return db.select().from(meetings).orderBy(desc(meetings.startTime));
+  }
+  
+  async getSampleMeetings(limit: number): Promise<Meeting[]> {
+    return db
+      .select()
+      .from(meetings)
+      .orderBy(sql`RANDOM()`)
+      .limit(limit);
   }
 
   // Form operations
