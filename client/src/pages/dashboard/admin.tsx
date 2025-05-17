@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -13,9 +12,11 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { useDateRange } from "@/hooks/use-date-range";
+import { DateRangePicker } from "@/components/global/date-range-picker";
 
 export default function AdminDashboard() {
-  const [month, setMonth] = useState("current");
+  const { dateRange } = useDateRange();
   const { data: dashboardData, isLoading } = useDashboardData();
   const [expandedUsers, setExpandedUsers] = useState<string[]>([]);
 
@@ -33,15 +34,7 @@ export default function AdminDashboard() {
             </Tabs>
           </div>
           <div className="flex space-x-2">
-            <Select value={month} onValueChange={setMonth}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Select month" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="current">2025-03 | March</SelectItem>
-                <SelectItem value="previous">2025-02 | February</SelectItem>
-              </SelectContent>
-            </Select>
+            <DateRangePicker />
           </div>
         </div>
         <div className="w-full animate-pulse">
@@ -80,15 +73,7 @@ export default function AdminDashboard() {
           </Tabs>
         </div>
         <div className="mt-4 md:mt-0">
-          <Select value={month} onValueChange={setMonth}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Select month" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="current">2025-03 | March</SelectItem>
-              <SelectItem value="previous">2025-02 | February</SelectItem>
-            </SelectContent>
-          </Select>
+          <DateRangePicker />
         </div>
       </div>
 
