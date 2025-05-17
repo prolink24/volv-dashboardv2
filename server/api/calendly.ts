@@ -190,17 +190,71 @@ async function syncAllEvents() {
                 }
               }
               
+              // Determine if this is the first call (NC1) or follow-up call (C2, C3, etc.)
+              const determineCallSequence = async (contactId, eventType) => {
+                try {
+                  const existingMeetings = await storage.getMeetingsByContactId(contactId);
+                  
+                  // Filter by similar meeting types if the event has a type
+                  const similarMeetings = existingMeetings.filter(m => {
+                    // If the event has a type, match on similar types
+                    if (eventType) {
+                      const mType = (m.type || '').toLowerCase();
+                      const eType = eventType.toLowerCase();
+                      
+                      // Check for type similarity - triage, solution, etc.
+                      return mType.includes('triage') && eType.includes('triage') ||
+                             mType.includes('solution') && eType.includes('solution') ||
+                             mType.includes('discovery') && eType.includes('discovery') ||
+                             mType.includes('demo') && eType.includes('demo');
+                    }
+                    return false;
+                  });
+                  
+                  // If no similar meetings found, this is likely NC1 (first call)
+                  if (similarMeetings.length === 0) {
+                    return 1; // NC1 - First call
+                  } else {
+                    // Otherwise, it's a follow-up call (C2, C3, etc.)
+                    return similarMeetings.length + 1;
+                  }
+                } catch (err) {
+                  console.error('Error determining call sequence:', err);
+                  return null; // Return null if we can't determine
+                }
+              };
+              
+              // Extract meeting type for better categorization
+              let meetingType = 'meeting';
+              if (event.name) {
+                const name = event.name.toLowerCase();
+                if (name.includes('triage')) {
+                  meetingType = 'triage_call';
+                } else if (name.includes('solution') || name.includes('demo')) {
+                  meetingType = 'solution_call';
+                } else if (name.includes('follow') || name.includes('check-in')) {
+                  meetingType = 'follow_up';
+                }
+              }
+              
+              // Get the call sequence number (NC1, C2, etc.)
+              const callSequence = await determineCallSequence(contact.id, meetingType);
+              
               // Create a meeting record with comprehensive data for attribution
               const meetingData = {
                 contactId: contact.id,
                 title: event.name || 'Calendly Meeting',
-                type: event.event_type || 'meeting',
+                type: meetingType,
                 status: event.status,
                 calendlyEventId: event.uri,
                 startTime: new Date(event.start_time),
                 endTime: new Date(event.end_time),
-                invitee_email: email.toLowerCase(), // Store lowercase email for consistent matching
-                invitee_name: invitee.name,
+                // Add booking time - crucial for proper timeline
+                bookedAt: new Date(invitee.created_at || event.created_at),
+                // Add sequence for NC1/C2 tracking
+                sequence: callSequence,
+                inviteeEmail: email.toLowerCase(), // Store lowercase email for consistent matching
+                inviteeName: invitee.name,
                 assignedTo: null,
                 // Include all event and invitee data for complete attribution
                 metadata: {
@@ -212,10 +266,11 @@ async function syncAllEvents() {
                   eventDetails: eventDetails,
                   attribution: {
                     platform: 'calendly',
-                    eventType: event.event_type,
+                    eventType: meetingType,
                     scheduledBy: invitee.name,
                     contactId: contact.id,
-                    timestamp: new Date().toISOString()
+                    timestamp: new Date().toISOString(),
+                    callSequence: callSequence
                   }
                 }
               };

@@ -28,6 +28,15 @@ export interface CustomerJourney {
     cancelRate: number;
     outboundTriagesSet: number;
     leadResponseTime: number | null;
+    // Enhanced call metrics
+    nc1BookedCount: number; // Number of first calls booked
+    nc1ShowCount: number; // Number of first calls completed
+    nc1ShowRate: number; // Show rate for first calls
+    c2BookedCount: number; // Number of second calls booked
+    c2ShowCount: number; // Number of second calls completed
+    c2ShowRate: number; // Show rate for second calls
+    avgTimeToBook: number | null; // Average time from contact creation to booking
+    avgTimeBetweenMeetings: number | null; // Average time between consecutive meetings
   };
   salesMetrics: {
     closedWon: number;
@@ -355,7 +364,23 @@ export async function getCustomerJourney(contactId: number, dateRange?: string):
           meetings.length
         ),
         outboundTriagesSet: activities.filter(a => a.type === 'call' && a.notes?.includes('triage')).length,
-        leadResponseTime: calculateLeadResponseTime(activities, contact)
+        leadResponseTime: calculateLeadResponseTime(activities, contact),
+        
+        // Enhanced call metrics for NC1/C2 tracking
+        nc1BookedCount: meetings.filter(m => m.sequence === 1).length,
+        nc1ShowCount: meetings.filter(m => m.sequence === 1 && m.status === 'completed').length,
+        nc1ShowRate: calculatePercentage(
+          meetings.filter(m => m.sequence === 1 && m.status === 'completed').length,
+          meetings.filter(m => m.sequence === 1).length
+        ),
+        c2BookedCount: meetings.filter(m => m.sequence === 2).length,
+        c2ShowCount: meetings.filter(m => m.sequence === 2 && m.status === 'completed').length,
+        c2ShowRate: calculatePercentage(
+          meetings.filter(m => m.sequence === 2 && m.status === 'completed').length,
+          meetings.filter(m => m.sequence === 2).length
+        ),
+        avgTimeToBook: calculateAverageTimeToBook(meetings, contact),
+        avgTimeBetweenMeetings: calculateAverageTimeBetweenMeetings(meetings)
       },
       salesMetrics: {
         closedWon: deals.filter(d => d.status === 'won').length,
@@ -416,6 +441,60 @@ export async function getCustomerJourney(contactId: number, dateRange?: string):
 function calculatePercentage(numerator: number, denominator: number): number {
   if (denominator === 0) return 0;
   return Math.round((numerator / denominator) * 100);
+}
+
+/**
+ * Calculate average time between contact creation and booking a meeting
+ */
+function calculateAverageTimeToBook(meetings: any[], contact: any): number | null {
+  if (!contact.createdAt || meetings.length === 0) return null;
+  
+  // Use meetings with booking times
+  const meetingsWithBookingTimes = meetings.filter(m => m.bookedAt);
+  if (meetingsWithBookingTimes.length === 0) return null;
+  
+  const contactCreatedDate = new Date(contact.createdAt);
+  
+  // Calculate time from contact creation to each booking
+  const timeToBookDurations = meetingsWithBookingTimes.map(meeting => {
+    const bookingDate = new Date(meeting.bookedAt);
+    return Math.round((bookingDate.getTime() - contactCreatedDate.getTime()) / (1000 * 60 * 60)); // hours
+  });
+  
+  // Return average
+  const totalHours = timeToBookDurations.reduce((sum, duration) => sum + duration, 0);
+  return Math.round(totalHours / timeToBookDurations.length);
+}
+
+/**
+ * Calculate average time between consecutive meetings
+ */
+function calculateAverageTimeBetweenMeetings(meetings: any[]): number | null {
+  if (meetings.length < 2) return null;
+  
+  // Sort meetings by start time
+  const sortedMeetings = [...meetings].sort((a, b) => 
+    new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+  );
+  
+  // Calculate time differences between consecutive meetings
+  const timeDifferences = [];
+  for (let i = 1; i < sortedMeetings.length; i++) {
+    const currentMeetingTime = new Date(sortedMeetings[i].startTime).getTime();
+    const previousMeetingTime = new Date(sortedMeetings[i-1].startTime).getTime();
+    const diffInHours = (currentMeetingTime - previousMeetingTime) / (1000 * 60 * 60);
+    
+    // Only include reasonable differences (ignore extremely large gaps)
+    if (diffInHours > 0 && diffInHours < 8760) { // Max 1 year difference
+      timeDifferences.push(diffInHours);
+    }
+  }
+  
+  if (timeDifferences.length === 0) return null;
+  
+  // Return average
+  const totalHours = timeDifferences.reduce((sum, diff) => sum + diff, 0);
+  return Math.round(totalHours / timeDifferences.length);
 }
 
 function calculateSpeedToLead(activities: any[], contact: any): number | null {
