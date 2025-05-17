@@ -32,7 +32,7 @@ import {
 interface TimelineEvent {
   id: number;
   date: string;
-  type: "form" | "meeting" | "activity" | "deal";
+  type: "form" | "meeting" | "meeting_booked" | "activity" | "deal";
   title: string;
   description?: string;
   source: "typeform" | "calendly" | "close";
@@ -42,6 +42,12 @@ interface TimelineEvent {
   attributionScore?: number;
   influence?: number;
   isKeyTouchpoint?: boolean;
+  // Call sequence tracking
+  callSequence?: string;
+  eventType?: string;
+  bookedAt?: string;
+  meetingTime?: string;
+  scheduledBy?: string;
 }
 
 interface AttributionChain {
@@ -92,6 +98,7 @@ export function AttributionJourney({
   const [activeTab, setActiveTab] = useState("timeline");
   const [selectedEventType, setSelectedEventType] = useState<string | null>(null);
   const [selectedSource, setSelectedSource] = useState<string | null>(null);
+  const [selectedCallSequence, setSelectedCallSequence] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<TimelineEvent | null>(null);
   const [selectedAttributionModel, setSelectedAttributionModel] = useState<string | null>(null);
@@ -105,8 +112,15 @@ export function AttributionJourney({
   const filteredEvents = sortedEvents.filter(event => {
     if (selectedEventType && event.type !== selectedEventType) return false;
     if (selectedSource && event.source !== selectedSource) return false;
+    if (selectedCallSequence && event.callSequence !== selectedCallSequence) return false;
     return true;
   });
+  
+  // Get unique call sequences for filtering
+  const callSequences = events
+    .filter(event => event.callSequence)
+    .map(event => event.callSequence)
+    .filter((value, index, self) => value && self.indexOf(value) === index) as string[];
   
   // Calculate event type distribution for analytics
   const eventTypeCounts = events.reduce((acc, event) => {
@@ -154,6 +168,8 @@ export function AttributionJourney({
         return <FormInput className="h-6 w-6 text-purple-500" />;
       case "meeting":
         return <CalendarIcon className="h-6 w-6 text-blue-500" />;
+      case "meeting_booked":
+        return <Calendar className="h-6 w-6 text-indigo-500" />;
       case "activity":
         return source === "close" ? 
           <Phone className="h-6 w-6 text-green-500" /> : 
@@ -544,8 +560,42 @@ export function AttributionJourney({
                         
                         <div className="ml-10 bg-white p-4 rounded-lg border shadow-sm">
                           <div className="flex justify-between items-start mb-1">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-medium">{event.title}</span>
+                              
+                              {/* Call sequence badge (NC1, C2, etc.) */}
+                              {event.callSequence && (
+                                <HoverCard>
+                                  <HoverCardTrigger asChild>
+                                    <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-200 text-xs">
+                                      {event.callSequence}
+                                    </Badge>
+                                  </HoverCardTrigger>
+                                  <HoverCardContent className="w-60">
+                                    <p className="text-sm">
+                                      {event.callSequence === 'NC1' ? 
+                                        'First discovery call with the prospect' : 
+                                        `Follow-up call #${event.callSequence.substring(1)}`}
+                                    </p>
+                                  </HoverCardContent>
+                                </HoverCard>
+                              )}
+                              
+                              {/* Meeting booking vs occurrence badge */}
+                              {event.type === 'meeting_booked' && (
+                                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs">
+                                  <Calendar className="h-3 w-3 mr-1" />
+                                  Booked
+                                </Badge>
+                              )}
+                              
+                              {event.type === 'meeting' && (
+                                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
+                                  <CalendarIcon className="h-3 w-3 mr-1" />
+                                  Occurred
+                                </Badge>
+                              )}
+                              
                               {event.isKeyTouchpoint && (
                                 <HoverCard>
                                   <HoverCardTrigger asChild>
@@ -566,11 +616,20 @@ export function AttributionJourney({
                           </div>
                           
                           <div className="text-sm text-muted-foreground mb-2">
-                            {formatDate(event.date)}
+                            {formatDate(event.date, true)} {/* Added time to the date display */}
                             {daysSince > 0 && index > 0 && (
                               <span className="text-xs ml-2 text-gray-400">
                                 ({daysSince} day{daysSince !== 1 ? 's' : ''} after previous event)
                               </span>
+                            )}
+                            
+                            {/* Show additional booking information for meetings */}
+                            {event.type === 'meeting' && event.bookedAt && (
+                              <div className="text-xs text-blue-600 mt-1">
+                                <Clock className="h-3 w-3 inline mr-1" /> 
+                                Booked on {formatDate(event.bookedAt, true)}
+                                {event.scheduledBy && ` by ${event.scheduledBy}`}
+                              </div>
                             )}
                           </div>
                           
