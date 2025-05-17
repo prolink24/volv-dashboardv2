@@ -553,30 +553,30 @@ const CustomerJourneyPage: React.FC = () => {
                     <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
                       <Card className="bg-muted/20">
                         <CardContent className="pt-6">
-                          <div className="text-2xl font-bold">{journeyData.callMetrics.solutionCallsBooked}</div>
-                          <p className="text-xs text-muted-foreground">Solution Calls Booked</p>
+                          <div className="text-2xl font-bold">{journeyData.callMetrics.nc1BookedCount || journeyData.callMetrics.solutionCallsBooked}</div>
+                          <p className="text-xs text-muted-foreground">NC1 Calls Booked</p>
                         </CardContent>
                       </Card>
                       <Card className="bg-muted/20">
                         <CardContent className="pt-6">
-                          <div className="text-2xl font-bold">{journeyData.callMetrics.solutionCallsSits}</div>
-                          <p className="text-xs text-muted-foreground">Solution Calls Attended</p>
+                          <div className="text-2xl font-bold">{journeyData.callMetrics.nc1ShowCount || journeyData.callMetrics.solutionCallsSits}</div>
+                          <p className="text-xs text-muted-foreground">NC1 Calls Attended</p>
                         </CardContent>
                       </Card>
                       <Card className="bg-muted/20">
                         <CardContent className="pt-6">
-                          <div className="text-2xl font-bold">{Math.round(journeyData.callMetrics.solutionCallShowRate * 100)}%</div>
-                          <p className="text-xs text-muted-foreground">Show Rate</p>
+                          <div className="text-2xl font-bold">{journeyData.callMetrics.c2BookedCount || 0}</div>
+                          <p className="text-xs text-muted-foreground">C2 Calls Booked</p>
                         </CardContent>
                       </Card>
                       <Card className="bg-muted/20">
                         <CardContent className="pt-6">
                           <div className="text-2xl font-bold">
-                            {journeyData.callMetrics.speedToLead !== null 
-                              ? `${Math.abs(Math.round(journeyData.callMetrics.speedToLead))} min${journeyData.callMetrics.speedToLead < 0 ? ' (proactive)' : ''}` 
+                            {journeyData.callMetrics.avgTimeToBook !== null 
+                              ? `${Math.round(journeyData.callMetrics.avgTimeToBook)} hrs` 
                               : 'N/A'}
                           </div>
-                          <p className="text-xs text-muted-foreground">Speed to Lead</p>
+                          <p className="text-xs text-muted-foreground">Avg Time to Book</p>
                         </CardContent>
                       </Card>
                     </div>
