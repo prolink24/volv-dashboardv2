@@ -564,14 +564,27 @@ export function VisualJourneyTimeline({ events }: VisualJourneyTimelineProps) {
                                       </Badge>
                                     )}
                                   </div>
-                                  <div className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
-                                    <span className="flex items-center gap-1">
-                                      <Clock className="h-3 w-3" />
-                                      {formatDate(event.timestamp)}
-                                    </span>
-                                    <span className="inline-block text-xs px-1.5 py-0.5 rounded bg-muted">
-                                      {formatRelativeTime(event.timestamp)}
-                                    </span>
+                                  <div className="text-sm text-muted-foreground flex flex-col gap-1 mt-1">
+                                    {/* Meeting/Call time */}
+                                    <div className="flex items-center gap-2">
+                                      <span className="flex items-center gap-1">
+                                        <Clock className="h-3 w-3" />
+                                        {formatDate(event.timestamp)}
+                                      </span>
+                                      <span className="inline-block text-xs px-1.5 py-0.5 rounded bg-muted">
+                                        {formatRelativeTime(event.timestamp)}
+                                      </span>
+                                    </div>
+                                    
+                                    {/* Booking time (if available) */}
+                                    {event.bookedAt && (
+                                      <div className="flex items-center gap-1 text-xs ml-4">
+                                        <Calendar className="h-3 w-3 text-blue-500" />
+                                        <span className="text-blue-600 dark:text-blue-400">
+                                          Booked at: {formatDate(new Date(event.bookedAt))}
+                                        </span>
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                               </div>
