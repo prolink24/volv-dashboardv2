@@ -53,6 +53,7 @@ function Router() {
           <Route path="/attribution-journey" component={AttributionJourney} />
           <Route path="/attribution-journey/:id" component={AttributionJourney} />
           <Route path="/customer-journey" component={CustomerJourney} />
+          <Route path="/customer-journey/:id" component={CustomerJourney} />
           <Route path="/database-health" component={DatabaseHealth} />
           <Route component={NotFound} />
         </Switch>
