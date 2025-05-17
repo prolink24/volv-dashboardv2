@@ -24,11 +24,15 @@ export async function getDatabaseHealthMetrics() {
     
     // Get count of won deals that have cash collected values
     const [wonDealsWithCashCollected] = await db.select({ count: sql<number>`count(*)` }).from(deals)
-      .where(sql`status = 'won' AND "cashCollected" IS NOT NULL AND "cashCollected" != '0'`);
+      .where(sql`status = 'won' AND "cashCollected" IS NOT NULL AND "cashCollected" != '0' AND "cashCollected" != ''`);
     
     // Get total count of won deals
     const [wonDealsTotal] = await db.select({ count: sql<number>`count(*)` }).from(deals)
       .where(sql`status = 'won'`);
+      
+    console.log('Database health metrics - Cash Collected:');
+    console.log(`- Won deals with cash collected: ${wonDealsWithCashCollected.count}`);
+    console.log(`- Total won deals: ${wonDealsTotal.count}`);
     
     const [dealsWithCloseId] = await db.select({ count: sql<number>`count(*)` }).from(deals)
       .where(sql`"close_id" IS NOT NULL`);
@@ -133,7 +137,7 @@ export async function getDatabaseHealthMetrics() {
       {
         id: '4',
         name: 'Cash Collected Coverage',
-        value: cashCollectedCoverage,
+        value: wonDealsTotal.count > 0 ? (wonDealsWithCashCollected.count / wonDealsTotal.count) * 100 : 0,
         status: cashCollectedCoverage > 95 ? 'healthy' : cashCollectedCoverage > 85 ? 'warning' : 'critical',
         lastChecked: new Date().toISOString(),
         target: 95,
