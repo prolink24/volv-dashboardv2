@@ -5,12 +5,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, Line, LineChart } from "recharts";
 import { formatCurrency } from "@/lib/utils";
+import { useDateRange } from "@/hooks/use-date-range";
+import { DateRangePicker } from "@/components/global/date-range-picker";
 
 export default function MarketingDashboard() {
-  const [month, setMonth] = useState("current");
+  const { dateRange } = useDateRange();
   const { data: dashboardData, isLoading, error } = useDashboardData({
-    useEnhanced: true,
-    cache: true
+    useEnhanced: true
   });
 
   console.log("Marketing Dashboard Data:", dashboardData ? "Loaded" : "Not loaded", "isLoading:", isLoading, "error:", error);
@@ -21,15 +22,7 @@ export default function MarketingDashboard() {
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold">Marketing Dashboard</h1>
           <div className="flex space-x-2">
-            <Select value={month} onValueChange={setMonth}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Select month" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="current">2025-03 | March</SelectItem>
-                <SelectItem value="previous">2025-02 | February</SelectItem>
-              </SelectContent>
-            </Select>
+            <DateRangePicker />
           </div>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
