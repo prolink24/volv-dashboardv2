@@ -23,12 +23,21 @@ import AttributionChannels from "@/components/dashboard/attribution-channels";
 import AttributionInsights from "@/components/dashboard/attribution-insights";
 
 import { formatCurrency } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 const Dashboard = () => {
   const { userFilter, refreshData, isRefreshing, activeTab, setActiveTab } = useDashboard();
   const { dateRange, isLoading: isDateLoading } = useDateRange();
   const { toast } = useToast();
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isDataVerifying, setIsDataVerifying] = useState(false);
+  const [dataStatus, setDataStatus] = useState<{
+    totalContacts: number;
+    totalDeals: number;
+    totalActivities: number;
+    totalMeetings: number;
+    isRealData: boolean;
+  } | null>(null);
 
   // Log the current date range
   console.log(`[Dashboard] Current date range: ${dateRange.startDate.toDateString()} to ${dateRange.endDate.toDateString()}`);
@@ -87,8 +96,62 @@ const Dashboard = () => {
   useEffect(() => {
     if (isInitialLoad && dashboardData) {
       setIsInitialLoad(false);
+      
+      // Check if we have real data or if we need to sync
+      checkDataIntegrity(dashboardData);
     }
   }, [dashboardData, isInitialLoad]);
+  
+  // Check if we have real data or empty placeholder data
+  const checkDataIntegrity = (data) => {
+    setIsDataVerifying(true);
+    
+    // Get counts of actual data entities
+    const totalContacts = data.contacts?.length || 0;
+    const totalDeals = data.deals?.length || 0; 
+    const totalActivities = data.activities?.length || 0;
+    const totalMeetings = data.meetings?.length || 0;
+    
+    // Determine if we have real data or placeholder data
+    const hasRealContacts = totalContacts > 0;
+    const hasRealDeals = totalDeals > 0;
+    const hasRealActivities = totalActivities > 0;
+    const hasRealMeetings = totalMeetings > 0;
+    
+    // If we have no real data, we should prompt for a sync
+    const isRealData = hasRealContacts || hasRealDeals || hasRealActivities || hasRealMeetings;
+    
+    setDataStatus({
+      totalContacts,
+      totalDeals,
+      totalActivities,
+      totalMeetings,
+      isRealData
+    });
+    
+    console.log('[Dashboard] Data integrity check:', {
+      totalContacts,
+      totalDeals,
+      totalActivities,
+      totalMeetings,
+      isRealData
+    });
+    
+    if (!isRealData) {
+      toast({
+        title: "No data detected",
+        description: "Your dashboard appears to be empty. Would you like to sync data from your sources?",
+        action: (
+          <Button onClick={handleRefresh} variant="default">
+            Sync Data
+          </Button>
+        ),
+        duration: 10000,
+      });
+    }
+    
+    setIsDataVerifying(false);
+  };
 
   // Handle refresh data with improved error handling
   const handleRefresh = async () => {

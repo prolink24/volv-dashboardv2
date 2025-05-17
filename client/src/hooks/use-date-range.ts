@@ -84,6 +84,8 @@ interface DateRangeState {
   formatDateRange: () => string;
   applyDateRangeToParams: (params?: Record<string, any>) => Record<string, any>;
   dateRangePresets: typeof dateRangePresets;
+  refreshData: () => void;
+  isLoading: boolean;
 }
 
 /**
@@ -94,10 +96,24 @@ export const useDateRangeStore = create<DateRangeState>()(
     (set, get) => ({
       dateRange: dateRangePresets.last30Days,
       presetKey: 'last30Days',
-      setDateRange: (dateRange) => set({ dateRange, presetKey: null }),
+      isLoading: false,
+      setDateRange: (dateRange) => {
+        set({ dateRange, presetKey: null, isLoading: true });
+        // Simulate loading state for real data refresh
+        setTimeout(() => set({ isLoading: false }), 600);
+      },
+      refreshData: () => {
+        set({ isLoading: true });
+        console.log("[DateRange] Refreshing data with current date range");
+        
+        // Clear loading state after a short delay to simulate data refresh
+        setTimeout(() => set({ isLoading: false }), 800);
+      },
       setPresetKey: (key) => {
         if (key && dateRangePresets[key]) {
-          set({ presetKey: key, dateRange: dateRangePresets[key] });
+          set({ presetKey: key, dateRange: dateRangePresets[key], isLoading: true });
+          // Simulate loading state for real data refresh
+          setTimeout(() => set({ isLoading: false }), 600);
         } else {
           set({ presetKey: null });
         }

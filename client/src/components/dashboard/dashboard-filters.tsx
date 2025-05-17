@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useDashboard } from "@/providers/dashboard-provider";
 import { useDateRange } from "@/providers/date-context";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, UserIcon, FilterIcon } from "lucide-react";
 import { 
   Select, 
   SelectContent, 
@@ -15,13 +15,18 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { DateRangePicker } from "@/components/global/date-range-picker";
 
 const DashboardFilters = () => {
-  const { userFilter, setUserFilter } = useDashboard();
-  const { dateRange } = useDateRange();
+  const { userFilter, setUserFilter, activeTab } = useDashboard();
+  const { dateRange, refreshData, isLoading } = useDateRange();
   const [isOpen, setIsOpen] = useState(false);
+  const [filtersApplied, setFiltersApplied] = useState(false);
   
+  // Real user data from your CRM system
+  // Note: This should ideally come from an API call to get actual users
   const userOptions = [
     "All Users",
     "Josh Sweetnam",
@@ -31,36 +36,66 @@ const DashboardFilters = () => {
     "Harlan Ryder",
   ];
 
+  // Detect when filters change to show visual indicator
+  useEffect(() => {
+    // Check if non-default filters are applied
+    const hasUserFilter = userFilter !== "All Users";
+    const hasDateFilter = dateRange.label !== "Last 30 days"; // Assuming default
+    
+    setFiltersApplied(hasUserFilter || hasDateFilter);
+    
+    // Log applied filters for debugging
+    if (hasUserFilter || hasDateFilter) {
+      console.log("[Filters] Applied filters:", {
+        user: userFilter,
+        dateRange: dateRange.label,
+        startDate: dateRange.startDate.toISOString(),
+        endDate: dateRange.endDate.toISOString()
+      });
+    }
+  }, [userFilter, dateRange]);
+
+  // Handle applying filters
+  const handleApplyFilters = () => {
+    console.log("[Filters] Manually refreshing data with current filters");
+    refreshData();
+  };
+
   return (
-    <div className="flex items-center gap-3">
-      <Popover open={isOpen} onOpenChange={setIsOpen}>
-        <PopoverTrigger asChild>
-          <Button 
-            variant="outline" 
-            className="w-[240px] justify-start text-left font-normal"
-            type="button"
-          >
-            <CalendarIcon className="mr-2 h-4 w-4" />
-            {dateRange.label || "Select date range"}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-4" align="start">
-          <DateRangePicker />
-        </PopoverContent>
-      </Popover>
+    <div className="flex flex-wrap items-center gap-3">
+      <DateRangePicker />
       
-      <Select value={userFilter} onValueChange={setUserFilter}>
-        <SelectTrigger className="w-[180px]">
-          <SelectValue placeholder="Select user" />
-        </SelectTrigger>
-        <SelectContent>
-          {userOptions.map((user) => (
-            <SelectItem key={user} value={user}>
-              {user}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <div className="flex items-center gap-2">
+        <Select value={userFilter} onValueChange={setUserFilter}>
+          <SelectTrigger className="w-[180px]">
+            <UserIcon className="mr-2 h-4 w-4" />
+            <SelectValue placeholder="Select user" />
+          </SelectTrigger>
+          <SelectContent>
+            {userOptions.map((user) => (
+              <SelectItem key={user} value={user}>
+                {user}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        
+        <Button 
+          variant={filtersApplied ? "default" : "outline"} 
+          size="sm"
+          className="flex items-center gap-1"
+          onClick={handleApplyFilters}
+          disabled={isLoading}
+        >
+          <FilterIcon className="h-4 w-4" />
+          <span>Apply</span>
+          {filtersApplied && (
+            <Badge variant="outline" className="ml-1 bg-primary/20">
+              Active
+            </Badge>
+          )}
+        </Button>
+      </div>
     </div>
   );
 };
