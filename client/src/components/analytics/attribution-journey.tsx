@@ -539,6 +539,35 @@ export function AttributionJourney({
                   >
                     Close CRM ({sourceCounts["close"] || 0})
                   </Button>
+                  
+                  {/* Call sequence filters */}
+                  {callSequences.length > 0 && (
+                    <>
+                      <div className="border-l h-8 mx-1"></div>
+                      
+                      {callSequences.map(sequence => {
+                        // Count events with this call sequence
+                        const count = events.filter(e => e.callSequence === sequence).length;
+                        
+                        // Set highlight colors based on sequence type
+                        const bgColor = sequence === 'NC1' 
+                          ? 'bg-indigo-50 text-indigo-700 border-indigo-200' 
+                          : 'bg-blue-50 text-blue-700 border-blue-200';
+                          
+                        return (
+                          <Button
+                            key={sequence}
+                            variant={selectedCallSequence === sequence ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setSelectedCallSequence(selectedCallSequence === sequence ? null : sequence)}
+                            className={`h-8 ${selectedCallSequence === sequence ? '' : bgColor}`}
+                          >
+                            {sequence} ({count})
+                          </Button>
+                        );
+                      })}
+                    </>
+                  )}
                 </div>
                 
                 {/* Timeline visualization */}
