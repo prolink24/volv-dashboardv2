@@ -19,7 +19,8 @@ import {
   LineChart,
   ShieldCheck,
   ClipboardCheck,
-  Sliders
+  Sliders,
+  Database
 } from "lucide-react";
 
 interface MobileSidebarProps {
@@ -65,6 +66,7 @@ const MobileSidebar = ({ isOpen, onClose, currentPath }: MobileSidebarProps) => 
     { icon: Calendar, label: "Meetings", href: "/meetings" },
     { icon: FileText, label: "Forms", href: "/forms" },
     { icon: BarChart2, label: "Analytics", href: "/analytics" },
+    { icon: Database, label: "Database Health", href: "/database-health" },
     { icon: Settings, label: "Settings", href: "/settings" },
     { 
       icon: Sliders, 
