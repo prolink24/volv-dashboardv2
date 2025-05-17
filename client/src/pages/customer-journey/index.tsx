@@ -13,7 +13,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, L
 import { useDateRange } from '@/hooks/use-date-range';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
-import VisualJourneyTimeline from '@/components/customer-journey/VisualJourneyTimeline';
+import { VisualJourneyTimeline } from '@/components/customer-journey/VisualJourneyTimeline';
 import { JourneyAnalytics } from '@/components/customer-journey/JourneyAnalytics';
 
 // Define interfaces for data types
