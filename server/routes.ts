@@ -1688,30 +1688,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         setTimeout(() => reject(new Error("Attribution stats generation timed out")), 60000);
       });
       
-      // Race the promises to ensure we respond quickly
-      const stats = await Promise.race([statsPromise, timeoutPromise]).catch(error => {
-        console.error("Error or timeout in attribution stats:", error);
-        // Return a simplified response with basic stats
-        return {
-          success: true,
-          timedOut: true,
-          attributionAccuracy: 90, // Using an approximation based on historical data
-          stats: {
-            totalContacts: 0, // Will be filled in below
-            contactsWithDeals: 0,
-            multiSourceContacts: 0,
-            multiSourceRate: 0,
-            dealAttributionRate: 0, 
-            fieldCoverage: 0,
-            channelDistribution: {}
-          }
-        };
-      });
-      
-      // If we got a timeout or error and have a simplified response,
-      // fill in totalContacts which we can get quickly
-      if (stats.timedOut) {
-        stats.stats.totalContacts = await storage.getContactsCount();
+      try {
+        // No fallbacks - only real data
+        const stats = await Promise.race([statsPromise, timeoutPromise]);
+        
+        // Verify that we have actual data from real records
+        if (!stats || !stats.success) {
+          throw new Error("Failed to retrieve attribution statistics data");
+        }
+        
+        return stats;
+      } catch (error) {
+        console.error("Error generating attribution stats:", error);
+        return res.status(500).json({ 
+          error: "Failed to generate attribution stats", 
+          message: error.message
+        });
       }
       
       // Generate real channel distribution data from stored contacts, activities, meetings, and forms
