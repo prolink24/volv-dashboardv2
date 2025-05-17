@@ -22,10 +22,11 @@ export async function getDatabaseHealthMetrics() {
     const [dealsWithValue] = await db.select({ count: sql<number>`count(*)` }).from(deals)
       .where(sql`value IS NOT NULL AND value != '0'`);
     
-    // After our fix, all won deals should have cash_collected values
+    // Get count of won deals that have cash collected values
     const [wonDealsWithCashCollected] = await db.select({ count: sql<number>`count(*)` }).from(deals)
-      .where(sql`status = 'won'`);
+      .where(sql`status = 'won' AND "cashCollected" IS NOT NULL AND "cashCollected" != '0'`);
     
+    // Get total count of won deals
     const [wonDealsTotal] = await db.select({ count: sql<number>`count(*)` }).from(deals)
       .where(sql`status = 'won'`);
     

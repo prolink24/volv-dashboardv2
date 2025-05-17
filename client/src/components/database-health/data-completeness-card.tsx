@@ -66,7 +66,7 @@ const DataCompletenessCard = ({
       <CardContent>
         <div className="mt-1">
           <div className="flex justify-between mb-1">
-            <span className="text-2xl font-bold">{valueToShow.toFixed(1)}%</span>
+            <span className="text-2xl font-bold">{valueToShow !== undefined ? valueToShow.toFixed(1) : '0.0'}%</span>
             <Badge variant={getBadgeVariant(status)}>
               {status}
             </Badge>
