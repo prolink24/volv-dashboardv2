@@ -97,6 +97,7 @@ export interface IStorage {
   createForm(form: InsertForm): Promise<Form>;
   getFormsByContactId(contactId: number): Promise<Form[]>;
   getFormsCount(): Promise<number>;
+  getSampleForms(limit: number): Promise<Form[]>;
 
   // Close User operations
   getCloseUser(id: number): Promise<CloseUser | undefined>;
@@ -499,6 +500,14 @@ export class DatabaseStorage implements IStorage {
   async getFormsCount(): Promise<number> {
     const result = await db.select({ count: sql<number>`COUNT(*)` }).from(forms);
     return result[0]?.count || 0;
+  }
+  
+  async getSampleForms(limit: number): Promise<Form[]> {
+    return db
+      .select()
+      .from(forms)
+      .orderBy(sql`RANDOM()`)
+      .limit(limit);
   }
 
   // Close User operations
