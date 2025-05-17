@@ -1090,28 +1090,6 @@ export class DatabaseStorage implements IStorage {
     };
     
     return dashboardData;
-  }
-}
-
-  /**
-   * Get all contacts without any limit or offset
-   */
-  async getAllContacts(): Promise<Contact[]> {
-    return db.select().from(contacts).orderBy(desc(contacts.createdAt));
-  }
-  
-  /**
-   * Update a deal with partial data
-   */
-  async updateDeal(id: number, dealData: Partial<InsertDeal>): Promise<Deal | undefined> {
-    const [updatedDeal] = await db
-      .update(deals)
-      .set(dealData)
-      .where(eq(deals.id, id))
-      .returning();
-    
-    return updatedDeal || undefined;
-  }
   
   /**
    * Get deals by status
@@ -1123,37 +1101,6 @@ export class DatabaseStorage implements IStorage {
       .where(eq(deals.status, status))
       .orderBy(desc(deals.createdAt));
   }
-  
-  /**
-   * Get all meetings
-   */
-  async getAllMeetings(): Promise<Meeting[]> {
-    return db.select().from(meetings);
-  }
-  
-  /**
-   * Update a meeting with partial data
-   */
-  async updateMeeting(id: number, meetingData: Partial<InsertMeeting>): Promise<Meeting | undefined> {
-    const [updatedMeeting] = await db
-      .update(meetings)
-      .set(meetingData)
-      .where(eq(meetings.id, id))
-      .returning();
-    
-    return updatedMeeting || undefined;
-  }
-  
-  /**
-   * Run a raw SQL query (for reporting and verification)
-   */
-  async query(sqlQuery: string, params?: any[]): Promise<any[]> {
-    try {
-      return await db.execute(sql.raw(sqlQuery, params));
-    } catch (error) {
-      console.error('Error executing SQL query:', error);
-      throw error;
-    }
   }
 }
 
