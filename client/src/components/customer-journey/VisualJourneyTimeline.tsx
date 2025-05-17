@@ -18,7 +18,7 @@ import { Progress } from '@/components/ui/progress';
 
 interface TimelineEvent {
   id: number;
-  type: 'meeting' | 'activity' | 'deal' | 'form_submission' | 'form' | 'note';
+  type: 'meeting' | 'meeting_booked' | 'activity' | 'deal' | 'form_submission' | 'form' | 'note';
   subtype?: string;
   title: string;
   description?: string;
@@ -76,6 +76,8 @@ const getEventIcon = (type: string, subtype?: string) => {
   switch (type) {
     case 'meeting':
       return <Calendar className="h-4 w-4" />;
+    case 'meeting_booked':
+      return <Clock className="h-4 w-4 text-blue-500" />;
     case 'activity':
       if (subtype === 'email') return <Mail className="h-4 w-4" />;
       if (subtype === 'call') return <Phone className="h-4 w-4" />;
