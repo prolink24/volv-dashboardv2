@@ -394,6 +394,24 @@ export class DatabaseStorage implements IStorage {
       .where(eq(meetings.contactId, contactId))
       .orderBy(desc(meetings.startTime));
   }
+  
+  // Get meetings ordered by when they were booked (for accurate timeline placement)
+  async getMeetingsByContactIdOrderedByBookingTime(contactId: number): Promise<Meeting[]> {
+    return db
+      .select()
+      .from(meetings)
+      .where(eq(meetings.contactId, contactId))
+      .orderBy(desc(meetings.bookedAt));
+  }
+  
+  // Get meetings by sequence number (for NC1/C2 tracking)
+  async getMeetingsBySequence(sequenceNumber: number): Promise<Meeting[]> {
+    return db
+      .select()
+      .from(meetings)
+      .where(eq(meetings.sequence, sequenceNumber))
+      .orderBy(desc(meetings.startTime));
+  }
 
   async getMeetingsCount(): Promise<number> {
     const result = await db.select({ count: sql<number>`COUNT(*)` }).from(meetings);
