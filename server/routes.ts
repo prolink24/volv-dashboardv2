@@ -1714,17 +1714,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
         stats.stats.totalContacts = await storage.getContactsCount();
       }
       
+      // Generate real channel distribution data from stored contacts, activities, meetings, and forms
+      // This ensures we display data from all three sources (Close CRM, Calendly, Typeform)
+      const channelData = {
+        'close': 0,
+        'calendly': 0,
+        'typeform': 0,
+        'email': 0,
+        'call': 0,
+        'meeting': 0,
+        'form': 0
+      };
+      
+      // Get sample data to calculate channel distribution
+      const activities = await storage.getSampleActivities(100);
+      const meetings = await storage.getSampleMeetings(100);
+      const forms = await storage.getSampleForms(100);
+      
+      // Count by source for real data
+      if (activities && activities.length > 0) {
+        activities.forEach(activity => {
+          if (activity.type === 'email') {
+            channelData.email += 1;
+          } else if (activity.type === 'call') {
+            channelData.call += 1;
+          } else {
+            channelData.close += 1;
+          }
+        });
+      }
+      
+      if (meetings && meetings.length > 0) {
+        channelData.calendly += meetings.length;
+        channelData.meeting += meetings.length;
+      }
+      
+      if (forms && forms.length > 0) {
+        channelData.typeform += forms.length;
+        channelData.form += forms.length;
+      }
+      
+      // Calculate total touchpoints
+      const totalTouchpoints = Object.values(channelData).reduce((sum, count) => sum + count, 0);
+      
+      // Find most effective channel
+      let mostEffectiveChannel = "unknown";
+      let maxCount = 0;
+      for (const [channel, count] of Object.entries(channelData)) {
+        if (count > maxCount) {
+          maxCount = count;
+          mostEffectiveChannel = channel;
+        }
+      }
+      
+      console.log("Real channel distribution data:", channelData);
+      console.log("Total touchpoints:", totalTouchpoints);
+      console.log("Most effective channel:", mostEffectiveChannel);
+      
       // Transform the response to match the expected frontend format
       const responseData = {
         success: stats.success,
         attributionAccuracy: stats.attributionAccuracy,
         stats: stats.stats,
         timedOut: stats.timedOut || false,
-        channelBreakdown: stats.stats?.channelDistribution || {},
-        totalTouchpoints: Object.values(stats.stats?.channelDistribution || {})
-          .reduce((sum: number, val: any) => sum + (typeof val === 'number' ? val : 0), 0),
-        mostEffectiveChannel: Object.entries(stats.stats?.channelDistribution || {})
-          .sort((a, b) => ((b[1] as number) || 0) - ((a[1] as number) || 0))[0]?.[0] || "unknown"
+        channelBreakdown: channelData,
+        totalTouchpoints,
+        mostEffectiveChannel
       };
       
       // Cache the result
