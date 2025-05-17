@@ -53,7 +53,7 @@ function AppWithSplash() {
 }
 
 createRoot(document.getElementById("root")!).render(
-  <ThemeProvider defaultTheme="light" storageKey="contactsync-theme">
+  <ThemeProvider defaultTheme="light" storageKey="volv-theme">
     <AppWithSplash />
   </ThemeProvider>
 );

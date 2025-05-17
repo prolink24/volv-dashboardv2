@@ -137,7 +137,7 @@ const Sidebar = () => {
           <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center text-primary-foreground">
             <Link2 className="h-5 w-5" />
           </div>
-          {!isCollapsed && <span className="ml-3 text-lg font-semibold">ContactSync</span>}
+          {!isCollapsed && <span className="ml-3 text-lg font-semibold">Volv</span>}
         </div>
         <Button
           variant="ghost"

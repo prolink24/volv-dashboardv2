@@ -56,7 +56,7 @@ export function SplashLoading({ onComplete, duration = 5000 }: SplashLoadingProp
               transition={{ duration: 0.5 }}
             >
               <div className="text-4xl font-bold bg-gradient-to-r from-primary via-blue-500 to-indigo-600 bg-clip-text text-transparent">
-                ContactSync
+                Volv
               </div>
             </motion.div>
             
