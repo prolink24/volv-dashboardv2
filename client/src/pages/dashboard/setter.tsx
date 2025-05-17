@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
+import { useDateRange } from "@/hooks/use-date-range";
+import { DateRangePicker } from "@/components/global/date-range-picker";
 
 export default function SetterDashboard() {
-  const [month, setMonth] = useState("current");
+  const { dateRange } = useDateRange();
   const { data: dashboardData, isLoading } = useDashboardData();
 
   if (isLoading || !dashboardData) {
@@ -14,15 +15,7 @@ export default function SetterDashboard() {
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold">Setter Metrics</h1>
           <div className="flex space-x-2">
-            <Select value={month} onValueChange={setMonth}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Select month" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="current">2025-03 | March</SelectItem>
-                <SelectItem value="previous">2025-02 | February</SelectItem>
-              </SelectContent>
-            </Select>
+            <DateRangePicker />
           </div>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6">
@@ -54,18 +47,10 @@ export default function SetterDashboard() {
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold">Setter Metrics</h1>
-          <p className="text-muted-foreground">Add a description</p>
+          <p className="text-muted-foreground">Key metrics for setter performance</p>
         </div>
         <div className="mt-4 md:mt-0">
-          <Select value={month} onValueChange={setMonth}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Select month" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="current">2025-03 | March</SelectItem>
-              <SelectItem value="previous">2025-02 | February</SelectItem>
-            </SelectContent>
-          </Select>
+          <DateRangePicker />
         </div>
       </div>
 
