@@ -18,8 +18,8 @@ import { JourneyAnalytics } from '@/components/customer-journey/JourneyAnalytics
 
 // Define interfaces for data types
 interface TimelineEvent {
-  id: number;
-  type: 'meeting' | 'activity' | 'deal' | 'form' | 'note';
+  id: number | string;
+  type: 'meeting' | 'meeting_booked' | 'activity' | 'deal' | 'form' | 'form_submission' | 'note';
   subtype?: string;
   title: string;
   description?: string;
@@ -27,9 +27,13 @@ interface TimelineEvent {
   source: string;
   sourceId?: string;
   data: any;
-  userId?: number;
+  userId?: number | string;
   userName?: string;
+  scheduledBy?: string;
   score?: number;
+  callSequence?: string;
+  bookedAt?: string | Date;
+  eventType?: string;
 }
 
 interface AssignedUser {
