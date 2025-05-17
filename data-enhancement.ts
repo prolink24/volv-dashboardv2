@@ -13,7 +13,8 @@
 import axios from 'axios';
 import chalk from 'chalk';
 
-const API_URL = 'http://localhost:3000/api/data-enhancement';
+// Default port for Replit
+const API_URL = 'http://localhost:8080/api/data-enhancement';
 
 async function enhanceData() {
   console.log(chalk.blue.bold('\n=== Data Enhancement Tool ===\n'));
