@@ -160,6 +160,7 @@ export function VisualJourneyTimeline({ events }: VisualJourneyTimelineProps) {
   
   const [typeFilters, setTypeFilters] = useState<Record<string, boolean>>({
     meeting: true,
+    meeting_booked: true,
     activity: true,
     deal: true,
     form: true,
@@ -360,7 +361,7 @@ export function VisualJourneyTimeline({ events }: VisualJourneyTimelineProps) {
                         htmlFor={`type-${type}`}
                         className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 capitalize"
                       >
-                        {type}
+                        {type.replace('_', ' ')}
                       </label>
                     </div>
                   ))}
@@ -474,9 +475,11 @@ export function VisualJourneyTimeline({ events }: VisualJourneyTimelineProps) {
               setSourceFilters(Object.fromEntries(uniqueSources.map(s => [s, true])));
               setTypeFilters({
                 meeting: true,
+                meeting_booked: true,
                 activity: true,
                 deal: true,
                 form: true,
+                form_submission: true,
                 note: true
               });
             }}
@@ -517,7 +520,7 @@ export function VisualJourneyTimeline({ events }: VisualJourneyTimelineProps) {
                       
                       return (
                         <Card 
-                          key={event.id} 
+                          key={`${event.id}-${eventIndex}`} 
                           className={`p-0 shadow-sm border-l-4 transition-all duration-150 
                             ${isMilestone && highlightMilestones ? 'ring-2 ring-amber-300 dark:ring-amber-700' : ''}`}
                           style={{ borderLeftColor: event.source.toLowerCase() === 'close' ? '#3498db' : 
@@ -536,8 +539,9 @@ export function VisualJourneyTimeline({ events }: VisualJourneyTimelineProps) {
                                 </div>
                                 
                                 <div>
-                                  <div className="font-medium flex items-center gap-2">
+                                  <div className="font-medium flex items-center gap-2 flex-wrap">
                                     {event.title}
+                                    
                                     {/* Call Sequence Badge */}
                                     {event.callSequence && (
                                       <Badge variant="outline" className={
@@ -548,6 +552,7 @@ export function VisualJourneyTimeline({ events }: VisualJourneyTimelineProps) {
                                         {event.callSequence}
                                       </Badge>
                                     )}
+                                    
                                     {isMilestone && highlightMilestones && (
                                       <TooltipProvider>
                                         <Tooltip>
@@ -560,12 +565,20 @@ export function VisualJourneyTimeline({ events }: VisualJourneyTimelineProps) {
                                         </Tooltip>
                                       </TooltipProvider>
                                     )}
+                                    
                                     {event.type === 'form_submission' && (
                                       <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800">
                                         Form Submission
                                       </Badge>
                                     )}
+                                    
+                                    {event.type === 'meeting_booked' && (
+                                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800">
+                                        Booking
+                                      </Badge>
+                                    )}
                                   </div>
+                                  
                                   <div className="text-sm text-muted-foreground flex flex-col gap-1 mt-1">
                                     {/* Meeting/Call time */}
                                     <div className="flex items-center gap-2">
@@ -598,186 +611,236 @@ export function VisualJourneyTimeline({ events }: VisualJourneyTimelineProps) {
                                       </div>
                                     )}
                                     
+                                    {/* Source and assigned to */}
+                                    <div className="flex items-center gap-2">
+                                      <Badge variant="outline" className="text-xs">
+                                        {event.source}
+                                      </Badge>
+                                      {event.userName && (
+                                        <span className="text-xs flex items-center gap-1">
+                                          <Avatar className="h-4 w-4 mr-1">
+                                            <AvatarFallback className="text-[10px]">
+                                              {event.userName.split(' ').map(n => n[0]).join('')}
+                                            </AvatarFallback>
+                                          </Avatar>
+                                          {event.userName}
+                                        </span>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
                               </div>
                               
                               <div className="flex items-center gap-3">
                                 <div className="flex flex-col items-end gap-2">
-                                  <Badge variant="outline" className="text-xs">
-                                    {event.source}
-                                  </Badge>
+                                  <div className="flex items-center">
+                                    <span 
+                                      className={`inline-block h-2 w-2 rounded-full mr-1.5 ${
+                                        impactScore >= 8 ? 'bg-green-500' : 
+                                        impactScore >= 5 ? 'bg-yellow-500' : 
+                                        'bg-gray-400'
+                                      }`}
+                                    />
+                                    <span className="text-xs text-muted-foreground mr-1">Impact</span>
+                                    <span className="text-xs font-medium">
+                                      {impactScore}/10
+                                    </span>
+                                  </div>
                                   
-                                  <Badge variant="secondary" className="text-xs capitalize">
-                                    {getEventTypeLabel(event.type, event.subtype)}
-                                  </Badge>
+                                  <Progress value={impactScore * 10} className="h-1 w-16" />
                                 </div>
                                 
-                                <div className="text-muted-foreground">
-                                  {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                <div>
+                                  {isExpanded ? (
+                                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                                  ) : (
+                                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                  )}
                                 </div>
                               </div>
                             </div>
                             
-                            {/* Expanded content */}
+                            {/* Expanded event details */}
                             {isExpanded && (
-                              <div className="p-4 border-t">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                  {/* Event details */}
-                                  <div className="space-y-3">
-                                    {event.description && (
-                                      <div>
-                                        <h4 className="text-sm font-medium mb-1">Description</h4>
-                                        <p className="text-sm">{event.description}</p>
-                                      </div>
-                                    )}
-                                    
-                                    {event.userName && (
-                                      <div>
-                                        <h4 className="text-sm font-medium mb-1">Associated User</h4>
-                                        <div className="flex items-center gap-2 text-sm">
-                                          <Avatar className="h-6 w-6">
-                                            <AvatarFallback>{event.userName.substring(0, 2).toUpperCase()}</AvatarFallback>
-                                          </Avatar>
-                                          <span>{event.userName}</span>
-                                        </div>
-                                      </div>
-                                    )}
-                                    
-                                    {event.sourceId && (
-                                      <div>
-                                        <h4 className="text-sm font-medium mb-1">Source Reference</h4>
-                                        <div className="flex items-center gap-2 text-sm">
-                                          <Badge variant="outline" className="font-mono text-xs">
-                                            {event.sourceId}
-                                          </Badge>
-                                        </div>
-                                      </div>
-                                    )}
+                              <div className="p-4 border-t space-y-3">
+                                {/* Event type and date */}
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-muted-foreground capitalize">
+                                    {getEventTypeLabel(event.type, event.subtype)}
+                                  </span>
+                                  <span className="text-muted-foreground">
+                                    {formatDate(event.timestamp)}
+                                  </span>
+                                </div>
+                                
+                                {/* Description */}
+                                {event.description && (
+                                  <div className="text-sm">
+                                    <p>{event.description}</p>
                                   </div>
-                                  
-                                  {/* Impact score and metadata */}
-                                  <div className="space-y-3">
-                                    <div>
-                                      <h4 className="text-sm font-medium mb-1 flex items-center gap-1">
-                                        Impact Score
-                                        <TooltipProvider>
-                                          <Tooltip>
-                                            <TooltipTrigger asChild>
-                                              <Info className="h-3 w-3 text-muted-foreground" />
-                                            </TooltipTrigger>
-                                            <TooltipContent>
-                                              <p>Impact score represents the estimated importance of this event in the customer journey</p>
-                                            </TooltipContent>
-                                          </Tooltip>
-                                        </TooltipProvider>
-                                      </h4>
-                                      <div className="flex items-center gap-2">
-                                        <Progress value={impactScore * 10} className="h-2 w-32" />
-                                        <span className="text-sm font-medium">{impactScore}/10</span>
-                                      </div>
+                                )}
+                                
+                                {/* Meeting details */}
+                                {event.type === 'meeting' && (
+                                  <div className="space-y-2">
+                                    <div className="flex items-center gap-2 text-sm">
+                                      <span className="text-muted-foreground">Status:</span>
+                                      <Badge variant={
+                                        event.data?.status === 'completed' ? 'success' :
+                                        event.data?.status === 'canceled' ? 'destructive' :
+                                        'default'
+                                      }>
+                                        {event.data?.status || 'Scheduled'}
+                                      </Badge>
                                     </div>
                                     
-                                    {/* Display custom data based on event type */}
-                                    {event.type === 'meeting' && event.data && (
-                                      <div>
-                                        <h4 className="text-sm font-medium mb-1">Meeting Details</h4>
-                                        <div className="grid grid-cols-2 gap-2 text-sm">
-                                          {event.data.duration && (
-                                            <div>
-                                              <span className="text-muted-foreground">Duration:</span> {event.data.duration} min
-                                            </div>
-                                          )}
-                                          {event.data.status && (
-                                            <div>
-                                              <span className="text-muted-foreground">Status:</span>{' '}
-                                              <Badge variant={event.data.status === 'completed' ? 'default' : 
-                                                      event.data.status === 'canceled' ? 'destructive' : 'secondary'} className="text-xs">
-                                                {event.data.status}
-                                              </Badge>
-                                            </div>
-                                          )}
-                                          {event.source === 'Calendly' && (
-                                            <div className="col-span-2 mt-1 text-green-700 border border-green-200 bg-green-50 dark:bg-green-950/30 dark:border-green-900 p-1.5 rounded-md flex items-center gap-2">
-                                              <Avatar className="h-5 w-5 bg-green-100 text-green-700 border border-green-200">
-                                                <AvatarFallback className="text-xs">
-                                                  {event.userName ? event.userName.substring(0, 2).toUpperCase() : 'TM'}
-                                                </AvatarFallback>
-                                              </Avatar>
-                                              <span className="text-xs font-medium">Scheduled by <span className="font-semibold">
-                                                {event.userName || event.scheduledBy || 'Team Member'}
-                                              </span></span>
-                                            </div>
-                                          )}
-                                        </div>
-                                      </div>
-                                    )}
-                                    
-                                    {event.type === 'deal' && event.data && (
-                                      <div>
-                                        <h4 className="text-sm font-medium mb-1">Deal Details</h4>
-                                        <div className="grid grid-cols-2 gap-2 text-sm">
-                                          {event.data.value && (
-                                            <div>
-                                              <span className="text-muted-foreground">Value:</span> {event.data.value}
-                                            </div>
-                                          )}
-                                          {event.data.status && (
-                                            <div>
-                                              <span className="text-muted-foreground">Status:</span>{' '}
-                                              <Badge variant={event.data.status === 'won' ? 'default' : 
-                                                      event.data.status === 'lost' ? 'destructive' : 'secondary'} className="text-xs">
-                                                {event.data.status}
-                                              </Badge>
-                                            </div>
-                                          )}
-                                        </div>
-                                      </div>
-                                    )}
-                                    
-                                    {/* Form Submission display */}
-                                    {event.type === 'form_submission' && (
-                                      <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-md border border-purple-200 dark:border-purple-800 mt-2">
-                                        <h4 className="text-sm font-medium mb-2 flex items-center">
-                                          <Sparkles className="h-4 w-4 mr-1 text-purple-500" />
-                                          Application Details
-                                        </h4>
-                                        <div className="space-y-2 text-sm">
-                                          <div className="flex items-center">
-                                            <FileText className="h-3.5 w-3.5 mr-1 text-purple-500" />
-                                            <span className="text-muted-foreground">Form:</span>{' '}
-                                            <span className="ml-1 font-medium">{event.title?.replace('Form Submitted: ', '') || 'Application Form'}</span>
-                                          </div>
-                                          <div className="flex items-center">
-                                            <CheckCircle className="h-3.5 w-3.5 mr-1 text-green-500" />
-                                            <span className="text-muted-foreground">Status:</span>{' '}
-                                            <Badge variant="default" className="text-xs ml-1 bg-green-500 hover:bg-green-600">Completed</Badge>
-                                          </div>
-                                          <div className="flex items-center">
-                                            <Clock className="h-3.5 w-3.5 mr-1 text-amber-500" />
-                                            <span className="text-muted-foreground">Submitted:</span>{' '}
-                                            <span className="ml-1">{format(new Date(event.timestamp), 'MMM d, yyyy h:mm a')}</span>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    )}
-                                    
-                                    {/* Display all other metadata keys */}
-                                    {event.data && Object.keys(event.data).length > 0 && (
-                                      <div>
-                                        <Separator className="my-2" />
-                                        <Button variant="outline" size="sm" className="text-xs" asChild>
-                                          <a href="#" onClick={(e) => {
-                                            e.preventDefault();
-                                            console.log('Event data:', event);
-                                          }}>
-                                            <ExternalLink className="h-3 w-3 mr-1" />
-                                            View Full Details
-                                          </a>
+                                    {event.data?.conferenceUrl && (
+                                      <div className="flex items-center text-sm">
+                                        <span className="text-muted-foreground mr-2">Conference:</span>
+                                        <Button 
+                                          variant="link" 
+                                          size="sm" 
+                                          className="h-auto p-0 text-sm"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            window.open(event.data.conferenceUrl, '_blank');
+                                          }}
+                                        >
+                                          Join Meeting <ExternalLink className="h-3 w-3 ml-1" />
                                         </Button>
                                       </div>
                                     )}
+                                    
+                                    {event.scheduledBy && (
+                                      <div className="flex items-center text-sm">
+                                        <span className="text-muted-foreground mr-2">Scheduled by:</span>
+                                        <span>{event.scheduledBy}</span>
+                                      </div>
+                                    )}
+                                    
+                                    {event.data?.inviteeName && (
+                                      <div className="flex items-center text-sm">
+                                        <span className="text-muted-foreground mr-2">Invitee:</span>
+                                        <span>{event.data.inviteeName}</span>
+                                      </div>
+                                    )}
+                                    
+                                    {event.callSequence && (
+                                      <div className="flex items-center text-sm">
+                                        <span className="text-muted-foreground mr-2">Call Sequence:</span>
+                                        <Badge variant="outline" className={
+                                          event.callSequence === 'NC1' 
+                                            ? 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800'
+                                            : 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800'
+                                        }>
+                                          {event.callSequence}
+                                        </Badge>
+                                      </div>
+                                    )}
+                                    
+                                    {event.bookedAt && (
+                                      <div className="flex items-center text-sm">
+                                        <span className="text-muted-foreground mr-2">Booked at:</span>
+                                        <span>{formatDate(new Date(event.bookedAt))}</span>
+                                      </div>
+                                    )}
                                   </div>
+                                )}
+                                
+                                {/* Deal details */}
+                                {event.type === 'deal' && (
+                                  <div className="space-y-2">
+                                    <div className="flex items-center gap-2 text-sm">
+                                      <span className="text-muted-foreground">Status:</span>
+                                      <Badge variant={
+                                        event.data?.status === 'won' ? 'success' :
+                                        event.data?.status === 'lost' ? 'destructive' :
+                                        'default'
+                                      }>
+                                        {event.data?.status || 'Open'}
+                                      </Badge>
+                                    </div>
+                                    
+                                    {event.data?.stage && (
+                                      <div className="flex items-center text-sm">
+                                        <span className="text-muted-foreground mr-2">Stage:</span>
+                                        <span>{event.data.stage}</span>
+                                      </div>
+                                    )}
+                                    
+                                    {event.data?.value && (
+                                      <div className="flex items-center text-sm">
+                                        <span className="text-muted-foreground mr-2">Value:</span>
+                                        <span className="font-medium">${parseFloat(event.data.value).toLocaleString()}</span>
+                                      </div>
+                                    )}
+                                    
+                                    {event.data?.closeDate && (
+                                      <div className="flex items-center text-sm">
+                                        <span className="text-muted-foreground mr-2">Close Date:</span>
+                                        <span>{new Date(event.data.closeDate).toLocaleDateString()}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                                
+                                {/* Form details */}
+                                {(event.type === 'form' || event.type === 'form_submission') && (
+                                  <div className="space-y-2">
+                                    {event.data?.formName && (
+                                      <div className="flex items-center text-sm">
+                                        <span className="text-muted-foreground mr-2">Form:</span>
+                                        <span>{event.data.formName}</span>
+                                      </div>
+                                    )}
+                                    
+                                    {event.data?.completionPercentage && (
+                                      <div className="space-y-1 text-sm">
+                                        <div className="flex justify-between">
+                                          <span className="text-muted-foreground">Completion:</span>
+                                          <span>{event.data.completionPercentage}%</span>
+                                        </div>
+                                        <Progress value={event.data.completionPercentage} className="h-1" />
+                                      </div>
+                                    )}
+                                    
+                                    {event.data?.completionTime && (
+                                      <div className="flex items-center text-sm">
+                                        <span className="text-muted-foreground mr-2">Time to complete:</span>
+                                        <span>{Math.floor(event.data.completionTime / 60)}m {event.data.completionTime % 60}s</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                                
+                                {/* Activity details */}
+                                {event.type === 'activity' && (
+                                  <div className="space-y-2">
+                                    {event.data?.status && (
+                                      <div className="flex items-center gap-2 text-sm">
+                                        <span className="text-muted-foreground">Status:</span>
+                                        <Badge variant={
+                                          event.data.status === 'completed' ? 'success' :
+                                          event.data.status === 'canceled' ? 'destructive' :
+                                          'default'
+                                        }>
+                                          {event.data.status}
+                                        </Badge>
+                                      </div>
+                                    )}
+                                    
+                                    {event.data?.notes && (
+                                      <div className="text-sm">
+                                        <div className="text-muted-foreground mb-1">Notes:</div>
+                                        <p className="whitespace-pre-line">{event.data.notes}</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                                
+                                {/* Source ID */}
+                                <div className="text-xs text-muted-foreground pt-1 border-t">
+                                  <span>Source ID: {event.sourceId || 'N/A'}</span>
                                 </div>
                               </div>
                             )}
@@ -795,5 +858,3 @@ export function VisualJourneyTimeline({ events }: VisualJourneyTimelineProps) {
     </div>
   );
 }
-
-export default VisualJourneyTimeline;
