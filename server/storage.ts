@@ -71,6 +71,7 @@ export interface IStorage {
   updateActivity(id: number, activity: Partial<InsertActivity>): Promise<Activity | undefined>;
   getActivitiesByContactId(contactId: number): Promise<Activity[]>;
   getActivitiesCount(): Promise<number>;
+  getSampleActivities(limit: number): Promise<Activity[]>;
 
   // Deal operations
   getDeal(id: number): Promise<Deal | undefined>;
@@ -297,6 +298,14 @@ export class DatabaseStorage implements IStorage {
   async getActivitiesCount(): Promise<number> {
     const result = await db.select({ count: sql<number>`COUNT(*)` }).from(activities);
     return result[0]?.count || 0;
+  }
+  
+  async getSampleActivities(limit: number): Promise<Activity[]> {
+    return db
+      .select()
+      .from(activities)
+      .orderBy(sql`RANDOM()`)
+      .limit(limit);
   }
   
   async getRecentActivities(limit: number, startDate: string, endDate: string): Promise<Activity[]> {
