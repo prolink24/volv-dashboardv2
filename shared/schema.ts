@@ -205,6 +205,9 @@ export const meetings = pgTable("meetings", {
   endTime: timestamp("end_time").notNull(),
   duration: integer("duration"), // Duration in minutes
   status: text("status").notNull(), // scheduled, completed, canceled, etc.
+  // Booking information - crucial for timeline accuracy
+  bookedAt: timestamp("booked_at"), // When the meeting was scheduled
+  sequence: integer("sequence"), // 1 for NC1 (first call), 2 for C2 (second call), etc.
   // Assignment and invitee tracking
   assignedTo: text("assigned_to"),
   assigneeEmail: text("assignee_email"),
@@ -217,8 +220,6 @@ export const meetings = pgTable("meetings", {
   // Rescheduling and cancellation
   rescheduled: boolean("rescheduled").default(false),
   canceledAt: timestamp("canceled_at"),
-
-
   // Field tracking
   fieldCoverage: integer("fieldcoverage"), // Percentage of fields filled (0-100)
   // All other metadata

@@ -146,9 +146,12 @@ export async function getCustomerJourney(contactId: number, dateRange?: string):
           score: isFormSubmission ? 7 : 5
         };
       }),
-      ...meetings.map(meeting => {
+      // Meetings - add both booking time and meeting time to the timeline
+      ...meetings.flatMap(meeting => {
         // Extract scheduler's name from metadata if it exists
         let scheduledBy = 'Unknown';
+        let bookingEvents = [];
+        
         if (meeting.metadata) {
           try {
             const metadata = typeof meeting.metadata === 'string' 
@@ -163,21 +166,55 @@ export async function getCustomerJourney(contactId: number, dateRange?: string):
           }
         }
         
-        return {
-          id: meeting.id,
+        // Determine call sequence label (NC1, C2, etc.)
+        const sequenceLabel = meeting.sequence ? 
+          (meeting.sequence === 1 ? 'NC1' : `C${meeting.sequence}`) : 
+          '';
+          
+        // Add the actual meeting to the timeline
+        const meetingEvent = {
+          id: `meeting-${meeting.id}`,
           type: 'meeting',
           subtype: meeting.type,
-          title: meeting.title || 'Meeting',
+          title: `${sequenceLabel ? `${sequenceLabel}: ` : ''}${meeting.title || 'Meeting'}`,
           description: meeting.description || '',
           timestamp: new Date(meeting.startTime),
           source: 'Calendly',
           sourceId: meeting.calendlyEventId,
           data: meeting,
-          userId: meeting.id, // Use meeting ID as fallback
-          userName: scheduledBy, // Use extracted name
-          scheduledBy: scheduledBy, // Add explicit field
-          score: 10
+          userId: meeting.assignedTo || '', 
+          userName: scheduledBy,
+          scheduledBy: scheduledBy,
+          score: 10,
+          // Add call sequence information
+          callSequence: sequenceLabel,
+          eventType: 'meeting_occurred'
         };
+        
+        // If we have booking data, add it as a separate event
+        if (meeting.bookedAt) {
+          const bookingEvent = {
+            id: `booking-${meeting.id}`,
+            type: 'meeting_booked',
+            subtype: meeting.type,
+            title: `${sequenceLabel ? `${sequenceLabel}: ` : ''}Booking: ${meeting.title || 'Meeting'}`,
+            description: `${scheduledBy} booked a meeting for ${new Date(meeting.startTime).toLocaleString()}`,
+            timestamp: new Date(meeting.bookedAt),
+            source: 'Calendly',
+            sourceId: `booking-${meeting.calendlyEventId}`,
+            data: meeting,
+            userId: meeting.assignedTo || '',
+            userName: scheduledBy,
+            scheduledBy: scheduledBy,
+            score: 7,
+            callSequence: sequenceLabel,
+            eventType: 'meeting_booked'
+          };
+          
+          bookingEvents.push(bookingEvent);
+        }
+        
+        return meeting.bookedAt ? [meetingEvent, ...bookingEvents] : [meetingEvent];
       }),
       ...deals.map(deal => ({
         id: deal.id,
