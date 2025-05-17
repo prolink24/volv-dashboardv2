@@ -82,9 +82,6 @@ const KpiCard = ({ title, value, subValue, trend, className }: KpiCardProps) => 
         </div>
         <div className="flex items-baseline">
           <span className="text-2xl font-bold">{getDisplayValue()}</span>
-          {subValue && (
-            <span className="ml-1 text-xs text-muted-foreground">{subValue}</span>
-          )}
         </div>
       </CardContent>
     </Card>
