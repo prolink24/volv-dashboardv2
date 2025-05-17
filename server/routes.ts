@@ -19,6 +19,7 @@ import settingsRouter from "./api/settings";
 import kpiConfiguratorRouter from "./api/kpi-configurator";
 import customerJourneyRoutes from "./routes/customer-journey";
 import typeformRoutes from "./routes/typeform";
+import dataEnhancementRoutes from "./routes/data-enhancement"; 
 import { CloseUser } from "@shared/schema";
 
 // Enhanced attribution response types
@@ -1849,6 +1850,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Mount the customer journey router
   app.use("/api/customer-journey", customerJourneyRoutes);
+  
+  // Register data enhancement routes
+  app.use("/api/data-enhancement", dataEnhancementRoutes);
   
   // Direct contact details endpoint for customer journey view
   apiRouter.get("/contacts/:contactId", async (req: Request, res: Response) => {

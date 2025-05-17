@@ -124,46 +124,12 @@ export interface IStorage {
 
 // Implementation with database storage using Drizzle ORM
 export class DatabaseStorage implements IStorage {
-  // Added methods for data enhancement
-  async getAllContacts(): Promise<Contact[]> {
-    return db.select().from(contacts).orderBy(desc(contacts.createdAt));
-  }
-  
-  async updateDeal(id: number, dealData: Partial<InsertDeal>): Promise<Deal | undefined> {
-    const [updatedDeal] = await db
-      .update(deals)
-      .set(dealData)
-      .where(eq(deals.id, id))
-      .returning();
-    
-    return updatedDeal || undefined;
-  }
-  
-  async getDealsByStatus(status: string): Promise<Deal[]> {
-    return db
-      .select()
-      .from(deals)
-      .where(eq(deals.status, status))
-      .orderBy(desc(deals.createdAt));
-  }
-  
-  async getAllMeetings(): Promise<Meeting[]> {
-    return db.select().from(meetings);
-  }
-  
-  async updateMeeting(id: number, meetingData: Partial<InsertMeeting>): Promise<Meeting | undefined> {
-    const [updatedMeeting] = await db
-      .update(meetings)
-      .set(meetingData)
-      .where(eq(meetings.id, id))
-      .returning();
-    
-    return updatedMeeting || undefined;
-  }
+  // We'll implement the methods elsewhere in the class
   
   async query(sqlQuery: string, params?: any[]): Promise<any[]> {
     try {
-      return await db.execute(sql.raw(sqlQuery, params || []));
+      const result = await db.execute(sql.raw(sqlQuery, params || []));
+      return result.rows || [];
     } catch (error) {
       console.error('Error executing SQL query:', error);
       throw error;

@@ -10,162 +10,237 @@
  * Run this script to ensure all KPIs in the dashboard work correctly.
  */
 
-import fieldMappingService from './server/services/field-mapping';
-import dealEnhancementService from './server/services/deal-enhancement';
-import attributionService from './server/services/attribution';
-import { storage } from './server/storage';
+import axios from 'axios';
+import chalk from 'chalk';
+
+const API_URL = 'http://localhost:3000/api/data-enhancement';
 
 async function enhanceData() {
+  console.log(chalk.blue.bold('\n=== Data Enhancement Tool ===\n'));
+  
   try {
-    console.log('==================================================');
-    console.log('Starting data quality enhancement process...');
-    console.log('==================================================\n');
+    console.log(chalk.yellow('Starting comprehensive data enhancement process...'));
     
-    // 1. Fix missing contact fields
-    console.log('\n--- Step 1: Fixing missing contact fields ---');
-    const contactFieldResult = await fieldMappingService.fixAllContactFields();
+    // Call the enhance-all endpoint which runs all enhancement steps
+    const response = await axios.post(`${API_URL}/enhance-all`);
     
-    if (contactFieldResult.success) {
-      console.log(`✅ Successfully processed ${contactFieldResult.processed} contacts and updated ${contactFieldResult.updated}`);
+    if (response.data.success) {
+      console.log(chalk.green.bold('\n✓ Data enhancement process completed successfully.\n'));
+      
+      // Display detailed results for each enhancement step
+      displayResults(response.data);
     } else {
-      console.error(`❌ Failed to fix contact fields: ${contactFieldResult.error}`);
+      console.error(chalk.red.bold('\n✗ Data enhancement process failed.\n'));
+      console.error(chalk.red(response.data.error || 'Unknown error occurred'));
     }
-    
-    // 2. Update sources count for multi-source attribution
-    console.log('\n--- Step 2: Updating sources count for multi-source attribution ---');
-    const sourcesCountResult = await fieldMappingService.updateSourcesCount();
-    
-    if (sourcesCountResult.success) {
-      console.log(`✅ Successfully updated ${sourcesCountResult.updated} contacts' source counts`);
-      console.log(`Found ${sourcesCountResult.withMultipleSources} contacts with multiple sources`);
-    } else {
-      console.error(`❌ Failed to update sources count: ${sourcesCountResult.error}`);
-    }
-    
-    // 3. Fix cash collected values for won deals
-    console.log('\n--- Step 3: Fixing cash collected values for won deals ---');
-    const cashCollectedResult = await dealEnhancementService.fixCashCollectedValues();
-    
-    if (cashCollectedResult.success) {
-      console.log(`✅ Successfully processed ${cashCollectedResult.processed} won deals and updated ${cashCollectedResult.updated} with cash collected values`);
-    } else {
-      console.error(`❌ Failed to fix cash collected values: ${cashCollectedResult.error}`);
-    }
-    
-    // 4. Classify meetings and set sequence numbers
-    console.log('\n--- Step 4: Classifying meetings and setting sequence numbers ---');
-    const meetingClassificationResult = await dealEnhancementService.classifyMeetings();
-    
-    if (meetingClassificationResult.success) {
-      console.log(`✅ Successfully classified ${meetingClassificationResult.updated} meetings with sequence numbers`);
-    } else {
-      console.error(`❌ Failed to classify meetings: ${meetingClassificationResult.error}`);
-    }
-    
-    // 5. Run the attribution service after data is enhanced
-    console.log('\n--- Step 5: Running attribution for all contacts with enhanced data ---');
-    const attributionResult = await attributionService.attributeAllContacts();
-    
-    if (attributionResult.success) {
-      console.log(`✅ Successfully attributed ${attributionResult.contactsProcessed} contacts`);
-      console.log(`Found ${attributionResult.multiSourceContacts} multi-source contacts`);
-    } else {
-      console.error(`❌ Failed to run attribution: ${attributionResult.error}`);
-    }
-    
-    // 6. Final verification
-    console.log('\n--- Final Verification ---');
-    
-    // Check contact fields
-    const contactFieldCoverage = await verifyContactFieldCoverage();
-    console.log(`Contact field coverage: ${contactFieldCoverage.title}% title, ${contactFieldCoverage.lastActivity}% lastActivityDate, ${contactFieldCoverage.assignedTo}% assignedTo`);
-    
-    // Check multi-source rate
-    const multiSourceRate = await verifyMultiSourceRate();
-    console.log(`Multi-source contact rate: ${multiSourceRate.toFixed(2)}%`);
-    
-    // Check cash collected coverage
-    const cashCollectedCoverage = await verifyCashCollectedCoverage();
-    console.log(`Cash collected coverage for won deals: ${cashCollectedCoverage.toFixed(2)}%`);
-    
-    // Check meeting sequence coverage
-    const meetingSequenceCoverage = await verifyMeetingSequenceCoverage();
-    console.log(`Meeting sequence coverage: ${meetingSequenceCoverage.toFixed(2)}%`);
-    
-    console.log('\n==================================================');
-    console.log('Data enhancement process completed!');
-    console.log('==================================================');
-    
   } catch (error: any) {
-    console.error('Error during data enhancement:', error.message);
+    console.error(chalk.red.bold('\n✗ Error executing data enhancement process.\n'));
+    
+    if (error.response) {
+      console.error(chalk.red(`Status: ${error.response.status}`));
+      console.error(chalk.red(`Message: ${JSON.stringify(error.response.data, null, 2)}`));
+    } else if (error.request) {
+      console.error(chalk.red('No response received from server. Is the server running?'));
+    } else {
+      console.error(chalk.red(`Error: ${error.message}`));
+    }
+  }
+}
+
+function displayResults(data: any) {
+  const { contactFields, sourcesCount, cashCollected, meetingClassification, attribution } = data;
+  
+  // Contact fields enhancement results
+  console.log(chalk.blue.bold('\nContact Field Enhancement:'));
+  console.log(`Total contacts: ${chalk.yellow(contactFields.total)}`);
+  console.log(`Updated contacts: ${chalk.green(contactFields.updated)}`);
+  console.log(`Field coverage improved: ${chalk.green(contactFields.fieldCoverageImproved)}`);
+  console.log(`Errors: ${chalk.red(contactFields.errors)}`);
+  
+  // Source count enhancement results
+  console.log(chalk.blue.bold('\nMulti-Source Attribution Enhancement:'));
+  console.log(`Total contacts: ${chalk.yellow(sourcesCount.total)}`);
+  console.log(`Multi-source contacts: ${chalk.green(sourcesCount.multiSourceUpdated)}`);
+  console.log(`Errors: ${chalk.red(sourcesCount.errors)}`);
+  
+  // Cash collected enhancement results
+  console.log(chalk.blue.bold('\nCash Collected Enhancement:'));
+  console.log(`Total deals: ${chalk.yellow(cashCollected.total)}`);
+  console.log(`Updated deals: ${chalk.green(cashCollected.updated)}`);
+  console.log(`Total cash collected: ${chalk.green('$' + cashCollected.totalCashCollected.toLocaleString())}`);
+  console.log(`Errors: ${chalk.red(cashCollected.errors)}`);
+  
+  // Meeting classification results
+  console.log(chalk.blue.bold('\nMeeting Classification:'));
+  console.log(`Total meetings: ${chalk.yellow(meetingClassification.total)}`);
+  console.log(`Updated meetings: ${chalk.green(meetingClassification.updated)}`);
+  console.log(`Errors: ${chalk.red(meetingClassification.errors)}`);
+  
+  // Meeting sequence distribution
+  console.log(chalk.blue.bold('\nMeeting Sequence Distribution:'));
+  const sequences = meetingClassification.bySequence || {};
+  Object.keys(sequences).sort((a, b) => Number(a) - Number(b)).forEach(seq => {
+    const count = sequences[seq];
+    console.log(`  Meeting #${seq}: ${chalk.yellow(count)}`);
+  });
+  
+  // Attribution results summary
+  if (attribution) {
+    console.log(chalk.blue.bold('\nAttribution Process:'));
+    console.log(`Total contacts: ${chalk.yellow(attribution.baseResults.total)}`);
+    console.log(`Processed contacts: ${chalk.green(attribution.baseResults.processed)}`);
+    console.log(`Successfully attributed: ${chalk.green(attribution.baseResults.attributed)}`);
+    console.log(`Errors: ${chalk.red(attribution.baseResults.errors)}`);
+    
+    console.log(chalk.blue.bold('\nKey Attribution Metrics:'));
+    const contactStats = attribution.detailedAnalytics.contactStats;
+    console.log(`Contacts with deals: ${chalk.yellow(contactStats.contactsWithDeals)}`);
+    console.log(`Contacts with meetings: ${chalk.yellow(contactStats.contactsWithMeetings)}`);
+    console.log(`Contacts with forms: ${chalk.yellow(contactStats.contactsWithForms)}`);
+    console.log(`Conversion rate: ${chalk.green((contactStats.conversionRate * 100).toFixed(2) + '%')}`);
+    
+    console.log(chalk.blue.bold('\nAttribution Insights:'));
+    const insights = attribution.detailedAnalytics.insights;
+    console.log(`Most effective channel: ${chalk.green(insights.mostEffectiveChannel)}`);
+    console.log(`Most common first touch: ${chalk.green(insights.mostCommonFirstTouch)}`);
+    console.log(`Most common last touch: ${chalk.green(insights.mostCommonLastTouch)}`);
+    console.log(`Avg days to conversion: ${chalk.yellow(insights.avgDaysToConversion)}`);
   }
 }
 
 async function verifyContactFieldCoverage() {
-  const result = await storage.query(`
-    SELECT 
-      COUNT(*) as total_contacts,
-      SUM(CASE WHEN title IS NOT NULL THEN 1 ELSE 0 END) as contacts_with_title,
-      SUM(CASE WHEN last_activity_date IS NOT NULL THEN 1 ELSE 0 END) as contacts_with_last_activity,
-      SUM(CASE WHEN assigned_to IS NOT NULL THEN 1 ELSE 0 END) as contacts_with_assigned_to
-    FROM contacts
-  `);
-  
-  const data = result[0];
-  const totalContacts = parseInt(data.total_contacts);
-  
-  return {
-    title: totalContacts > 0 ? (parseInt(data.contacts_with_title) / totalContacts * 100).toFixed(2) : 0,
-    lastActivity: totalContacts > 0 ? (parseInt(data.contacts_with_last_activity) / totalContacts * 100).toFixed(2) : 0,
-    assignedTo: totalContacts > 0 ? (parseInt(data.contacts_with_assigned_to) / totalContacts * 100).toFixed(2) : 0
-  };
+  try {
+    console.log(chalk.blue.bold('\n=== Contact Field Coverage Verification ===\n'));
+    
+    // Run a SQL query to check field coverage statistics
+    const response = await axios.post(`${API_URL}/fix-contact-fields`);
+    
+    if (response.data.success) {
+      console.log(chalk.green.bold('\n✓ Contact field enhancement complete.\n'));
+      console.log(`Total contacts: ${chalk.yellow(response.data.total)}`);
+      console.log(`Updated contacts: ${chalk.green(response.data.updated)}`);
+      console.log(`Field coverage improved: ${chalk.green(response.data.fieldCoverageImproved)}`);
+      console.log(`Errors: ${chalk.red(response.data.errors)}`);
+    } else {
+      console.error(chalk.red.bold('\n✗ Contact field verification failed.\n'));
+      console.error(chalk.red(response.data.error || 'Unknown error occurred'));
+    }
+  } catch (error: any) {
+    console.error(chalk.red.bold('\n✗ Error verifying contact field coverage.\n'));
+    console.error(chalk.red(`Message: ${error.message}`));
+  }
 }
 
 async function verifyMultiSourceRate() {
-  const result = await storage.query(`
-    SELECT 
-      COUNT(*) as total_contacts,
-      SUM(CASE WHEN sources_count > 1 THEN 1 ELSE 0 END) as multi_source_contacts
-    FROM contacts
-  `);
-  
-  const data = result[0];
-  const totalContacts = parseInt(data.total_contacts);
-  const multiSourceContacts = parseInt(data.multi_source_contacts);
-  
-  return totalContacts > 0 ? (multiSourceContacts / totalContacts * 100) : 0;
+  try {
+    console.log(chalk.blue.bold('\n=== Multi-Source Attribution Verification ===\n'));
+    
+    // Run a SQL query to check multi-source attribution statistics
+    const response = await axios.post(`${API_URL}/update-sources-count`);
+    
+    if (response.data.success) {
+      console.log(chalk.green.bold('\n✓ Multi-source attribution update complete.\n'));
+      console.log(`Total contacts: ${chalk.yellow(response.data.total)}`);
+      console.log(`Multi-source contacts: ${chalk.green(response.data.multiSourceUpdated)}`);
+      console.log(`Errors: ${chalk.red(response.data.errors)}`);
+    } else {
+      console.error(chalk.red.bold('\n✗ Multi-source verification failed.\n'));
+      console.error(chalk.red(response.data.error || 'Unknown error occurred'));
+    }
+  } catch (error: any) {
+    console.error(chalk.red.bold('\n✗ Error verifying multi-source rate.\n'));
+    console.error(chalk.red(`Message: ${error.message}`));
+  }
 }
 
 async function verifyCashCollectedCoverage() {
-  const result = await storage.query(`
-    SELECT 
-      COUNT(*) as total_won_deals,
-      SUM(CASE WHEN cash_collected IS NOT NULL AND cash_collected != '' THEN 1 ELSE 0 END) as deals_with_cash_collected
-    FROM deals
-    WHERE status = 'won'
-  `);
-  
-  const data = result[0];
-  const totalWonDeals = parseInt(data.total_won_deals);
-  const dealsWithCashCollected = parseInt(data.deals_with_cash_collected);
-  
-  return totalWonDeals > 0 ? (dealsWithCashCollected / totalWonDeals * 100) : 0;
+  try {
+    console.log(chalk.blue.bold('\n=== Cash Collected Coverage Verification ===\n'));
+    
+    // Fix cash collected values for won deals
+    const response = await axios.post(`${API_URL}/fix-cash-collected`);
+    
+    if (response.data.success) {
+      console.log(chalk.green.bold('\n✓ Cash collected values fixed.\n'));
+      console.log(`Total won deals: ${chalk.yellow(response.data.total)}`);
+      console.log(`Updated deals: ${chalk.green(response.data.updated)}`);
+      console.log(`Total cash collected: ${chalk.green('$' + response.data.totalCashCollected.toLocaleString())}`);
+      console.log(`Errors: ${chalk.red(response.data.errors)}`);
+    } else {
+      console.error(chalk.red.bold('\n✗ Cash collected verification failed.\n'));
+      console.error(chalk.red(response.data.error || 'Unknown error occurred'));
+    }
+  } catch (error: any) {
+    console.error(chalk.red.bold('\n✗ Error verifying cash collected coverage.\n'));
+    console.error(chalk.red(`Message: ${error.message}`));
+  }
 }
 
 async function verifyMeetingSequenceCoverage() {
-  const result = await storage.query(`
-    SELECT 
-      COUNT(*) as total_meetings,
-      SUM(CASE WHEN sequence IS NOT NULL THEN 1 ELSE 0 END) as meetings_with_sequence
-    FROM meetings
-  `);
-  
-  const data = result[0];
-  const totalMeetings = parseInt(data.total_meetings);
-  const meetingsWithSequence = parseInt(data.meetings_with_sequence);
-  
-  return totalMeetings > 0 ? (meetingsWithSequence / totalMeetings * 100) : 0;
+  try {
+    console.log(chalk.blue.bold('\n=== Meeting Sequence Coverage Verification ===\n'));
+    
+    // Classify meetings and set sequence numbers
+    const response = await axios.post(`${API_URL}/classify-meetings`);
+    
+    if (response.data.success) {
+      console.log(chalk.green.bold('\n✓ Meeting classification complete.\n'));
+      console.log(`Total meetings: ${chalk.yellow(response.data.total)}`);
+      console.log(`Updated meetings: ${chalk.green(response.data.updated)}`);
+      console.log(`Errors: ${chalk.red(response.data.errors)}`);
+      
+      // Display meeting sequence distribution
+      console.log(chalk.blue.bold('\nMeeting Sequence Distribution:'));
+      const sequences = response.data.bySequence || {};
+      Object.keys(sequences).sort((a, b) => Number(a) - Number(b)).forEach(seq => {
+        const count = sequences[seq];
+        console.log(`  Meeting #${seq}: ${chalk.yellow(count)}`);
+      });
+    } else {
+      console.error(chalk.red.bold('\n✗ Meeting sequence verification failed.\n'));
+      console.error(chalk.red(response.data.error || 'Unknown error occurred'));
+    }
+  } catch (error: any) {
+    console.error(chalk.red.bold('\n✗ Error verifying meeting sequence coverage.\n'));
+    console.error(chalk.red(`Message: ${error.message}`));
+  }
 }
 
-// Run the main function
-enhanceData().catch(console.error);
+// Run the functions based on command-line arguments
+const args = process.argv.slice(2);
+const command = args[0] || 'all';
+
+async function main() {
+  try {
+    switch (command) {
+      case 'all':
+        await enhanceData();
+        break;
+      case 'contacts':
+        await verifyContactFieldCoverage();
+        break;
+      case 'sources':
+        await verifyMultiSourceRate();
+        break;
+      case 'cash':
+        await verifyCashCollectedCoverage();
+        break;
+      case 'meetings':
+        await verifyMeetingSequenceCoverage();
+        break;
+      default:
+        console.log(chalk.yellow(`Unknown command: ${command}`));
+        console.log(chalk.blue('Available commands:'));
+        console.log('  all - Run all data enhancement processes');
+        console.log('  contacts - Verify contact field coverage');
+        console.log('  sources - Verify multi-source attribution rate');
+        console.log('  cash - Verify cash collected coverage');
+        console.log('  meetings - Verify meeting sequence coverage');
+    }
+  } catch (error: any) {
+    console.error(chalk.red.bold('\n✗ Error during data enhancement process.\n'));
+    console.error(chalk.red(`Message: ${error.message}`));
+  }
+}
+
+main();
