@@ -1090,6 +1090,7 @@ export class DatabaseStorage implements IStorage {
     };
     
     return dashboardData;
+  }
   
   /**
    * Get deals by status
@@ -1100,7 +1101,6 @@ export class DatabaseStorage implements IStorage {
       .from(deals)
       .where(eq(deals.status, status))
       .orderBy(desc(deals.createdAt));
-  }
   }
 }
 
