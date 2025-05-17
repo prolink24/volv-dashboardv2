@@ -112,15 +112,7 @@ export default function MarketingDashboard() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Marketing Dashboard</h1>
         <div className="flex space-x-2">
-          <Select value={month} onValueChange={setMonth}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Select month" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="current">2025-03 | March</SelectItem>
-              <SelectItem value="previous">2025-02 | February</SelectItem>
-            </SelectContent>
-          </Select>
+          <DateRangePicker />
         </div>
       </div>
 
