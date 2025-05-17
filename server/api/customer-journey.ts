@@ -156,7 +156,7 @@ export async function getCustomerJourney(contactId: number, dateRange?: string):
         };
       }),
       // Meetings - add both booking time and meeting time to the timeline
-      ...meetings.flatMap(meeting => {
+      ...meetings.flatMap((meeting, index) => {
         // Extract scheduler's name from metadata if it exists
         let scheduledBy = 'Unknown';
         let bookingEvents = [];
@@ -175,10 +175,16 @@ export async function getCustomerJourney(contactId: number, dateRange?: string):
           }
         }
         
-        // Determine call sequence label (NC1, C2, etc.)
-        const sequenceLabel = meeting.sequence ? 
-          (meeting.sequence === 1 ? 'NC1' : `C${meeting.sequence}`) : 
-          '';
+        // Determine call sequence - if not explicitly set, infer from position
+        let sequence = meeting.sequence;
+        if (!sequence) {
+          // If there's only one meeting, it's NC1
+          // If there are multiple meetings, the first is NC1, subsequent ones are C2, C3, etc.
+          sequence = index === 0 ? 1 : index + 1;
+        }
+        
+        // Create the proper label (NC1, C2, etc.)
+        const sequenceLabel = sequence === 1 ? 'NC1' : `C${sequence}`;
           
         // Add the actual meeting to the timeline
         const meetingEvent = {
@@ -367,17 +373,33 @@ export async function getCustomerJourney(contactId: number, dateRange?: string):
         leadResponseTime: calculateLeadResponseTime(activities, contact),
         
         // Enhanced call metrics for NC1/C2 tracking
-        nc1BookedCount: meetings.filter(m => m.sequence === 1).length,
-        nc1ShowCount: meetings.filter(m => m.sequence === 1 && m.status === 'completed').length,
+        nc1BookedCount: meetings.filter(m => {
+          // Treat first meeting for contact as NC1 if sequence is not explicitly set
+          if (m.sequence === 1) return true;
+          if (!m.sequence && meetings.length === 1) return true; 
+          return false;
+        }).length,
+        nc1ShowCount: meetings.filter(m => {
+          // Treat first meeting for contact as NC1 if sequence is not explicitly set
+          return (m.sequence === 1 || (!m.sequence && meetings.length === 1)) && m.status === 'completed';
+        }).length,
         nc1ShowRate: calculatePercentage(
-          meetings.filter(m => m.sequence === 1 && m.status === 'completed').length,
-          meetings.filter(m => m.sequence === 1).length
+          meetings.filter(m => (m.sequence === 1 || (!m.sequence && meetings.length === 1)) && m.status === 'completed').length,
+          meetings.filter(m => m.sequence === 1 || (!m.sequence && meetings.length === 1)).length
         ),
-        c2BookedCount: meetings.filter(m => m.sequence === 2).length,
-        c2ShowCount: meetings.filter(m => m.sequence === 2 && m.status === 'completed').length,
+        c2BookedCount: meetings.filter(m => {
+          // Treat second meeting for contact as C2 if sequence is not explicitly set
+          if (m.sequence === 2) return true;
+          if (!m.sequence && meetings.length > 1 && meetings.indexOf(m) > 0) return true;
+          return false;
+        }).length,
+        c2ShowCount: meetings.filter(m => {
+          // Treat second meeting for contact as C2 if sequence is not explicitly set
+          return (m.sequence === 2 || (!m.sequence && meetings.length > 1 && meetings.indexOf(m) > 0)) && m.status === 'completed';
+        }).length,
         c2ShowRate: calculatePercentage(
-          meetings.filter(m => m.sequence === 2 && m.status === 'completed').length,
-          meetings.filter(m => m.sequence === 2).length
+          meetings.filter(m => (m.sequence === 2 || (!m.sequence && meetings.length > 1 && meetings.indexOf(m) > 0)) && m.status === 'completed').length,
+          meetings.filter(m => m.sequence === 2 || (!m.sequence && meetings.length > 1 && meetings.indexOf(m) > 0)).length
         ),
         avgTimeToBook: calculateAverageTimeToBook(meetings, contact),
         avgTimeBetweenMeetings: calculateAverageTimeBetweenMeetings(meetings)
@@ -561,7 +583,8 @@ function calculateDirectBookingRate(activities: any[], meetings: any[]): number 
     }
   });
   
-  return calculatePercentage(directBookings, totalMeetings);
+  // Calculate percentage properly (as a decimal, not multiplied by 100)
+  return directBookings / totalMeetings;
 }
 
 function calculateLeadResponseTime(activities: any[], contact: any): number | null {
