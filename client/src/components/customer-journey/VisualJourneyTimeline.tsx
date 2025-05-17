@@ -578,9 +578,27 @@ export function VisualJourneyTimeline({ events }: VisualJourneyTimelineProps) {
                                       </span>
                                     </div>
                                     
-                                    {/* Booking time (if available) */}
-                                    {event.bookedAt && (
-                                      <div className="flex items-center gap-1 text-xs ml-4">
+                                    {/* Booking time (for meeting_booked type) */}
+                                    {event.type === 'meeting_booked' && (
+                                      <div className="flex items-center gap-2 text-xs text-blue-600">
+                                        <span className="flex items-center gap-1">
+                                          <Calendar className="h-3 w-3" />
+                                          Booked at: {formatDate(event.timestamp)}
+                                        </span>
+                                      </div>
+                                    )}
+                                    
+                                    {/* For meetings, show when they were booked if available */}
+                                    {event.type === 'meeting' && event.bookedAt && (
+                                      <div className="flex items-center gap-2 text-xs text-blue-600">
+                                        <span className="flex items-center gap-1">
+                                          <Calendar className="h-3 w-3" />
+                                          Originally booked: {formatDate(new Date(event.bookedAt))}
+                                        </span>
+                                      </div>
+                                    )}
+                                    
+                                    {/* Remove duplicate booking time section */}
                                         <Calendar className="h-3 w-3 text-blue-500" />
                                         <span className="text-blue-600 dark:text-blue-400">
                                           Booked at: {formatDate(new Date(event.bookedAt))}
