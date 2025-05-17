@@ -48,6 +48,18 @@ export interface IStorage {
   createContact(contact: InsertContact): Promise<Contact>;
   updateContact(id: number, contact: Partial<InsertContact>): Promise<Contact | undefined>;
   getContacts(limit?: number, offset?: number): Promise<Contact[]>;
+  getAllContacts(): Promise<Contact[]>;
+
+  // Deal operations with additions
+  updateDeal(id: number, deal: Partial<InsertDeal>): Promise<Deal | undefined>;
+  getDealsByStatus(status: string): Promise<Deal[]>;
+  
+  // Meeting operations with additions
+  getAllMeetings(): Promise<Meeting[]>;
+  updateMeeting(id: number, meeting: Partial<InsertMeeting>): Promise<Meeting | undefined>;
+
+  // Generic SQL query for reporting and verification
+  query(sqlQuery: string, params?: any[]): Promise<any[]>;
   searchContacts(query: string, limit?: number, offset?: number): Promise<Contact[]>;
   getContactsCount(): Promise<number>;
   getAllContacts(): Promise<Contact[]>;
@@ -112,6 +124,51 @@ export interface IStorage {
 
 // Implementation with database storage using Drizzle ORM
 export class DatabaseStorage implements IStorage {
+  // Added methods for data enhancement
+  async getAllContacts(): Promise<Contact[]> {
+    return db.select().from(contacts).orderBy(desc(contacts.createdAt));
+  }
+  
+  async updateDeal(id: number, dealData: Partial<InsertDeal>): Promise<Deal | undefined> {
+    const [updatedDeal] = await db
+      .update(deals)
+      .set(dealData)
+      .where(eq(deals.id, id))
+      .returning();
+    
+    return updatedDeal || undefined;
+  }
+  
+  async getDealsByStatus(status: string): Promise<Deal[]> {
+    return db
+      .select()
+      .from(deals)
+      .where(eq(deals.status, status))
+      .orderBy(desc(deals.createdAt));
+  }
+  
+  async getAllMeetings(): Promise<Meeting[]> {
+    return db.select().from(meetings);
+  }
+  
+  async updateMeeting(id: number, meetingData: Partial<InsertMeeting>): Promise<Meeting | undefined> {
+    const [updatedMeeting] = await db
+      .update(meetings)
+      .set(meetingData)
+      .where(eq(meetings.id, id))
+      .returning();
+    
+    return updatedMeeting || undefined;
+  }
+  
+  async query(sqlQuery: string, params?: any[]): Promise<any[]> {
+    try {
+      return await db.execute(sql.raw(sqlQuery, params || []));
+    } catch (error) {
+      console.error('Error executing SQL query:', error);
+      throw error;
+    }
+  }
   // User operations
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
@@ -1067,6 +1124,70 @@ export class DatabaseStorage implements IStorage {
     };
     
     return dashboardData;
+  }
+}
+
+  /**
+   * Get all contacts without any limit or offset
+   */
+  async getAllContacts(): Promise<Contact[]> {
+    return db.select().from(contacts).orderBy(desc(contacts.createdAt));
+  }
+  
+  /**
+   * Update a deal with partial data
+   */
+  async updateDeal(id: number, dealData: Partial<InsertDeal>): Promise<Deal | undefined> {
+    const [updatedDeal] = await db
+      .update(deals)
+      .set(dealData)
+      .where(eq(deals.id, id))
+      .returning();
+    
+    return updatedDeal || undefined;
+  }
+  
+  /**
+   * Get deals by status
+   */
+  async getDealsByStatus(status: string): Promise<Deal[]> {
+    return db
+      .select()
+      .from(deals)
+      .where(eq(deals.status, status))
+      .orderBy(desc(deals.createdAt));
+  }
+  
+  /**
+   * Get all meetings
+   */
+  async getAllMeetings(): Promise<Meeting[]> {
+    return db.select().from(meetings);
+  }
+  
+  /**
+   * Update a meeting with partial data
+   */
+  async updateMeeting(id: number, meetingData: Partial<InsertMeeting>): Promise<Meeting | undefined> {
+    const [updatedMeeting] = await db
+      .update(meetings)
+      .set(meetingData)
+      .where(eq(meetings.id, id))
+      .returning();
+    
+    return updatedMeeting || undefined;
+  }
+  
+  /**
+   * Run a raw SQL query (for reporting and verification)
+   */
+  async query(sqlQuery: string, params?: any[]): Promise<any[]> {
+    try {
+      return await db.execute(sql.raw(sqlQuery, params));
+    } catch (error) {
+      console.error('Error executing SQL query:', error);
+      throw error;
+    }
   }
 }
 

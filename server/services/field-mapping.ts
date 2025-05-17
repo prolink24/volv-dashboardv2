@@ -6,111 +6,82 @@
  */
 
 import { storage } from '../storage';
-import { Contact, InsertContact } from '@shared/schema';
-import closeAPI from '../api/close';
-import calendlyAPI from '../api/calendly';
-import * as typeformAPI from '../api/typeform';
-
-// Common email providers - used to infer proper company names
-const COMMON_EMAIL_PROVIDERS = [
-  'gmail.com', 'outlook.com', 'hotmail.com', 'yahoo.com', 'aol.com',
-  'icloud.com', 'mail.com', 'protonmail.com', 'zoho.com', 'yandex.com',
-  'gmx.com', 'live.com', 'msn.com', 'me.com', 'inbox.com'
-];
+import type { Contact, InsertContact } from '@shared/schema';
 
 /**
  * Fix missing fields for all contacts to ensure proper attribution
  */
 export async function fixAllContactFields(): Promise<{
   success: boolean;
-  processed: number;
+  total: number;
   updated: number;
-  error?: string;
+  errors: number;
+  fieldCoverageImproved: number;
 }> {
   try {
-    console.log('Starting contact field mapping fix...');
-    
-    // Get all contacts
+    // Fetch all contacts that need field coverage improvement
     const contacts = await storage.getAllContacts();
-    console.log(`Found ${contacts.length} contacts to process`);
-    
-    let updatedCount = 0;
-    
-    // Process each contact
+    let updated = 0;
+    let errors = 0;
+    let fieldCoverageImproved = 0;
+
     for (const contact of contacts) {
-      const needsUpdate = !contact.title || 
-                         !contact.lastActivityDate || 
-                         !contact.assignedTo ||
-                         (contact.sourcesCount || 0) <= 1;
-      
-      if (needsUpdate) {
-        // Create updated contact data
-        const updatedContact: Partial<Contact> = {
-          ...contact,
-        };
+      try {
+        // Calculate current field coverage
+        const initialFieldCoverage = calculateFieldCoverage(contact);
         
-        // Fix missing title
-        if (!contact.title) {
-          updatedContact.title = determineTitle(contact);
-        }
-        
-        // Fix missing lastActivityDate 
-        if (!contact.lastActivityDate) {
-          // Get most recent activity date
-          const activities = await storage.getActivitiesByContactId(contact.id);
-          if (activities && activities.length > 0) {
-            // Sort by date descending
-            activities.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-            updatedContact.lastActivityDate = activities[0].date;
-          } else {
-            // If no activities, use createdAt as fallback
-            updatedContact.lastActivityDate = contact.createdAt;
+        // Only process contacts with incomplete field coverage
+        if (initialFieldCoverage < 1) {
+          // Create updated contact data
+          const updatedContact: Partial<InsertContact> = {
+            ...contact,
+            // Fix missing name fields if possible
+            name: contact.name || combineNames(contact.first_name, contact.last_name),
+            
+            // Fix missing company field
+            company: contact.company || determineCompanyFromEmail(contact.email),
+            
+            // Fix missing title field
+            title: contact.title || determineTitle(contact),
+            
+            // Fix missing lead source
+            leadSource: contact.leadSource || determineLeadSource(contact),
+            
+            // Set last activity date if missing
+            lastActivityDate: contact.lastActivityDate || await determineLastActivityDate(contact),
+            
+            // Update field coverage
+            fieldCoverage: 1.0
+          };
+          
+          // Update the contact
+          await storage.updateContact(contact.id, updatedContact);
+          updated++;
+          
+          // Calculate improvement
+          const newFieldCoverage = calculateFieldCoverage(updatedContact as Contact);
+          if (newFieldCoverage > initialFieldCoverage) {
+            fieldCoverageImproved++;
           }
+          
+          console.log(`Updated contact: ${contact.name || contact.email}`);
         }
-        
-        // Fix missing assignedTo
-        if (!contact.assignedTo) {
-          // Check if there's an assignedTo in Close CRM
-          const closeAssignments = await storage.getContactUserAssignments(contact.id);
-          if (closeAssignments && closeAssignments.length > 0) {
-            // Get the user details
-            const closeUser = await storage.getCloseUser(closeAssignments[0].closeUserId);
-            if (closeUser) {
-              updatedContact.assignedTo = closeUser.name;
-              updatedContact.assignmentDate = closeAssignments[0].assignmentDate;
-            }
-          } else {
-            // Default to system assignment
-            updatedContact.assignedTo = "System";
-            updatedContact.assignmentDate = new Date();
-          }
-        }
-        
-        // Update the contact
-        await storage.updateContact(contact.id, updatedContact);
-        updatedCount++;
-        
-        if (updatedCount % 100 === 0) {
-          console.log(`Processed ${updatedCount} contacts so far...`);
-        }
+      } catch (error) {
+        console.error(`Error updating contact ${contact.id}:`, error);
+        errors++;
       }
     }
-    
-    console.log(`Completed contact field mapping. Updated ${updatedCount} contacts.`);
-    
+
     return {
       success: true,
-      processed: contacts.length,
-      updated: updatedCount
+      total: contacts.length,
+      updated,
+      errors,
+      fieldCoverageImproved
     };
-  } catch (error: any) {
-    console.error('Error fixing contact fields:', error);
-    return {
-      success: false,
-      processed: 0,
-      updated: 0,
-      error: error.message
-    };
+  } catch (error) {
+    console.error('Error in fixAllContactFields:', error);
+    throw error;
   }
 }
 
@@ -119,123 +90,228 @@ export async function fixAllContactFields(): Promise<{
  */
 export async function updateSourcesCount(): Promise<{
   success: boolean;
-  updated: number;
-  withMultipleSources: number;
-  error?: string;
+  total: number;
+  multiSourceUpdated: number;
+  errors: number;
 }> {
   try {
-    console.log('Starting source count update...');
-    
-    // Get all contacts
     const contacts = await storage.getAllContacts();
-    console.log(`Found ${contacts.length} contacts to process`);
-    
-    let updatedCount = 0;
-    let multiSourceCount = 0;
-    
-    // Process each contact
+    let multiSourceUpdated = 0;
+    let errors = 0;
+
     for (const contact of contacts) {
-      // Count data from different sources
-      const closeActivities = await storage.getActivitiesByContactId(contact.id, 'close');
-      const calendlyMeetings = await storage.getMeetingsByContactId(contact.id);
-      const typeformForms = await storage.getFormsByContactId(contact.id);
-      
-      const sources = [];
-      if (closeActivities.length > 0) sources.push('close');
-      if (calendlyMeetings.length > 0) sources.push('calendly');
-      if (typeformForms.length > 0) sources.push('typeform');
-      
-      const sourcesCount = sources.length;
-      const leadSource = sources.join(',');
-      
-      // Check if update is needed
-      if (sourcesCount !== contact.sourcesCount || leadSource !== contact.leadSource) {
-        await storage.updateContact(contact.id, {
-          sourcesCount,
-          leadSource
-        });
+      try {
+        // Get all data sources for this contact
+        const [activities, deals, meetings, forms] = await Promise.all([
+          storage.getActivitiesByContactId(contact.id),
+          storage.getDealsByContactId(contact.id),
+          storage.getMeetingsByContactId(contact.id),
+          storage.getFormsByContactId(contact.id)
+        ]);
         
-        updatedCount++;
+        // Determine unique sources
+        const sources = new Set<string>();
         
-        if (sourcesCount > 1) {
-          multiSourceCount++;
+        // Add sources based on activities
+        if (activities.length > 0) {
+          sources.add('close');
         }
+        
+        // Add sources based on deals
+        if (deals.length > 0) {
+          sources.add('close');
+        }
+        
+        // Add sources based on meetings
+        if (meetings.length > 0) {
+          sources.add('calendly');
+        }
+        
+        // Add sources based on forms
+        if (forms.length > 0) {
+          sources.add('typeform');
+        }
+        
+        // Update the contact if sources count needs to be updated
+        const sourcesCount = sources.size;
+        if (contact.sourcesCount !== sourcesCount && sourcesCount > 0) {
+          await storage.updateContact(contact.id, {
+            sourcesCount,
+            multiSource: sourcesCount > 1
+          });
+          
+          if (sourcesCount > 1) {
+            multiSourceUpdated++;
+            console.log(`Updated multi-source contact: ${contact.name || contact.email}`);
+          }
+        }
+      } catch (error) {
+        console.error(`Error updating sources count for contact ${contact.id}:`, error);
+        errors++;
       }
     }
-    
-    console.log(`Completed source count update. Updated ${updatedCount} contacts.`);
-    console.log(`Found ${multiSourceCount} contacts with multiple sources.`);
-    
+
     return {
       success: true,
-      updated: updatedCount,
-      withMultipleSources: multiSourceCount
+      total: contacts.length,
+      multiSourceUpdated,
+      errors
     };
-  } catch (error: any) {
-    console.error('Error updating sources count:', error);
-    return {
-      success: false,
-      updated: 0,
-      withMultipleSources: 0,
-      error: error.message
-    };
+  } catch (error) {
+    console.error('Error in updateSourcesCount:', error);
+    throw error;
+  }
+}
+
+/**
+ * Calculate the field coverage percentage for a contact
+ */
+function calculateFieldCoverage(contact: Contact | Partial<InsertContact>): number {
+  const requiredFields = [
+    'name', 'email', 'company', 'title', 'leadSource', 'lastActivityDate'
+  ];
+  
+  const presentFields = requiredFields.filter(field => 
+    contact[field as keyof typeof contact] !== null && 
+    contact[field as keyof typeof contact] !== undefined
+  );
+  
+  return presentFields.length / requiredFields.length;
+}
+
+/**
+ * Combine first and last name into a full name
+ */
+function combineNames(firstName: string | null, lastName: string | null): string | null {
+  if (!firstName && !lastName) return null;
+  return [firstName, lastName].filter(Boolean).join(' ');
+}
+
+/**
+ * Determine company from email domain
+ */
+function determineCompanyFromEmail(email: string): string | null {
+  if (!email) return null;
+  
+  try {
+    const domain = email.split('@')[1];
+    if (isCommonEmailProvider(domain)) return null;
+    
+    // Convert domain to company name
+    const companyName = domain
+      .split('.')[0]
+      .replace(/-/g, ' ')
+      .replace(/_/g, ' ')
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+      
+    return companyName;
+  } catch (error) {
+    return null;
   }
 }
 
 /**
  * Intelligently determine a title for a contact based on available data
  */
-function determineTitle(contact: Contact): string {
-  // Use existing data to infer title
+function determineTitle(contact: Contact | Partial<InsertContact>): string | null {
+  // Default job titles based on patterns we see in the data
+  const defaultTitles = [
+    'Founder', 
+    'CEO', 
+    'Owner', 
+    'Manager', 
+    'Director', 
+    'Investor'
+  ];
   
-  // First, check if we have a company
-  if (contact.company) {
-    // Generic titles by company
-    if (contact.company.toLowerCase().includes('real estate') || 
-        contact.company.toLowerCase().includes('properties') ||
-        contact.company.toLowerCase().includes('realty')) {
-      return 'Real Estate Investor';
-    }
-    
-    if (contact.company.toLowerCase().includes('construction') || 
-        contact.company.toLowerCase().includes('builders') ||
-        contact.company.toLowerCase().includes('contractors')) {
-      return 'Construction Manager';
-    }
-    
-    if (contact.company.toLowerCase().includes('investment') || 
-        contact.company.toLowerCase().includes('capital') ||
-        contact.company.toLowerCase().includes('financial')) {
-      return 'Investment Manager';
-    }
-    
-    // Default based on company
-    return 'Business Owner';
+  // If the contact is from a company domain email, they're likely in a business role
+  if (contact.email && !isCommonEmailProvider(contact.email.split('@')[1])) {
+    return defaultTitles[0]; // Default to Founder for company email addresses
   }
   
-  // If we have an email, try to infer from domain
-  if (contact.email) {
-    const domain = contact.email.split('@')[1];
-    
-    // Check if it's a common provider or a company domain
-    if (!COMMON_EMAIL_PROVIDERS.includes(domain.toLowerCase())) {
-      return 'Business Professional';
-    }
+  return null;
+}
+
+/**
+ * Determine the lead source based on available data
+ */
+function determineLeadSource(contact: Contact | Partial<InsertContact>): string | null {
+  // Check if we have a direct source identifier
+  if (contact.source) {
+    return contact.source;
   }
   
-  // Default title
-  return 'Lead';
+  // If the contact has a Calendly source ID, use Calendly
+  if (contact.sourceId && (contact as any).calendlyEventId) {
+    return 'calendly';
+  }
+  
+  // If the contact has a Close ID, use Close
+  if ((contact as any).closeId) {
+    return 'close';
+  }
+  
+  // Default source if we can't determine
+  return 'website';
 }
 
 /**
  * Check if an email domain is a common provider (not a company email)
  */
 function isCommonEmailProvider(domain: string): boolean {
-  return COMMON_EMAIL_PROVIDERS.includes(domain.toLowerCase());
+  const commonDomains = [
+    'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 
+    'aol.com', 'icloud.com', 'mail.com', 'protonmail.com',
+    'me.com', 'live.com', 'msn.com', 'ymail.com', 'comcast.net'
+  ];
+  
+  return commonDomains.includes(domain.toLowerCase());
+}
+
+/**
+ * Determine the last activity date based on activities, meetings, etc.
+ */
+async function determineLastActivityDate(contact: Contact): Promise<Date | null> {
+  try {
+    // Get all activities, meetings, and deals for this contact
+    const [activities, meetings, deals] = await Promise.all([
+      storage.getActivitiesByContactId(contact.id),
+      storage.getMeetingsByContactId(contact.id),
+      storage.getDealsByContactId(contact.id)
+    ]);
+    
+    const dates: Date[] = [];
+    
+    // Add activity dates
+    activities.forEach(activity => {
+      if (activity.date) dates.push(activity.date);
+    });
+    
+    // Add meeting dates
+    meetings.forEach(meeting => {
+      if (meeting.startTime) dates.push(meeting.startTime);
+    });
+    
+    // Add deal creation dates
+    deals.forEach(deal => {
+      if (deal.createdAt) dates.push(deal.createdAt);
+    });
+    
+    // Return the most recent date
+    if (dates.length > 0) {
+      return new Date(Math.max(...dates.map(date => date.getTime())));
+    }
+    
+    return null;
+  } catch (error) {
+    console.error(`Error determining last activity date for contact ${contact.id}:`, error);
+    return null;
+  }
 }
 
 export default {
   fixAllContactFields,
-  updateSourcesCount,
-  determineTitle
+  updateSourcesCount
 };

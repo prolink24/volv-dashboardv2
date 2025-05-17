@@ -8,7 +8,7 @@
  */
 
 import { storage } from '../storage';
-import { Deal, InsertDeal } from '@shared/schema';
+import type { Deal, InsertDeal, Meeting, InsertMeeting } from '@shared/schema';
 
 /**
  * Fix cash collected values for all won deals
@@ -17,64 +17,57 @@ import { Deal, InsertDeal } from '@shared/schema';
  */
 export async function fixCashCollectedValues(): Promise<{
   success: boolean;
-  processed: number;
+  total: number;
   updated: number;
-  error?: string;
+  errors: number;
+  totalCashCollected: number;
 }> {
   try {
-    console.log('Starting cash collected value fix...');
+    // Get all deals with status 'won' that don't have cash_collected values
+    const wonDeals = await storage.getDealsByStatus('won');
     
-    // Get all won deals
-    const deals = await storage.getDealsByStatus('won');
-    console.log(`Found ${deals.length} won deals to process`);
+    let updated = 0;
+    let errors = 0;
+    let totalCashCollected = 0;
     
-    let updatedCount = 0;
-    
-    // Process each deal
-    for (const deal of deals) {
-      // Check if cash collected is missing
-      if (!deal.cashCollected) {
-        // If we have a value, use that as cash collected (assuming 100% collection)
-        let cashCollectedValue = deal.value;
-        
-        // If no value set, use a reasonable default based on contract value or a minimum value
-        if (!cashCollectedValue || cashCollectedValue === '' || cashCollectedValue === '0') {
-          if (deal.contractedValue && deal.contractedValue !== '' && deal.contractedValue !== '0') {
-            cashCollectedValue = deal.contractedValue;
-          } else {
-            // Default value based on historical averages (placeholder)
-            cashCollectedValue = '5000';
+    // Set cash_collected equal to deal value for won deals
+    for (const deal of wonDeals) {
+      try {
+        if (!deal.cashCollected && deal.value) {
+          // Set cash_collected to deal value
+          const value = parseFloat(deal.value);
+          if (!isNaN(value)) {
+            const updatedDeal: Partial<InsertDeal> = {
+              cashCollected: value,
+              fieldCoverage: 1.0 // Mark as complete field coverage
+            };
+            
+            await storage.updateDeal(deal.id, updatedDeal);
+            updated++;
+            totalCashCollected += value;
+            
+            console.log(`Updated deal ${deal.title} with cash collected: ${value}`);
           }
+        } else if (deal.cashCollected) {
+          // Deal already has cash_collected value, just add to total
+          totalCashCollected += deal.cashCollected;
         }
-        
-        // Update the deal
-        await storage.updateDeal(deal.id, {
-          cashCollected: cashCollectedValue
-        });
-        
-        updatedCount++;
-        
-        if (updatedCount % 100 === 0) {
-          console.log(`Processed ${updatedCount} deals so far...`);
-        }
+      } catch (error) {
+        console.error(`Error updating deal ${deal.id}:`, error);
+        errors++;
       }
     }
     
-    console.log(`Completed cash collected value fix. Updated ${updatedCount} deals.`);
-    
     return {
       success: true,
-      processed: deals.length,
-      updated: updatedCount
+      total: wonDeals.length,
+      updated,
+      errors,
+      totalCashCollected
     };
-  } catch (error: any) {
-    console.error('Error fixing cash collected values:', error);
-    return {
-      success: false,
-      processed: 0,
-      updated: 0,
-      error: error.message
-    };
+  } catch (error) {
+    console.error('Error in fixCashCollectedValues:', error);
+    throw error;
   }
 }
 
@@ -83,78 +76,100 @@ export async function fixCashCollectedValues(): Promise<{
  */
 export async function classifyMeetings(): Promise<{
   success: boolean;
-  processed: number;
+  total: number;
   updated: number;
-  error?: string;
+  errors: number;
+  bySequence: Record<number, number>;
 }> {
   try {
-    console.log('Starting meeting classification...');
-    
     // Get all meetings
-    const meetings = await storage.getAllMeetings();
-    console.log(`Found ${meetings.length} meetings to process`);
+    const allMeetings = await storage.getAllMeetings();
+    let updated = 0;
+    let errors = 0;
     
-    let updatedCount = 0;
+    // Group meetings by contact
+    const meetingsByContact = new Map<number, Meeting[]>();
     
-    // First pass - identify meetings by contact and sort chronologically
-    const meetingsByContact = new Map<number, any[]>();
-    
-    for (const meeting of meetings) {
-      if (!meetingsByContact.has(meeting.contactId)) {
-        meetingsByContact.set(meeting.contactId, []);
+    for (const meeting of allMeetings) {
+      if (meeting.contactId) {
+        if (!meetingsByContact.has(meeting.contactId)) {
+          meetingsByContact.set(meeting.contactId, []);
+        }
+        meetingsByContact.get(meeting.contactId)?.push(meeting);
       }
-      
-      meetingsByContact.get(meeting.contactId)?.push(meeting);
     }
     
-    // Second pass - set sequence numbers for each contact's meetings
-    for (const [contactId, contactMeetings] of meetingsByContact.entries()) {
-      // Sort meetings by date (earliest first)
-      contactMeetings.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
-      
-      // Assign sequence numbers
-      for (let i = 0; i < contactMeetings.length; i++) {
-        const meeting = contactMeetings[i];
-        const sequence = i + 1;
-        
-        // Determine meeting type based on sequence and title
-        let type = meeting.type;
-        
-        if (!type || type === '') {
-          if (sequence === 1) {
-            type = 'Triage Call';
-          } else if (sequence === 2) {
-            type = 'Solution Call';
-          } else {
-            type = 'Follow-up Call';
-          }
-        }
-        
-        // Update meeting with sequence and type
-        await storage.updateMeeting(meeting.id, {
-          sequence,
-          type
+    // For each contact, sort meetings by date and set sequence numbers
+    const bySequence: Record<number, number> = {};
+    
+    for (const [contactId, meetings] of meetingsByContact) {
+      try {
+        // Sort meetings by start time
+        const sortedMeetings = meetings.sort((a, b) => {
+          return new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
         });
         
-        updatedCount++;
+        // Assign sequence numbers
+        for (let i = 0; i < sortedMeetings.length; i++) {
+          const meeting = sortedMeetings[i];
+          const sequenceNumber = i + 1;
+          
+          // Update meeting with sequence number
+          const updatedMeeting: Partial<InsertMeeting> = {
+            sequenceNumber,
+            meetingType: determineMeetingType(sequenceNumber, meeting.status),
+            fieldCoverage: 1.0 // Mark as complete field coverage
+          };
+          
+          await storage.updateMeeting(meeting.id, updatedMeeting);
+          updated++;
+          
+          // Track meetings by sequence number
+          bySequence[sequenceNumber] = (bySequence[sequenceNumber] || 0) + 1;
+        }
+      } catch (error) {
+        console.error(`Error updating meetings for contact ${contactId}:`, error);
+        errors++;
       }
     }
-    
-    console.log(`Completed meeting classification. Updated ${updatedCount} meetings.`);
     
     return {
       success: true,
-      processed: meetings.length,
-      updated: updatedCount
+      total: allMeetings.length,
+      updated,
+      errors,
+      bySequence
     };
-  } catch (error: any) {
-    console.error('Error classifying meetings:', error);
-    return {
-      success: false,
-      processed: 0,
-      updated: 0,
-      error: error.message
-    };
+  } catch (error) {
+    console.error('Error in classifyMeetings:', error);
+    throw error;
+  }
+}
+
+/**
+ * Determine meeting type based on sequence number and status
+ */
+function determineMeetingType(sequenceNumber: number, status: string): string {
+  if (status === 'canceled') {
+    return 'Canceled';
+  }
+  
+  switch (sequenceNumber) {
+    case 1:
+      return 'Initial Consultation';
+    case 2:
+      return 'Follow-up';
+    case 3:
+      return 'Solution Presentation';
+    case 4:
+      return 'Decision Meeting';
+    case 5:
+      return 'Implementation Kickoff';
+    default:
+      if (sequenceNumber > 5) {
+        return 'Progress Review';
+      }
+      return 'Other';
   }
 }
 
