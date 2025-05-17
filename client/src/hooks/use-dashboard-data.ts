@@ -1,7 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useDateRange, formatDateRangeForApi, type DateRange } from "@/hooks/use-date-range";
 import { apiRequest } from "@/lib/queryClient";
-import { format } from 'date-fns';
 
 /**
  * Dashboard data interface representing data returned from the API
@@ -162,15 +161,8 @@ export interface DashboardData {
 function getDateRangeParams(dateRange: DateRange, additionalParams: Record<string, string> = {}): string {
   const params = new URLSearchParams();
   
-  // Format dates in YYYY-MM-DD format for the API to understand
-  const startFormatted = format(dateRange.startDate, 'yyyy-MM-dd');
-  const endFormatted = format(dateRange.endDate, 'yyyy-MM-dd'); 
-  
   // Add date range as a single parameter in the format YYYY-MM-DD_YYYY-MM-DD
-  params.append('dateRange', `${startFormatted}_${endFormatted}`);
-  
-  // Log the date range being sent to the API for debugging
-  console.log(`[API Request] Using date range: ${startFormatted} to ${endFormatted}`);
+  params.append('dateRange', formatDateRangeForApi(dateRange));
   
   // Add any additional parameters
   Object.entries(additionalParams).forEach(([key, value]) => {
@@ -218,99 +210,85 @@ export function useDashboardData(options?: string | { date?: string; userId?: st
       const apiUrl = `/api/enhanced-dashboard${getDateRangeParams(dateRange, additionalParams)}`;
       console.log(`[DashboardData] API URL: ${apiUrl}`);
       
-      try {
-        const response = await fetch(apiUrl);
-        
-        if (!response.ok) {
-          console.error(`[DashboardData] Error response: ${response.status} ${response.statusText}`);
-          throw new Error(`Failed to fetch dashboard data: ${response.status} ${response.statusText}`);
-        }
-        
-        const data = await response.json();
-        
-        // Check if we actually got data back
-        if (!data) {
-          console.error('[DashboardData] No data returned from API');
-          throw new Error('No data returned from API');
-        }
-        
-        // If we have a success=false response, still provide fallback structure 
-        // to prevent dashboard from crashing
-        if (data.success === false || data.partialData === true) {
-          console.warn('[DashboardData] Server returned error or partial data:', data.error || 'Unknown error');
-          
-          // Create a complete fallback structure with all required KPIs
-          // This ensures dashboard doesn't crash with undefined properties
-          return {
-            kpis: {
-              deals: { current: 0, previous: 0, change: 0 },
-              revenue: { current: 0, previous: 0, change: 0 },
-              activities: { current: 0, previous: 0, change: 0 },
-              meetings: { current: 0, previous: 0, change: 0 },
-              closedDeals: { current: 0, previous: 0, change: 0 },
-              cashCollected: { current: 0, previous: 0, change: 0 },
-              revenueGenerated: { current: 0, previous: 0, change: 0 },
-              totalCalls: { current: 0, previous: 0, change: 0 },
-              call1Taken: { current: 0, previous: 0, change: 0 },
-              call2Taken: { current: 0, previous: 0, change: 0 },
-              closingRate: 0,
-              avgCashCollected: 0,
-              solutionCallShowRate: 0,
-              earningPerCall2: 0
-            },
-            salesTeam: [],
-            leadMetrics: {
-              newLeadsToday: 0,
-              leadsLastWeek: 0,
-              averageLeadQualificationTime: 0,
-              leadConversionRate: 0,
-              leadSourceDistribution: {},
-              totalLeads: 0,
-              qualifiedLeads: 0,
-              conversionRate: 0,
-              costPerLead: 0,
-              qualifiedRate: 0,
-              responseRate: 0
-            },
-            timelineData: [],
-            topDeals: [],
-            refreshedAt: new Date().toISOString(),
-            success: false,
-            error: data.error || 'Error fetching dashboard data',
-            partialData: true
-          };
-        }
-        
-        // Log the data returned from the API
-        console.log(`[DashboardData] API returned ${Object.keys(data).length} top-level fields`);
-        
-        // Add a client-side timestamp to track when the data was loaded
-        // Also ensure all KPI fields exist to prevent null reference errors
-        return {
-          ...data,
-          kpis: {
-            deals: data.kpis?.deals || { current: 0, previous: 0, change: 0 },
-            revenue: data.kpis?.revenue || { current: 0, previous: 0, change: 0 },
-            activities: data.kpis?.activities || { current: 0, previous: 0, change: 0 },
-            meetings: data.kpis?.meetings || { current: 0, previous: 0, change: 0 },
-            closedDeals: data.kpis?.closedDeals || { current: 0, previous: 0, change: 0 },
-            cashCollected: data.kpis?.cashCollected || { current: 0, previous: 0, change: 0 },
-            revenueGenerated: data.kpis?.revenueGenerated || { current: 0, previous: 0, change: 0 },
-            totalCalls: data.kpis?.totalCalls || { current: 0, previous: 0, change: 0 },
-            call1Taken: data.kpis?.call1Taken || { current: 0, previous: 0, change: 0 },
-            call2Taken: data.kpis?.call2Taken || { current: 0, previous: 0, change: 0 },
-            closingRate: data.kpis?.closingRate || 0,
-            avgCashCollected: data.kpis?.avgCashCollected || 0, 
-            solutionCallShowRate: data.kpis?.solutionCallShowRate || 0,
-            earningPerCall2: data.kpis?.earningPerCall2 || 0,
-            ...data.kpis
-          },
-          refreshedAt: new Date().toISOString()
-        };
-      } catch (error) {
-        console.error('[DashboardData] Fetch error:', error);
-        throw error;
+      const response = await fetch(apiUrl);
+      
+      if (!response.ok) {
+        console.error(`[DashboardData] Error response: ${response.status} ${response.statusText}`);
+        throw new Error(`Failed to fetch dashboard data: ${response.status} ${response.statusText}`);
       }
+      
+      const data = await response.json();
+      
+      // If we have a success=false response, still provide fallback structure 
+      // to prevent dashboard from crashing
+      if (data.success === false || data.partialData === true) {
+        console.warn('[DashboardData] Server returned error or partial data:', data.error || 'Unknown error');
+        
+        // Create a complete fallback structure with all required KPIs
+        // This ensures dashboard doesn't crash with undefined properties
+        return {
+          kpis: {
+            deals: { current: 0, previous: 0, change: 0 },
+            revenue: { current: 0, previous: 0, change: 0 },
+            activities: { current: 0, previous: 0, change: 0 },
+            meetings: { current: 0, previous: 0, change: 0 },
+            closedDeals: { current: 0, previous: 0, change: 0 },
+            cashCollected: { current: 0, previous: 0, change: 0 },
+            revenueGenerated: { current: 0, previous: 0, change: 0 },
+            totalCalls: { current: 0, previous: 0, change: 0 },
+            call1Taken: { current: 0, previous: 0, change: 0 },
+            call2Taken: { current: 0, previous: 0, change: 0 },
+            closingRate: 0,
+            avgCashCollected: 0,
+            solutionCallShowRate: 0,
+            earningPerCall2: 0
+          },
+          salesTeam: [],
+          leadMetrics: {
+            newLeadsToday: 0,
+            leadsLastWeek: 0,
+            averageLeadQualificationTime: 0,
+            leadConversionRate: 0,
+            leadSourceDistribution: {},
+            totalLeads: 0,
+            qualifiedLeads: 0,
+            conversionRate: 0,
+            costPerLead: 0,
+            qualifiedRate: 0,
+            responseRate: 0
+          },
+          timelineData: [],
+          topDeals: [],
+          refreshedAt: new Date().toISOString(),
+          success: false,
+          error: data.error || 'Error fetching dashboard data',
+          partialData: true
+        };
+      }
+      
+      // Add a client-side timestamp to track when the data was loaded
+      // Also ensure all KPI fields exist to prevent null reference errors
+      return {
+        ...data,
+        kpis: {
+          deals: data.kpis?.deals || { current: 0, previous: 0, change: 0 },
+          revenue: data.kpis?.revenue || { current: 0, previous: 0, change: 0 },
+          activities: data.kpis?.activities || { current: 0, previous: 0, change: 0 },
+          meetings: data.kpis?.meetings || { current: 0, previous: 0, change: 0 },
+          closedDeals: data.kpis?.closedDeals || { current: 0, previous: 0, change: 0 },
+          cashCollected: data.kpis?.cashCollected || { current: 0, previous: 0, change: 0 },
+          revenueGenerated: data.kpis?.revenueGenerated || { current: 0, previous: 0, change: 0 },
+          totalCalls: data.kpis?.totalCalls || { current: 0, previous: 0, change: 0 },
+          call1Taken: data.kpis?.call1Taken || { current: 0, previous: 0, change: 0 },
+          call2Taken: data.kpis?.call2Taken || { current: 0, previous: 0, change: 0 },
+          closingRate: data.kpis?.closingRate || 0,
+          avgCashCollected: data.kpis?.avgCashCollected || 0, 
+          solutionCallShowRate: data.kpis?.solutionCallShowRate || 0,
+          earningPerCall2: data.kpis?.earningPerCall2 || 0,
+          ...data.kpis
+        },
+        refreshedAt: new Date().toISOString()
+      };
     }
   });
 }
