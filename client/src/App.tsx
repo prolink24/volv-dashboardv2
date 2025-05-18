@@ -73,6 +73,7 @@ function App() {
             <DashboardProvider>
               <DataFlowDebugger />
               <Router />
+              <CustomToaster />
             </DashboardProvider>
           </DateProvider>
         </ToastProvider>

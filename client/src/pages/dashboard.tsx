@@ -6,7 +6,7 @@ import {
 import { useDashboard } from "@/providers/dashboard-provider";
 import { useDateRange } from "@/providers/date-context";
 import { useDashboardData, syncData, invalidateDashboardData, useAttributionStats } from "@/hooks/use-dashboard-data";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/contexts/toast-context";
 import { DashboardDebugWrapper } from "@/components/debug/dashboard-debug-wrapper";
 import { safeMap } from "@/utils/debug-logger";
 
