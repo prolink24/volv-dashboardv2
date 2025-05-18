@@ -1,6 +1,8 @@
 import { Request, Response, Router } from 'express';
 import { storage } from '../storage';
-import { parseISO } from 'date-fns';
+import { parseISO, format } from 'date-fns';
+import { db } from '../db';
+import { and, eq, gte, lte, sql } from 'drizzle-orm';
 
 const router = Router();
 
@@ -32,15 +34,60 @@ async function getDashboardData(req: Request, res: Response) {
     const currentStartDate = typeof startDate === 'string' ? parseISO(startDate) : new Date();
     const currentEndDate = typeof endDate === 'string' ? parseISO(endDate) : new Date();
     
-    // Get current period data
-    const currentPeriodData = await storage.getDashboardData(
-      { startDate: currentStartDate, endDate: currentEndDate }, 
-      userId as string | undefined
-    );
+    // Log the request for debugging
+    console.log(`Dashboard request for: ${format(currentStartDate, 'yyyy-MM-dd')} to ${format(currentEndDate, 'yyyy-MM-dd')}`);
     
-    // Check if we need to compare with previous period
-    let previousPeriodData = null;
-    if (compareStartDate && compareEndDate) {
+    // Get current period data with better error handling
+    try {
+      const currentPeriodData = await storage.getDashboardData(
+        { startDate: currentStartDate, endDate: currentEndDate }, 
+        userId as string | undefined
+      );
+      
+      // Add diagnostic info to response
+      currentPeriodData.success = true;
+      currentPeriodData.requestedDateRange = {
+        start: format(currentStartDate, 'yyyy-MM-dd'),
+        end: format(currentEndDate, 'yyyy-MM-dd')
+      };
+      
+      // Check if we need to compare with previous period
+      let previousPeriodData = null;
+      if (compareStartDate && compareEndDate) {
+        const compareStart = typeof compareStartDate === 'string' ? parseISO(compareStartDate) : new Date();
+        const compareEnd = typeof compareEndDate === 'string' ? parseISO(compareEndDate) : new Date();
+        
+        previousPeriodData = await storage.getDashboardData(
+          { startDate: compareStart, endDate: compareEnd },
+          userId as string | undefined
+        );
+        
+        // Calculate changes and trends for KPIs
+        if (previousPeriodData && currentPeriodData.kpis) {
+          Object.keys(currentPeriodData.kpis).forEach(key => {
+            if (previousPeriodData.kpis && previousPeriodData.kpis[key]) {
+              const previous = previousPeriodData.kpis[key].current || 0;
+              const current = currentPeriodData.kpis[key].current || 0;
+              
+              currentPeriodData.kpis[key].previous = previous;
+              currentPeriodData.kpis[key].change = previous > 0 
+                ? ((current - previous) / previous) * 100 
+                : (current > 0 ? 100 : 0);
+            }
+          });
+        }
+      }
+      
+      // Return the complete dashboard data
+      return res.json(currentPeriodData);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to fetch dashboard data',
+        message: error.message
+      });
+    }
       const compareStart = typeof compareStartDate === 'string' ? parseISO(compareStartDate) : null;
       const compareEnd = typeof compareEndDate === 'string' ? parseISO(compareEndDate) : null;
       
