@@ -1,196 +1,60 @@
 import React from 'react';
 import {
-  ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  getSortedRowModel,
-  SortingState,
-  useReactTable,
-} from '@tanstack/react-table';
-import { SalesTeamMember } from '@/hooks/use-dashboard-data';
-import { formatCurrency, formatNumber } from '@/lib/utils';
-import {
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { ArrowUpDown } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+} from "@/components/ui/table";
+import { SalesTeamMember } from '@/hooks/use-dashboard-data';
+import { formatCurrency, formatNumber, formatPercent } from '@/lib/utils';
 
 interface ImprovedPerformanceTableProps {
   salesTeam: SalesTeamMember[];
 }
 
 /**
- * Performance Table Component
+ * Improved Performance Table Component
  * 
- * Displays sales team performance data in a sortable table
+ * Displays detailed performance metrics for each sales team member
  */
 export function ImprovedPerformanceTable({ salesTeam }: ImprovedPerformanceTableProps) {
-  const [sorting, setSorting] = React.useState<SortingState>([
-    { id: 'revenue', desc: true }, // Default sort by revenue descending
-  ]);
-
-  // Define table columns
-  const columns: ColumnDef<SalesTeamMember>[] = [
-    {
-      accessorKey: 'name',
-      header: 'Team Member',
-      cell: ({ row }) => (
-        <div className="font-medium">{row.getValue('name')}</div>
-      ),
-    },
-    {
-      accessorKey: 'contactsOwned',
-      header: ({ column }) => (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="p-0 hover:bg-transparent"
-        >
-          Contacts
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      ),
-      cell: ({ row }) => (
-        <div className="text-right">{formatNumber(row.getValue('contactsOwned'))}</div>
-      ),
-    },
-    {
-      accessorKey: 'dealsOwned',
-      header: ({ column }) => (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="p-0 hover:bg-transparent"
-        >
-          Deals
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      ),
-      cell: ({ row }) => (
-        <div className="text-right">{formatNumber(row.getValue('dealsOwned'))}</div>
-      ),
-    },
-    {
-      accessorKey: 'meetings',
-      header: ({ column }) => (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="p-0 hover:bg-transparent"
-        >
-          Meetings
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      ),
-      cell: ({ row }) => (
-        <div className="text-right">{formatNumber(row.getValue('meetings'))}</div>
-      ),
-    },
-    {
-      accessorKey: 'activities',
-      header: ({ column }) => (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="p-0 hover:bg-transparent"
-        >
-          Activities
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      ),
-      cell: ({ row }) => (
-        <div className="text-right">{formatNumber(row.getValue('activities'))}</div>
-      ),
-    },
-    {
-      accessorKey: 'revenue',
-      header: ({ column }) => (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="p-0 hover:bg-transparent"
-        >
-          Revenue
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      ),
-      cell: ({ row }) => (
-        <div className="text-right font-medium">{formatCurrency(row.getValue('revenue'))}</div>
-      ),
-    },
-    {
-      accessorKey: 'cashCollected',
-      header: ({ column }) => (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          className="p-0 hover:bg-transparent"
-        >
-          Cash Collected
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      ),
-      cell: ({ row }) => (
-        <div className="text-right font-medium">{formatCurrency(row.getValue('cashCollected'))}</div>
-      ),
-    },
-  ];
-
-  // Initialize table
-  const table = useReactTable({
-    data: salesTeam,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    onSortingChange: setSorting,
-    getSortedRowModel: getSortedRowModel(),
-    state: {
-      sorting,
-    },
-  });
-
-  // Show empty state if no data
-  if (salesTeam.length === 0) {
-    return (
-      <div className="text-center py-8 text-muted-foreground">
-        No team performance data available for the selected period
-      </div>
-    );
-  }
-
   return (
     <div className="rounded-md border">
       <Table>
         <TableHeader>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <TableHead key={header.id} className="text-right">
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                </TableHead>
-              ))}
-            </TableRow>
-          ))}
+          <TableRow>
+            <TableHead className="w-[180px]">Team Member</TableHead>
+            <TableHead className="text-right">Contacts</TableHead>
+            <TableHead className="text-right">Deals</TableHead>
+            <TableHead className="text-right">Revenue</TableHead>
+            <TableHead className="text-right">Cash Collected</TableHead>
+            <TableHead className="text-right">Meetings</TableHead>
+            <TableHead className="text-right">Activities</TableHead>
+            <TableHead className="text-right">Conversion</TableHead>
+          </TableRow>
         </TableHeader>
         <TableBody>
-          {table.getRowModel().rows.map((row) => (
-            <TableRow key={row.id}>
-              {row.getVisibleCells().map((cell) => (
-                <TableCell key={cell.id}>
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </TableCell>
-              ))}
+          {salesTeam.map((member) => (
+            <TableRow key={member.id}>
+              <TableCell className="font-medium">{member.name}</TableCell>
+              <TableCell className="text-right">{formatNumber(member.totalContacts)}</TableCell>
+              <TableCell className="text-right">{formatNumber(member.totalDeals)}</TableCell>
+              <TableCell className="text-right">{formatCurrency(member.totalRevenue)}</TableCell>
+              <TableCell className="text-right">{formatCurrency(member.totalCashCollected)}</TableCell>
+              <TableCell className="text-right">{formatNumber(member.totalMeetings)}</TableCell>
+              <TableCell className="text-right">{formatNumber(member.totalActivities)}</TableCell>
+              <TableCell className="text-right">{formatPercent(member.conversionRate)}</TableCell>
             </TableRow>
           ))}
+          {salesTeam.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={8} className="h-24 text-center">
+                No team members found for the selected period.
+              </TableCell>
+            </TableRow>
+          )}
         </TableBody>
       </Table>
     </div>

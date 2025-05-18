@@ -1,8 +1,40 @@
-import express, { Request, Response } from 'express';
+import { Request, Response, Router } from 'express';
 import { storage } from '../storage';
-import cacheService from '../services/cache';
+import NodeCache from 'node-cache';
 
-const router = express.Router();
+const router = Router();
+const cache = new NodeCache({ stdTTL: 300 }); // 5 minutes cache
+
+// Cache middleware
+const cacheService = {
+  cacheMiddleware: (duration: number) => {
+    return (req: Request, res: Response, next: Function) => {
+      // Skip caching if explicitly requested
+      if (req.query.skipCache === 'true') {
+        return next();
+      }
+
+      // Create a cache key from the request path and query params
+      const cacheKey = `${req.originalUrl}`;
+      const cachedResponse = cache.get(cacheKey);
+
+      if (cachedResponse) {
+        return res.json(cachedResponse);
+      } else {
+        // Replace the res.json method to intercept the response
+        const originalJson = res.json;
+        res.json = function(body) {
+          cache.set(cacheKey, body, duration);
+          return originalJson.call(this, body);
+        };
+        next();
+      }
+    };
+  },
+  clearCache: () => {
+    cache.flushAll();
+  }
+};
 
 /**
  * GET /api/dashboard
@@ -17,78 +49,73 @@ const router = express.Router();
  */
 router.get('/', cacheService.cacheMiddleware(300), async (req: Request, res: Response) => {
   try {
-    const { 
-      startDate, 
-      endDate, 
-      userId,
-      previousStartDate,
-      previousEndDate
-    } = req.query;
-
-    // Validate required parameters
-    if (!startDate || !endDate) {
-      return res.status(400).json({ 
-        error: 'Missing required parameters: startDate and endDate are required' 
-      });
-    }
-
-    // Parse date strings to Date objects
-    const currentPeriodStart = new Date(startDate as string);
-    const currentPeriodEnd = new Date(endDate as string);
-
-    // Get current period data
-    const currentPeriodData = await storage.getDashboardData(
-      { startDate: currentPeriodStart, endDate: currentPeriodEnd },
-      userId as string | undefined
-    );
+    const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
+    const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
+    const userId = req.query.userId as string | undefined;
+    const previousStartDate = req.query.previousStartDate ? new Date(req.query.previousStartDate as string) : undefined;
+    const previousEndDate = req.query.previousEndDate ? new Date(req.query.previousEndDate as string) : undefined;
     
-    // Get previous period data if requested
-    let previousPeriodData = null;
-    if (previousStartDate && previousEndDate) {
-      const prevStart = new Date(previousStartDate as string);
-      const prevEnd = new Date(previousEndDate as string);
-      
-      previousPeriodData = await storage.getDashboardData(
-        { startDate: prevStart, endDate: prevEnd },
-        userId as string | undefined
-      );
+    // Validate date range
+    if (!startDate || !endDate) {
+      return res.status(400).json({ error: 'Invalid date range' });
     }
-
-    // Format response based on whether previous period data was requested
-    const response = {
+    
+    // Fetch dashboard data for current period
+    const dashboardData = await storage.getDashboardData(startDate, endDate, userId);
+    
+    // Format the response
+    const response: any = {
       currentPeriod: {
-        totalContacts: currentPeriodData.totalContacts,
-        totalRevenue: currentPeriodData.totalRevenue,
-        totalCashCollected: currentPeriodData.totalCashCollected,
-        totalDeals: currentPeriodData.totalDeals,
-        totalMeetings: currentPeriodData.totalMeetings,
-        totalActivities: currentPeriodData.totalActivities,
-        conversionRate: currentPeriodData.conversionRate,
-        multiSourceRate: currentPeriodData.multiSourceRate,
-        cashCollectedRate: currentPeriodData.cashCollectedRate,
-        salesTeam: currentPeriodData.salesTeam,
+        totalContacts: dashboardData.totalContacts || 0,
+        totalRevenue: dashboardData.totalRevenue || 0,
+        totalCashCollected: dashboardData.totalCashCollected || 0,
+        totalDeals: dashboardData.totalDeals || 0,
+        totalMeetings: dashboardData.totalMeetings || 0,
+        totalActivities: dashboardData.totalActivities || 0,
+        conversionRate: dashboardData.conversionRate || 0,
+        multiSourceRate: dashboardData.multiSourceRate || 0,
+        cashCollectedRate: dashboardData.cashCollectedRate || 0,
+        salesTeam: dashboardData.salesTeam || []
       }
     };
-
-    // Add previous period data if available
-    if (previousPeriodData) {
-      response['previousPeriod'] = {
-        totalContacts: previousPeriodData.totalContacts,
-        totalRevenue: previousPeriodData.totalRevenue,
-        totalCashCollected: previousPeriodData.totalCashCollected,
-        totalDeals: previousPeriodData.totalDeals,
-        totalMeetings: previousPeriodData.totalMeetings,
-        totalActivities: previousPeriodData.totalActivities,
-        conversionRate: previousPeriodData.conversionRate,
-        multiSourceRate: previousPeriodData.multiSourceRate,
-        cashCollectedRate: previousPeriodData.cashCollectedRate,
+    
+    // If previous period is requested, fetch data for it
+    if (previousStartDate && previousEndDate) {
+      const previousData = await storage.getDashboardData(previousStartDate, previousEndDate, userId);
+      
+      response.previousPeriod = {
+        totalContacts: previousData.totalContacts || 0,
+        totalRevenue: previousData.totalRevenue || 0,
+        totalCashCollected: previousData.totalCashCollected || 0,
+        totalDeals: previousData.totalDeals || 0,
+        totalMeetings: previousData.totalMeetings || 0,
+        totalActivities: previousData.totalActivities || 0,
+        conversionRate: previousData.conversionRate || 0,
+        multiSourceRate: previousData.multiSourceRate || 0,
+        cashCollectedRate: previousData.cashCollectedRate || 0,
+        salesTeam: previousData.salesTeam || []
       };
     }
-
-    return res.status(200).json(response);
+    
+    res.json(response);
   } catch (error) {
     console.error('Error fetching dashboard data:', error);
-    return res.status(500).json({ error: 'Failed to fetch dashboard data' });
+    res.status(500).json({ error: 'Failed to fetch dashboard data' });
+  }
+});
+
+/**
+ * POST /api/dashboard/clear-cache
+ * 
+ * Clears the dashboard cache
+ */
+router.post('/clear-cache', async (req: Request, res: Response) => {
+  try {
+    cacheService.clearCache();
+    res.json({ success: true, message: 'Dashboard cache cleared successfully' });
+  } catch (error) {
+    console.error('Error clearing dashboard cache:', error);
+    res.status(500).json({ error: 'Failed to clear dashboard cache' });
   }
 });
 
