@@ -1,45 +1,55 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 
-export interface DateRange {
-  from: Date | null;
-  to: Date | null;
+// Date context type definition
+export interface DateContextType {
+  startDate: Date | null;
+  endDate: Date | null;
+  includePreviousPeriod: boolean;
+  setDateRange: (start: Date | null, end: Date | null) => void;
+  setIncludePreviousPeriod: (include: boolean) => void;
 }
 
-interface DateContextType {
-  dateRange: DateRange;
-  setDateRange: (range: DateRange) => void;
-}
+// Create the context with default values
+const DateContext = createContext<DateContextType>({
+  startDate: null,
+  endDate: null,
+  includePreviousPeriod: true,
+  setDateRange: () => {},
+  setIncludePreviousPeriod: () => {},
+});
 
-const DateContext = createContext<DateContextType | undefined>(undefined);
+// Hook to use the date context
+export const useDateContext = () => useContext(DateContext);
 
-interface DateProviderProps {
-  children: ReactNode;
-  initialDateRange?: DateRange;
-}
-
-export function DateProvider({ 
-  children, 
-  initialDateRange = {
-    // Default to last 30 days
-    from: new Date(new Date().setDate(new Date().getDate() - 30)),
-    to: new Date(),
-  }
-}: DateProviderProps) {
-  const [dateRange, setDateRange] = useState<DateRange>(initialDateRange);
-
+// Define the provider component
+export function DateContextProvider({ children }: { children: React.ReactNode }) {
+  // Default to current month
+  const today = new Date();
+  const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  
+  // State for the date range
+  const [startDate, setStartDate] = useState<Date | null>(startOfMonth);
+  const [endDate, setEndDate] = useState<Date | null>(endOfMonth);
+  const [includePreviousPeriod, setIncludePreviousPeriod] = useState<boolean>(true);
+  
+  // Function to set both dates at once
+  const setDateRange = (start: Date | null, end: Date | null) => {
+    setStartDate(start);
+    setEndDate(end);
+  };
+  
   return (
-    <DateContext.Provider value={{ dateRange, setDateRange }}>
+    <DateContext.Provider
+      value={{
+        startDate,
+        endDate,
+        includePreviousPeriod,
+        setDateRange,
+        setIncludePreviousPeriod,
+      }}
+    >
       {children}
     </DateContext.Provider>
   );
-}
-
-export function useDateContext() {
-  const context = useContext(DateContext);
-  
-  if (context === undefined) {
-    throw new Error('useDateContext must be used within a DateProvider');
-  }
-  
-  return context;
 }

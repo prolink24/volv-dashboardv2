@@ -1,35 +1,48 @@
 import React, { useState } from 'react';
-import { CheckIcon, ChevronsUpDown, User } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+import { Check, ChevronsUpDown, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Command,
   CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
-} from '@/components/ui/command';
+  CommandList,
+  CommandSeparator,
+} from "@/components/ui/command";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover';
-import { useDashboard } from '@/providers/dashboard-provider';
+} from "@/components/ui/popover";
+import { useDashboard } from "@/providers/dashboard-provider";
+import { cn } from "@/lib/utils";
 
-// This component will be populated with real user data from the dashboard context
+/**
+ * Improved user filter component for dashboard
+ */
 export function ImprovedUserFilter() {
+  const { selectedUserId, setSelectedUserId, data, isLoading } = useDashboard();
   const [open, setOpen] = useState(false);
-  const { dashboardData, selectedUserId, setSelectedUserId, isLoading } = useDashboard();
   
-  // Get users from the dashboard data if available
-  const users = dashboardData?.salesTeam || [];
+  // Get sales team from dashboard data
+  const salesTeam = data?.salesTeam || [];
   
-  // Find the currently selected user
-  const selectedUser = users.find(user => user.id === selectedUserId);
+  const userOptions = [
+    { id: '', name: 'All Users' },
+    ...salesTeam.map(user => ({
+      id: String(user.id),
+      name: user.name
+    }))
+  ];
   
-  // Handle selecting all users (no specific user filter)
-  const handleSelectAllUsers = () => {
-    setSelectedUserId(undefined);
+  // Get the selected user name
+  const selectedUserName = selectedUserId 
+    ? userOptions.find(user => user.id === selectedUserId)?.name || 'Unknown User'
+    : 'All Users';
+  
+  const handleSelect = (userId: string) => {
+    setSelectedUserId(userId ? userId : null);
     setOpen(false);
   };
   
@@ -40,49 +53,43 @@ export function ImprovedUserFilter() {
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="justify-between w-full sm:w-[220px]"
+          className="w-[200px] justify-between"
           disabled={isLoading}
         >
           <div className="flex items-center gap-2 truncate">
-            <User className="h-4 w-4 shrink-0" />
-            <span className="truncate">
-              {selectedUser ? selectedUser.name : "All Team Members"}
-            </span>
+            <Users className="h-4 w-4" />
+            <span className="truncate">{selectedUserName}</span>
           </div>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="p-0 w-[220px]">
+      <PopoverContent className="w-[200px] p-0">
         <Command>
-          <CommandInput placeholder="Search team member..." />
-          <CommandEmpty>No team member found.</CommandEmpty>
-          <CommandGroup>
-            <CommandItem
-              onSelect={handleSelectAllUsers}
-              className="flex items-center gap-2"
-            >
-              <User className="h-4 w-4" />
-              <span>All Team Members</span>
-              {!selectedUserId && <CheckIcon className="ml-auto h-4 w-4" />}
-            </CommandItem>
-            
-            {users.map((user) => (
-              <CommandItem
-                key={user.id}
-                onSelect={() => {
-                  setSelectedUserId(user.id);
-                  setOpen(false);
-                }}
-                className="flex items-center gap-2"
-              >
-                <User className="h-4 w-4" />
-                <span>{user.name}</span>
-                {selectedUserId === user.id && (
-                  <CheckIcon className="ml-auto h-4 w-4" />
-                )}
-              </CommandItem>
-            ))}
-          </CommandGroup>
+          <CommandInput placeholder="Search user..." />
+          <CommandEmpty>No user found.</CommandEmpty>
+          <CommandList>
+            <CommandGroup>
+              {userOptions.map(user => (
+                <CommandItem
+                  key={user.id}
+                  value={user.name}
+                  onSelect={() => handleSelect(user.id)}
+                  className="flex items-center gap-2"
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      (selectedUserId === user.id || (!selectedUserId && user.id === '')) 
+                        ? "opacity-100" 
+                        : "opacity-0"
+                    )}
+                  />
+                  {user.name}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+            <CommandSeparator />
+          </CommandList>
         </Command>
       </PopoverContent>
     </Popover>

@@ -1,103 +1,132 @@
-import React, { createContext, useContext, ReactNode, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useDateContext } from './date-context';
-import { useDashboardData } from '@/hooks/use-dashboard-data';
+import { useQuery } from '@tanstack/react-query';
+import { queryClient } from '@/lib/queryClient';
 
-// Define the shape of our dashboard data
+// Dashboard data interface
 export interface DashboardData {
-  // Contact-related metrics
   totalContacts: number;
-  contactsWithDeals: number;
-  multiSourceRate: number;
-  fieldCoverage: number;
-  
-  // Deal-related metrics
   totalDeals: number;
-  wonDeals: number;
-  lostDeals: number;
-  openDeals: number;
-  
-  // Financial metrics
-  totalRevenue: number;
-  avgDealSize: number;
-  cashCollected: number;
-  
-  // Meeting metrics
-  totalMeetings: number;
-  meetingsAttended: number;
-  meetingsCanceled: number;
-  
-  // Activity metrics
   totalActivities: number;
-  
-  // Team performance
-  salesTeam: Array<{
-    id: string;
+  totalMeetings: number;
+  revenueGenerated: number;
+  cashCollected: number;
+  averageDealValue: number;
+  averageDealCycle: number;
+  attributionAccuracy: number;
+  contactsWithMultipleSources: number;
+  totalContactsWithAttribution: number;
+  salesTeam: {
+    id: number | string;
     name: string;
-    email: string;
     role: string;
     deals: number;
     revenue: number;
     meetings: number;
-  }>;
-  
-  // Previous period data for comparisons
+    contacts: number;
+  }[];
   previousPeriod?: {
     totalContacts: number;
     totalDeals: number;
+    totalActivities: number;
+    totalMeetings: number;
     totalRevenue: number;
     cashCollected: number;
   };
 }
 
+// Dashboard context interface
 interface DashboardContextType {
-  dashboardData: DashboardData | null;
+  data: DashboardData | null;
   isLoading: boolean;
   error: Error | null;
-  selectedUserId?: string;
-  setSelectedUserId: (userId?: string) => void;
+  selectedUserId: string | null;
+  setSelectedUserId: (userId: string | null) => void;
   refreshData: () => void;
 }
 
-const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
+// Create the context with default values
+const DashboardContext = createContext<DashboardContextType>({
+  data: null,
+  isLoading: false,
+  error: null,
+  selectedUserId: null,
+  setSelectedUserId: () => {},
+  refreshData: () => {},
+});
 
-interface DashboardProviderProps {
-  children: ReactNode;
-}
+// Hook to use the dashboard context
+export const useDashboard = () => useContext(DashboardContext);
 
-export function DashboardProvider({ children }: DashboardProviderProps) {
-  const { dateRange } = useDateContext();
-  const [selectedUserId, setSelectedUserId] = useState<string | undefined>(undefined);
+// Provider component
+export function DashboardProvider({ children }: { children: React.ReactNode }) {
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const { startDate, endDate, includePreviousPeriod } = useDateContext();
   
-  // Use our custom hook to fetch dashboard data
-  const { 
-    data: dashboardData, 
-    isLoading, 
-    error,
-    refetch: refreshData
-  } = useDashboardData(dateRange, selectedUserId);
-
+  // Format dates for the API calls
+  const formatDate = (date: Date | null): string | null => {
+    if (!date) return null;
+    return date.toISOString().split('T')[0]; // YYYY-MM-DD format
+  };
+  
+  // Build query parameters for the API call
+  const getQueryParams = () => {
+    const params = new URLSearchParams();
+    
+    if (startDate) params.append('startDate', formatDate(startDate) || '');
+    if (endDate) params.append('endDate', formatDate(endDate) || '');
+    if (includePreviousPeriod) params.append('comparePreviousPeriod', 'true');
+    if (selectedUserId) params.append('userId', selectedUserId);
+    
+    return params.toString();
+  };
+  
+  // Create query key that depends on all filter parameters
+  const queryKey = [
+    '/api/dashboard',
+    formatDate(startDate),
+    formatDate(endDate),
+    includePreviousPeriod,
+    selectedUserId
+  ];
+  
+  // Fetch dashboard data
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey,
+    queryFn: async () => {
+      const params = getQueryParams();
+      const url = `/api/dashboard${params ? `?${params}` : ''}`;
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error(`Error fetching dashboard data: ${response.statusText}`);
+      }
+      
+      return response.json() as Promise<DashboardData>;
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    refetchOnWindowFocus: false,
+  });
+  
+  // Function to manually refresh data
+  const refreshData = () => {
+    // Clear cache for this query
+    queryClient.invalidateQueries({ queryKey });
+    refetch();
+  };
+  
   return (
-    <DashboardContext.Provider 
-      value={{ 
-        dashboardData, 
-        isLoading, 
-        error,
+    <DashboardContext.Provider
+      value={{
+        data: data || null,
+        isLoading,
+        error: error as Error | null,
         selectedUserId,
         setSelectedUserId,
-        refreshData
+        refreshData,
       }}
     >
       {children}
     </DashboardContext.Provider>
   );
-}
-
-export function useDashboard() {
-  const context = useContext(DashboardContext);
-  
-  if (context === undefined) {
-    throw new Error('useDashboard must be used within a DashboardProvider');
-  }
-  
-  return context;
 }

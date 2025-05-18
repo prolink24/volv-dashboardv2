@@ -1,266 +1,270 @@
 import React from 'react';
 import { ImprovedKPICard } from './improved-kpi-card';
-import { ImprovedStatsCard } from './improved-stats-card';
 import { ImprovedDateRangePicker } from './improved-date-range-picker';
 import { ImprovedUserFilter } from './improved-user-filter';
 import { useDashboard } from '@/providers/dashboard-provider';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card } from '@/components/ui/card';
-import { 
-  Users, 
-  DollarSign, 
-  Calendar, 
-  BarChart3, 
-  Phone, 
-  Mail, 
-  CheckCircle, 
-  XCircle,
-  TrendingUp,
-  AlertCircle,
-  Target,
-  RefreshCw
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import { DateProvider } from '@/providers/date-context';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { BarChart3, Users, DollarSign, Calendar, Phone, Activity } from 'lucide-react';
+import { calculatePercentChange, formatCurrency, formatNumber } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
+/**
+ * Main dashboard component that connects to the database and displays KPIs
+ */
 export function ImprovedDashboard() {
-  const { 
-    dashboardData, 
-    isLoading, 
-    error, 
-    refreshData 
-  } = useDashboard();
+  // Get dashboard data and state from context
+  const { data, isLoading, error } = useDashboard();
   
-  const handleRefresh = () => {
-    refreshData();
-  };
+  // Calculate percent changes if we have previous period data
+  const contactsChange = data?.previousPeriod
+    ? calculatePercentChange(data.totalContacts, data.previousPeriod.totalContacts)
+    : null;
   
-  if (error) {
-    return (
-      <div className="p-6 flex flex-col items-center justify-center min-h-[400px]">
-        <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
-        <h2 className="text-xl font-semibold mb-2">Error Loading Dashboard</h2>
-        <p className="text-muted-foreground mb-4 text-center max-w-md">
-          There was a problem loading your dashboard data. 
-          This could be due to a connection issue or a problem with the database.
-        </p>
-        <Button onClick={handleRefresh}>
-          <RefreshCw className="mr-2 h-4 w-4" />
-          Try Again
-        </Button>
-      </div>
-    );
-  }
+  const dealsChange = data?.previousPeriod
+    ? calculatePercentChange(data.totalDeals, data.previousPeriod.totalDeals)
+    : null;
+  
+  const revenueChange = data?.previousPeriod && data.revenueGenerated
+    ? calculatePercentChange(data.revenueGenerated, data.previousPeriod.totalRevenue)
+    : null;
+  
+  const cashCollectedChange = data?.previousPeriod && data.cashCollected
+    ? calculatePercentChange(data.cashCollected, data.previousPeriod.cashCollected)
+    : null;
   
   return (
-    <div className="p-4 lg:p-6 space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <h1 className="text-2xl font-bold">Performance Dashboard</h1>
-        
-        <div className="flex flex-col sm:flex-row gap-3">
-          <ImprovedUserFilter />
+    <div className="space-y-6">
+      {/* Header with date range picker and user filter */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+        <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
           <ImprovedDateRangePicker />
+          <ImprovedUserFilter />
         </div>
       </div>
       
-      {/* Main KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <ImprovedKPICard 
-          title="Total Revenue" 
-          value={dashboardData?.totalRevenue || 0}
-          previousValue={dashboardData?.previousPeriod?.totalRevenue}
-          formatType="currency"
-          icon={<DollarSign className="h-4 w-4" />}
-          isLoading={isLoading}
-        />
-        <ImprovedKPICard 
-          title="Cash Collected" 
-          value={dashboardData?.cashCollected || 0}
-          previousValue={dashboardData?.previousPeriod?.totalRevenue}
-          formatType="currency"
-          icon={<DollarSign className="h-4 w-4" />}
-          isLoading={isLoading}
-        />
-        <ImprovedKPICard 
-          title="Total Contacts" 
-          value={dashboardData?.totalContacts || 0}
-          previousValue={dashboardData?.previousPeriod?.totalContacts}
+      {/* Show error if any */}
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>
+            Error loading dashboard data: {error.message}
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {/* Primary KPIs */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <ImprovedKPICard
+          title="Total Contacts"
+          value={data?.totalContacts || 0}
+          percentChange={contactsChange}
+          previousValue={data?.previousPeriod?.totalContacts}
           icon={<Users className="h-4 w-4" />}
           isLoading={isLoading}
+          variant="contacts"
         />
-        <ImprovedKPICard 
-          title="Average Deal Size" 
-          value={dashboardData?.avgDealSize || 0}
-          formatType="currency"
+        
+        <ImprovedKPICard
+          title="Total Deals"
+          value={data?.totalDeals || 0}
+          percentChange={dealsChange}
+          previousValue={data?.previousPeriod?.totalDeals}
           icon={<BarChart3 className="h-4 w-4" />}
           isLoading={isLoading}
         />
+        
+        <ImprovedKPICard
+          title="Revenue Generated"
+          value={data?.revenueGenerated || 0}
+          percentChange={revenueChange}
+          previousValue={data?.previousPeriod?.totalRevenue}
+          valuePrefix="$"
+          icon={<DollarSign className="h-4 w-4" />}
+          isLoading={isLoading}
+          variant="revenue"
+        />
+        
+        <ImprovedKPICard
+          title="Cash Collected"
+          value={data?.cashCollected || 0}
+          percentChange={cashCollectedChange}
+          previousValue={data?.previousPeriod?.cashCollected}
+          valuePrefix="$"
+          icon={<DollarSign className="h-4 w-4" />}
+          isLoading={isLoading}
+          variant="revenue"
+        />
       </div>
       
-      {/* Dashboard Tabs */}
-      <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid grid-cols-3 md:w-[400px]">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="deals">Deals</TabsTrigger>
-          <TabsTrigger value="activity">Activity</TabsTrigger>
-        </TabsList>
+      {/* Secondary KPIs */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+        <ImprovedKPICard
+          title="Activities"
+          value={data?.totalActivities || 0}
+          icon={<Activity className="h-4 w-4" />}
+          isLoading={isLoading}
+        />
         
-        {/* Overview Tab */}
-        <TabsContent value="overview" className="space-y-4">
-          {/* Overview Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <ImprovedStatsCard 
-              title="Multi-Source Rate" 
-              statValue={`${dashboardData?.multiSourceRate || 0}%`}
-              description="Contacts with data from multiple platforms"
-              icon={<Target className="h-4 w-4" />}
-              isLoading={isLoading}
-            />
-            <ImprovedStatsCard 
-              title="Field Coverage" 
-              statValue={`${dashboardData?.fieldCoverage || 0}%`}
-              description="Percentage of contact fields with data"
-              icon={<CheckCircle className="h-4 w-4" />}
-              isLoading={isLoading}
-            />
-            <ImprovedStatsCard 
-              title="Total Meetings" 
-              statValue={dashboardData?.totalMeetings || 0}
-              description="Meetings scheduled across all platforms"
-              icon={<Calendar className="h-4 w-4" />}
-              isLoading={isLoading}
-            />
-          </div>
-          
-          {/* Team Performance Table */}
-          <Card className="p-5">
-            <h3 className="text-lg font-semibold mb-4">Team Performance</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-2">Team Member</th>
-                    <th className="text-right p-2">Deals</th>
-                    <th className="text-right p-2">Revenue</th>
-                    <th className="text-right p-2">Meetings</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {isLoading ? (
-                    Array(3).fill(0).map((_, i) => (
-                      <tr key={i} className="border-b">
-                        <td className="p-2">
-                          <div className="h-5 bg-gray-200 animate-pulse rounded w-32"></div>
-                        </td>
-                        <td className="p-2 text-right">
-                          <div className="h-5 bg-gray-200 animate-pulse rounded w-12 ml-auto"></div>
-                        </td>
-                        <td className="p-2 text-right">
-                          <div className="h-5 bg-gray-200 animate-pulse rounded w-20 ml-auto"></div>
-                        </td>
-                        <td className="p-2 text-right">
-                          <div className="h-5 bg-gray-200 animate-pulse rounded w-12 ml-auto"></div>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    dashboardData?.salesTeam?.map((member) => (
-                      <tr key={member.id} className="border-b">
-                        <td className="p-2 font-medium">{member.name}</td>
-                        <td className="p-2 text-right">{member.deals}</td>
-                        <td className="p-2 text-right">${member.revenue.toLocaleString()}</td>
-                        <td className="p-2 text-right">{member.meetings}</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </Card>
-        </TabsContent>
+        <ImprovedKPICard
+          title="Meetings"
+          value={data?.totalMeetings || 0}
+          icon={<Calendar className="h-4 w-4" />}
+          isLoading={isLoading}
+          variant="meetings"
+        />
         
-        {/* Deals Tab */}
-        <TabsContent value="deals" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <ImprovedStatsCard 
-              title="Total Deals" 
-              statValue={dashboardData?.totalDeals || 0}
-              icon={<BarChart3 className="h-4 w-4" />}
-              isLoading={isLoading}
-            />
-            <ImprovedStatsCard 
-              title="Won Deals" 
-              statValue={dashboardData?.wonDeals || 0}
-              icon={<CheckCircle className="h-4 w-4" />}
-              isLoading={isLoading}
-            />
-            <ImprovedStatsCard 
-              title="Lost Deals" 
-              statValue={dashboardData?.lostDeals || 0}
-              icon={<XCircle className="h-4 w-4" />}
-              isLoading={isLoading}
-            />
-            <ImprovedStatsCard 
-              title="Open Deals" 
-              statValue={dashboardData?.openDeals || 0}
-              icon={<TrendingUp className="h-4 w-4" />}
-              isLoading={isLoading}
-            />
-          </div>
-        </TabsContent>
-        
-        {/* Activity Tab */}
-        <TabsContent value="activity" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <ImprovedStatsCard 
-              title="Total Activities" 
-              statValue={dashboardData?.totalActivities || 0}
-              icon={<BarChart3 className="h-4 w-4" />}
-              isLoading={isLoading}
-            />
-            <ImprovedStatsCard 
-              title="Meetings Scheduled" 
-              statValue={dashboardData?.totalMeetings || 0}
-              icon={<Calendar className="h-4 w-4" />}
-              isLoading={isLoading}
-            />
-            <ImprovedStatsCard 
-              title="Meetings Attended" 
-              statValue={dashboardData?.meetingsAttended || 0}
-              icon={<CheckCircle className="h-4 w-4" />}
-              isLoading={isLoading}
-            />
-            <ImprovedStatsCard 
-              title="Meetings Canceled" 
-              statValue={dashboardData?.meetingsCanceled || 0}
-              icon={<XCircle className="h-4 w-4" />}
-              isLoading={isLoading}
-            />
-          </div>
-        </TabsContent>
-      </Tabs>
+        <ImprovedKPICard
+          title="Avg. Deal Value"
+          value={data?.averageDealValue || 0}
+          valuePrefix="$"
+          icon={<DollarSign className="h-4 w-4" />}
+          isLoading={isLoading}
+          variant="revenue"
+        />
+      </div>
       
-      <div className="flex justify-end">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={handleRefresh}
-          className="gap-2"
-        >
-          <RefreshCw className="h-4 w-4" />
-          Refresh Data
-        </Button>
+      {/* Team performance table */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg font-medium">Sales Team Performance</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="space-y-2">
+              <Skeleton className="h-8 w-full" />
+              <Skeleton className="h-8 w-full" />
+              <Skeleton className="h-8 w-full" />
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead className="text-right">Deals</TableHead>
+                  <TableHead className="text-right">Revenue</TableHead>
+                  <TableHead className="text-right">Meetings</TableHead>
+                  <TableHead className="text-right">Contacts</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data?.salesTeam && data.salesTeam.length > 0 ? (
+                  data.salesTeam.map((member) => (
+                    <TableRow key={member.id}>
+                      <TableCell className="font-medium">{member.name}</TableCell>
+                      <TableCell>{member.role}</TableCell>
+                      <TableCell className="text-right">{member.deals}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(member.revenue)}</TableCell>
+                      <TableCell className="text-right">{member.meetings}</TableCell>
+                      <TableCell className="text-right">{member.contacts}</TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-4">
+                      No team data available
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+      
+      {/* Attribution metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg font-medium">Attribution Metrics</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Attribution Accuracy</span>
+                <span className="font-medium">
+                  {isLoading ? (
+                    <Skeleton className="h-4 w-16 inline-block" />
+                  ) : (
+                    `${data?.attributionAccuracy || 0}%`
+                  )}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Multi-Source Contacts</span>
+                <span className="font-medium">
+                  {isLoading ? (
+                    <Skeleton className="h-4 w-16 inline-block" />
+                  ) : (
+                    formatNumber(data?.contactsWithMultipleSources || 0)
+                  )}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Contacts with Attribution</span>
+                <span className="font-medium">
+                  {isLoading ? (
+                    <Skeleton className="h-4 w-16 inline-block" />
+                  ) : (
+                    formatNumber(data?.totalContactsWithAttribution || 0)
+                  )}
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg font-medium">Sales Efficiency</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Average Deal Cycle</span>
+                <span className="font-medium">
+                  {isLoading ? (
+                    <Skeleton className="h-4 w-16 inline-block" />
+                  ) : (
+                    `${data?.averageDealCycle || 0} days`
+                  )}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Revenue per Deal</span>
+                <span className="font-medium">
+                  {isLoading ? (
+                    <Skeleton className="h-4 w-16 inline-block" />
+                  ) : (
+                    formatCurrency(data?.revenueGenerated && data?.totalDeals ? 
+                      data?.revenueGenerated / (data?.totalDeals || 1) : 0)
+                  )}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Deals per Contact</span>
+                <span className="font-medium">
+                  {isLoading ? (
+                    <Skeleton className="h-4 w-16 inline-block" />
+                  ) : (
+                    (data?.totalDeals && data?.totalContacts ? 
+                      (data.totalDeals / (data.totalContacts || 1)).toFixed(2) : '0.00')
+                  )}
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
-  );
-}
-
-// Wrap the dashboard in the DateProvider for use outside this file
-export function ImprovedDashboardWithContext() {
-  return (
-    <DateProvider>
-      <ImprovedDashboard />
-    </DateProvider>
   );
 }
