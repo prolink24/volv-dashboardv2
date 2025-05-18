@@ -1,207 +1,155 @@
-import React, { useState } from 'react';
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { useDateContext } from "@/providers/date-context";
-import { CalendarIcon, CheckIcon, ChevronDownIcon } from "lucide-react";
+import React from 'react';
+import { CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { DateRange } from 'react-day-picker';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { format } from "date-fns";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-
-type DatePreset = 'today' | 'yesterday' | 'last7days' | 'last30days' | 'thisMonth' | 'lastMonth' | 'custom';
+} from '@/components/ui/popover';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { useDateContext } from '@/providers/date-context';
 
 /**
- * Enhanced date range picker with presets and comparison options
+ * Date Range Picker Component
+ * 
+ * Allows user to select a date range for dashboard data
+ * with optional comparison to previous period
  */
 export function ImprovedDateRangePicker() {
-  const { startDate, endDate, setDateRange, includePreviousPeriod, setIncludePreviousPeriod } = useDateContext();
-  const [calendarOpen, setCalendarOpen] = useState(false);
-  const [currentPreset, setCurrentPreset] = useState<DatePreset>('thisMonth');
-  
-  // Format date range for display
-  const formattedDateRange = startDate && endDate
-    ? `${format(startDate, 'MMM d, yyyy')} - ${format(endDate, 'MMM d, yyyy')}`
-    : 'Select date range';
-  
-  // Apply a preset date range
-  const applyPreset = (preset: DatePreset) => {
-    const today = new Date();
-    const currentYear = today.getFullYear();
-    const currentMonth = today.getMonth();
-    
-    let newStartDate: Date;
-    let newEndDate: Date;
-    
-    switch (preset) {
-      case 'today':
-        newStartDate = new Date(today);
-        newEndDate = new Date(today);
-        break;
-        
-      case 'yesterday':
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
-        newStartDate = yesterday;
-        newEndDate = yesterday;
-        break;
-        
-      case 'last7days':
-        newEndDate = new Date(today);
-        newStartDate = new Date(today);
-        newStartDate.setDate(newStartDate.getDate() - 6);
-        break;
-        
-      case 'last30days':
-        newEndDate = new Date(today);
-        newStartDate = new Date(today);
-        newStartDate.setDate(newStartDate.getDate() - 29);
-        break;
-        
-      case 'thisMonth':
-        newStartDate = new Date(currentYear, currentMonth, 1);
-        newEndDate = new Date(currentYear, currentMonth + 1, 0);
-        break;
-        
-      case 'lastMonth':
-        newStartDate = new Date(currentYear, currentMonth - 1, 1);
-        newEndDate = new Date(currentYear, currentMonth, 0);
-        break;
-        
-      case 'custom':
-        // Don't change the dates, just open the calendar
-        setCalendarOpen(true);
-        setCurrentPreset('custom');
-        return;
-        
-      default:
-        return;
-    }
-    
-    setDateRange(newStartDate, newEndDate);
-    setCurrentPreset(preset);
-  };
-  
-  // Handle date selection from calendar
-  const handleSelect = (date: Date | undefined) => {
-    if (!date) return;
-    
-    if (!startDate || (startDate && endDate)) {
-      // If no date selected yet or both dates are selected, set start date
-      setDateRange(date, null);
-    } else {
-      // If only start date is selected, set end date
-      // Ensure end date is after start date
-      if (date < startDate) {
-        setDateRange(date, startDate);
-      } else {
-        setDateRange(startDate, date);
+  const { startDate, endDate, setDateRange, comparePreviousPeriod, setComparePreviousPeriod } = useDateContext();
+  const [date, setDate] = React.useState<DateRange | undefined>({
+    from: startDate,
+    to: endDate
+  });
+  const [isCalendarOpen, setIsCalendarOpen] = React.useState(false);
+
+  // Handle date change in the calendar
+  const handleDateChange = (range: DateRange | undefined) => {
+    setDate(range);
+    if (range?.from && range?.to) {
+      setDateRange(range.from, range.to);
+      if (isCalendarOpen) {
+        setIsCalendarOpen(false);
       }
-      // Close the calendar after selecting end date
-      setCalendarOpen(false);
     }
-    
-    setCurrentPreset('custom');
   };
-  
-  // Handle toggling the comparison option
+
+  // Predefined date ranges
+  const selectThisMonth = () => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    setDate({ from: start, to: end });
+    setDateRange(start, end);
+  };
+
+  const selectLastMonth = () => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const end = new Date(now.getFullYear(), now.getMonth(), 0);
+    setDate({ from: start, to: end });
+    setDateRange(start, end);
+  };
+
+  const selectThisQuarter = () => {
+    const now = new Date();
+    const currentQuarter = Math.floor(now.getMonth() / 3);
+    const start = new Date(now.getFullYear(), currentQuarter * 3, 1);
+    const end = new Date(now.getFullYear(), currentQuarter * 3 + 3, 0);
+    setDate({ from: start, to: end });
+    setDateRange(start, end);
+  };
+
+  const selectLastQuarter = () => {
+    const now = new Date();
+    const currentQuarter = Math.floor(now.getMonth() / 3);
+    const previousQuarter = currentQuarter - 1 < 0 ? 3 : currentQuarter - 1;
+    const year = currentQuarter - 1 < 0 ? now.getFullYear() - 1 : now.getFullYear();
+    const start = new Date(year, previousQuarter * 3, 1);
+    const end = new Date(year, previousQuarter * 3 + 3, 0);
+    setDate({ from: start, to: end });
+    setDateRange(start, end);
+  };
+
+  const selectLast30Days = () => {
+    const now = new Date();
+    const end = new Date(now);
+    const start = new Date(now);
+    start.setDate(now.getDate() - 30);
+    setDate({ from: start, to: end });
+    setDateRange(start, end);
+  };
+
+  // Toggle comparison with previous period
   const handleComparisonToggle = (checked: boolean) => {
-    setIncludePreviousPeriod(checked);
+    setComparePreviousPeriod(checked);
   };
-  
+
   return (
-    <div className="flex flex-row flex-wrap gap-2 items-center">
-      {/* Date picker */}
-      <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+    <div className="flex flex-col space-y-2">
+      <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
-            className="h-10 px-3 py-2 w-auto text-sm"
+            className={cn(
+              "justify-start text-left font-normal w-full",
+              !date && "text-muted-foreground"
+            )}
           >
-            <CalendarIcon className="h-4 w-4 mr-2" />
-            {formattedDateRange}
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {date?.from ? (
+              date.to ? (
+                <>
+                  {format(date.from, "LLL dd, y")} - {format(date.to, "LLL dd, y")}
+                </>
+              ) : (
+                format(date.from, "LLL dd, y")
+              )
+            ) : (
+              <span>Pick a date range</span>
+            )}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
-          <Calendar
-            mode="range"
-            defaultMonth={startDate || new Date()}
-            selected={{ 
-              from: startDate || undefined, 
-              to: endDate || undefined 
-            }}
-            onSelect={(range) => {
-              if (range?.from) handleSelect(range.from);
-              if (range?.to) handleSelect(range.to);
-            }}
-            numberOfMonths={2}
-            initialFocus
-          />
+          <div className="flex flex-col sm:flex-row">
+            <div className="p-3 border-r">
+              <div className="space-y-2">
+                <h4 className="font-medium text-sm">Quick Select</h4>
+                <div className="flex flex-col gap-1">
+                  <Button variant="ghost" size="sm" onClick={selectThisMonth}>This Month</Button>
+                  <Button variant="ghost" size="sm" onClick={selectLastMonth}>Last Month</Button>
+                  <Button variant="ghost" size="sm" onClick={selectThisQuarter}>This Quarter</Button>
+                  <Button variant="ghost" size="sm" onClick={selectLastQuarter}>Last Quarter</Button>
+                  <Button variant="ghost" size="sm" onClick={selectLast30Days}>Last 30 Days</Button>
+                </div>
+              </div>
+            </div>
+            <Calendar
+              mode="range"
+              selected={date}
+              onSelect={handleDateChange}
+              numberOfMonths={2}
+              disabled={{ after: new Date() }}
+              className="rounded-md border"
+            />
+          </div>
         </PopoverContent>
       </Popover>
       
-      {/* Presets dropdown */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" className="h-10 px-3 py-2 text-sm">
-            {currentPreset === 'custom' ? 'Custom Range' : 
-             currentPreset === 'today' ? 'Today' :
-             currentPreset === 'yesterday' ? 'Yesterday' :
-             currentPreset === 'last7days' ? 'Last 7 Days' :
-             currentPreset === 'last30days' ? 'Last 30 Days' :
-             currentPreset === 'thisMonth' ? 'This Month' : 'Last Month'}
-            <ChevronDownIcon className="h-4 w-4 ml-2" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => applyPreset('today')}>
-            Today
-            {currentPreset === 'today' && <CheckIcon className="h-4 w-4 ml-2" />}
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => applyPreset('yesterday')}>
-            Yesterday
-            {currentPreset === 'yesterday' && <CheckIcon className="h-4 w-4 ml-2" />}
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => applyPreset('last7days')}>
-            Last 7 Days
-            {currentPreset === 'last7days' && <CheckIcon className="h-4 w-4 ml-2" />}
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => applyPreset('last30days')}>
-            Last 30 Days
-            {currentPreset === 'last30days' && <CheckIcon className="h-4 w-4 ml-2" />}
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => applyPreset('thisMonth')}>
-            This Month
-            {currentPreset === 'thisMonth' && <CheckIcon className="h-4 w-4 ml-2" />}
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => applyPreset('lastMonth')}>
-            Last Month
-            {currentPreset === 'lastMonth' && <CheckIcon className="h-4 w-4 ml-2" />}
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => applyPreset('custom')}>
-            Custom Range
-            {currentPreset === 'custom' && <CheckIcon className="h-4 w-4 ml-2" />}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-      
-      {/* Comparison toggle */}
       <div className="flex items-center space-x-2">
-        <Switch 
-          id="compare-mode" 
-          checked={includePreviousPeriod}
+        <Switch
+          id="compare-previous"
+          checked={comparePreviousPeriod}
           onCheckedChange={handleComparisonToggle}
         />
-        <Label htmlFor="compare-mode" className="text-sm">Compare with previous period</Label>
+        <Label htmlFor="compare-previous" className="text-sm text-muted-foreground">
+          Compare with previous period
+        </Label>
       </div>
     </div>
   );

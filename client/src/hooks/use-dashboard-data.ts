@@ -1,175 +1,171 @@
-import { useQuery } from "@tanstack/react-query";
-import { useDateContext } from "@/providers/date-context";
+import { useQuery } from '@tanstack/react-query';
+import { useDateContext } from '@/providers/date-context';
 
-// Define the dashboard data structure
+// Types for dashboard data
 export interface DashboardData {
   totalContacts: number;
   totalDeals: number;
   totalActivities: number;
   totalMeetings: number;
-  averageDealValue: number;
-  averageDealCycle: number;
-  contactsWithMultipleSources: number;
-  totalContactsWithAttribution: number;
-  attributionAccuracy: number;
+  revenueGenerated: number;
+  cashCollected: number;
+  multiSourceRate: number;
+  fieldCoverageRate: number;
   salesTeam: SalesTeamMember[];
-  revenueGenerated?: number;
-  cashCollected?: number;
   previousPeriod?: {
     totalContacts: number;
     totalDeals: number;
+    totalActivities: number;
+    totalMeetings: number;
     totalRevenue: number;
     cashCollected: number;
   };
 }
 
-// Define the sales team member structure
 export interface SalesTeamMember {
-  id: number;
+  userId: string;
   name: string;
-  email: string;
-  role: string;
-  deals: number;
-  revenue: number;
+  contactsOwned: number;
+  dealsOwned: number;
   meetings: number;
-  contacts: number;
+  activities: number;
+  revenue: number;
+  cashCollected: number;
+}
+
+export interface AttributionStats {
+  contactStats: {
+    totalContacts: number;
+    contactsWithDeals: number;
+    contactsWithMeetings: number;
+    contactsWithForms: number;
+    conversionRate: number;
+  };
+  sourceDistribution: {
+    singleSource: number;
+    multiSource: number;
+    multiSourceRate: number;
+  };
+  fieldCoverage: {
+    name: number;
+    email: number;
+    phone: number;
+    title: number;
+    company: number;
+    source: number;
+    notes: number;
+    assignedTo: number;
+    lastActivityDate: number;
+    averageCoverage: number;
+  };
+  channelDistribution: Record<string, number>;
+  touchpointStats: {
+    averageTouchpoints: number;
+    maxTouchpoints: number;
+    touchpointDistribution: Record<string, number>;
+  };
 }
 
 /**
- * Custom hook for fetching dashboard data
- * @param userId Optional user ID to filter data by
- * @returns Query result with dashboard data
+ * Hook to fetch dashboard data based on date range and user filter
  */
 export function useDashboardData(userId?: string) {
-  const { startDate, endDate, includePreviousPeriod } = useDateContext();
+  const { startDate, endDate, comparePreviousPeriod } = useDateContext();
   
-  return useQuery({
-    queryKey: [
-      '/api/dashboard', 
-      startDate?.toISOString(), 
-      endDate?.toISOString(), 
-      userId,
-      includePreviousPeriod
-    ],
+  // Format dates for API
+  const formattedStartDate = startDate.toISOString();
+  const formattedEndDate = endDate.toISOString();
+  
+  // Build query parameters
+  const queryParams = new URLSearchParams();
+  queryParams.append('startDate', formattedStartDate);
+  queryParams.append('endDate', formattedEndDate);
+  
+  if (userId) {
+    queryParams.append('userId', userId);
+  }
+  
+  if (comparePreviousPeriod) {
+    queryParams.append('comparePreviousPeriod', 'true');
+  }
+  
+  // Construct the API URL
+  const apiUrl = `/api/dashboard?${queryParams.toString()}`;
+  
+  // Fetch dashboard data
+  return useQuery<DashboardData>({
+    queryKey: ['dashboard', formattedStartDate, formattedEndDate, userId, comparePreviousPeriod],
     queryFn: async () => {
-      // Verify we have valid dates
-      if (!startDate || !endDate) {
-        throw new Error('Invalid date range');
-      }
-      
-      // Build query parameters
-      const params = new URLSearchParams({
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-        includePreviousPeriod: includePreviousPeriod ? 'true' : 'false'
-      });
-      
-      // Add userId parameter if provided
-      if (userId) {
-        params.append('userId', userId);
-      }
-      
-      // Fetch data from the API
-      const response = await fetch(`/api/dashboard?${params.toString()}`);
-      
+      const response = await fetch(apiUrl);
       if (!response.ok) {
         throw new Error('Failed to fetch dashboard data');
       }
-      
-      return await response.json() as DashboardData;
+      return response.json();
     },
-    // Only enable the query when we have valid dates
-    enabled: !!startDate && !!endDate,
     staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
   });
 }
 
 /**
- * Custom hook for fetching deals data
- * @param userId Optional user ID to filter data by
- * @returns Query result with deals data
+ * Hook to fetch attribution statistics
  */
-export function useDashboardDeals(userId?: string) {
+export function useAttributionStats() {
   const { startDate, endDate } = useDateContext();
   
-  return useQuery({
-    queryKey: [
-      '/api/dashboard/deals', 
-      startDate?.toISOString(), 
-      endDate?.toISOString(), 
-      userId
-    ],
+  // Format dates for API
+  const formattedStartDate = startDate.toISOString();
+  const formattedEndDate = endDate.toISOString();
+  
+  // Build query parameters
+  const queryParams = new URLSearchParams();
+  queryParams.append('startDate', formattedStartDate);
+  queryParams.append('endDate', formattedEndDate);
+  
+  // Construct the API URL
+  const apiUrl = `/api/attribution-stats?${queryParams.toString()}`;
+  
+  // Fetch attribution stats
+  return useQuery<AttributionStats>({
+    queryKey: ['attribution-stats', formattedStartDate, formattedEndDate],
     queryFn: async () => {
-      // Verify we have valid dates
-      if (!startDate || !endDate) {
-        throw new Error('Invalid date range');
-      }
-      
-      // Build query parameters
-      const params = new URLSearchParams({
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString()
-      });
-      
-      // Add userId parameter if provided
-      if (userId) {
-        params.append('userId', userId);
-      }
-      
-      // Fetch data from the API
-      const response = await fetch(`/api/dashboard/deals?${params.toString()}`);
-      
+      const response = await fetch(apiUrl);
       if (!response.ok) {
-        throw new Error('Failed to fetch deals data');
+        throw new Error('Failed to fetch attribution stats');
       }
-      
-      return await response.json();
+      return response.json();
     },
-    // Only enable the query when we have valid dates
-    enabled: !!startDate && !!endDate,
     staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
   });
 }
 
 /**
- * Custom hook for fetching team performance data
- * @returns Query result with team performance data
+ * Hook to fetch sales team performance data
  */
-export function useTeamPerformance() {
+export function useSalesTeamData() {
   const { startDate, endDate } = useDateContext();
   
-  return useQuery({
-    queryKey: [
-      '/api/dashboard/team', 
-      startDate?.toISOString(), 
-      endDate?.toISOString()
-    ],
+  // Format dates for API
+  const formattedStartDate = startDate.toISOString();
+  const formattedEndDate = endDate.toISOString();
+  
+  // Build query parameters
+  const queryParams = new URLSearchParams();
+  queryParams.append('startDate', formattedStartDate);
+  queryParams.append('endDate', formattedEndDate);
+  
+  // Construct the API URL
+  const apiUrl = `/api/dashboard/sales-team?${queryParams.toString()}`;
+  
+  // Fetch sales team data
+  return useQuery<{ salesTeam: SalesTeamMember[] }>({
+    queryKey: ['sales-team', formattedStartDate, formattedEndDate],
     queryFn: async () => {
-      // Verify we have valid dates
-      if (!startDate || !endDate) {
-        throw new Error('Invalid date range');
-      }
-      
-      // Build query parameters
-      const params = new URLSearchParams({
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString()
-      });
-      
-      // Fetch data from the API
-      const response = await fetch(`/api/dashboard/team?${params.toString()}`);
-      
+      const response = await fetch(apiUrl);
       if (!response.ok) {
-        throw new Error('Failed to fetch team performance data');
+        throw new Error('Failed to fetch sales team data');
       }
-      
-      return await response.json();
+      return response.json();
     },
-    // Only enable the query when we have valid dates
-    enabled: !!startDate && !!endDate,
-    staleTime: 10 * 60 * 1000, // 10 minutes
-    gcTime: 15 * 60 * 1000, // 15 minutes
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }
