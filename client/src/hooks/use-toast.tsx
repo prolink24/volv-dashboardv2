@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 // Define toast types
 export type ToastProps = {
@@ -97,4 +97,15 @@ export function useToast() {
 // Initialization function to be called in ToastProvider
 export function initializeToastStore(newStore: ReturnType<typeof useToastStore>) {
   store = newStore;
+}
+
+// React provider component to initialize the toast store
+export function ToastProvider({ children }: { children: React.ReactNode }) {
+  const storeInstance = useToastStore();
+
+  useEffect(() => {
+    initializeToastStore(storeInstance);
+  }, [storeInstance]);
+
+  return <>{children}</>;
 }

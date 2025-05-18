@@ -1,7 +1,7 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { apiRequest } from "@/lib/queryClient";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 // Legacy hook for backward compatibility with KpiConfigurator component
 export function useKpiConfiguration() {
@@ -82,6 +82,7 @@ export function useKpiFormulasByDashboard(dashboardType: string) {
 
 // Create a new KPI formula
 export function useCreateKpiFormula() {
+  const { toast } = useToast();
   return useMutation({
     mutationFn: async (formulaData: KpiFormulaInput) => {
       const response = await fetch('/api/kpi/formulas', {
@@ -118,6 +119,7 @@ export function useCreateKpiFormula() {
 
 // Update an existing KPI formula
 export function useUpdateKpiFormula() {
+  const { toast } = useToast();
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<KpiFormulaInput> }) => {
       const response = await fetch(`/api/kpi/formulas/${id}`, {
@@ -154,6 +156,7 @@ export function useUpdateKpiFormula() {
 
 // Delete a KPI formula
 export function useDeleteKpiFormula() {
+  const { toast } = useToast();
   return useMutation({
     mutationFn: async (id: string) => {
       const response = await fetch(`/api/kpi/formulas/${id}`, {
