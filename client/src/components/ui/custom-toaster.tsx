@@ -4,19 +4,20 @@ import {
   Toast,
   ToastClose,
   ToastDescription,
+  ToastProvider,
   ToastTitle,
   ToastViewport,
-  ToastProvider as ShadcnToastProvider
 } from "@/components/ui/toast";
 
+// Simplified and fixed toast component that doesn't rely on nested providers
 export function CustomToaster() {
   const { toasts } = useToast();
 
   return (
-    <ShadcnToastProvider>
+    <ToastProvider swipeDirection="right">
       {toasts.map(function ({ id, title, description, action, variant, ...props }) {
         return (
-          <Toast key={id} {...props} variant={variant}>
+          <Toast key={id} {...props} variant={variant || "default"}>
             <div className="grid gap-1">
               {title && <ToastTitle>{title}</ToastTitle>}
               {description && (
@@ -28,7 +29,7 @@ export function CustomToaster() {
           </Toast>
         );
       })}
-      <ToastViewport />
-    </ShadcnToastProvider>
+      <ToastViewport className="p-6" />
+    </ToastProvider>
   );
 }
