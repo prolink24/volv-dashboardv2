@@ -53,7 +53,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Mount data enhancement routes
   apiRouter.use("/data-enhancement", dataEnhancementRoutes);
   
-  // Mount dashboard routes
+  // Mount dashboard routes - use only the dedicated router
   apiRouter.use("/dashboard", dashboardRouter);
   
   // API Cache endpoint - mainly for debugging
