@@ -7,254 +7,205 @@
 
 import axios from 'axios';
 import chalk from 'chalk';
-import { db, pool } from './server/db';
-import { count } from 'drizzle-orm';
-import { 
-  contacts, 
-  deals, 
-  activities, 
-  meetings, 
-  closeUsers, 
-  contactToUserAssignments, 
-  dealToUserAssignments 
-} from './shared/schema';
+import { getStorage } from './server/storage';
+import * as fs from 'fs';
+import { format } from 'date-fns';
 
-// Configuration
-const API_BASE_URL = 'http://localhost:5000/api';
-const DEBUG_LEVEL = 'verbose'; // 'basic', 'verbose', 'full'
+// Set up colors for better logging
+const colors = {
+  info: chalk.blue,
+  success: chalk.green,
+  warning: chalk.yellow,
+  error: chalk.red,
+  debug: chalk.gray,
+  highlight: chalk.cyan,
+};
 
-// Utility function for logging
 function log(message: string, type: 'info' | 'success' | 'warning' | 'error' | 'debug' = 'info') {
-  const timestamp = new Date().toISOString().split('T')[1].split('.')[0]; // HH:MM:SS
-  
-  switch (type) {
-    case 'success':
-      console.log(chalk.green(`[${timestamp}] ✓ ${message}`));
-      break;
-    case 'warning':
-      console.log(chalk.yellow(`[${timestamp}] ⚠ ${message}`));
-      break;
-    case 'error':
-      console.log(chalk.red(`[${timestamp}] ✗ ${message}`));
-      break;
-    case 'debug':
-      console.log(chalk.gray(`[${timestamp}] • ${message}`));
-      break;
-    default:
-      console.log(chalk.blue(`[${timestamp}] - ${message}`));
-  }
+  console.log(colors[type](`[${type.toUpperCase()}] ${message}`));
 }
 
-// Function to verify database tables
+// Create a log file with detailed output
+const LOG_FILE = `./debug-output/dashboard-debug-${format(new Date(), 'yyyy-MM-dd-HH-mm-ss')}.log`;
+
+// Ensure the directory exists
+if (!fs.existsSync('./debug-output')) {
+  fs.mkdirSync('./debug-output', { recursive: true });
+}
+
+// Function to append to log file
+function appendToLogFile(message: string) {
+  fs.appendFileSync(LOG_FILE, message + '\n');
+}
+
 async function verifyDatabaseTables() {
   log('Verifying database tables...', 'info');
   
   try {
-    // Check contacts table
-    const contactsCount = await db.select({ count: count() }).from(contacts);
-    log(`Contacts table: ${contactsCount[0].count} records`, 'success');
-    
     // Check deals table
-    const dealsCount = await db.select({ count: count() }).from(deals);
-    log(`Deals table: ${dealsCount[0].count} records`, 'success');
+    const deals = await db.query.deals.findMany({
+      where: (deals, { and, between, eq }) => and(
+        between(deals.date, new Date('2025-04-01'), new Date('2025-04-30')),
+        eq(deals.status, 'won')
+      )
+    });
     
-    // Check activities table
-    const activitiesCount = await db.select({ count: count() }).from(activities);
-    log(`Activities table: ${activitiesCount[0].count} records`, 'success');
+    log(`Found ${deals.length} won deals in April 2025`, 'info');
+    appendToLogFile(`DEALS IN APRIL 2025: ${JSON.stringify(deals, null, 2)}`);
     
-    // Check meetings table
-    const meetingsCount = await db.select({ count: count() }).from(meetings);
-    log(`Meetings table: ${meetingsCount[0].count} records`, 'success');
+    // Calculate total deal value and cash collected
+    const totalValue = deals.reduce((sum, deal) => sum + Number(deal.value || 0), 0);
+    const totalCashCollected = deals.reduce((sum, deal) => sum + Number(deal.cash_collected || 0), 0);
     
-    // Check Close users table
-    const closeUsersCount = await db.select({ count: count() }).from(closeUsers);
-    log(`Close users table: ${closeUsersCount[0].count} records`, 'success');
+    log(`Total deal value: $${totalValue}`, 'highlight');
+    log(`Total cash collected: $${totalCashCollected}`, 'highlight');
     
-    // Check contact user assignments table
-    const contactAssignmentsCount = await db.select({ count: count() }).from(contactToUserAssignments);
-    log(`Contact user assignments table: ${contactAssignmentsCount[0].count} records`, 'success');
+    if (totalValue !== totalCashCollected) {
+      log(`Warning: Deal value (${totalValue}) and cash collected (${totalCashCollected}) don't match`, 'warning');
+    }
     
-    // Check deal user assignments table
-    const dealAssignmentsCount = await db.select({ count: count() }).from(dealToUserAssignments);
-    log(`Deal user assignments table: ${dealAssignmentsCount[0].count} records`, 'success');
+    // Log individual deals
+    deals.forEach((deal, index) => {
+      log(`Deal ${index + 1}: ID=${deal.id}, value=${deal.value}, cash_collected=${deal.cash_collected}`, 'debug');
+    });
+    
+    return { deals, totalValue, totalCashCollected };
+  } catch (error: any) {
+    log(`Database query error: ${error.message}`, 'error');
+    appendToLogFile(`DATABASE ERROR: ${error.stack}`);
+    return null;
+  }
+}
+
+async function testEndpoint(endpoint: string, description: string) {
+  log(`Testing ${description} (${endpoint})...`, 'info');
+  
+  try {
+    // Add date range parameters for April 2025
+    const params = endpoint.includes('?') ? '&' : '?';
+    const dateEndpoint = `${endpoint}${params}dateRange=2025-04-01_2025-04-30`;
+    
+    // Use axios to make API call
+    const start = Date.now();
+    const response = await axios.get(`http://localhost:5000${dateEndpoint}`);
+    const duration = Date.now() - start;
+    
+    // Log basic info
+    log(`✓ ${description} response received in ${duration}ms`, 'success');
+    
+    // Log the response data structure
+    if (response.data) {
+      const keys = Object.keys(response.data);
+      log(`Response keys: ${keys.join(', ')}`, 'debug');
+      
+      // Check for deals data
+      if (response.data.deals || response.data.stats?.deals) {
+        const deals = response.data.deals || response.data.stats?.deals;
+        const totalValue = Array.isArray(deals) ? 
+          deals.reduce((sum, deal) => sum + Number(deal.value || 0), 0) : 
+          response.data.stats?.revenue || 0;
+        
+        const totalCashCollected = Array.isArray(deals) ? 
+          deals.reduce((sum, deal) => sum + Number(deal.cash_collected || 0), 0) : 
+          response.data.stats?.cashCollected || 0;
+          
+        log(`API Response - Deal value: $${totalValue}`, 'highlight');
+        log(`API Response - Cash collected: $${totalCashCollected}`, 'highlight');
+      }
+      
+      // Log full response to file
+      appendToLogFile(`${description.toUpperCase()} (${dateEndpoint}) RESPONSE: ${JSON.stringify(response.data, null, 2)}`);
+    }
+    
+    return response.data;
+  } catch (error: any) {
+    log(`✗ ${description} error: ${error.message}`, 'error');
+    
+    if (error.response) {
+      log(`Status: ${error.response.status}`, 'error');
+      log(`Data: ${JSON.stringify(error.response.data)}`, 'error');
+      appendToLogFile(`ERROR FOR ${endpoint}: ${JSON.stringify(error.response.data, null, 2)}`);
+    } else {
+      appendToLogFile(`ERROR FOR ${endpoint}: ${error.stack}`);
+    }
+    
+    return null;
+  }
+}
+
+async function checkCacheService() {
+  log('Checking cache service...', 'info');
+  
+  try {
+    // Get cache stats
+    const response = await axios.get('http://localhost:5000/api/cache/stats');
+    log(`Cache service stats: ${JSON.stringify(response.data)}`, 'debug');
+    appendToLogFile(`CACHE STATS: ${JSON.stringify(response.data, null, 2)}`);
+    
+    // Clear cache and check result
+    const clearResponse = await axios.post('http://localhost:5000/api/cache/clear');
+    log(`Cache clear result: ${JSON.stringify(clearResponse.data)}`, 'success');
+    appendToLogFile(`CACHE CLEAR RESULT: ${JSON.stringify(clearResponse.data, null, 2)}`);
     
     return true;
-  } catch (error) {
-    log(`Error verifying database tables: ${error.message}`, 'error');
-    if (DEBUG_LEVEL === 'full') {
-      console.error(error);
-    }
+  } catch (error: any) {
+    log(`Cache service error: ${error.message}`, 'error');
+    appendToLogFile(`CACHE SERVICE ERROR: ${error.stack}`);
     return false;
   }
 }
 
-// Test single API endpoint
-async function testEndpoint(endpoint: string, description: string) {
-  try {
-    log(`Testing ${description} (${endpoint})...`, 'info');
-    
-    // Make the API call
-    const startTime = Date.now();
-    const response = await axios.get(`${API_BASE_URL}${endpoint}`);
-    const endTime = Date.now();
-    
-    // Log success
-    log(`✓ ${description}: ${response.status} (${endTime - startTime}ms)`, 'success');
-    
-    // Log data if in verbose mode
-    if (DEBUG_LEVEL === 'verbose' || DEBUG_LEVEL === 'full') {
-      if (typeof response.data === 'object') {
-        if (Array.isArray(response.data)) {
-          log(`  Response: Array with ${response.data.length} items`, 'debug');
-        } else {
-          const keys = Object.keys(response.data);
-          log(`  Response: Object with keys: ${keys.join(', ')}`, 'debug');
-        }
-      } else {
-        log(`  Response: ${response.data}`, 'debug');
-      }
-    }
-    
-    // Log full response in full debug mode
-    if (DEBUG_LEVEL === 'full') {
-      console.log(chalk.gray('Full response data:'));
-      console.dir(response.data, { depth: 4, colors: true });
-    }
-    
-    return { success: true, data: response.data };
-  } catch (error) {
-    // Log error
-    log(`✗ ${description} failed: ${error.message}`, 'error');
-    
-    // Log detailed error info
-    if (DEBUG_LEVEL === 'verbose' || DEBUG_LEVEL === 'full') {
-      if (error.response) {
-        log(`  Status: ${error.response.status}`, 'error');
-        log(`  Status Text: ${error.response.statusText}`, 'error');
-        log(`  Data: ${JSON.stringify(error.response.data)}`, 'error');
-      }
-    }
-    
-    // Log full error in full debug mode
-    if (DEBUG_LEVEL === 'full') {
-      console.log(chalk.red('Full error:'));
-      console.dir(error, { depth: 3, colors: true });
-    }
-    
-    return { success: false, error };
-  }
-}
-
-// Main function to check the dashboard API
 async function debugDashboardApi() {
-  log('Starting Dashboard API Debug Tool', 'info');
+  log('Starting comprehensive dashboard API debugging...', 'info');
+  appendToLogFile(`=== DASHBOARD API DEBUG REPORT - ${new Date().toISOString()} ===`);
   
-  try {
-    // First, verify database tables
-    const dbVerified = await verifyDatabaseTables();
-    if (!dbVerified) {
-      log('Database verification failed, but continuing with API tests', 'warning');
-    }
+  // First verify the actual database values
+  const dbResults = await verifyDatabaseTables();
+  
+  // Check cache service and clear it
+  await checkCacheService();
+  
+  // Test all relevant API endpoints
+  const mainDashboard = await testEndpoint('/api/enhanced-dashboard', 'Main dashboard');
+  const attributionStats = await testEndpoint('/api/attribution/stats', 'Attribution stats');
+  const dealsApi = await testEndpoint('/api/deals', 'Deals API');
+  
+  // Test date filtering explicitly
+  const dateFilteredDashboard = await testEndpoint('/api/enhanced-dashboard?dateRange=2025-04-01_2025-04-30', 'Date filtered dashboard');
+  
+  // Compare database values with API responses
+  if (dbResults && mainDashboard) {
+    log('Comparing database values with API responses...', 'info');
     
-    log('\nTesting dashboard API endpoints:', 'info');
+    const dbTotalValue = dbResults.totalValue;
+    const apiTotalValue = mainDashboard.stats?.revenue || 0;
     
-    // Test general attribution stats endpoint
-    const attributionStatsResult = await testEndpoint('/attribution/enhanced-stats', 'Attribution stats');
+    const dbCashCollected = dbResults.totalCashCollected;
+    const apiCashCollected = mainDashboard.stats?.cashCollected || 0;
     
-    // Test close users endpoints
-    const closeUsersResult = await testEndpoint('/close-users', 'Close users');
-    
-    if (closeUsersResult.success && closeUsersResult.data && closeUsersResult.data.users && closeUsersResult.data.users.length > 0) {
-      // Get a sample user to test user-specific endpoints
-      const sampleUser = closeUsersResult.data.users[0];
-      log(`Selected sample user for testing: ${sampleUser.email} (ID: ${sampleUser.id})`, 'info');
-      
-      // Test user-specific endpoints
-      await testEndpoint(`/close-users/${sampleUser.id}`, 'Specific Close user');
-      await testEndpoint(`/close-users/${sampleUser.id}/contacts`, 'User contacts');
-      await testEndpoint(`/close-users/${sampleUser.id}/deals`, 'User deals');
+    if (dbTotalValue !== apiTotalValue) {
+      log(`Discrepancy in Revenue: DB=$${dbTotalValue} vs API=$${apiTotalValue}`, 'error');
     } else {
-      log('No users available to test user-specific endpoints', 'warning');
+      log('Revenue values match between database and API', 'success');
     }
     
-    // Test dashboard data endpoint
-    const dashboardResult = await testEndpoint('/dashboard', 'Dashboard data');
-    
-    // Test contact-related endpoints
-    await testEndpoint('/contacts?limit=10', 'Contacts list');
-    await testEndpoint('/contacts/count', 'Contacts count');
-    
-    // Test deal-related endpoints
-    await testEndpoint('/deals?limit=10', 'Deals list');
-    await testEndpoint('/deals/count', 'Deals count');
-    
-    // Test meetings-related endpoints
-    await testEndpoint('/meetings?limit=10', 'Meetings list');
-    await testEndpoint('/meetings/count', 'Meetings count');
-    
-    // Check if all critical endpoints are working
-    if (attributionStatsResult.success && closeUsersResult.success && dashboardResult.success) {
-      log('\nAll critical endpoints are working!', 'success');
+    if (dbCashCollected !== apiCashCollected) {
+      log(`Discrepancy in Cash Collected: DB=$${dbCashCollected} vs API=$${apiCashCollected}`, 'error');
     } else {
-      log('\nSome critical endpoints are failing, dashboard may not work correctly', 'error');
+      log('Cash Collected values match between database and API', 'success');
     }
-    
-    // Advanced testing: check for dashboard UI issues (data format mismatches)
-    if (dashboardResult.success && dashboardResult.data) {
-      log('\nAnalyzing dashboard data for potential UI issues:', 'info');
-      
-      const dashboardData = dashboardResult.data;
-      
-      // Check for missing required data structures
-      const requiredKeys = ['kpis', 'salesTeam', 'triageMetrics', 'leadMetrics', 'advancedMetrics'];
-      const missingKeys = requiredKeys.filter(key => !dashboardData[key]);
-      
-      if (missingKeys.length > 0) {
-        log(`Missing required dashboard sections: ${missingKeys.join(', ')}`, 'error');
-      } else {
-        log('All required dashboard sections are present', 'success');
-      }
-      
-      // Check for specific numeric fields being undefined (common cause of UI errors)
-      if (dashboardData.kpis) {
-        const kpiFields = Object.entries(dashboardData.kpis);
-        const undefinedKpis = kpiFields.filter(([key, value]) => value === undefined);
-        
-        if (undefinedKpis.length > 0) {
-          log(`KPI fields with undefined values: ${undefinedKpis.map(([key]) => key).join(', ')}`, 'warning');
-        } else {
-          log('All KPI fields have defined values', 'success');
-        }
-      }
-      
-      // Check sales team data
-      if (dashboardData.salesTeam && Array.isArray(dashboardData.salesTeam)) {
-        if (dashboardData.salesTeam.length === 0) {
-          log('Sales team array is empty, this may cause UI issues', 'warning');
-        } else {
-          log(`Sales team data contains ${dashboardData.salesTeam.length} entries`, 'success');
-          
-          // Verify a sample sales team entry
-          const sampleEntry = dashboardData.salesTeam[0];
-          const requiredTeamFields = ['name', 'id', 'closed', 'cashCollected', 'contractedValue', 'calls'];
-          const missingTeamFields = requiredTeamFields.filter(field => sampleEntry[field] === undefined);
-          
-          if (missingTeamFields.length > 0) {
-            log(`Sales team entries missing fields: ${missingTeamFields.join(', ')}`, 'warning');
-          }
-        }
-      }
-    }
-    
-    log('\nAPI testing completed!', 'info');
-    
-  } catch (error) {
-    log(`Unexpected error during testing: ${error.message}`, 'error');
-    console.error(error);
-  } finally {
-    await pool.end();
   }
+  
+  log(`Debug log written to ${LOG_FILE}`, 'info');
+  log('Dashboard API debugging completed', 'success');
 }
 
-// Run the test
-debugDashboardApi();
+// Run the debugging
+debugDashboardApi()
+  .then(() => {
+    log('Debugging script completed successfully', 'success');
+  })
+  .catch(error => {
+    log(`Debugging script error: ${error.message}`, 'error');
+    appendToLogFile(`SCRIPT ERROR: ${error.stack}`);
+  });
