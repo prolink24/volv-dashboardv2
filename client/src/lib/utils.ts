@@ -112,7 +112,6 @@ export function getDateRangeByOption(option: string) {
   
   switch (option) {
     case 'today':
-    case 'today':
       return {
         startDate: startOfDay(now),
         endDate: now,
