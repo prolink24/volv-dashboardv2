@@ -6,13 +6,14 @@ import {
   ToastDescription,
   ToastTitle,
   ToastViewport,
+  ToastProvider as ShadcnToastProvider
 } from "@/components/ui/toast";
 
 export function CustomToaster() {
   const { toasts } = useToast();
 
   return (
-    <>
+    <ShadcnToastProvider>
       {toasts.map(function ({ id, title, description, action, variant, ...props }) {
         return (
           <Toast key={id} {...props} variant={variant}>
@@ -28,6 +29,6 @@ export function CustomToaster() {
         );
       })}
       <ToastViewport />
-    </>
+    </ShadcnToastProvider>
   );
 }

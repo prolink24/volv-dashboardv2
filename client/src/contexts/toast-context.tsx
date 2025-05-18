@@ -1,4 +1,5 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
+import { ToastProvider as ShadcnToastProvider } from "@/components/ui/toast";
 
 export type ToastProps = {
   id?: string;
@@ -7,6 +8,7 @@ export type ToastProps = {
   action?: React.ReactNode;
   variant?: "default" | "destructive";
   className?: string;
+  duration?: number;
 };
 
 type ToastContextType = {
@@ -23,11 +25,17 @@ export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
 
   const addToast = (props: ToastProps) => {
     const id = props.id || String(Date.now());
+    const duration = props.duration || 5000;
     
     setToasts((prevToasts) => [
       ...prevToasts.filter((t) => t.id !== id),
-      { ...props, id },
+      { ...props, id, duration },
     ]);
+    
+    // Auto-dismiss toast after duration
+    setTimeout(() => {
+      dismissToast(id);
+    }, duration);
     
     return {
       id,
@@ -55,7 +63,12 @@ export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
     update: updateToast,
   };
 
-  return <ToastContext.Provider value={value}>{children}</ToastContext.Provider>;
+  // Use a separate Toast Context Provider for the actual toast itself
+  return (
+    <ToastContext.Provider value={value}>
+      {children}
+    </ToastContext.Provider>
+  );
 };
 
 export const useToast = (): ToastContextType => {
@@ -74,7 +87,7 @@ export const toast = (props: ToastProps) => {
     const { toast } = useToast();
     return toast(props);
   } catch (e) {
-    console.warn('Toast failed, context may not be available:', e);
+    console.error('Toast failed, context may not be available:', e);
     return { 
       id: String(Date.now()), 
       dismiss: () => {}, 

@@ -11,5 +11,11 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-export const db = drizzle({ client: pool, schema });
+// Create a connection pool for PostgreSQL with proper connection parameters
+export const pool = new Pool({ 
+  connectionString: process.env.DATABASE_URL,
+  max: 10
+});
+
+// Create Drizzle ORM instance with proper configuration for PostgreSQL
+export const db = drizzle(pool, { schema });

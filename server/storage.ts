@@ -123,8 +123,13 @@ export interface IStorage {
 export class DatabaseStorage implements IStorage {
   async query(sqlQuery: string, params?: any[]): Promise<any[]> {
     try {
-      const result = await db.execute(sql.raw(sqlQuery, params || []));
-      return result.rows || [];
+      // Use the correct execute method for PostgreSQL via Drizzle
+      const result = await db.execute(sql`${sql.raw(sqlQuery)}`);
+      // PostgreSQL results come back with a rows property
+      if (result && 'rows' in result && Array.isArray(result.rows)) {
+        return result.rows;
+      }
+      return Array.isArray(result) ? result : [];
     } catch (error) {
       console.error("Database query error:", error);
       return [];

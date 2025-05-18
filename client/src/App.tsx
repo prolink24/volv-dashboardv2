@@ -2,7 +2,6 @@ import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ToastProvider } from "@/contexts/toast-context";
-import { Toast, ToastProvider as ShadcnToastProvider } from "@/components/ui/toast";
 import { CustomToaster } from "@/components/ui/custom-toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { DashboardProvider } from "@/providers/dashboard-provider";
