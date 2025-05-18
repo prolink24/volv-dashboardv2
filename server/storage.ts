@@ -681,11 +681,19 @@ export class DatabaseStorage implements IStorage {
       const conversionRate = totalContacts > 0 ? (contactsWithDeals / totalContacts) * 100 : 0;
       const multiSourceRate = totalContacts > 0 ? (multiSourceContacts / totalContacts) * 100 : 0;
 
-      // Get revenue metrics with optimized SQL
+      // Get revenue metrics with improved SQL for more accurate financial calculations
       const revenueResult = await db
         .select({
-          totalRevenue: sql<string>`COALESCE(SUM(CASE WHEN ${deals.value} ~ '^[0-9]+(\.[0-9]+)?$' THEN ${deals.value}::numeric ELSE 0 END), 0)`,
-          totalCashCollected: sql<string>`COALESCE(SUM(CASE WHEN ${deals.cashCollected} ~ '^[0-9]+(\.[0-9]+)?$' THEN ${deals.cashCollected}::numeric ELSE 0 END), 0)`,
+          totalRevenue: sql<string>`COALESCE(SUM(CASE 
+            WHEN ${deals.value} ~ '^[0-9]+(\.[0-9]+)?$' THEN ${deals.value}::numeric 
+            WHEN ${deals.value} ~ '^[$][0-9,]+(\.[0-9]+)?$' THEN REPLACE(REPLACE(${deals.value}, '$', ''), ',', '')::numeric
+            ELSE 0 
+          END), 0)`,
+          totalCashCollected: sql<string>`COALESCE(SUM(CASE 
+            WHEN ${deals.cashCollected} ~ '^[0-9]+(\.[0-9]+)?$' THEN ${deals.cashCollected}::numeric 
+            WHEN ${deals.cashCollected} ~ '^[$][0-9,]+(\.[0-9]+)?$' THEN REPLACE(REPLACE(${deals.cashCollected}, '$', ''), ',', '')::numeric
+            ELSE 0 
+          END), 0)`,
           wonDealsCount: sql<number>`COUNT(*)`
         })
         .from(deals)
@@ -694,27 +702,38 @@ export class DatabaseStorage implements IStorage {
           eq(deals.status, 'won')
         ));
       
-      // Extract revenue values with safe parsing
+      // Extract revenue values with enhanced validation for financial accuracy
       let totalRevenue = 0;
       let totalCashCollected = 0;
       let wonDealsCount = 0;
       
       try {
-        totalRevenue = parseFloat(revenueResult[0]?.totalRevenue || '0');
-        if (isNaN(totalRevenue)) totalRevenue = 0;
+        // Parse with additional validation to ensure proper financial reporting
+        const revenueStr = revenueResult[0]?.totalRevenue?.toString() || '0';
+        totalRevenue = Math.max(0, parseFloat(revenueStr));
         
-        totalCashCollected = parseFloat(revenueResult[0]?.totalCashCollected || '0');
-        if (isNaN(totalCashCollected)) totalCashCollected = 0;
+        const cashStr = revenueResult[0]?.totalCashCollected?.toString() || '0';
+        totalCashCollected = Math.max(0, parseFloat(cashStr));
         
-        wonDealsCount = revenueResult[0]?.wonDealsCount || 0;
+        wonDealsCount = Math.max(0, revenueResult[0]?.wonDealsCount || 0);
         
-        console.log(`Revenue metrics: Revenue=${totalRevenue}, Cash Collected=${totalCashCollected}, Won Deals=${wonDealsCount}`);
+        // Round to 2 decimal places for financial reporting
+        totalRevenue = Math.round(totalRevenue * 100) / 100;
+        totalCashCollected = Math.round(totalCashCollected * 100) / 100;
+        
+        console.log(`Dashboard KPIs - Revenue: $${totalRevenue.toLocaleString()}, Cash Collected: $${totalCashCollected.toLocaleString()}, Won Deals: ${wonDealsCount}`);
       } catch (e) {
         console.error('Error parsing revenue values', e);
+        // Set safe defaults if parsing fails
+        totalRevenue = 0;
+        totalCashCollected = 0;
+        wonDealsCount = 0;
       }
 
-      // Calculate cash collected rate
-      const cashCollectedRate = totalRevenue > 0 ? (totalCashCollected / totalRevenue) * 100 : 0;
+      // Calculate cash collected rate with proper percentage calculation and rounding
+      const cashCollectedRate = totalRevenue > 0 
+        ? Math.min(100, Math.round((totalCashCollected / totalRevenue) * 100 * 100) / 100) 
+        : 0;
 
       // Get sales team performance data
       let salesTeam = [];
@@ -760,13 +779,28 @@ export class DatabaseStorage implements IStorage {
           
           for (const deal of userWonDeals) {
             try {
-              const dealValue = parseFloat(deal.value || '0');
-              const dealCashCollected = parseFloat(deal.cashCollected || '0');
-              const dealContractedValue = parseFloat(deal.contractedValue || '0');
+              // Process deal value with improved parsing for currency formats
+              let valueStr = String(deal.value || '0').trim();
+              if (valueStr.startsWith('$')) valueStr = valueStr.substring(1).trim();
+              valueStr = valueStr.replace(/,/g, '');
+              const dealValue = parseFloat(valueStr);
               
-              if (!isNaN(dealValue)) userRevenue += dealValue;
-              if (!isNaN(dealCashCollected)) userCashCollected += dealCashCollected;
-              if (!isNaN(dealContractedValue)) userContractedValue += dealContractedValue;
+              // Process cash collected with improved parsing
+              let cashStr = String(deal.cashCollected || '0').trim();
+              if (cashStr.startsWith('$')) cashStr = cashStr.substring(1).trim();
+              cashStr = cashStr.replace(/,/g, '');
+              const dealCashCollected = parseFloat(cashStr);
+              
+              // Process contracted value with improved parsing
+              let contractedStr = String(deal.contractedValue || '0').trim();
+              if (contractedStr.startsWith('$')) contractedStr = contractedStr.substring(1).trim();
+              contractedStr = contractedStr.replace(/,/g, '');
+              const dealContractedValue = parseFloat(contractedStr);
+              
+              // Add values with validation
+              if (!isNaN(dealValue) && dealValue > 0) userRevenue += dealValue;
+              if (!isNaN(dealCashCollected) && dealCashCollected > 0) userCashCollected += dealCashCollected;
+              if (!isNaN(dealContractedValue) && dealContractedValue > 0) userContractedValue += dealContractedValue;
             } catch (e) {
               console.error(`Error parsing deal values for user ${user.id}`, e);
             }
