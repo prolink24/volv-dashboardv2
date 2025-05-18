@@ -45,23 +45,26 @@ const Dashboard = () => {
     useEnhanced: true
   });
   
+  // Check if dashboardData exists and contains kpis
+  const hasDashboardData = dashboardData && dashboardData.kpis;
+  
   // Default empty dashboard data to prevent null reference errors
-  const safeData = dashboardData || {
+  const safeData = {
     kpis: {
-      deals: { current: 0, previous: 0, change: 0 },
-      revenue: { current: 0, previous: 0, change: 0 },
-      activities: { current: 0, previous: 0, change: 0 },
-      meetings: { current: 0, previous: 0, change: 0 },
-      closedDeals: { current: 0, previous: 0, change: 0 },
-      cashCollected: { current: 0, previous: 0, change: 0 },
-      revenueGenerated: { current: 0, previous: 0, change: 0 },
-      totalCalls: { current: 0, previous: 0, change: 0 },
-      call1Taken: { current: 0, previous: 0, change: 0 },
-      call2Taken: { current: 0, previous: 0, change: 0 },
-      closingRate: 0,
-      avgCashCollected: 0,
-      solutionCallShowRate: 0,
-      earningPerCall2: 0
+      deals: hasDashboardData ? dashboardData.kpis.deals || { current: 0, previous: 0, change: 0 } : { current: 0, previous: 0, change: 0 },
+      revenue: hasDashboardData ? dashboardData.kpis.revenue || { current: 0, previous: 0, change: 0 } : { current: 0, previous: 0, change: 0 },
+      activities: hasDashboardData ? dashboardData.kpis.activities || { current: 0, previous: 0, change: 0 } : { current: 0, previous: 0, change: 0 },
+      meetings: hasDashboardData ? dashboardData.kpis.meetings || { current: 0, previous: 0, change: 0 } : { current: 0, previous: 0, change: 0 },
+      closedDeals: hasDashboardData ? dashboardData.kpis.closedDeals || { current: 0, previous: 0, change: 0 } : { current: 0, previous: 0, change: 0 },
+      cashCollected: hasDashboardData ? dashboardData.kpis.cashCollected || { current: 0, previous: 0, change: 0 } : { current: 0, previous: 0, change: 0 },
+      revenueGenerated: hasDashboardData ? dashboardData.kpis.revenueGenerated || { current: 0, previous: 0, change: 0 } : { current: 0, previous: 0, change: 0 },
+      totalCalls: hasDashboardData ? dashboardData.kpis.totalCalls || { current: 0, previous: 0, change: 0 } : { current: 0, previous: 0, change: 0 },
+      call1Taken: hasDashboardData ? dashboardData.kpis.call1Taken || { current: 0, previous: 0, change: 0 } : { current: 0, previous: 0, change: 0 },
+      call2Taken: hasDashboardData ? dashboardData.kpis.call2Taken || { current: 0, previous: 0, change: 0 } : { current: 0, previous: 0, change: 0 },
+      closingRate: hasDashboardData ? dashboardData.kpis.closingRate || 0 : 0,
+      avgCashCollected: hasDashboardData ? dashboardData.kpis.avgCashCollected || 0 : 0,
+      solutionCallShowRate: hasDashboardData ? dashboardData.kpis.solutionCallShowRate || 0 : 0,
+      earningPerCall2: hasDashboardData ? dashboardData.kpis.earningPerCall2 || 0 : 0
     },
     salesTeam: [],
     leadMetrics: {
