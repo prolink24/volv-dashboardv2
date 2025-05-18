@@ -1,114 +1,109 @@
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
 
 /**
- * Combines and merges class names with Tailwind CSS. This utility helps prevent duplicate
- * class names and handles conditional classes elegantly.
- * @param inputs - Class values or conditional class objects
- * @returns Merged class string
+ * Combines class names with Tailwind CSS utility classes
  */
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
 /**
- * Format a number as currency (USD)
- * @param value - Number to format
- * @param minimumFractionDigits - Minimum fraction digits to show
- * @param maximumFractionDigits - Maximum fraction digits to show
- * @returns Formatted currency string
+ * Format currency values with $ sign and commas
  */
-export function formatCurrency(
-  value: number, 
-  minimumFractionDigits = 0, 
-  maximumFractionDigits = 0
-): string {
+export function formatCurrency(value: number | string): string {
+  // Handle string values
+  const numValue = typeof value === 'string' 
+    ? parseFloat(value.replace(/[^0-9.-]/g, '')) 
+    : value;
+  
+  // Check for valid numbers
+  if (isNaN(numValue) || !isFinite(numValue)) {
+    return '$0';
+  }
+
+  // Format with $ sign, commas, and 2 decimal places
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
-    minimumFractionDigits,
-    maximumFractionDigits
-  }).format(value);
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(numValue);
 }
 
 /**
- * Format a number with thousands separators
- * @param value - Number to format
- * @returns Formatted number string
+ * Format numbers with commas for thousands separators
  */
-export function formatNumber(value: number): string {
-  return new Intl.NumberFormat('en-US').format(value);
-}
-
-/**
- * Format a percentage
- * @param value - Number to format as percentage 
- * @param decimals - Number of decimal places
- * @returns Formatted percentage string
- */
-export function formatPercent(value: number, decimals = 1): string {
-  return `${value.toFixed(decimals)}%`;
-}
-
-/**
- * Calculate the percent change between two values
- * @param current - Current value
- * @param previous - Previous value
- * @returns Percentage change or null if previous is 0 or null
- */
-export function calculatePercentChange(current: number, previous?: number): number | null {
-  if (previous === undefined || previous === null || previous === 0) {
-    return null;
+export function formatNumber(value: number | string): string {
+  // Handle string values
+  const numValue = typeof value === 'string' 
+    ? parseFloat(value.replace(/[^0-9.-]/g, '')) 
+    : value;
+  
+  // Check for valid numbers
+  if (isNaN(numValue) || !isFinite(numValue)) {
+    return '0';
   }
-  
-  return ((current - previous) / previous) * 100;
+
+  // Format with commas
+  return new Intl.NumberFormat('en-US').format(numValue);
 }
 
 /**
- * Truncate a string to a specified length and add ellipsis
- * @param str - String to truncate
- * @param length - Maximum length
- * @returns Truncated string
+ * Calculate percentage change between two values
  */
-export function truncateString(str: string, length = 30): string {
-  if (!str) return '';
-  if (str.length <= length) return str;
-  
-  return str.substring(0, length) + '...';
+export function calculatePercentChange(current: number, previous: number): number {
+  if (previous === 0) {
+    return current > 0 ? 100 : 0;
+  }
+  return ((current - previous) / Math.abs(previous)) * 100;
 }
 
 /**
- * Delays execution for specified milliseconds
- * @param ms - Milliseconds to delay
- * @returns Promise that resolves after the specified time
+ * Format a date to readable format: Jan 1, 2025
  */
-export function delay(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+export function formatDate(date: Date): string {
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  }).format(date);
 }
 
 /**
- * Creates a debounced function that delays invoking the provided function
- * until after the specified wait time has elapsed since the last invocation.
- * @param func - Function to debounce
- * @param wait - Wait time in milliseconds
- * @returns Debounced function
+ * Format a date range as a string: Jan 1 - Jan 31, 2025
  */
-export function debounce<T extends (...args: any[]) => any>(
-  func: T, 
-  wait: number
-): (...args: Parameters<T>) => void {
-  let timeout: ReturnType<typeof setTimeout> | null = null;
+export function formatDateRange(startDate: Date, endDate: Date): string {
+  const start = new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+  }).format(startDate);
   
-  return function(...args: Parameters<T>): void {
-    const later = () => {
-      timeout = null;
-      func(...args);
-    };
-    
-    if (timeout !== null) {
-      clearTimeout(timeout);
-    }
-    
-    timeout = setTimeout(later, wait);
-  };
+  const end = new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  }).format(endDate);
+  
+  return `${start} - ${end}`;
+}
+
+/**
+ * Check if two date ranges overlap
+ */
+export function dateRangesOverlap(
+  startA: Date,
+  endA: Date,
+  startB: Date,
+  endB: Date
+): boolean {
+  return startA <= endB && startB <= endA;
+}
+
+/**
+ * Truncate text with ellipsis after specified length
+ */
+export function truncateText(text: string, maxLength: number): string {
+  if (!text || text.length <= maxLength) return text;
+  return `${text.slice(0, maxLength)}...`;
 }
