@@ -14,7 +14,7 @@ type ToastStore = {
   toasts: ToastProps[];
 };
 
-const useToastStore = () => {
+export const useToastStore = () => {
   // Using local state for simplicity
   const [toasts, setToasts] = useState<ToastProps[]>([]);
 
@@ -96,8 +96,13 @@ export function useToast() {
 
 // Export toast function directly for easier import
 export const toast = (props: ToastProps) => {
-  const { toast: toastFn } = useToast();
-  return toastFn(props);
+  try {
+    const { toast: toastFn } = useToast();
+    return toastFn(props);
+  } catch (e) {
+    console.warn("Toast failed, store may not be initialized:", e);
+    return { id: String(Date.now()), dismiss: () => {}, update: () => {} };
+  }
 };
 
 // Initialization function to be called in ToastProvider

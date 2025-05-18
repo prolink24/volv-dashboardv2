@@ -1,7 +1,7 @@
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
+import { ToastProvider } from "@/components/ui/toast-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { DashboardProvider } from "@/providers/dashboard-provider";
 import { DateProvider } from "@/providers/date-context";
@@ -67,13 +67,14 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <DateProvider>
-          <DashboardProvider>
-            <Toaster />
-            <DataFlowDebugger />
-            <Router />
-          </DashboardProvider>
-        </DateProvider>
+        <ToastProvider>
+          <DateProvider>
+            <DashboardProvider>
+              <DataFlowDebugger />
+              <Router />
+            </DashboardProvider>
+          </DateProvider>
+        </ToastProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );
