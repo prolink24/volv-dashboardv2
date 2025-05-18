@@ -1,12 +1,74 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { getDateWithTime } from '@/lib/utils';
+import React, { createContext, useContext, useState } from 'react';
+import { addDays, addMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, startOfDay, endOfDay } from 'date-fns';
 
-interface DateRange {
+// Define the date range interface
+export interface DateRange {
   startDate: Date;
   endDate: Date;
   label?: string;
 }
 
+// Define the preset date ranges
+const getPresetRanges = () => [
+  {
+    label: 'Today',
+    range: {
+      startDate: startOfDay(new Date()),
+      endDate: endOfDay(new Date()),
+    },
+  },
+  {
+    label: 'Yesterday',
+    range: {
+      startDate: startOfDay(addDays(new Date(), -1)),
+      endDate: endOfDay(addDays(new Date(), -1)),
+    },
+  },
+  {
+    label: 'This Week',
+    range: {
+      startDate: startOfWeek(new Date(), { weekStartsOn: 1 }),
+      endDate: endOfWeek(new Date(), { weekStartsOn: 1 }),
+    },
+  },
+  {
+    label: 'Last Week',
+    range: {
+      startDate: startOfWeek(addDays(new Date(), -7), { weekStartsOn: 1 }),
+      endDate: endOfWeek(addDays(new Date(), -7), { weekStartsOn: 1 }),
+    },
+  },
+  {
+    label: 'This Month',
+    range: {
+      startDate: startOfMonth(new Date()),
+      endDate: endOfMonth(new Date()),
+    },
+  },
+  {
+    label: 'Last Month',
+    range: {
+      startDate: startOfMonth(addMonths(new Date(), -1)),
+      endDate: endOfMonth(addMonths(new Date(), -1)),
+    },
+  },
+  {
+    label: 'Last 3 Months',
+    range: {
+      startDate: startOfMonth(addMonths(new Date(), -3)),
+      endDate: endOfMonth(new Date()),
+    },
+  },
+  {
+    label: 'Year to Date',
+    range: {
+      startDate: new Date(new Date().getFullYear(), 0, 1), // January 1st of current year
+      endDate: endOfDay(new Date()),
+    },
+  },
+];
+
+// Define the context type
 interface DateContextType {
   dateRange: DateRange;
   setDateRange: (range: DateRange) => void;
@@ -15,168 +77,81 @@ interface DateContextType {
     range: DateRange;
   }[];
   applyDateRange: (range: DateRange) => void;
+  selectedPreset: string | null;
+  setSelectedPreset: (preset: string | null) => void;
 }
 
-// Create context with default values
+// Create the context with default values
 const DateContext = createContext<DateContextType>({
   dateRange: {
-    startDate: new Date(new Date().setDate(new Date().getDate() - 30)),
-    endDate: new Date(),
+    startDate: startOfMonth(new Date()),
+    endDate: endOfMonth(new Date()),
   },
   setDateRange: () => {},
-  presetRanges: [],
+  presetRanges: getPresetRanges(),
   applyDateRange: () => {},
+  selectedPreset: null,
+  setSelectedPreset: () => {},
 });
 
-// Custom hook to use the date context
+// Create a hook to use the date context
 export const useDateRange = () => useContext(DateContext);
 
+// Props interface for the DateProvider
 interface DateProviderProps {
   children: React.ReactNode;
 }
 
+// Create the DateProvider component
 export const DateProvider: React.FC<DateProviderProps> = ({ children }) => {
-  // Default to last 30 days
+  // Initialize with current month
   const [dateRange, setDateRangeState] = useState<DateRange>({
-    startDate: getDateWithTime(new Date(new Date().setDate(new Date().getDate() - 30))),
-    endDate: getDateWithTime(new Date(), true),
-    label: 'Last 30 days',
+    startDate: startOfMonth(new Date()),
+    endDate: endOfMonth(new Date()),
+    label: 'This Month',
   });
-
-  // Generate preset date ranges
-  const getPresetRanges = () => {
-    const today = new Date();
-    
-    // Last 7 days
-    const last7Start = new Date(today);
-    last7Start.setDate(today.getDate() - 6);
-    
-    // Last 14 days
-    const last14Start = new Date(today);
-    last14Start.setDate(today.getDate() - 13);
-    
-    // Last 30 days
-    const last30Start = new Date(today);
-    last30Start.setDate(today.getDate() - 29);
-    
-    // Last 90 days
-    const last90Start = new Date(today);
-    last90Start.setDate(today.getDate() - 89);
-    
-    // This month
-    const thisMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-    
-    // Last month
-    const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-    const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
-    
-    // This quarter
-    const thisQuarterStart = new Date(today.getFullYear(), Math.floor(today.getMonth() / 3) * 3, 1);
-    
-    // This year
-    const thisYearStart = new Date(today.getFullYear(), 0, 1);
-    
-    // Last year
-    const lastYearStart = new Date(today.getFullYear() - 1, 0, 1);
-    const lastYearEnd = new Date(today.getFullYear() - 1, 11, 31);
-    
-    return [
-      {
-        label: 'Last 7 days',
-        range: {
-          startDate: getDateWithTime(last7Start),
-          endDate: getDateWithTime(today, true),
-        },
-      },
-      {
-        label: 'Last 14 days',
-        range: {
-          startDate: getDateWithTime(last14Start),
-          endDate: getDateWithTime(today, true),
-        },
-      },
-      {
-        label: 'Last 30 days',
-        range: {
-          startDate: getDateWithTime(last30Start),
-          endDate: getDateWithTime(today, true),
-        },
-      },
-      {
-        label: 'Last 90 days',
-        range: {
-          startDate: getDateWithTime(last90Start),
-          endDate: getDateWithTime(today, true),
-        },
-      },
-      {
-        label: 'This month',
-        range: {
-          startDate: getDateWithTime(thisMonthStart),
-          endDate: getDateWithTime(today, true),
-        },
-      },
-      {
-        label: 'Last month',
-        range: {
-          startDate: getDateWithTime(lastMonthStart),
-          endDate: getDateWithTime(lastMonthEnd, true),
-        },
-      },
-      {
-        label: 'This quarter',
-        range: {
-          startDate: getDateWithTime(thisQuarterStart),
-          endDate: getDateWithTime(today, true),
-        },
-      },
-      {
-        label: 'This year',
-        range: {
-          startDate: getDateWithTime(thisYearStart),
-          endDate: getDateWithTime(today, true),
-        },
-      },
-      {
-        label: 'Last year',
-        range: {
-          startDate: getDateWithTime(lastYearStart),
-          endDate: getDateWithTime(lastYearEnd, true),
-        },
-      },
-    ];
-  };
-
+  
+  const [selectedPreset, setSelectedPreset] = useState<string | null>('This Month');
   const presetRanges = getPresetRanges();
-
-  // Set date range with applied start/end timestamps
+  
+  // Function to set the date range
   const setDateRange = (range: DateRange) => {
-    // Make sure the start date is at the beginning of the day (00:00:00)
-    const formattedStartDate = getDateWithTime(range.startDate);
-    
-    // Make sure the end date is at the end of the day (23:59:59)
-    const formattedEndDate = getDateWithTime(range.endDate, true);
-    
-    setDateRangeState({
-      startDate: formattedStartDate,
-      endDate: formattedEndDate,
-      label: range.label,
-    });
+    setDateRangeState(range);
   };
-
-  // Apply a date range and trigger any needed updates
+  
+  // Function to apply date range and possibly update the selected preset
   const applyDateRange = (range: DateRange) => {
-    setDateRange(range);
-    // Any additional logic for when date range changes can go here
+    setDateRangeState(range);
+    
+    // If a label is provided, use it as the selected preset
+    if (range.label) {
+      setSelectedPreset(range.label);
+    }
+    // Otherwise, check if the range matches a preset
+    else {
+      const matchingPreset = presetRanges.find(
+        (preset) =>
+          preset.range.startDate.getTime() === range.startDate.getTime() &&
+          preset.range.endDate.getTime() === range.endDate.getTime()
+      );
+      
+      setSelectedPreset(matchingPreset?.label || null);
+    }
   };
-
-  // Context value
-  const value = {
+  
+  // Create the context value
+  const contextValue: DateContextType = {
     dateRange,
     setDateRange,
     presetRanges,
     applyDateRange,
+    selectedPreset,
+    setSelectedPreset,
   };
-
-  return <DateContext.Provider value={value}>{children}</DateContext.Provider>;
+  
+  return (
+    <DateContext.Provider value={contextValue}>
+      {children}
+    </DateContext.Provider>
+  );
 };

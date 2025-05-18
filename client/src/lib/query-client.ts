@@ -1,15 +1,15 @@
-import { QueryClient } from '@tanstack/react-query';
 import axios from 'axios';
+import { QueryClient } from '@tanstack/react-query';
 
-// Create a custom axios instance for API requests
+// Create an axios instance with default configuration
 export const apiClient = axios.create({
-  baseURL: '/',
+  baseURL: '',
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Helper function to handle API requests
+// Simplified API request function that works with our React Query setup
 export const apiRequest = async <T>({
   url,
   method = 'GET',
@@ -17,9 +17,9 @@ export const apiRequest = async <T>({
   params,
 }: {
   url: string;
-  method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
-  data?: any;
-  params?: any;
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  data?: unknown;
+  params?: Record<string, string | number | boolean | undefined>;
 }): Promise<T> => {
   try {
     const response = await apiClient({
@@ -31,22 +31,18 @@ export const apiRequest = async <T>({
     
     return response.data;
   } catch (error) {
-    if (axios.isAxiosError(error) && error.response) {
-      // Extract the error message from the response
-      const message = error.response.data?.message || error.message;
-      throw new Error(message);
-    }
+    console.error('API request failed:', error);
     throw error;
   }
 };
 
-// Create a client with default options
+// Configure the React Query client with default options
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 1,
       refetchOnWindowFocus: false,
-      staleTime: 1000 * 60 * 5, // 5 minutes
+      retry: 1,
+      staleTime: 5 * 60 * 1000, // 5 minutes
     },
   },
 });

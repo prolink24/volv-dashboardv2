@@ -1,6 +1,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export interface ImprovedStatsCardProps {
   title: string;
@@ -21,21 +22,30 @@ export function ImprovedStatsCard({
 }: ImprovedStatsCardProps) {
   return (
     <Card className={cn('overflow-hidden', className)}>
-      <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        {icon && <div className="h-4 w-4 text-muted-foreground">{icon}</div>}
-      </CardHeader>
-      <CardContent>
+      <CardContent className="p-4">
         {isLoading ? (
-          <div className="animate-pulse">
-            <div className="h-9 bg-muted rounded w-2/3 mb-2"></div>
-            {description && <div className="h-4 bg-muted rounded w-full"></div>}
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-8 w-16" />
+            <Skeleton className="h-4 w-24" />
           </div>
         ) : (
           <>
-            <div className="text-2xl font-bold">{statValue}</div>
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-muted-foreground">{title}</p>
+              {icon && <div className="text-muted-foreground">{icon}</div>}
+            </div>
+            
+            <div className="mt-2 flex items-baseline">
+              <p className="text-2xl font-semibold">
+                {typeof statValue === 'number' 
+                  ? new Intl.NumberFormat().format(statValue) 
+                  : statValue}
+              </p>
+            </div>
+            
             {description && (
-              <p className="text-xs text-muted-foreground mt-1">{description}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{description}</p>
             )}
           </>
         )}

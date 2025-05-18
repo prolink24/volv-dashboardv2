@@ -1,19 +1,19 @@
 import React from 'react';
-import { cn, formatCurrency, formatNumber, formatPercentage, getTrendDirection } from '@/lib/utils';
+import { cn } from '@/lib/utils';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ArrowDownIcon, ArrowUpIcon } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
-// Interface for KPI card props
 export interface ImprovedKPICardProps {
   title: string;
-  value: string | number;
-  previousValue?: string | number;
+  value: number;
+  previousValue?: number;
   change?: number;
-  prefix?: string;
-  suffix?: string;
-  isLoading?: boolean;
-  formatType?: 'currency' | 'number' | 'percentage' | 'plain';
-  size?: 'sm' | 'md' | 'lg';
+  formatType?: 'number' | 'currency' | 'percentage';
   icon?: React.ReactNode;
   className?: string;
+  isLoading?: boolean;
+  size?: 'default' | 'sm';
 }
 
 export function ImprovedKPICard({
@@ -21,82 +21,105 @@ export function ImprovedKPICard({
   value,
   previousValue,
   change,
-  prefix = '',
-  suffix = '',
-  isLoading = false,
   formatType = 'number',
-  size = 'md',
   icon,
   className,
+  isLoading = false,
+  size = 'default',
 }: ImprovedKPICardProps) {
-  // Format the value based on the format type
-  const formattedValue = React.useMemo(() => {
-    if (formatType === 'currency') {
-      return formatCurrency(value);
-    } else if (formatType === 'number') {
-      return formatNumber(value);
-    } else if (formatType === 'percentage') {
-      return formatPercentage(value);
-    } else {
-      return `${prefix}${value}${suffix}`;
-    }
-  }, [value, formatType, prefix, suffix]);
-
-  // Get the trend direction (up, down, or neutral)
-  const trendDirection = getTrendDirection(change || 0);
+  // Format the value based on the specified format type
+  const formattedValue = formatValue(value, formatType);
+  const formattedPreviousValue = previousValue !== undefined ? formatValue(previousValue, formatType) : undefined;
   
-  // Display the change as a percentage if it exists
-  const changeDisplay = change !== undefined ? `${change >= 0 ? '+' : ''}${change.toFixed(1)}%` : null;
-
+  // Determine if change is positive, negative, or neutral
+  const changeType = change !== undefined
+    ? change > 0
+      ? 'positive'
+      : change < 0
+        ? 'negative'
+        : 'neutral'
+    : 'neutral';
+  
+  // Format the change percentage
+  const formattedChange = change !== undefined
+    ? `${changeType === 'positive' ? '+' : ''}${change.toFixed(1)}%`
+    : undefined;
+  
   return (
-    <div 
-      className={cn(
-        'rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden',
-        size === 'sm' ? 'p-4' : size === 'md' ? 'p-5' : 'p-6',
-        className
-      )}
-    >
-      <div className="flex flex-col space-y-2">
-        <div className="flex items-center justify-between">
-          <h3 className={cn(
-            'font-medium',
-            size === 'sm' ? 'text-sm' : size === 'md' ? 'text-base' : 'text-lg'
-          )}>
-            {title}
-          </h3>
-          {icon && <div className="text-muted-foreground">{icon}</div>}
-        </div>
-        
+    <Card className={cn(
+      'overflow-hidden',
+      size === 'sm' ? 'h-auto' : 'h-full',
+      className
+    )}>
+      <CardHeader className={cn(
+        'flex flex-row items-center justify-between pb-2',
+        size === 'sm' ? 'p-4' : 'p-6'
+      )}>
+        <CardTitle className={cn(
+          'text-sm font-medium',
+          size === 'sm' ? 'text-xs' : 'text-sm'
+        )}>
+          {icon && <span className="mr-2 inline-block">{icon}</span>}
+          {title}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className={cn(
+        'p-6 pt-0',
+        size === 'sm' ? 'p-4 pt-0' : 'p-6 pt-0'
+      )}>
         {isLoading ? (
-          <div className="animate-pulse">
-            <div className="h-8 bg-muted rounded w-3/4"></div>
-            {changeDisplay && <div className="h-4 mt-2 bg-muted rounded w-1/4"></div>}
+          <div className="space-y-2">
+            <Skeleton className={cn(
+              'h-8 w-24',
+              size === 'sm' ? 'h-6 w-20' : 'h-8 w-24'
+            )} />
+            <Skeleton className="h-4 w-16" />
           </div>
         ) : (
           <>
             <div className={cn(
-              'font-bold',
-              size === 'sm' ? 'text-xl' : size === 'md' ? 'text-2xl' : 'text-3xl'
+              'text-2xl font-bold',
+              size === 'sm' ? 'text-xl' : 'text-2xl'
             )}>
               {formattedValue}
             </div>
-            
-            {changeDisplay && (
-              <div className="flex items-center space-x-1">
+            {formattedPreviousValue !== undefined && formattedChange !== undefined && (
+              <div className="mt-1 flex items-center text-xs">
+                <span className="text-muted-foreground">vs. {formattedPreviousValue}</span>
                 <span className={cn(
-                  'text-xs font-medium',
-                  trendDirection === 'up' ? 'text-green-600' : 
-                  trendDirection === 'down' ? 'text-red-600' : 
-                  'text-gray-500'
+                  'ml-2 flex items-center',
+                  changeType === 'positive' ? 'text-green-500' : 
+                  changeType === 'negative' ? 'text-red-500' : 
+                  'text-muted-foreground'
                 )}>
-                  {changeDisplay}
+                  {changeType === 'positive' && <ArrowUpIcon className="mr-1 h-3 w-3" />}
+                  {changeType === 'negative' && <ArrowDownIcon className="mr-1 h-3 w-3" />}
+                  {formattedChange}
                 </span>
-                <span className="text-xs text-muted-foreground">vs previous period</span>
               </div>
             )}
           </>
         )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
+}
+
+// Helper function to format values based on the specified format type
+function formatValue(value: number, formatType: 'number' | 'currency' | 'percentage'): string {
+  switch (formatType) {
+    case 'currency':
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        maximumFractionDigits: 0,
+      }).format(value);
+    
+    case 'percentage':
+      return `${value.toFixed(1)}%`;
+    
+    case 'number':
+    default:
+      return new Intl.NumberFormat('en-US').format(value);
+  }
 }

@@ -1,51 +1,57 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useDashboardData, useAttributionStats, type DashboardData, type AttributionStats } from '@/hooks/use-dashboard-data';
-import { useDateRange } from './date-context';
-import { useToast } from '@/hooks/use-toast';
+import React, { createContext, useContext, useState, useCallback } from 'react';
+import { useDashboardData, useAttributionStats, DashboardData, AttributionStats } from '@/hooks/use-dashboard-data';
+import { useDateRange } from '@/providers/date-context';
+import { useQuery } from '@tanstack/react-query';
 
+// Define the dashboard context type
 interface DashboardContextType {
   dashboardData: DashboardData | undefined;
   attributionStats: AttributionStats | undefined;
   isLoading: boolean;
-  isError: boolean;
-  refreshDashboard: () => void;
+  error: Error | null;
+  refreshDashboard: () => Promise<void>;
+  useEnhancedMode: boolean;
+  setUseEnhancedMode: (enabled: boolean) => void;
   selectedUserId: string | undefined;
   setSelectedUserId: (userId: string | undefined) => void;
-  useEnhancedMode: boolean;
-  setUseEnhancedMode: (mode: boolean) => void;
 }
 
+// Create the context with default values
 const DashboardContext = createContext<DashboardContextType>({
   dashboardData: undefined,
   attributionStats: undefined,
   isLoading: false,
-  isError: false,
-  refreshDashboard: () => {},
-  selectedUserId: undefined,
-  setSelectedUserId: () => {},
+  error: null,
+  refreshDashboard: async () => {},
   useEnhancedMode: true,
   setUseEnhancedMode: () => {},
+  selectedUserId: undefined,
+  setSelectedUserId: () => {},
 });
 
+// Create a hook to use the dashboard context
 export const useDashboard = () => useContext(DashboardContext);
 
+// Props interface for the DashboardProvider
 interface DashboardProviderProps {
   children: React.ReactNode;
 }
 
+// Create the DashboardProvider component
 export const DashboardProvider: React.FC<DashboardProviderProps> = ({ children }) => {
-  const { dateRange } = useDateRange();
-  const [selectedUserId, setSelectedUserId] = useState<string | undefined>(undefined);
+  // State for enhanced mode and selected user
   const [useEnhancedMode, setUseEnhancedMode] = useState<boolean>(true);
-  const { toast } = useToast();
+  const [selectedUserId, setSelectedUserId] = useState<string | undefined>(undefined);
   
-  // Fetch dashboard data with selected filters
-  const {
-    data: dashboardData,
-    isLoading: isDashboardLoading,
-    isError: isDashboardError,
+  // Get the current date range from the DateProvider
+  const { dateRange } = useDateRange();
+  
+  // Fetch dashboard data with the current filters
+  const { 
+    data: dashboardData, 
+    isLoading: isDashboardLoading, 
     error: dashboardError,
-    refetch: refetchDashboard,
+    refetch: refetchDashboard
   } = useDashboardData({
     userId: selectedUserId,
     useEnhanced: useEnhancedMode,
@@ -55,67 +61,39 @@ export const DashboardProvider: React.FC<DashboardProviderProps> = ({ children }
   const {
     data: attributionStats,
     isLoading: isAttributionLoading,
-    isError: isAttributionError,
     error: attributionError,
-    refetch: refetchAttribution,
+    refetch: refetchAttribution
   } = useAttributionStats();
   
-  // Combined loading and error states
+  // Combined loading state
   const isLoading = isDashboardLoading || isAttributionLoading;
-  const isError = isDashboardError || isAttributionError;
   
-  // Refresh all dashboard data
-  const refreshDashboard = () => {
-    refetchDashboard();
-    refetchAttribution();
-    toast({
-      title: 'Refreshing Dashboard',
-      description: 'Fetching the latest data...',
-      variant: 'default',
-    });
-  };
+  // Combined error state
+  const error = dashboardError || attributionError || null;
   
-  // Show error notifications
-  useEffect(() => {
-    if (isDashboardError && dashboardError) {
-      toast({
-        title: 'Dashboard Error',
-        description: `Failed to load dashboard data: ${dashboardError.message}`,
-        variant: 'destructive',
-      });
-    }
-    
-    if (isAttributionError && attributionError) {
-      toast({
-        title: 'Attribution Error',
-        description: `Failed to load attribution stats: ${attributionError.message}`,
-        variant: 'destructive',
-      });
-    }
-  }, [isDashboardError, isAttributionError, dashboardError, attributionError, toast]);
+  // Function to refresh all dashboard data
+  const refreshDashboard = useCallback(async (): Promise<void> => {
+    await Promise.all([
+      refetchDashboard(),
+      refetchAttribution()
+    ]);
+  }, [refetchDashboard, refetchAttribution]);
   
-  // When date range changes, refresh data
-  useEffect(() => {
-    // Only refetch if we've loaded data before
-    if (dashboardData || attributionStats) {
-      refreshDashboard();
-    }
-  }, [dateRange.startDate, dateRange.endDate]);
-  
-  const value = {
+  // Create the context value
+  const contextValue: DashboardContextType = {
     dashboardData,
     attributionStats,
     isLoading,
-    isError,
+    error,
     refreshDashboard,
-    selectedUserId,
-    setSelectedUserId,
     useEnhancedMode,
     setUseEnhancedMode,
+    selectedUserId,
+    setSelectedUserId,
   };
   
   return (
-    <DashboardContext.Provider value={value}>
+    <DashboardContext.Provider value={contextValue}>
       {children}
     </DashboardContext.Provider>
   );

@@ -1,494 +1,544 @@
-import { useState, useEffect } from "react";
-import { useDashboard } from "@/providers/dashboard-provider";
-import { useDateRange } from "@/providers/date-context";
-import { useDashboardData, syncData, invalidateDashboardData, useAttributionStats } from "@/hooks/use-dashboard-data";
-import { useToast } from "@/hooks/use-toast";
+import React, { useState } from 'react';
+import { cn } from '@/lib/utils';
+import { ImprovedKPICard } from '@/components/dashboard/improved-kpi-card';
+import { ImprovedStatsCard } from '@/components/dashboard/improved-stats-card';
+import { ImprovedDateRangePicker } from '@/components/dashboard/improved-date-range-picker';
+import { ImprovedUserFilter } from '@/components/dashboard/improved-user-filter';
+import { useDashboard } from '@/providers/dashboard-provider';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 import { 
-  BarChart, 
-  RefreshCw, 
-  Download, 
-  Users, 
+  BarChart3, 
   DollarSign, 
-  Activity, 
+  Download, 
+  LayoutDashboard, 
   Phone, 
-  CheckCircle, 
-  Calendar
-} from "lucide-react";
+  RefreshCw, 
+  UserRoundPlus, 
+  Users,
+  Calendar,
+  LineChart,
+  TrendingUp,
+  Activity,
+  CheckCircle,
+  ArrowDownRight,
+  ArrowUpRight
+} from 'lucide-react';
+import { format } from 'date-fns';
+import { syncData } from '@/hooks/use-dashboard-data';
 
-import { ImprovedKpiCard } from "@/components/dashboard/improved-kpi-card";
-import { ImprovedStatsCard } from "@/components/dashboard/improved-stats-card";
-import { ImprovedDateRangePicker } from "@/components/dashboard/improved-date-range-picker";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { formatCurrency } from "@/lib/utils";
-import { Separator } from "@/components/ui/separator";
+interface ImprovedDashboardProps {
+  className?: string;
+}
 
-export function ImprovedDashboard() {
-  const { userFilter, refreshData, isRefreshing, activeTab, setActiveTab } = useDashboard();
-  const { dateRange } = useDateRange();
-  const { toast } = useToast();
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
-  
-  // Fetch dashboard data with enhanced attribution
+export function ImprovedDashboard({ className }: ImprovedDashboardProps) {
   const { 
-    data: dashboardData, 
+    dashboardData, 
+    attributionStats, 
     isLoading, 
-    isError, 
-    error,
-    refetch
-  } = useDashboardData({ 
-    userId: userFilter !== "All Users" ? userFilter : undefined,
-    useEnhanced: true
-  });
+    refreshDashboard,
+    useEnhancedMode,
+    setUseEnhancedMode 
+  } = useDashboard();
   
-  // Get attribution stats
-  const { 
-    data: attributionStatsData,
-    isLoading: isAttributionLoading,
-    isError: isAttributionError
-  } = useAttributionStats();
+  const [activeTab, setActiveTab] = useState('overview');
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
-  useEffect(() => {
-    if (isInitialLoad && dashboardData) {
-      setIsInitialLoad(false);
-    }
-  }, [dashboardData, isInitialLoad]);
-
-  // Refresh data with improved error handling
+  // Function to handle dashboard refresh
   const handleRefresh = async () => {
-    toast({
-      title: "Refreshing data",
-      description: "Syncing data from all sources...",
-    });
-    
-    try {
-      // First try to sync the data
-      const syncResult = await syncData();
-      
-      // If sync was successful, invalidate the cache
-      if (syncResult) {
-        await invalidateDashboardData();
-        await refetch();
-      }
-      
-      toast({
-        title: "Data refreshed",
-        description: "Dashboard data has been updated from all sources",
-      });
-    } catch (error) {
-      console.error("Data refresh error:", error);
-      
-      toast({
-        title: "Error refreshing data",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
-        variant: "destructive",
-      });
-    }
+    setIsRefreshing(true);
+    // First attempt to sync data from external sources
+    await syncData();
+    // Then refresh the dashboard data
+    await refreshDashboard();
+    setIsRefreshing(false);
   };
   
-  // Default empty dashboard data to prevent null reference errors
-  const safeData = dashboardData || {
-    kpis: {
-      deals: { current: 0, previous: 0, change: 0 },
-      revenue: { current: 0, previous: 0, change: 0 },
-      activities: { current: 0, previous: 0, change: 0 },
-      meetings: { current: 0, previous: 0, change: 0 },
-      closedDeals: { current: 0, previous: 0, change: 0 },
-      cashCollected: { current: 0, previous: 0, change: 0 },
-      revenueGenerated: { current: 0, previous: 0, change: 0 },
-      totalCalls: { current: 0, previous: 0, change: 0 },
-      call1Taken: { current: 0, previous: 0, change: 0 },
-      call2Taken: { current: 0, previous: 0, change: 0 },
-      closingRate: 0,
-      avgCashCollected: 0,
-      solutionCallShowRate: 0,
-      earningPerCall2: 0
-    },
-    salesTeam: [],
-    leadMetrics: {
-      newLeadsToday: 0,
-      leadsLastWeek: 0,
-      averageLeadQualificationTime: 0,
-      leadConversionRate: 0,
-      leadSourceDistribution: {},
-      totalLeads: 0,
-      qualifiedLeads: 0,
-      conversionRate: 0,
-      costPerLead: 0,
-      qualifiedRate: 0,
-      responseRate: 0
-    },
-    timelineData: [],
-    topDeals: [],
-    stats: {
-      totalContacts: 0,
-      totalDeals: 0,
-      totalActivities: 0,
-      totalMeetings: 0,
-      contactsWithMultipleSources: 0,
-      totalContactsWithAttribution: 0,
-    },
-    attributionAccuracy: 0
+  // Function to handle enhanced mode toggle
+  const handleEnhancedModeToggle = () => {
+    setUseEnhancedMode(!useEnhancedMode);
   };
   
-  // Generate attribution data
-  const attributionData = {
-    multiSourceRate: attributionStatsData?.stats?.multiSourceRate || 0,
-    attributionAccuracy: attributionStatsData?.attributionAccuracy || 0,
-    fieldCoverage: attributionStatsData?.stats?.fieldCoverage || 0,
-    dealAttributionRate: attributionStatsData?.stats?.dealAttributionRate || 0,
-    channelBreakdown: attributionStatsData?.channelBreakdown || {},
-  };
-  
-  // Loading state
-  if (isLoading && isInitialLoad) {
-    return (
-      <div className="p-4 md:p-6 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">Dashboard</h1>
-            <p className="text-muted-foreground">Your attribution metrics and insights</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-9 w-[240px]" />
-            <Skeleton className="h-9 w-9 rounded-md" />
-            <Skeleton className="h-9 w-9 rounded-md" />
-          </div>
-        </div>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <Skeleton key={i} className="h-[120px] rounded-md" />
-          ))}
-        </div>
-      </div>
-    );
-  }
-  
-  // Error state
-  if (isError) {
-    return (
-      <div className="p-4 md:p-6">
-        <Card className="border-destructive">
-          <CardHeader>
-            <CardTitle className="text-destructive">Error Loading Dashboard</CardTitle>
-            <CardDescription>
-              {error instanceof Error ? error.message : "Failed to load dashboard data. Please try again."}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={handleRefresh} className="w-full">
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Retry
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
-    <div className="p-4 md:p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className={cn('flex flex-col gap-6 p-4 md:p-8', className)}>
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground">
-            Your attribution metrics and insights from {dateRange.startDate.toLocaleDateString()} to {dateRange.endDate.toLocaleDateString()}
+            View your contact attribution metrics and KPIs
           </p>
         </div>
+        
         <div className="flex items-center gap-2">
-          <ImprovedDateRangePicker 
-            isLoading={isLoading || isRefreshing} 
-            onApply={refetch}
-          />
-          <Button 
-            variant="outline" 
-            size="icon"
+          <ImprovedDateRangePicker />
+          
+          <Button
+            variant="outline"
+            size="sm"
             onClick={handleRefresh}
             disabled={isLoading || isRefreshing}
           >
-            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={cn('mr-2 h-4 w-4', isRefreshing && 'animate-spin')} />
+            Refresh
           </Button>
-          <Button 
-            variant="outline" 
-            size="icon" 
-            onClick={() => {
-              toast({
-                title: "Export Started",
-                description: "Your data is being exported",
-              });
-            }}
+          
+          <Button
+            variant={useEnhancedMode ? 'default' : 'outline'}
+            size="sm"
+            onClick={handleEnhancedModeToggle}
           >
-            <Download className="h-4 w-4" />
+            {useEnhancedMode ? 'Enhanced Mode' : 'Standard Mode'}
           </Button>
         </div>
-      </div>
+      </header>
       
-      {/* Tabs for different dashboard views */}
-      <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full max-w-md grid-cols-5">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="sales">Sales</TabsTrigger>
-          <TabsTrigger value="marketing">Marketing</TabsTrigger>
-          <TabsTrigger value="setter">Setter</TabsTrigger>
-          <TabsTrigger value="attribution">Attribution</TabsTrigger>
-        </TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <div className="flex items-center justify-between">
+          <TabsList>
+            <TabsTrigger value="overview" className="flex items-center gap-2">
+              <LayoutDashboard className="h-4 w-4" />
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="attribution" className="flex items-center gap-2">
+              <LineChart className="h-4 w-4" />
+              Attribution
+            </TabsTrigger>
+            <TabsTrigger value="team" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Team
+            </TabsTrigger>
+          </TabsList>
+          
+          <div className="flex items-center gap-2">
+            <ImprovedUserFilter />
+            <Button variant="outline" size="sm">
+              <Download className="mr-2 h-4 w-4" />
+              Export
+            </Button>
+          </div>
+        </div>
         
-        {/* Overview Tab */}
+        {/* Overview Tab Content */}
         <TabsContent value="overview" className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <ImprovedKpiCard
-              title="Closed Deals"
-              value={safeData.kpis.closedDeals?.current || safeData.kpis.deals.current}
-              subValue="/10 target"
-              trend={{
-                value: safeData.kpis.closedDeals?.change || safeData.kpis.deals.change,
-                label: "vs. last period"
-              }}
-              icon={<CheckCircle className="h-5 w-5" />}
+          {/* KPI Cards */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <ImprovedKPICard
+              title="Total Revenue"
+              value={dashboardData?.kpis.revenue.current || 0}
+              previousValue={dashboardData?.kpis.revenue.previous || 0}
+              change={dashboardData?.kpis.revenue.change || 0}
+              formatType="currency"
+              icon={<DollarSign className="h-4 w-4" />}
               isLoading={isLoading}
             />
-            <ImprovedKpiCard
+            
+            <ImprovedKPICard
               title="Cash Collected"
-              value={formatCurrency(safeData.kpis.cashCollected?.current || 0)}
-              subValue="/150k target"
-              trend={{
-                value: safeData.kpis.cashCollected?.change || 0,
-                label: "vs. last period"
-              }}
-              icon={<DollarSign className="h-5 w-5" />}
+              value={dashboardData?.kpis.cashCollected.current || 0}
+              previousValue={dashboardData?.kpis.cashCollected.previous || 0}
+              change={dashboardData?.kpis.cashCollected.change || 0}
+              formatType="currency"
+              icon={<DollarSign className="h-4 w-4" />}
               isLoading={isLoading}
             />
-            <ImprovedKpiCard
-              title="Revenue Generated"
-              value={formatCurrency(safeData.kpis.revenueGenerated?.current || safeData.kpis.revenue.current)}
-              subValue="/250k target"
-              trend={{
-                value: safeData.kpis.revenueGenerated?.change || safeData.kpis.revenue.change,
-                label: "vs. last period"
-              }}
-              icon={<BarChart className="h-5 w-5" />}
+            
+            <ImprovedKPICard
+              title="Total Deals"
+              value={dashboardData?.kpis.deals.current || 0}
+              previousValue={dashboardData?.kpis.deals.previous || 0}
+              change={dashboardData?.kpis.deals.change || 0}
+              formatType="number"
+              icon={<BarChart3 className="h-4 w-4" />}
               isLoading={isLoading}
             />
-            <ImprovedKpiCard
-              title="Total Calls"
-              value={typeof safeData.kpis.totalCalls === 'object' ? safeData.kpis.totalCalls.current : 
-                     (typeof safeData.kpis.totalCalls === 'number' ? safeData.kpis.totalCalls : safeData.kpis.activities.current)}
-              subValue="/60 target"
-              trend={{
-                value: typeof safeData.kpis.totalCalls === 'object' ? safeData.kpis.totalCalls.change : -5,
-                label: "vs. last period"
-              }}
-              icon={<Phone className="h-5 w-5" />}
-              isLoading={isLoading}
-            />
-            <ImprovedKpiCard
-              title="Call 1 Taken"
-              value={typeof safeData.kpis.call1Taken === 'object' ? safeData.kpis.call1Taken.current : 
-                     (typeof safeData.kpis.call1Taken === 'number' ? safeData.kpis.call1Taken : 0)}
-              subValue="/40 target"
-              trend={{
-                value: typeof safeData.kpis.call1Taken === 'object' ? safeData.kpis.call1Taken.change : 8,
-                label: "vs. last period"
-              }}
-              icon={<Phone className="h-5 w-5" />}
-              isLoading={isLoading}
-            />
-            <ImprovedKpiCard
-              title="Call 2 Taken"
-              value={typeof safeData.kpis.call2Taken === 'object' ? safeData.kpis.call2Taken.current : 
-                     (typeof safeData.kpis.call2Taken === 'number' ? safeData.kpis.call2Taken : 0)}
-              subValue="/20 target"
-              trend={{
-                value: typeof safeData.kpis.call2Taken === 'object' ? safeData.kpis.call2Taken.change : -10,
-                label: "vs. last period"
-              }}
-              icon={<Phone className="h-5 w-5" />}
+            
+            <ImprovedKPICard
+              title="Total Meetings"
+              value={dashboardData?.kpis.meetings.current || 0}
+              previousValue={dashboardData?.kpis.meetings.previous || 0}
+              change={dashboardData?.kpis.meetings.change || 0}
+              formatType="number"
+              icon={<Calendar className="h-4 w-4" />}
               isLoading={isLoading}
             />
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Attribution Metrics</CardTitle>
-                <CardDescription>Cross-platform attribution stats</CardDescription>
+          {/* Secondary KPI Metrics */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <ImprovedKPICard
+              title="Closing Rate"
+              value={dashboardData?.kpis.closingRate || 0}
+              formatType="percentage"
+              icon={<TrendingUp className="h-4 w-4" />}
+              isLoading={isLoading}
+              size="sm"
+            />
+            
+            <ImprovedKPICard
+              title="Solution Call Show Rate"
+              value={dashboardData?.kpis.solutionCallShowRate || 0}
+              formatType="percentage"
+              icon={<CheckCircle className="h-4 w-4" />}
+              isLoading={isLoading}
+              size="sm"
+            />
+            
+            <ImprovedKPICard
+              title="Avg. Cash Collected"
+              value={dashboardData?.kpis.avgCashCollected || 0}
+              formatType="currency"
+              icon={<DollarSign className="h-4 w-4" />}
+              isLoading={isLoading}
+              size="sm"
+            />
+          </div>
+          
+          {/* Attribution Stats and Timeline */}
+          <div className="grid gap-4 md:grid-cols-7">
+            <Card className="md:col-span-5">
+              <CardHeader>
+                <CardTitle>Revenue Timeline</CardTitle>
+                <CardDescription>
+                  Monthly revenue over the selected period
+                </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent>
+                {isLoading ? (
+                  <div className="h-[300px] w-full animate-pulse bg-muted rounded" />
+                ) : dashboardData?.timelineData?.length ? (
+                  <div className="h-[300px]">
+                    {/* Timeline chart would go here */}
+                    <p className="text-sm text-muted-foreground">
+                      Chart showing revenue for each date in the selected period.
+                    </p>
+                    <div className="mt-2 space-y-2">
+                      {dashboardData.timelineData.slice(0, 5).map((item, index) => (
+                        <div key={index} className="flex items-center justify-between">
+                          <div className="text-sm">{format(new Date(item.date), 'MMM d, yyyy')}</div>
+                          <div className="font-medium">${item.revenue.toLocaleString()}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex h-[300px] items-center justify-center">
+                    <p className="text-sm text-muted-foreground">No timeline data available</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+            
+            <div className="grid gap-4 md:col-span-2">
+              <ImprovedStatsCard
+                title="Multi-Source Rate"
+                statValue={`${attributionStats?.sourceDistribution.multiSourceRate || 0}%`}
+                description="Contacts with multiple data sources"
+                icon={<TrendingUp className="h-4 w-4" />}
+                isLoading={isLoading}
+              />
+              
+              <ImprovedStatsCard
+                title="Field Coverage"
+                statValue={`${attributionStats?.fieldCoverage.coverageRate || 0}%`}
+                description="Completeness of contact data fields"
+                icon={<CheckCircle className="h-4 w-4" />}
+                isLoading={isLoading}
+              />
+              
+              <ImprovedStatsCard
+                title="Total Touchpoints"
+                statValue={attributionStats?.totalTouchpoints || 0}
+                description={`Avg: ${attributionStats?.touchpointStats.average.toFixed(1)} per contact`}
+                icon={<Activity className="h-4 w-4" />}
+                isLoading={isLoading}
+              />
+            </div>
+          </div>
+          
+          {/* Top Deals */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Top Deals</CardTitle>
+              <CardDescription>
+                Your highest value opportunities
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Multi-source contacts</span>
-                    <span className="font-medium">{Math.round(attributionData.multiSourceRate)}%</span>
-                  </div>
-                  <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-primary rounded-full" 
-                      style={{ width: `${Math.round(attributionData.multiSourceRate)}%` }}
-                    ></div>
-                  </div>
+                  {Array(5).fill(0).map((_, i) => (
+                    <div key={i} className="h-12 animate-pulse bg-muted rounded" />
+                  ))}
                 </div>
-                
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Attribution accuracy</span>
-                    <span className="font-medium">{Math.round(attributionData.attributionAccuracy)}%</span>
-                  </div>
-                  <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-green-500 rounded-full" 
-                      style={{ width: `${Math.round(attributionData.attributionAccuracy)}%` }}
-                    ></div>
-                  </div>
+              ) : dashboardData?.topDeals?.length ? (
+                <div className="space-y-4">
+                  {dashboardData.topDeals.slice(0, 5).map((deal) => (
+                    <div key={deal.id} className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <div className="space-y-1">
+                          <p className="font-medium">{deal.title}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {deal.stage} · {deal.owner}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="mr-4 text-right">
+                          <p className="font-medium">${deal.value.toLocaleString()}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {deal.closeDate ? format(new Date(deal.closeDate), 'MMM d, yyyy') : 'No close date'}
+                          </p>
+                        </div>
+                        {deal.status === 'won' ? (
+                          <ArrowUpRight className="h-4 w-4 text-green-500" />
+                        ) : deal.status === 'lost' ? (
+                          <ArrowDownRight className="h-4 w-4 text-red-500" />
+                        ) : (
+                          <TrendingUp className="h-4 w-4 text-blue-500" />
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Field coverage</span>
-                    <span className="font-medium">{Math.round(attributionData.fieldCoverage)}%</span>
+              ) : (
+                <div className="flex h-[200px] items-center justify-center">
+                  <p className="text-sm text-muted-foreground">No deals available</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        {/* Attribution Tab Content */}
+        <TabsContent value="attribution" className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <Card>
+              <CardHeader>
+                <CardTitle>Attribution Accuracy</CardTitle>
+                <CardDescription>
+                  Overall accuracy of contact attribution
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center">
+                  <div className="text-4xl font-bold">
+                    {isLoading ? (
+                      <div className="h-9 w-16 mx-auto animate-pulse bg-muted rounded" />
+                    ) : (
+                      `${attributionStats?.attributionAccuracy || 0}%`
+                    )}
                   </div>
-                  <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-blue-500 rounded-full" 
-                      style={{ width: `${Math.round(attributionData.fieldCoverage)}%` }}
-                    ></div>
+                  <div className="mt-2 text-sm text-muted-foreground">
+                    Based on data consistency and completeness
                   </div>
                 </div>
               </CardContent>
             </Card>
             
-            <Card className="col-span-1 md:col-span-2">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Channel Distribution</CardTitle>
-                <CardDescription>Contact sources by platform</CardDescription>
+            <Card>
+              <CardHeader>
+                <CardTitle>Contact Sources</CardTitle>
+                <CardDescription>
+                  Distribution of contact data sources
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                {isAttributionLoading ? (
-                  <div className="space-y-4">
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-full" />
+                {isLoading ? (
+                  <div className="space-y-2">
+                    <div className="h-6 animate-pulse bg-muted rounded" />
+                    <div className="h-6 animate-pulse bg-muted rounded" />
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {Object.entries(attributionData.channelBreakdown || {}).map(([name, value], index) => {
-                      const percentage = attributionStatsData?.totalTouchpoints 
-                        ? (value as number / attributionStatsData.totalTouchpoints) * 100 
-                        : 0;
-                      
-                      let bgColor = "bg-blue-500";
-                      switch(name.toLowerCase()) {
-                        case 'close':
-                          bgColor = "bg-green-500";
-                          break;
-                        case 'calendly':
-                          bgColor = "bg-orange-400";
-                          break;
-                        case 'typeform':
-                          bgColor = "bg-blue-500";
-                          break;
-                        default:
-                          bgColor = "bg-purple-500";
-                      }
-                      
-                      return (
-                        <div key={name} className="space-y-2">
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-muted-foreground capitalize">{name}</span>
-                            <span className="font-medium">{Math.round(percentage)}% ({value as number})</span>
-                          </div>
-                          <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                            <div 
-                              className={`h-full ${bgColor} rounded-full`} 
-                              style={{ width: `${percentage}%` }}
-                            ></div>
-                          </div>
+                    <div className="flex items-center justify-between">
+                      <div>Single Source</div>
+                      <div className="font-medium">{attributionStats?.sourceDistribution.singleSource || 0}</div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div>Multi Source</div>
+                      <div className="font-medium">{attributionStats?.sourceDistribution.multiSource || 0}</div>
+                    </div>
+                    <Separator />
+                    <div className="flex items-center justify-between">
+                      <div>Multi-Source Rate</div>
+                      <div className="font-medium">{attributionStats?.sourceDistribution.multiSourceRate || 0}%</div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Channel Distribution</CardTitle>
+                <CardDescription>
+                  Contact attribution by channel
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="space-y-2">
+                    {Array(4).fill(0).map((_, i) => (
+                      <div key={i} className="h-6 animate-pulse bg-muted rounded" />
+                    ))}
+                  </div>
+                ) : attributionStats?.channelDistribution && Object.keys(attributionStats.channelDistribution).length ? (
+                  <div className="space-y-2">
+                    {Object.entries(attributionStats.channelDistribution)
+                      .sort(([, a], [, b]) => b - a)
+                      .slice(0, 4)
+                      .map(([channel, count]) => (
+                        <div key={channel} className="flex items-center justify-between">
+                          <div className="capitalize">{channel}</div>
+                          <div className="font-medium">{count}</div>
                         </div>
-                      );
-                    })}
-                    
-                    {Object.keys(attributionData.channelBreakdown || {}).length === 0 && !isAttributionLoading && (
-                      <div className="py-6 text-center text-muted-foreground">
-                        No channel data available for the selected date range
-                      </div>
-                    )}
+                      ))}
+                  </div>
+                ) : (
+                  <div className="flex h-[100px] items-center justify-center">
+                    <p className="text-sm text-muted-foreground">No channel data available</p>
                   </div>
                 )}
               </CardContent>
             </Card>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <ImprovedStatsCard
-              title="Total Contacts"
-              value={safeData.stats.totalContacts}
-              description="Contacts from all sources"
-              icon={<Users className="h-4 w-4" />}
-              isLoading={isLoading}
-            />
-            <ImprovedStatsCard
-              title="Total Activities"
-              value={safeData.stats.totalActivities}
-              description="Activities tracked across platforms"
-              icon={<Activity className="h-4 w-4" />}
-              isLoading={isLoading}
-            />
-            <ImprovedStatsCard
-              title="Total Meetings"
-              value={safeData.stats.totalMeetings}
-              description="Scheduled meetings via Calendly"
-              icon={<Calendar className="h-4 w-4" />}
-              isLoading={isLoading}
-            />
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Contact Attribution Stats</CardTitle>
+              <CardDescription>
+                Key metrics about your contact attribution
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="space-y-4">
+                  {Array(3).fill(0).map((_, i) => (
+                    <div key={i} className="h-12 animate-pulse bg-muted rounded" />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  <div className="space-y-2">
+                    <h3 className="font-medium">Contact Stats</h3>
+                    <div className="space-y-1">
+                      <div className="flex justify-between">
+                        <div className="text-sm">Total Contacts</div>
+                        <div className="text-sm font-medium">{attributionStats?.contactStats.totalContacts || 0}</div>
+                      </div>
+                      <div className="flex justify-between">
+                        <div className="text-sm">With Deals</div>
+                        <div className="text-sm font-medium">{attributionStats?.contactStats.contactsWithDeals || 0}</div>
+                      </div>
+                      <div className="flex justify-between">
+                        <div className="text-sm">With Meetings</div>
+                        <div className="text-sm font-medium">{attributionStats?.contactStats.contactsWithMeetings || 0}</div>
+                      </div>
+                      <div className="flex justify-between">
+                        <div className="text-sm">With Forms</div>
+                        <div className="text-sm font-medium">{attributionStats?.contactStats.contactsWithForms || 0}</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <h3 className="font-medium">Field Coverage</h3>
+                    <div className="space-y-1">
+                      <div className="flex justify-between">
+                        <div className="text-sm">Total Fields</div>
+                        <div className="text-sm font-medium">{attributionStats?.fieldCoverage.total || 0}</div>
+                      </div>
+                      <div className="flex justify-between">
+                        <div className="text-sm">Covered Fields</div>
+                        <div className="text-sm font-medium">{attributionStats?.fieldCoverage.covered || 0}</div>
+                      </div>
+                      <div className="flex justify-between">
+                        <div className="text-sm">Coverage Rate</div>
+                        <div className="text-sm font-medium">{attributionStats?.fieldCoverage.coverageRate || 0}%</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <h3 className="font-medium">Touchpoint Stats</h3>
+                    <div className="space-y-1">
+                      <div className="flex justify-between">
+                        <div className="text-sm">Total Touchpoints</div>
+                        <div className="text-sm font-medium">{attributionStats?.touchpointStats.total || 0}</div>
+                      </div>
+                      <div className="flex justify-between">
+                        <div className="text-sm">Average per Contact</div>
+                        <div className="text-sm font-medium">{attributionStats?.touchpointStats.average.toFixed(1) || 0}</div>
+                      </div>
+                      <div className="flex justify-between">
+                        <div className="text-sm">Maximum Touchpoints</div>
+                        <div className="text-sm font-medium">{attributionStats?.touchpointStats.max || 0}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
         
-        {/* Other tabs would go here - customized for each dashboard view */}
-        <TabsContent value="sales" className="space-y-6">
-          <div className="text-center py-8">
-            <h2 className="text-xl font-semibold mb-2">Sales Dashboard</h2>
-            <p className="text-muted-foreground">
-              Select the main dashboard tab to view the complete dashboard.
-            </p>
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="marketing" className="space-y-6">
-          <div className="text-center py-8">
-            <h2 className="text-xl font-semibold mb-2">Marketing Dashboard</h2>
-            <p className="text-muted-foreground">
-              Select the main dashboard tab to view the complete dashboard.
-            </p>
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="setter" className="space-y-6">
-          <div className="text-center py-8">
-            <h2 className="text-xl font-semibold mb-2">Setter Dashboard</h2>
-            <p className="text-muted-foreground">
-              Select the main dashboard tab to view the complete dashboard.
-            </p>
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="attribution" className="space-y-6">
-          <div className="text-center py-8">
-            <h2 className="text-xl font-semibold mb-2">Attribution Dashboard</h2>
-            <p className="text-muted-foreground">
-              Select the main dashboard tab to view the complete dashboard.
-            </p>
-          </div>
+        {/* Team Tab Content */}
+        <TabsContent value="team" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Sales Team Performance</CardTitle>
+              <CardDescription>
+                Individual metrics for each team member
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="space-y-4">
+                  {Array(5).fill(0).map((_, i) => (
+                    <div key={i} className="h-16 animate-pulse bg-muted rounded" />
+                  ))}
+                </div>
+              ) : dashboardData?.salesTeam?.length ? (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-5 gap-4 font-medium text-sm">
+                    <div>Name</div>
+                    <div>Role</div>
+                    <div className="text-right">Deals</div>
+                    <div className="text-right">Revenue</div>
+                    <div className="text-right">Activities</div>
+                  </div>
+                  <Separator />
+                  {dashboardData.salesTeam.map((member) => (
+                    <div key={member.id} className="grid grid-cols-5 gap-4 text-sm">
+                      <div className="font-medium">{member.name}</div>
+                      <div className="text-muted-foreground">{member.role}</div>
+                      <div className="text-right">{member.deals}</div>
+                      <div className="text-right">${member.revenue.toLocaleString()}</div>
+                      <div className="text-right">{member.activities}</div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex h-[200px] items-center justify-center">
+                  <p className="text-sm text-muted-foreground">No team data available</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
       
-      {/* Last updated indicator */}
-      <div className="pt-4 text-xs text-muted-foreground text-right">
-        Last updated: {dashboardData?.refreshedAt ? new Date(dashboardData.refreshedAt).toLocaleString() : 'Unknown'}
+      {/* Data Refresh Info */}
+      <div className="flex items-center justify-between">
+        <div className="text-xs text-muted-foreground">
+          Dashboard Mode: {useEnhancedMode ? 'Enhanced' : 'Standard'}
+        </div>
+        <div className="text-xs text-muted-foreground">
+          Data retrieved {format(new Date(), 'MMM d, yyyy h:mm a')}
+        </div>
       </div>
     </div>
   );
 }
-
-export default ImprovedDashboard;
