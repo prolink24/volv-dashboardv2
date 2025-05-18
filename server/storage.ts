@@ -127,7 +127,14 @@ export interface IStorage {
 
 // Implementation with database storage using Drizzle ORM
 export class DatabaseStorage implements IStorage {
-  // We'll implement the methods elsewhere in the class
+  // Get deals by status implementation
+  async getDealsByStatus(status: string): Promise<Deal[]> {
+    return db
+      .select()
+      .from(deals)
+      .where(eq(deals.status, status))
+      .orderBy(desc(deals.createdAt));
+  }
   
   async query(sqlQuery: string, params?: any[]): Promise<any[]> {
     try {
@@ -663,19 +670,27 @@ export class DatabaseStorage implements IStorage {
       // Single date provided
       startDate = date;
       endDate = date;
-      console.log(`Fetching dashboard data for role: ${role || 'default'}, date: ${date.toISOString()}, userId: ${userId || 'all'}`);
+      console.log(`Fetching dashboard data for single date: ${startDate.toISOString()}`);
     } else {
       // Date range provided
       startDate = date.startDate;
       endDate = date.endDate;
-      console.log(`Fetching dashboard data for role: ${role || 'default'}, date range: ${startDate.toISOString()} to ${endDate.toISOString()}, userId: ${userId || 'all'}`);
+      console.log(`Fetching dashboard data for date range: ${startDate.toISOString()} to ${endDate.toISOString()}`);
     }
     
     // Format dates for PostgreSQL
     const startDateString = startDate.toISOString().split('T')[0];
     const endDateString = endDate.toISOString().split('T')[0];
     
-    // Create date range filters using SQL template literals
+    console.log(`Using date range: ${startDateString} to ${endDateString}`);
+    if (userId) {
+      console.log(`Filtering for user ID: ${userId}`);
+    }
+    if (role) {
+      console.log(`Filtering for role: ${role}`);
+    }
+    
+    // Create date range filters
     const contactsDateFilter = and(
       sql`${contacts.createdAt}::text >= ${startDateString}::text`,
       sql`${contacts.createdAt}::text <= ${endDateString}::text`
@@ -696,269 +711,290 @@ export class DatabaseStorage implements IStorage {
       sql`${meetings.startTime}::text <= ${endDateString}::text`
     );
     
-    // Add user filter if userId is provided
-    let userFilter = {};
-    if (userId) {
-      // We'll apply this filter later when querying deals and contacts with user assignments
-      console.log(`Filtering dashboard data for user ID: ${userId}`);
-    }
-    
-    // Get base counts
-    const [
-      contactsCountResult,
-      dealsCountResult,
-      activitiesCountResult,
-      meetingsCountResult,
-      multiSourceContactsResult,
-      contactsWithDealsResult,
-      contactsWithMeetingsResult
-    ] = await Promise.all([
-      // Total contacts in period
-      db.select({ count: sql<number>`COUNT(*)` })
-        .from(contacts)
-        .where(contactsDateFilter),
-      
-      // Total deals in period
-      db.select({ count: sql<number>`COUNT(*)` })
-        .from(deals)
-        .where(dealsDateFilter),
-      
-      // Total activities in period
-      db.select({ count: sql<number>`COUNT(*)` })
-        .from(activities)
-        .where(activitiesDateFilter),
-      
-      // Total meetings in period
-      db.select({ count: sql<number>`COUNT(*)` })
-        .from(meetings)
-        .where(meetingsDateFilter),
-      
-      // Contacts with multiple sources
-      db.select({ count: sql<number>`COUNT(*)` })
-        .from(contacts)
-        .where(and(
-          contactsDateFilter,
-          sql`${contacts.sourcesCount} > 1`
-        )),
-      
-      // Contacts with deals
-      db.select({ count: sql<number>`COUNT(DISTINCT ${contacts.id})` })
-        .from(contacts)
-        .where(exists(
-          db.select().from(deals).where(eq(deals.contactId, contacts.id))
-        )),
-      
-      // Contacts with meetings
-      db.select({ count: sql<number>`COUNT(DISTINCT ${contacts.id})` })
-        .from(contacts)
-        .where(exists(
-          db.select().from(meetings).where(eq(meetings.contactId, contacts.id))
-        )),
-    ]);
-    
-    // Extract count values
-    const totalContacts = contactsCountResult[0]?.count || 0;
-    const totalDeals = dealsCountResult[0]?.count || 0;
-    const totalActivities = activitiesCountResult[0]?.count || 0;
-    const totalMeetings = meetingsCountResult[0]?.count || 0;
-    const multiSourceContacts = multiSourceContactsResult[0]?.count || 0;
-    const contactsWithDeals = contactsWithDealsResult[0]?.count || 0;
-    const contactsWithMeetings = contactsWithMeetingsResult[0]?.count || 0;
-    
-    // Calculate conversion rates and ratios
-    const conversionRate = totalContacts > 0 ? (contactsWithDeals / totalContacts) * 100 : 0;
-    const multiSourceRate = totalContacts > 0 ? (multiSourceContacts / totalContacts) * 100 : 0;
-    
-    // Get revenue metrics
-    const revenueResult = await db.select({
-      totalRevenue: sql<string>`COALESCE(SUM(NULLIF(${deals.value}, '')::numeric), 0)`,
-      totalCashCollected: sql<string>`COALESCE(SUM(NULLIF(${deals.cashCollected}, '')::numeric), 0)`
-    })
-    .from(deals)
-    .where(and(
-      dealsDateFilter,
-      eq(deals.status, 'won')
-    ));
-    
-    // Extract revenue values
-    const totalRevenue = parseFloat(revenueResult[0]?.totalRevenue || '0');
-    const totalCashCollected = parseFloat(revenueResult[0]?.totalCashCollected || '0');
-    const cashCollectedRate = totalRevenue > 0 ? (totalCashCollected / totalRevenue) * 100 : 0;
-    
-    // Get sales team performance data
-    let salesTeam: any[] = [];
-    
-    if (userId) {
-      // Get single user data
-      const user = await db.select().from(closeUsers).where(eq(closeUsers.closeId, userId));
-      
-      if (user.length > 0) {
-        const closeUserId = user[0].id;
+    try {
+      // Get base counts
+      const [
+        contactsCountResult,
+        dealsCountResult,
+        activitiesCountResult,
+        meetingsCountResult,
+        multiSourceContactsResult,
+        contactsWithDealsResult,
+        contactsWithMeetingsResult
+      ] = await Promise.all([
+        // Total contacts in period
+        db.select({ count: sql<number>`COUNT(*)` })
+          .from(contacts)
+          .where(contactsDateFilter),
         
-        // Get user's deals
-        const userDeals = await db.select()
+        // Total deals in period
+        db.select({ count: sql<number>`COUNT(*)` })
           .from(deals)
-          .innerJoin(dealToUserAssignments, eq(deals.id, dealToUserAssignments.dealId))
-          .where(and(
-            dealsDateFilter,
-            eq(dealToUserAssignments.closeUserId, closeUserId)
-          ));
+          .where(dealsDateFilter),
         
-        // Get user's meetings
-        const userMeetings = await db.select()
-          .from(meetings)
-          .where(and(
-            meetingsDateFilter,
-            eq(meetings.assignedTo, userId)
-          ));
-        
-        // Get user's activities
-        const userActivities = await db.select()
+        // Total activities in period
+        db.select({ count: sql<number>`COUNT(*)` })
           .from(activities)
+          .where(activitiesDateFilter),
+        
+        // Total meetings in period
+        db.select({ count: sql<number>`COUNT(*)` })
+          .from(meetings)
+          .where(meetingsDateFilter),
+        
+        // Contacts with multiple sources
+        db.select({ count: sql<number>`COUNT(*)` })
+          .from(contacts)
           .where(and(
-            activitiesDateFilter,
-            eq(activities.taskAssignedTo, userId)
-          ));
+            contactsDateFilter,
+            sql`${contacts.sourcesCount} > 1`
+          )),
         
-        // Calculate user-specific metrics
-        const userWonDeals = userDeals.filter(deal => deal.deals.status === 'won');
-        const userClosedDeals = userDeals.filter(deal => deal.deals.status === 'won' || deal.deals.status === 'lost');
-        const userRevenue = userWonDeals.reduce((sum, deal) => {
-          const value = parseFloat(deal.deals.value || '0');
-          return sum + (isNaN(value) ? 0 : value);
-        }, 0);
-        const userCashCollected = userWonDeals.reduce((sum, deal) => {
-          const value = parseFloat(deal.deals.cashCollected || '0');
-          return sum + (isNaN(value) ? 0 : value);
-        }, 0);
-        const userContractedValue = userWonDeals.reduce((sum, deal) => {
-          const value = parseFloat(deal.deals.contractedValue || '0');
-          return sum + (isNaN(value) ? 0 : value);
-        }, 0);
-        const closingRate = userClosedDeals.length > 0 
-          ? (userWonDeals.length / userClosedDeals.length) * 100 
-          : 0;
+        // Contacts with deals
+        db.select({ count: sql<number>`COUNT(DISTINCT ${contacts.id})` })
+          .from(contacts)
+          .where(exists(
+            db.select().from(deals).where(eq(deals.contactId, contacts.id))
+          )),
         
-        // Add to sales team array
-        salesTeam.push({
-          id: userId,
-          name: `${user[0].first_name} ${user[0].last_name}`.trim(),
-          role: user[0].role || 'Sales Representative',
-          deals: userDeals.length,
-          meetings: userMeetings.length,
-          activities: userActivities.length,
-          performance: closingRate,  // Using closing rate as performance indicator
-          closed: userClosedDeals.length,
-          cashCollected: userCashCollected,
-          revenue: userRevenue,
-          contractedValue: userContractedValue,
-          calls: userActivities.filter(a => a.type === 'call').length,
-          closingRate: closingRate
-        });
-      }
-    } else {
-      // Get all users
-      const users = await db.select().from(closeUsers);
+        // Contacts with meetings
+        db.select({ count: sql<number>`COUNT(DISTINCT ${contacts.id})` })
+          .from(contacts)
+          .where(exists(
+            db.select().from(meetings).where(eq(meetings.contactId, contacts.id))
+          )),
+      ]);
       
-      // Process data for each user
-      for (const user of users) {
-        // Get user's deals
-        const userDeals = await db.select()
-          .from(deals)
-          .innerJoin(dealToUserAssignments, eq(deals.id, dealToUserAssignments.dealId))
-          .where(and(
-            dealsDateFilter,
-            eq(dealToUserAssignments.closeUserId, user.id)
-          ));
+      // Extract count values
+      const totalContacts = contactsCountResult[0]?.count || 0;
+      const totalDeals = dealsCountResult[0]?.count || 0;
+      const totalActivities = activitiesCountResult[0]?.count || 0;
+      const totalMeetings = meetingsCountResult[0]?.count || 0;
+      const multiSourceContacts = multiSourceContactsResult[0]?.count || 0;
+      const contactsWithDeals = contactsWithDealsResult[0]?.count || 0;
+      const contactsWithMeetings = contactsWithMeetingsResult[0]?.count || 0;
+      
+      // Calculate conversion rates and ratios
+      const conversionRate = totalContacts > 0 ? (contactsWithDeals / totalContacts) * 100 : 0;
+      const multiSourceRate = totalContacts > 0 ? (multiSourceContacts / totalContacts) * 100 : 0;
+      
+      // Get revenue metrics
+      const revenueResult = await db.select({
+        totalRevenue: sql<string>`COALESCE(SUM(NULLIF(${deals.value}, '')::numeric), 0)`,
+        totalCashCollected: sql<string>`COALESCE(SUM(NULLIF(${deals.cashCollected}, '')::numeric), 0)`
+      })
+      .from(deals)
+      .where(and(
+        dealsDateFilter,
+        eq(deals.status, 'won')
+      ));
+      
+      // Extract revenue values with safe parsing
+      let totalRevenue = 0;
+      let totalCashCollected = 0;
+      
+      try {
+        totalRevenue = parseFloat(revenueResult[0]?.totalRevenue || '0');
+        if (isNaN(totalRevenue)) totalRevenue = 0;
         
-        // Get user's meetings
-        const userMeetings = await db.select()
-          .from(meetings)
-          .where(and(
-            meetingsDateFilter,
-            eq(meetings.assignedTo, user.closeId)
-          ));
-        
-        // Get user's activities
-        const userActivities = await db.select()
-          .from(activities)
-          .where(and(
-            activitiesDateFilter,
-            eq(activities.taskAssignedTo, user.closeId)
-          ));
-        
-        // Calculate user-specific metrics
-        const userWonDeals = userDeals.filter(deal => deal.deals.status === 'won');
-        const userClosedDeals = userDeals.filter(deal => deal.deals.status === 'won' || deal.deals.status === 'lost');
-        const userRevenue = userWonDeals.reduce((sum, deal) => {
-          const value = parseFloat(deal.deals.value || '0');
-          return sum + (isNaN(value) ? 0 : value);
-        }, 0);
-        const userCashCollected = userWonDeals.reduce((sum, deal) => {
-          const value = parseFloat(deal.deals.cashCollected || '0');
-          return sum + (isNaN(value) ? 0 : value);
-        }, 0);
-        const userContractedValue = userWonDeals.reduce((sum, deal) => {
-          const value = parseFloat(deal.deals.contractedValue || '0');
-          return sum + (isNaN(value) ? 0 : value);
-        }, 0);
-        const closingRate = userClosedDeals.length > 0 
-          ? (userWonDeals.length / userClosedDeals.length) * 100 
-          : 0;
-        
-        // Add to sales team array
-        salesTeam.push({
-          id: user.closeId,
-          name: `${user.first_name} ${user.last_name}`.trim(),
-          role: user.role || 'Sales Representative',
-          deals: userDeals.length,
-          meetings: userMeetings.length,
-          activities: userActivities.length,
-          performance: closingRate,  // Using closing rate as performance indicator
-          closed: userClosedDeals.length,
-          cashCollected: userCashCollected,
-          revenue: userRevenue,
-          contractedValue: userContractedValue,
-          calls: userActivities.filter(a => a.type === 'call').length,
-          closingRate: closingRate
-        });
+        totalCashCollected = parseFloat(revenueResult[0]?.totalCashCollected || '0');
+        if (isNaN(totalCashCollected)) totalCashCollected = 0;
+      } catch (error) {
+        console.error("Error parsing revenue values:", error);
+        // Use default values if parsing fails
+        totalRevenue = 0;
+        totalCashCollected = 0;
       }
+      
+      const cashCollectedRate = totalRevenue > 0 ? (totalCashCollected / totalRevenue) * 100 : 0;
+      
+      // Get sales team performance data
+      let salesTeamData: any[] = [];
+      
+      if (userId) {
+        // Get single user data
+        const user = await db.select().from(closeUsers).where(eq(closeUsers.closeId, userId));
+        
+        if (user.length > 0) {
+          const closeUserId = user[0].id;
+          
+          // Get user's deals
+          const userDeals = await db.select()
+            .from(deals)
+            .innerJoin(dealToUserAssignments, eq(deals.id, dealToUserAssignments.dealId))
+            .where(and(
+              dealsDateFilter,
+              eq(dealToUserAssignments.closeUserId, closeUserId)
+            ));
+          
+          // Get user's meetings
+          const userMeetings = await db.select()
+            .from(meetings)
+            .where(and(
+              meetingsDateFilter,
+              eq(meetings.assignedTo, userId)
+            ));
+          
+          // Get user's activities
+          const userActivities = await db.select()
+            .from(activities)
+            .where(and(
+              activitiesDateFilter,
+              eq(activities.taskAssignedTo, userId)
+            ));
+          
+          // Calculate user-specific metrics
+          const userWonDeals = userDeals.filter(deal => deal.deals.status === 'won');
+          const userClosedDeals = userDeals.filter(deal => 
+            deal.deals.status === 'won' || deal.deals.status === 'lost'
+          );
+          
+          let userRevenue = 0;
+          let userCashCollected = 0;
+          let userContractedValue = 0;
+          
+          for (const deal of userWonDeals) {
+            try {
+              const value = parseFloat(deal.deals.value || '0');
+              if (!isNaN(value)) userRevenue += value;
+              
+              const cashCollected = parseFloat(deal.deals.cashCollected || '0');
+              if (!isNaN(cashCollected)) userCashCollected += cashCollected;
+              
+              const contractedValue = parseFloat(deal.deals.contractedValue || '0');
+              if (!isNaN(contractedValue)) userContractedValue += contractedValue;
+            } catch (e) {
+              console.error("Error parsing deal values:", e);
+            }
+          }
+          
+          const closingRate = userClosedDeals.length > 0 
+            ? (userWonDeals.length / userClosedDeals.length) * 100 
+            : 0;
+          
+          // Add to sales team array
+          salesTeamData.push({
+            id: userId,
+            name: `${user[0].first_name} ${user[0].last_name}`.trim(),
+            role: user[0].role || 'Sales Representative',
+            deals: userDeals.length,
+            meetings: userMeetings.length,
+            activities: userActivities.length,
+            performance: closingRate,
+            closed: userClosedDeals.length,
+            cashCollected: userCashCollected,
+            revenue: userRevenue,
+            contractedValue: userContractedValue,
+            calls: userActivities.filter(a => a.type === 'call').length,
+            closingRate: closingRate
+          });
+        }
+      } else {
+        // Get all users
+        const users = await db.select().from(closeUsers);
+        
+        // Process data for each user
+        for (const user of users) {
+          // Get user's deals
+          const userDeals = await db.select()
+            .from(deals)
+            .innerJoin(dealToUserAssignments, eq(deals.id, dealToUserAssignments.dealId))
+            .where(and(
+              dealsDateFilter,
+              eq(dealToUserAssignments.closeUserId, user.id)
+            ));
+          
+          // Get user's meetings
+          const userMeetings = await db.select()
+            .from(meetings)
+            .where(and(
+              meetingsDateFilter,
+              eq(meetings.assignedTo, user.closeId)
+            ));
+          
+          // Get user's activities
+          const userActivities = await db.select()
+            .from(activities)
+            .where(and(
+              activitiesDateFilter,
+              eq(activities.taskAssignedTo, user.closeId)
+            ));
+          
+          // Calculate user-specific metrics
+          const userWonDeals = userDeals.filter(deal => deal.deals.status === 'won');
+          const userClosedDeals = userDeals.filter(deal => 
+            deal.deals.status === 'won' || deal.deals.status === 'lost'
+          );
+          
+          let userRevenue = 0;
+          let userCashCollected = 0;
+          let userContractedValue = 0;
+          
+          for (const deal of userWonDeals) {
+            try {
+              const value = parseFloat(deal.deals.value || '0');
+              if (!isNaN(value)) userRevenue += value;
+              
+              const cashCollected = parseFloat(deal.deals.cashCollected || '0');
+              if (!isNaN(cashCollected)) userCashCollected += cashCollected;
+              
+              const contractedValue = parseFloat(deal.deals.contractedValue || '0');
+              if (!isNaN(contractedValue)) userContractedValue += contractedValue;
+            } catch (e) {
+              console.error("Error parsing deal values:", e);
+            }
+          }
+          
+          const closingRate = userClosedDeals.length > 0 
+            ? (userWonDeals.length / userClosedDeals.length) * 100 
+            : 0;
+          
+          // Add to sales team array
+          salesTeamData.push({
+            id: user.closeId,
+            name: `${user.first_name} ${user.last_name}`.trim(),
+            role: user.role || 'Sales Representative',
+            deals: userDeals.length,
+            meetings: userMeetings.length,
+            activities: userActivities.length,
+            performance: closingRate,
+            closed: userClosedDeals.length,
+            cashCollected: userCashCollected,
+            revenue: userRevenue,
+            contractedValue: userContractedValue,
+            calls: userActivities.filter(a => a.type === 'call').length,
+            closingRate: closingRate
+          });
+        }
+      }
+      
+      // Ensure no extreme values (for data quality)
+      const salesTeam = salesTeamData.map(member => ({
+        ...member,
+        // Cap extremely high values to prevent UI issues
+        revenue: Math.min(member.revenue, 10000000), // Cap at 10M
+        cashCollected: Math.min(member.cashCollected, 10000000), // Cap at 10M
+        contractedValue: Math.min(member.contractedValue, 10000000), // Cap at 10M
+      }));
+      
+      // Construct response object
+      return {
+        totalContacts,
+        totalRevenue,
+        totalCashCollected,
+        totalDeals,
+        totalMeetings,
+        totalActivities,
+        conversionRate,
+        multiSourceRate,
+        cashCollectedRate,
+        salesTeam
+      };
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+      throw error;
     }
-    
-    // Ensure no extreme values (for data quality)
-    salesTeam = salesTeam.map(member => ({
-      ...member,
-      // Cap extremely high values to prevent UI issues
-      revenue: Math.min(member.revenue, 10000000), // Cap at 10M
-      cashCollected: Math.min(member.cashCollected, 10000000), // Cap at 10M
-      contractedValue: Math.min(member.contractedValue, 10000000), // Cap at 10M
-    }));
-    
-    // Construct response object
-    return {
-      totalContacts,
-      totalRevenue,
-      totalCashCollected,
-      totalDeals,
-      totalMeetings,
-      totalActivities,
-      conversionRate,
-      multiSourceRate,
-      cashCollectedRate,
-      salesTeam
-    };
-    const avgDealValueResult = await db.select({ 
-      avg: sql<number>`COALESCE(AVG(${deals.value}), 0)` 
-    })
-    .from(deals)
-    .where(dealsDateFilter);
-    const averageDealValue = Math.round(avgDealValueResult[0]?.avg || 0);
-    
-    // Get average deal cycle (days from created to closed)
-    const avgDealCycleResult = await db.select({
-      avg: sql<number>`COALESCE(AVG(EXTRACT(DAY FROM ${deals.closeDate} - ${deals.createdAt})), 0)`
-    })
-    .from(deals)
+  }
     .where(and(
       gte(deals.createdAt, sql`${startDate}`),
       lte(deals.createdAt, sql`${endDate}`),

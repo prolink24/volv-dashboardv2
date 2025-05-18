@@ -32,8 +32,7 @@ export async function getDashboardData(req: Request, res: Response) {
     
     // Get current period data
     const currentPeriodData = await storage.getDashboardData(
-      currentStartDate,
-      currentEndDate, 
+      { startDate: currentStartDate, endDate: currentEndDate }, 
       userId as string | undefined
     );
     
@@ -45,8 +44,7 @@ export async function getDashboardData(req: Request, res: Response) {
       
       if (compareStart && compareEnd) {
         previousPeriodData = await storage.getDashboardData(
-          compareStart,
-          compareEnd,
+          { startDate: compareStart, endDate: compareEnd },
           userId as string | undefined
         );
       }
