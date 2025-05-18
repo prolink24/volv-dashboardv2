@@ -23,6 +23,22 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
+ * Get initials from a name (up to 2 characters)
+ * @param name Full name to extract initials from
+ * @returns String with initials (1-2 characters)
+ */
+export function getInitials(name: string): string {
+  if (!name) return '';
+  
+  const parts = name.split(' ').filter(part => part.length > 0);
+  
+  if (parts.length === 0) return '';
+  if (parts.length === 1) return parts[0][0].toUpperCase();
+  
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+/**
  * Format a number with commas as thousand separators
  */
 export function formatNumber(value: number | string | null | undefined): string {
