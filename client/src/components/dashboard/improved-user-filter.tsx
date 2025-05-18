@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
-import { useDashboard } from "@/providers/dashboard-provider";
-import { Check, ChevronsUpDown, UserIcon } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Check, ChevronsUpDown, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -14,81 +13,110 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useDashboard } from "@/providers/dashboard-provider";
 import { cn } from "@/lib/utils";
 
-// Default user options, customize based on your data
-const defaultUserOptions = [
-  "All Users",
-  "Josh Sweetnam",
-  "Mazin Gazar",
-  "Bryann Cabral",
-  "Bogdan Micov",
-  "Harlan Ryder",
-];
+interface UserOption {
+  value: string;
+  label: string;
+}
 
 interface ImprovedUserFilterProps {
-  userOptions?: string[];
+  users: UserOption[];
+  isLoading?: boolean;
+  onFilterChange?: (userId: string) => void;
   className?: string;
-  onUserChange?: (user: string) => void;
 }
 
 export function ImprovedUserFilter({
-  userOptions = defaultUserOptions,
-  className,
-  onUserChange
+  users,
+  isLoading = false,
+  onFilterChange,
+  className = "",
 }: ImprovedUserFilterProps) {
   const { userFilter, setUserFilter } = useDashboard();
   const [open, setOpen] = useState(false);
+  const [options, setOptions] = useState<UserOption[]>([]);
 
-  const handleValueChange = (value: string) => {
-    setUserFilter(value);
-    if (onUserChange) {
-      onUserChange(value);
+  // Initialize options with All Users option and provided users
+  useEffect(() => {
+    if (users && users.length > 0) {
+      setOptions([
+        { value: "All Users", label: "All Users" },
+        ...users
+      ]);
     }
-    setOpen(false);
+  }, [users]);
+
+  // Get the display label for current user filter
+  const getCurrentUserLabel = () => {
+    if (userFilter === "All Users") return "All Users";
+    
+    const selectedUser = options.find(user => user.value === userFilter);
+    return selectedUser ? selectedUser.label : "All Users";
   };
 
+  // Handle user selection
+  const handleUserSelect = (userId: string) => {
+    setUserFilter(userId);
+    setOpen(false);
+    
+    if (onFilterChange) {
+      onFilterChange(userId);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className={className}>
+        <Skeleton className="h-9 w-[180px]" />
+      </div>
+    );
+  }
+
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className={cn("w-[200px] justify-between", className)}
-        >
-          <div className="flex items-center gap-2 truncate">
-            <UserIcon className="h-4 w-4 shrink-0 opacity-50" />
-            <span className="truncate">{userFilter || "All Users"}</span>
-          </div>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[200px] p-0">
-        <Command>
-          <CommandInput placeholder="Search users..." />
-          <CommandEmpty>No user found.</CommandEmpty>
-          <CommandGroup>
-            {userOptions.map((user) => (
-              <CommandItem
-                key={user}
-                value={user}
-                onSelect={() => handleValueChange(user)}
-              >
-                <Check
-                  className={cn(
-                    "mr-2 h-4 w-4",
-                    userFilter === user ? "opacity-100" : "opacity-0"
-                  )}
-                />
-                {user}
-              </CommandItem>
-            ))}
-          </CommandGroup>
-        </Command>
-      </PopoverContent>
-    </Popover>
+    <div className={className}>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="w-[180px] justify-between"
+          >
+            <div className="flex items-center">
+              <Users className="mr-2 h-4 w-4" />
+              <span className="truncate">{getCurrentUserLabel()}</span>
+            </div>
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[180px] p-0">
+          <Command>
+            <CommandInput placeholder="Search users..." />
+            <CommandEmpty>No user found.</CommandEmpty>
+            <CommandGroup>
+              {options.map((user) => (
+                <CommandItem
+                  key={user.value}
+                  value={user.value}
+                  onSelect={handleUserSelect}
+                  className="cursor-pointer"
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      userFilter === user.value ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  <span className="truncate">{user.label}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    </div>
   );
 }
-
-export default ImprovedUserFilter;

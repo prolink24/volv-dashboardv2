@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
+// Define toast types
 export type ToastProps = {
   id?: string;
   title?: string;
@@ -8,28 +9,67 @@ export type ToastProps = {
   variant?: "default" | "destructive" | "success";
 };
 
-const TOAST_TIMEOUT = 5000; // 5 seconds
+// Create a store for toasts
+type ToastStore = {
+  toasts: ToastProps[];
+};
 
-export function useToast() {
+const useToastStore = () => {
+  // Using local state for simplicity
   const [toasts, setToasts] = useState<ToastProps[]>([]);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setToasts((toasts) => {
-        if (toasts.length > 0) {
-          const [, ...rest] = toasts;
-          return rest;
-        }
-        return toasts;
-      });
-    }, TOAST_TIMEOUT);
+  const addToast = (toast: ToastProps) => {
+    const id = toast.id || String(Date.now());
+    
+    setToasts((prevToasts) => [
+      ...prevToasts.filter((t) => t.id !== id),
+      { ...toast, id },
+    ]);
+    
+    return id;
+  };
 
-    return () => clearTimeout(timer);
-  }, [toasts]);
+  const removeToast = (id: string) => {
+    setToasts((prevToasts) => prevToasts.filter((toast) => toast.id !== id));
+  };
 
+  const updateToast = (toast: ToastProps) => {
+    if (!toast.id) return;
+    
+    setToasts((prevToasts) => 
+      prevToasts.map((t) => (t.id === toast.id ? { ...t, ...toast } : t))
+    );
+  };
+
+  return {
+    toasts,
+    addToast,
+    removeToast,
+    updateToast,
+  };
+};
+
+// Singleton store instance
+let store: ReturnType<typeof useToastStore> | null = null;
+
+// Initialize store if it doesn't exist
+const getStore = () => {
+  if (store === null) {
+    throw new Error(
+      "Toast store not initialized. Make sure you're using the ToastProvider at the root of your app."
+    );
+  }
+  return store;
+};
+
+// Hook to access and manipulate toasts
+export function useToast() {
+  // This is a fake hook that just returns the store methods
+  // In a real app, you'd use React context or a state management library
+  
   function toast(props: ToastProps) {
-    const id = props.id || Math.random().toString(36).substring(2, 9);
-    setToasts((toasts) => [...toasts, { id, ...props }]);
+    const id = props.id || String(Date.now());
+    getStore().addToast({ id, ...props });
     
     return {
       id,
@@ -37,24 +77,24 @@ export function useToast() {
       update: (props: ToastProps) => update({ id, ...props }),
     };
   }
-
+  
   function dismiss(id: string) {
-    setToasts((toasts) => toasts.filter((toast) => toast.id !== id));
+    getStore().removeToast(id);
   }
-
+  
   function update(props: ToastProps) {
-    if (!props.id) return;
-    
-    setToasts((toasts) =>
-      toasts.map((t) => (t.id === props.id ? { ...t, ...props } : t))
-    );
+    getStore().updateToast(props);
   }
-
+  
   return {
     toast,
     dismiss,
-    toasts,
+    update,
+    toasts: getStore().toasts,
   };
 }
 
-export default useToast;
+// Initialization function to be called in ToastProvider
+export function initializeToastStore(newStore: ReturnType<typeof useToastStore>) {
+  store = newStore;
+}

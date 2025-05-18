@@ -1,72 +1,73 @@
-import { QueryClient } from "@tanstack/react-query";
+import { QueryClient } from '@tanstack/react-query';
 
-// Create a client
+// Default fetcher function for React Query
+export async function defaultFetcher<T>(url: string): Promise<T> {
+  const response = await fetch(url);
+  
+  if (!response.ok) {
+    // Handle API errors
+    const errorData = await response.json().catch(() => ({
+      message: 'Unknown error occurred',
+    }));
+    
+    throw new Error(
+      errorData.message || `API error: ${response.status} ${response.statusText}`
+    );
+  }
+  
+  return response.json();
+}
+
+// Helper function for API requests with different methods
+export async function apiRequest<T, U = void>(
+  url: string,
+  method: 'POST' | 'PATCH' | 'DELETE' | 'PUT' = 'POST',
+  data?: U
+): Promise<T> {
+  const response = await fetch(url, {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: data ? JSON.stringify(data) : undefined,
+  });
+  
+  if (!response.ok) {
+    // Handle API errors
+    const errorData = await response.json().catch(() => ({
+      message: 'Unknown error occurred',
+    }));
+    
+    throw new Error(
+      errorData.message || `API error: ${response.status} ${response.statusText}`
+    );
+  }
+  
+  // For DELETE operations, we might not have a response body
+  if (method === 'DELETE' && response.status === 204) {
+    return {} as T;
+  }
+  
+  return response.json();
+}
+
+// Create a client with default configuration
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
+      staleTime: 60 * 1000, // 1 minute
       retry: 1,
       refetchOnWindowFocus: false,
-      staleTime: 5 * 60 * 1000, // 5 minutes
+      queryFn: ({ queryKey }) => {
+        // Convert array query keys to URL path
+        const url = Array.isArray(queryKey) 
+          ? queryKey.join('/') 
+          : queryKey.toString();
+          
+        return defaultFetcher(url);
+      },
     },
   },
 });
-
-// Base API request function
-type RequestOptions = {
-  method?: string;
-  headers?: Record<string, string>;
-  body?: any;
-  params?: Record<string, any>;
-};
-
-export async function apiRequest(
-  endpoint: string,
-  options: RequestOptions = {}
-) {
-  const { method = "GET", headers = {}, body, params } = options;
-
-  // Build URL with query params if any
-  let url = endpoint;
-  if (params && Object.keys(params).length > 0) {
-    const searchParams = new URLSearchParams();
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        searchParams.append(key, String(value));
-      }
-    });
-    url = `${endpoint}?${searchParams.toString()}`;
-  }
-
-  const requestOptions: RequestInit = {
-    method,
-    headers: {
-      "Content-Type": "application/json",
-      ...headers,
-    },
-  };
-
-  if (body) {
-    requestOptions.body = JSON.stringify(body);
-  }
-
-  try {
-    const response = await fetch(url, requestOptions);
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(errorText || `Request failed with status ${response.status}`);
-    }
-    
-    // Check for no content response
-    if (response.status === 204) {
-      return {};
-    }
-    
-    return await response.json();
-  } catch (error) {
-    console.error(`API request error for ${url}:`, error);
-    throw error;
-  }
-}
 
 export default queryClient;
