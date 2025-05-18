@@ -1,141 +1,147 @@
-import { createContext, useState, useContext, ReactNode } from "react";
-import { add, startOfMonth, endOfMonth, startOfWeek, endOfWeek, startOfDay, endOfDay } from "date-fns";
+import React, { createContext, useState, useContext, ReactNode, useEffect } from "react";
+import { add, sub, format, isValid, parseISO } from "date-fns";
 
-// Define the shape of our date range
-export interface DateRange {
+interface DateRange {
   startDate: Date;
   endDate: Date;
-  label?: string;
 }
 
-// Define date range presets
-export const dateRangePresets: Record<string, { label: string; range: () => DateRange }> = {
-  "this-month": {
-    label: "This Month",
-    range: () => ({
-      startDate: startOfMonth(new Date()),
-      endDate: endOfMonth(new Date()),
-      label: "This Month"
-    })
-  },
-  "last-month": {
-    label: "Last Month",
-    range: () => {
-      const date = add(new Date(), { months: -1 });
-      return {
-        startDate: startOfMonth(date),
-        endDate: endOfMonth(date),
-        label: "Last Month"
-      };
-    }
-  },
-  "this-week": {
-    label: "This Week",
-    range: () => ({
-      startDate: startOfWeek(new Date(), { weekStartsOn: 1 }),
-      endDate: endOfWeek(new Date(), { weekStartsOn: 1 }),
-      label: "This Week"
-    })
-  },
-  "last-week": {
-    label: "Last Week",
-    range: () => {
-      const date = add(new Date(), { weeks: -1 });
-      return {
-        startDate: startOfWeek(date, { weekStartsOn: 1 }),
-        endDate: endOfWeek(date, { weekStartsOn: 1 }),
-        label: "Last Week"
-      };
-    }
-  },
-  "last-30-days": {
-    label: "Last 30 Days",
-    range: () => ({
-      startDate: add(new Date(), { days: -30 }),
-      endDate: endOfDay(new Date()),
-      label: "Last 30 Days"
-    })
-  },
-  "last-90-days": {
-    label: "Last 90 Days",
-    range: () => ({
-      startDate: add(new Date(), { days: -90 }),
-      endDate: endOfDay(new Date()),
-      label: "Last 90 Days"
-    })
-  },
-  "today": {
-    label: "Today",
-    range: () => ({
-      startDate: startOfDay(new Date()),
-      endDate: endOfDay(new Date()),
-      label: "Today"
-    })
-  },
-  "yesterday": {
-    label: "Yesterday",
-    range: () => {
-      const yesterday = add(new Date(), { days: -1 });
-      return {
-        startDate: startOfDay(yesterday),
-        endDate: endOfDay(yesterday),
-        label: "Yesterday"
-      };
-    }
-  },
-  "april-2025": {
-    label: "April 2025",
-    range: () => {
-      // Create a date for April 2025
-      const april2025 = new Date(2025, 3, 1); // Month is 0-indexed, so 3 = April
-      
-      return {
-        startDate: startOfMonth(april2025),
-        endDate: endOfMonth(april2025),
-        label: "April 2025"
-      };
-    }
-  }
-};
-
-// Create the context
-export interface DateContextProps {
+interface DateContextProps {
   dateRange: DateRange;
   setDateRange: (range: DateRange) => void;
-  presetKey: string | null;
-  setPresetKey: (key: string) => void;
+  presets: Record<string, DateRange>;
+  selectedPreset: string | null;
+  setSelectedPreset: (preset: string | null) => void;
 }
 
 const DateContext = createContext<DateContextProps>({
-  dateRange: dateRangePresets["april-2025"].range(),
+  dateRange: {
+    startDate: sub(new Date(), { months: 1 }),
+    endDate: new Date(),
+  },
   setDateRange: () => {},
-  presetKey: "april-2025",
-  setPresetKey: () => {}
+  presets: {},
+  selectedPreset: null,
+  setSelectedPreset: () => {},
 });
 
-// Provider component
 interface DateProviderProps {
   children: ReactNode;
-  initialPreset?: string;
 }
 
-export const DateProvider = ({ 
-  children, 
-  initialPreset = "april-2025" 
-}: DateProviderProps) => {
-  const [presetKey, setPresetKey] = useState<string | null>(initialPreset);
-  const [dateRange, setDateRange] = useState<DateRange>(() => {
-    const preset = dateRangePresets[initialPreset];
-    return preset ? preset.range() : dateRangePresets["april-2025"].range();
+const LOCAL_STORAGE_KEY = "crm-dashboard-date-range";
+
+export function DateProvider({ children }: DateProviderProps) {
+  // Initialize with default date range (last 30 days)
+  const [dateRange, setDateRangeState] = useState<DateRange>({
+    startDate: sub(new Date(), { months: 1 }),
+    endDate: new Date(),
   });
 
-  // Update the date range when preset changes
-  const handleSetPresetKey = (key: string) => {
-    setPresetKey(key);
-    const preset = dateRangePresets[key];
-    if (preset) {
-      setDateRange(preset.range());
+  const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
+
+  // Date range presets
+  const presets: Record<string, DateRange> = {
+    "Today": {
+      startDate: new Date(),
+      endDate: new Date(),
+    },
+    "Yesterday": {
+      startDate: sub(new Date(), { days: 1 }),
+      endDate: sub(new Date(), { days: 1 }),
+    },
+    "Last 7 days": {
+      startDate: sub(new Date(), { days: 6 }),
+      endDate: new Date(),
+    },
+    "Last 30 days": {
+      startDate: sub(new Date(), { days: 29 }),
+      endDate: new Date(),
+    },
+    "This month": {
+      startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+      endDate: new Date(),
+    },
+    "Last month": {
+      startDate: new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1),
+      endDate: new Date(new Date().getFullYear(), new Date().getMonth(), 0),
+    },
+    "This quarter": {
+      startDate: new Date(new Date().getFullYear(), Math.floor(new Date().getMonth() / 3) * 3, 1),
+      endDate: new Date(),
+    },
+    "Last quarter": {
+      startDate: new Date(
+        new Date().getFullYear(),
+        Math.floor(new Date().getMonth() / 3) * 3 - 3,
+        1
+      ),
+      endDate: new Date(
+        new Date().getFullYear(),
+        Math.floor(new Date().getMonth() / 3) * 3,
+        0
+      ),
+    },
+    "This year": {
+      startDate: new Date(new Date().getFullYear(), 0, 1),
+      endDate: new Date(),
+    },
+    "Last year": {
+      startDate: new Date(new Date().getFullYear() - 1, 0, 1),
+      endDate: new Date(new Date().getFullYear() - 1, 11, 31),
+    },
+    "All time": {
+      startDate: new Date(2020, 0, 1),
+      endDate: new Date(),
+    },
+  };
+
+  // Load date range from localStorage on initial render
+  useEffect(() => {
+    const savedRange = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (savedRange) {
+      try {
+        const { startDate, endDate, preset } = JSON.parse(savedRange);
+        
+        // Ensure dates are valid
+        const parsedStartDate = parseISO(startDate);
+        const parsedEndDate = parseISO(endDate);
+        
+        if (isValid(parsedStartDate) && isValid(parsedEndDate)) {
+          setDateRangeState({ 
+            startDate: parsedStartDate, 
+            endDate: parsedEndDate 
+          });
+          
+          // Restore preset if available
+          if (preset && preset in presets) {
+            setSelectedPreset(preset);
+          }
+        }
+      } catch (error) {
+        console.error("Error parsing saved date range:", error);
+        // If there's an error, just use the default range
+      }
+    } else {
+      // Default to "Last 30 days" if no saved range
+      setSelectedPreset("Last 30 days");
+      setDateRangeState(presets["Last 30 days"]);
     }
+  }, []);
+
+  // Custom wrapper to update the state and save to localStorage
+  const setDateRange = (range: DateRange) => {
+    setDateRangeState(range);
+    
+    // Save to localStorage with ISO string format for dates
+    localStorage.setItem(
+      LOCAL_STORAGE_KEY,
+      JSON.stringify({
+        startDate: range.startDate.toISOString(),
+        endDate: range.endDate.toISOString(),
+        preset: selectedPreset
+      })
+    );
   };
 
   return (
@@ -143,22 +149,22 @@ export const DateProvider = ({
       value={{
         dateRange,
         setDateRange,
-        presetKey,
-        setPresetKey: handleSetPresetKey
+        presets,
+        selectedPreset,
+        setSelectedPreset,
       }}
     >
       {children}
     </DateContext.Provider>
   );
-};
+}
 
-// Custom hook to use the date context
-export const useDateRange = () => {
+export function useDateRange() {
   const context = useContext(DateContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error("useDateRange must be used within a DateProvider");
   }
   return context;
-};
+}
 
 export default DateProvider;

@@ -24,14 +24,10 @@ const DashboardContext = createContext<DashboardContextProps>({
 
 interface DashboardProviderProps {
   children: ReactNode;
-  initialUserFilter?: string;
 }
 
-export const DashboardProvider = ({ 
-  children, 
-  initialUserFilter = "All Users" 
-}: DashboardProviderProps) => {
-  const [userFilter, setUserFilter] = useState<string>(initialUserFilter);
+export function DashboardProvider({ children }: DashboardProviderProps) {
+  const [userFilter, setUserFilter] = useState<string>("All Users");
   const [refreshData, setRefreshData] = useState<boolean>(false);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<string>("overview");
@@ -52,14 +48,14 @@ export const DashboardProvider = ({
       {children}
     </DashboardContext.Provider>
   );
-};
+}
 
-export const useDashboard = () => {
+export function useDashboard() {
   const context = useContext(DashboardContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error("useDashboard must be used within a DashboardProvider");
   }
   return context;
-};
+}
 
 export default DashboardProvider;
