@@ -20,6 +20,7 @@ import kpiConfiguratorRouter from "./api/kpi-configurator";
 import customerJourneyRoutes from "./routes/customer-journey";
 import typeformRoutes from "./routes/typeform";
 import dataEnhancementRoutes from "./routes/data-enhancement"; 
+import dashboardRouter from "./routes/dashboard";
 import { CloseUser } from "@shared/schema";
 
 // Enhanced attribution response types
@@ -32,6 +33,27 @@ interface AttributionStatsResponse {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const apiRouter = express.Router();
+
+  // Mount the metrics router on the API router
+  apiRouter.use("/metrics", metricsRouter);
+  
+  // Mount the settings router on the API router
+  apiRouter.use("/settings", settingsRouter);
+  
+  // Mount the KPI configurator router
+  apiRouter.use("/kpi-configurator", kpiConfiguratorRouter);
+  
+  // Mount customer journey routes
+  apiRouter.use("/customer-journey", customerJourneyRoutes);
+  
+  // Mount typeform routes
+  apiRouter.use("/typeform", typeformRoutes);
+  
+  // Mount data enhancement routes
+  apiRouter.use("/data-enhancement", dataEnhancementRoutes);
+  
+  // Mount dashboard routes
+  apiRouter.use("/dashboard", dashboardRouter);
   
   // API Cache endpoint - mainly for debugging
   apiRouter.get("/cache/stats", (req: Request, res: Response) => {
