@@ -1,10 +1,9 @@
 import React from 'react';
-import { useToast, ToastProps } from '@/contexts/toast-context';
+import { useToast } from '@/contexts/toast-context';
 import {
   Toast,
   ToastClose,
   ToastDescription,
-  ToastProvider,
   ToastTitle,
   ToastViewport,
 } from "@/components/ui/toast";
@@ -13,7 +12,7 @@ export function CustomToaster() {
   const { toasts } = useToast();
 
   return (
-    <ToastProvider>
+    <>
       {toasts.map(function ({ id, title, description, action, variant, ...props }) {
         return (
           <Toast key={id} {...props} variant={variant}>
@@ -29,6 +28,6 @@ export function CustomToaster() {
         );
       })}
       <ToastViewport />
-    </ToastProvider>
+    </>
   );
 }
