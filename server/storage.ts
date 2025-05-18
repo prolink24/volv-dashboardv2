@@ -568,6 +568,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getDashboardData(date: Date | { startDate: Date, endDate: Date }, userId?: string, role?: string): Promise<any> {
+    console.time('getDashboardData');
     try {
       // Set date range
       let startDate: Date, endDate: Date;
@@ -582,16 +583,19 @@ export class DatabaseStorage implements IStorage {
       // Format dates for SQL
       const startDateStr = startDate.toISOString().split('T')[0];
       const endDateStr = endDate.toISOString().split('T')[0];
+      
+      console.log(`Dashboard data for date range: ${startDateStr} to ${endDateStr}`);
 
-      // Create date filters
+      // Create date filters for different date fields depending on the entity
       const contactsDateFilter = and(
         gte(contacts.createdAt, startDateStr),
         lte(contacts.createdAt, endDateStr + 'T23:59:59.999Z')
       );
 
+      // Important: For deals, use closeDate for better financial reporting accuracy
       const dealsDateFilter = and(
-        gte(deals.createdAt, startDateStr),
-        lte(deals.createdAt, endDateStr + 'T23:59:59.999Z')
+        gte(deals.closeDate, startDateStr),
+        lte(deals.closeDate, endDateStr)
       );
 
       const meetingsDateFilter = and(
@@ -676,11 +680,12 @@ export class DatabaseStorage implements IStorage {
       const conversionRate = totalContacts > 0 ? (contactsWithDeals / totalContacts) * 100 : 0;
       const multiSourceRate = totalContacts > 0 ? (multiSourceContacts / totalContacts) * 100 : 0;
 
-      // Get revenue metrics
+      // Get revenue metrics with optimized SQL
       const revenueResult = await db
         .select({
-          totalRevenue: sql<string>`COALESCE(SUM(NULLIF(${deals.value}, '')::numeric), 0)`,
-          totalCashCollected: sql<string>`COALESCE(SUM(NULLIF(${deals.cashCollected}, '')::numeric), 0)`
+          totalRevenue: sql<string>`COALESCE(SUM(CASE WHEN ${deals.value} ~ '^[0-9]+(\.[0-9]+)?$' THEN ${deals.value}::numeric ELSE 0 END), 0)`,
+          totalCashCollected: sql<string>`COALESCE(SUM(CASE WHEN ${deals.cashCollected} ~ '^[0-9]+(\.[0-9]+)?$' THEN ${deals.cashCollected}::numeric ELSE 0 END), 0)`,
+          wonDealsCount: sql<number>`COUNT(*)`
         })
         .from(deals)
         .where(and(
@@ -691,6 +696,7 @@ export class DatabaseStorage implements IStorage {
       // Extract revenue values with safe parsing
       let totalRevenue = 0;
       let totalCashCollected = 0;
+      let wonDealsCount = 0;
       
       try {
         totalRevenue = parseFloat(revenueResult[0]?.totalRevenue || '0');
@@ -698,6 +704,10 @@ export class DatabaseStorage implements IStorage {
         
         totalCashCollected = parseFloat(revenueResult[0]?.totalCashCollected || '0');
         if (isNaN(totalCashCollected)) totalCashCollected = 0;
+        
+        wonDealsCount = revenueResult[0]?.wonDealsCount || 0;
+        
+        console.log(`Revenue metrics: Revenue=${totalRevenue}, Cash Collected=${totalCashCollected}, Won Deals=${wonDealsCount}`);
       } catch (e) {
         console.error('Error parsing revenue values', e);
       }
