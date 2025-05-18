@@ -20,8 +20,6 @@ import kpiConfiguratorRouter from "./api/kpi-configurator";
 import customerJourneyRoutes from "./routes/customer-journey";
 import typeformRoutes from "./routes/typeform";
 import dataEnhancementRoutes from "./routes/data-enhancement"; 
-import * as dashboardModule from "./routes/dashboard";
-const dashboardRouter = dashboardModule.default;
 import { CloseUser } from "@shared/schema";
 
 // Enhanced attribution response types
@@ -34,27 +32,6 @@ interface AttributionStatsResponse {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const apiRouter = express.Router();
-
-  // Mount the metrics router on the API router
-  apiRouter.use("/metrics", metricsRouter);
-  
-  // Mount the settings router on the API router
-  apiRouter.use("/settings", settingsRouter);
-  
-  // Mount the KPI configurator router
-  apiRouter.use("/kpi-configurator", kpiConfiguratorRouter);
-  
-  // Mount customer journey routes
-  apiRouter.use("/customer-journey", customerJourneyRoutes);
-  
-  // Mount typeform routes
-  apiRouter.use("/typeform", typeformRoutes);
-  
-  // Mount data enhancement routes
-  apiRouter.use("/data-enhancement", dataEnhancementRoutes);
-  
-  // Mount dashboard routes - use only the dedicated router
-  apiRouter.use("/dashboard", dashboardRouter);
   
   // API Cache endpoint - mainly for debugging
   apiRouter.get("/cache/stats", (req: Request, res: Response) => {
@@ -68,116 +45,118 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ success: true, cleared: count, prefix: prefix || "all" });
   });
   
-  // Attribution Stats endpoint
-  apiRouter.get("/attribution-stats", cacheService.cacheMiddleware(600), async (req: Request, res: Response) => {
+  // No-cache dashboard endpoint for debugging/direct data access
+  apiRouter.get("/nocache-dashboard", async (req: Request, res: Response) => {
+    console.log("[DEBUG] Accessing dashboard data with no cache");
     try {
-      // Get date range from query params (required)
-      const { startDate, endDate, userId } = req.query;
+      // Get the date range parameters
+      const dateRangeParam = req.query.dateRange as string;
+      let startDate: Date, endDate: Date;
       
-      if (!startDate || !endDate) {
-        return res.status(400).json({ 
-          error: "Missing required date parameters",
-          success: false 
-        });
+      if (dateRangeParam) {
+        // Format: 2025-04-01_2025-04-30
+        const [startStr, endStr] = dateRangeParam.split('_');
+        startDate = new Date(startStr);
+        endDate = new Date(endStr);
+        // Add one day to end date to include the end date
+        endDate.setDate(endDate.getDate() + 1);
+      } else {
+        // Default to current month
+        const now = new Date();
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
       }
       
-      // Format date parameters
-      const start = new Date(startDate as string);
-      const end = new Date(endDate as string);
+      console.log(`[DEBUG] Date range: ${startDate.toISOString()} to ${endDate.toISOString()}`);
       
-      // Create a cache key based on the date range and user filter
-      const dateRangeKey = `${start.toISOString()}_${end.toISOString()}_${userId || 'all'}`;
-      const cacheKey = `attribution-stats-${dateRangeKey}`;
+      // Direct SQL query to get won deals for this date range
+      const sql = await import('drizzle-orm/neon-serverless');
+      const { neon } = await import('@neondatabase/serverless');
       
-      // Check cache first
-      const cachedResult = cacheService.get(cacheKey);
-      if (cachedResult) {
-        console.log(`Using cached attribution stats for ${dateRangeKey}`);
-        return res.json(cachedResult);
+      const client = neon(process.env.DATABASE_URL!);
+      const db = sql.drizzle(client);
+      
+      // Run direct query to get deals in this date range
+      const deals = await client(`
+        SELECT id, contact_id, value, cash_collected, status, close_date 
+        FROM deals 
+        WHERE close_date BETWEEN $1 AND $2
+        AND status = 'won';
+      `, [startDate.toISOString().split('T')[0], endDate.toISOString().split('T')[0]]);
+      
+      // Calculate the totals
+      let totalValue = 0;
+      let totalCashCollected = 0;
+      
+      for (const deal of deals) {
+        totalValue += Number(deal.value) || 0;
+        totalCashCollected += Number(deal.cash_collected) || 0;
       }
       
-      console.time("attribution-stats-generation");
+      console.log(`[DEBUG] Found ${deals.length} deals with total value ${totalValue} and cash collected ${totalCashCollected}`);
       
-      // Get dashboard data that includes basic attribution metrics
-      const dashboardData = await storage.getDashboardData({ startDate: start, endDate: end }, userId as string);
-      
-      // Extract and format attribution stats
-      const attributionStats = {
+      // Format the response to match the dashboard API structure
+      const dashboardData = {
         success: true,
-        attributionAccuracy: 92, // This could be calculated based on data quality metrics
-        stats: {
-          // Contact stats
-          totalContacts: dashboardData.totalContacts || 0,
-          contactsWithDeals: Math.round((dashboardData.conversionRate / 100) * dashboardData.totalContacts) || 0,
-          contactsWithMeetings: dashboardData.totalMeetings || 0,
-          contactsWithForms: Math.round(dashboardData.totalContacts * 0.3) || 0, // Example approximation
-          conversionRate: dashboardData.conversionRate || 0,
-          
-          // Source distribution
-          sourceDistribution: {
-            singleSource: dashboardData.totalContacts - dashboardData.contactsWithMultipleSources || 0,
-            multiSource: dashboardData.contactsWithMultipleSources || 0,
-            multiSourceRate: dashboardData.multiSourceRate || 0,
-          },
-          
-          // Field coverage
-          fieldCoverage: {
-            average: 87, // This would ideally be calculated from actual field data
-            byEntity: {
-              contacts: 92,
-              deals: 85,
-              meetings: 94,
-              activities: 78
-            }
-          },
-          
-          // Channel distribution (example data)
-          channelDistribution: {
-            "close": Math.round(dashboardData.totalContacts * 0.7),
-            "calendly": Math.round(dashboardData.totalContacts * 0.5),
-            "typeform": Math.round(dashboardData.totalContacts * 0.3)
-          },
-          
-          // Deal attribution
-          dealAttributionRate: dashboardData.conversionRate || 0,
-          
-          // Multi-touch stats
-          touchpointStats: {
-            averageTouchpoints: 2.3,
-            firstTouchDistribution: {
-              "calendly": 45,
-              "typeform": 35,
-              "close": 20
-            },
-            lastTouchDistribution: {
-              "calendly": 25,
-              "close": 65,
-              "typeform": 10
-            }
-          }
+        date: dateRangeParam || `${startDate.toISOString()}_${endDate.toISOString()}`,
+        kpis: {
+          revenue: { current: totalValue, previous: 0, change: 0 },
+          cashCollected: { current: totalCashCollected, previous: 0, change: 0 },
+          revenueGenerated: { current: totalValue, previous: 0, change: 0 },
+          deals: { current: deals.length, previous: 0, change: 0 }
         },
+        dealsData: deals,
         timestamp: new Date().toISOString(),
-        cachedAt: new Date().toISOString()
+        refreshedAt: new Date().toISOString(),
+        noCache: true
       };
       
-      console.timeEnd("attribution-stats-generation");
-      
-      // Cache for future requests
-      cacheService.set(cacheKey, attributionStats, 600);
-      
-      res.json(attributionStats);
+      res.json(dashboardData);
     } catch (error) {
-      console.error("Error generating attribution stats:", error);
-      res.status(500).json({ 
-        error: "Failed to generate attribution statistics",
-        success: false 
-      });
+      console.error("Error fetching uncached dashboard data:", error);
+      res.status(500).json({ error: "Failed to fetch dashboard data" });
     }
   });
-  
-  // No-cache dashboard endpoint moved to the dashboardRouter
 
-  // Dashboard data endpoint with caching (5 minutes TTL) - using dashboardRouter
+  // Dashboard data endpoint with caching (5 minutes TTL)
+  apiRouter.get("/dashboard", cacheService.cacheMiddleware(300), async (req: Request, res: Response) => {
+    try {
+      const dateStr = req.query.date as string || new Date().toISOString();
+      const userId = req.query.userId as string;
+      const useCache = req.query.cache !== "false"; // Default to using cache
+      
+      const date = new Date(dateStr);
+      const dashboardData = await storage.getDashboardData(date, userId);
+      
+      // Get real-time attribution data if cache is disabled
+      if (!useCache) {
+        try {
+          // Run a quick attribution on a sample of contacts to get latest insights
+          const attributionData = await attributionService.attributeAllContacts();
+          
+          if (attributionData.success) {
+            // Add attribution data to the dashboard
+            dashboardData.attribution = {
+              contactStats: attributionData.detailedAnalytics?.contactStats,
+              channelStats: attributionData.detailedAnalytics?.channelStats,
+              touchpointStats: attributionData.detailedAnalytics?.touchpointStats,
+              dealStats: attributionData.detailedAnalytics?.dealStats,
+              insights: attributionData.detailedAnalytics?.insights
+            };
+          }
+        } catch (attributionError) {
+          console.error("Error generating attribution data:", attributionError);
+          // Don't fail the whole request, just continue without attribution data
+          dashboardData.attribution = { error: "Attribution data unavailable" };
+        }
+      }
+      
+      res.json(dashboardData);
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+      res.status(500).json({ error: "Failed to fetch dashboard data" });
+    }
+  });
   
   // Specialized dashboard endpoint for different user roles - with optimized 15 minute cache
   apiRouter.get("/specialized-dashboard/:role?", cacheService.cacheMiddleware(900), async (req: Request, res: Response) => {
