@@ -710,13 +710,23 @@ export class DatabaseStorage implements IStorage {
       try {
         // Parse with additional validation to ensure proper financial reporting
         console.log("Revenue query result:", JSON.stringify(revenueResult));
-        const revenueStr = revenueResult[0]?.totalrevenue?.toString() || revenueResult[0]?.totalRevenue?.toString() || '0';
+        // Handle any case of field names that PostgreSQL might return
+        const result = revenueResult[0] || {};
+        // Use a case-insensitive approach to find the correct property
+        const findProperty = (obj: any, baseName: string): string => {
+          const objKeys = Object.keys(obj);
+          const key = objKeys.find(k => k.toLowerCase() === baseName.toLowerCase());
+          return key ? obj[key].toString() : '0';
+        };
+        
+        const revenueStr = findProperty(result, 'totalRevenue');
         totalRevenue = Math.max(0, parseFloat(revenueStr));
         
-        const cashStr = revenueResult[0]?.totalcashcollected?.toString() || revenueResult[0]?.totalCashCollected?.toString() || '0';
+        const cashStr = findProperty(result, 'totalCashCollected');
         totalCashCollected = Math.max(0, parseFloat(cashStr));
         
-        wonDealsCount = Math.max(0, revenueResult[0]?.wondealscount || revenueResult[0]?.wonDealsCount || 0);
+        const wonDealsStr = findProperty(result, 'wonDealsCount');
+        wonDealsCount = Math.max(0, parseInt(wonDealsStr));
         
         // Round to 2 decimal places for financial reporting
         totalRevenue = Math.round(totalRevenue * 100) / 100;
