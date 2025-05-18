@@ -1,7 +1,7 @@
 import React from 'react';
-import { cn } from '@/lib/utils';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowDownIcon, ArrowUpIcon } from 'lucide-react';
+import { cn, formatCurrency, formatNumber, formatPercent, getTrendClass } from '@/lib/utils';
+import { Card, CardContent } from '@/components/ui/card';
+import { ArrowDownIcon, ArrowUpIcon, MinusIcon } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export interface ImprovedKPICardProps {
@@ -27,74 +27,64 @@ export function ImprovedKPICard({
   isLoading = false,
   size = 'default',
 }: ImprovedKPICardProps) {
-  // Format the value based on the specified format type
   const formattedValue = formatValue(value, formatType);
-  const formattedPreviousValue = previousValue !== undefined ? formatValue(previousValue, formatType) : undefined;
-  
-  // Determine if change is positive, negative, or neutral
-  const changeType = change !== undefined
-    ? change > 0
-      ? 'positive'
-      : change < 0
-        ? 'negative'
-        : 'neutral'
-    : 'neutral';
-  
-  // Format the change percentage
-  const formattedChange = change !== undefined
-    ? `${changeType === 'positive' ? '+' : ''}${change.toFixed(1)}%`
-    : undefined;
+  const calculatedChange = change ?? (
+    previousValue !== undefined 
+      ? ((value - previousValue) / (previousValue || 1)) * 100 
+      : 0
+  );
   
   return (
-    <Card className={cn(
-      'overflow-hidden',
-      size === 'sm' ? 'h-auto' : 'h-full',
-      className
-    )}>
-      <CardHeader className={cn(
-        'flex flex-row items-center justify-between pb-2',
-        size === 'sm' ? 'p-4' : 'p-6'
-      )}>
-        <CardTitle className={cn(
-          'text-sm font-medium',
-          size === 'sm' ? 'text-xs' : 'text-sm'
-        )}>
-          {icon && <span className="mr-2 inline-block">{icon}</span>}
-          {title}
-        </CardTitle>
-      </CardHeader>
+    <Card className={cn('overflow-hidden', className)}>
       <CardContent className={cn(
-        'p-6 pt-0',
-        size === 'sm' ? 'p-4 pt-0' : 'p-6 pt-0'
+        'flex flex-col p-6',
+        size === 'sm' && 'p-4'
       )}>
+        <div className="flex items-center justify-between space-x-2">
+          <p className={cn(
+            "text-sm font-medium text-muted-foreground",
+            size === 'sm' && 'text-xs'
+          )}>
+            {title}
+          </p>
+          {icon && (
+            <div className="h-4 w-4 text-muted-foreground">
+              {icon}
+            </div>
+          )}
+        </div>
+        
         {isLoading ? (
-          <div className="space-y-2">
-            <Skeleton className={cn(
-              'h-8 w-24',
-              size === 'sm' ? 'h-6 w-20' : 'h-8 w-24'
-            )} />
-            <Skeleton className="h-4 w-16" />
+          <div className="mt-3 space-y-2">
+            <Skeleton className="h-10 w-3/4" />
+            <Skeleton className="h-4 w-1/2" />
           </div>
         ) : (
           <>
             <div className={cn(
-              'text-2xl font-bold',
-              size === 'sm' ? 'text-xl' : 'text-2xl'
+              "mt-3 text-2xl font-bold",
+              size === 'sm' ? 'text-xl mt-2' : 'text-3xl'
             )}>
               {formattedValue}
             </div>
-            {formattedPreviousValue !== undefined && formattedChange !== undefined && (
-              <div className="mt-1 flex items-center text-xs">
-                <span className="text-muted-foreground">vs. {formattedPreviousValue}</span>
-                <span className={cn(
-                  'ml-2 flex items-center',
-                  changeType === 'positive' ? 'text-green-500' : 
-                  changeType === 'negative' ? 'text-red-500' : 
-                  'text-muted-foreground'
-                )}>
-                  {changeType === 'positive' && <ArrowUpIcon className="mr-1 h-3 w-3" />}
-                  {changeType === 'negative' && <ArrowDownIcon className="mr-1 h-3 w-3" />}
-                  {formattedChange}
+            
+            {(previousValue !== undefined || change !== undefined) && (
+              <div className="mt-2 flex items-center">
+                {calculatedChange > 0 ? (
+                  <ArrowUpIcon className="h-4 w-4 text-green-500" />
+                ) : calculatedChange < 0 ? (
+                  <ArrowDownIcon className="h-4 w-4 text-red-500" />
+                ) : (
+                  <MinusIcon className="h-4 w-4 text-gray-500" />
+                )}
+                
+                <span 
+                  className={cn(
+                    "ml-1 text-sm",
+                    getTrendClass(calculatedChange)
+                  )}
+                >
+                  {Math.abs(calculatedChange).toFixed(1)}% {calculatedChange > 0 ? 'increase' : calculatedChange < 0 ? 'decrease' : ''}
                 </span>
               </div>
             )}
@@ -105,21 +95,14 @@ export function ImprovedKPICard({
   );
 }
 
-// Helper function to format values based on the specified format type
 function formatValue(value: number, formatType: 'number' | 'currency' | 'percentage'): string {
   switch (formatType) {
     case 'currency':
-      return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        maximumFractionDigits: 0,
-      }).format(value);
-    
+      return formatCurrency(value);
     case 'percentage':
-      return `${value.toFixed(1)}%`;
-    
+      return formatPercent(value);
     case 'number':
     default:
-      return new Intl.NumberFormat('en-US').format(value);
+      return formatNumber(value);
   }
 }

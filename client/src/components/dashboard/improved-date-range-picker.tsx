@@ -1,4 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
+import { Calendar as CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
@@ -13,164 +16,166 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
-import { CalendarIcon, Check, ChevronDown } from 'lucide-react';
-import { useDateRange } from '@/providers/date-context';
-import { DateRange } from '@/providers/date-context';
+import { useDateContext } from '@/providers/date-context';
 
 export interface ImprovedDateRangePickerProps {
   className?: string;
 }
 
 export function ImprovedDateRangePicker({ className }: ImprovedDateRangePickerProps) {
-  const { 
-    dateRange, 
-    applyDateRange, 
-    presetRanges, 
-    selectedPreset, 
-    setSelectedPreset 
-  } = useDateRange();
-  
+  const { dateRange, setDateRange } = useDateContext();
   const [isOpen, setIsOpen] = useState(false);
-  const [localDateRange, setLocalDateRange] = useState<DateRange>(dateRange);
   
-  // Update local date range when context date range changes
-  useEffect(() => {
-    setLocalDateRange(dateRange);
-  }, [dateRange]);
+  // Preset date ranges
+  const presets = {
+    'today': { label: 'Today', days: 0 },
+    'yesterday': { label: 'Yesterday', days: 1 },
+    'last7': { label: 'Last 7 days', days: 7 },
+    'last14': { label: 'Last 14 days', days: 14 },
+    'last30': { label: 'Last 30 days', days: 30 },
+    'last90': { label: 'Last 90 days', days: 90 },
+    'thisMonth': { label: 'This month', days: 'month' },
+    'lastMonth': { label: 'Last month', days: 'lastMonth' },
+    'thisYear': { label: 'This year', days: 'year' },
+    'custom': { label: 'Custom', days: null },
+  };
   
-  // Handle preset selection
-  const handlePresetSelect = (value: string) => {
-    const preset = presetRanges.find(p => p.label === value);
-    if (preset) {
-      setLocalDateRange({
-        ...preset.range,
-        label: preset.label
+  const [selectedPreset, setSelectedPreset] = useState<string>('last30');
+  
+  // Handle preset change
+  const handlePresetChange = (value: string) => {
+    setSelectedPreset(value);
+    if (value !== 'custom') {
+      const preset = presets[value as keyof typeof presets];
+      
+      const end = new Date();
+      let start = new Date();
+      
+      if (preset.days === 'month') {
+        // This month
+        start = new Date(end.getFullYear(), end.getMonth(), 1);
+      } else if (preset.days === 'lastMonth') {
+        // Last month
+        start = new Date(end.getFullYear(), end.getMonth() - 1, 1);
+        end.setDate(0); // Last day of previous month
+      } else if (preset.days === 'year') {
+        // This year
+        start = new Date(end.getFullYear(), 0, 1);
+      } else if (typeof preset.days === 'number') {
+        // Days ago
+        if (preset.days === 0) {
+          // Today
+          start.setHours(0, 0, 0, 0);
+        } else if (preset.days === 1) {
+          // Yesterday
+          start = new Date(end);
+          start.setDate(start.getDate() - 1);
+          start.setHours(0, 0, 0, 0);
+          end = new Date(start);
+          end.setHours(23, 59, 59, 999);
+        } else {
+          // X days ago
+          start.setDate(end.getDate() - preset.days);
+        }
+      }
+      
+      setDateRange({
+        from: start,
+        to: end,
       });
-      setSelectedPreset(preset.label);
     }
-  };
-  
-  // Apply the date range selection and close the popover
-  const handleApply = () => {
-    applyDateRange(localDateRange);
-    setIsOpen(false);
-  };
-  
-  // Reset to the current date range from context
-  const handleCancel = () => {
-    setLocalDateRange(dateRange);
-    setIsOpen(false);
   };
   
   // Format the date range for display
   const formatDateRange = () => {
-    if (selectedPreset) {
-      return selectedPreset;
+    if (!dateRange.from) {
+      return 'Select date range';
     }
     
-    return `${format(dateRange.startDate, 'MMM d, yyyy')} - ${format(dateRange.endDate, 'MMM d, yyyy')}`;
+    if (!dateRange.to) {
+      return format(dateRange.from, 'PPP');
+    }
+    
+    return `${format(dateRange.from, 'MMM d, yyyy')} - ${format(dateRange.to, 'MMM d, yyyy')}`;
   };
   
   return (
-    <div className={cn('relative', className)}>
+    <div className={cn('grid gap-2', className)}>
       <Popover open={isOpen} onOpenChange={setIsOpen}>
         <PopoverTrigger asChild>
-          <Button 
-            variant="outline" 
+          <Button
+            id="date"
+            variant={'outline'}
+            size="sm"
             className={cn(
-              'justify-between w-auto min-w-[240px] px-3 py-2 h-9 text-sm font-medium',
-              isOpen && 'border-primary'
+              'h-9 w-[260px] justify-start text-left font-normal',
+              !dateRange.from && 'text-muted-foreground'
             )}
           >
-            <div className="flex items-center">
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              <span>{formatDateRange()}</span>
-            </div>
-            <ChevronDown className="h-4 w-4 opacity-50" />
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {formatDateRange()}
           </Button>
         </PopoverTrigger>
-        
         <PopoverContent className="w-auto p-0" align="start">
-          <div className="grid gap-4 p-4">
-            <div className="space-y-2">
-              <h4 className="font-medium text-sm">Date Range</h4>
+          <div className="px-4 py-3 border-b">
+            <div className="space-y-1">
+              <h4 className="text-sm font-medium">Select range</h4>
+              <p className="text-xs text-muted-foreground">
+                Filter data based on date range
+              </p>
+            </div>
+            <div className="flex gap-2 mt-3">
               <Select
-                value={selectedPreset || ''}
-                onValueChange={handlePresetSelect}
+                defaultValue={selectedPreset}
+                onValueChange={handlePresetChange}
               >
-                <SelectTrigger className="h-8">
-                  <SelectValue placeholder="Select range" />
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Select preset" />
                 </SelectTrigger>
-                <SelectContent>
-                  {presetRanges.map((preset) => (
-                    <SelectItem key={preset.label} value={preset.label}>
-                      <div className="flex items-center">
-                        {selectedPreset === preset.label && (
-                          <Check className="mr-1 h-3 w-3" />
-                        )}
-                        <span>{preset.label}</span>
-                      </div>
+                <SelectContent position="popper">
+                  {Object.entries(presets).map(([key, preset]) => (
+                    <SelectItem key={key} value={key}>
+                      {preset.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            
-            <div className="grid gap-2">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <div className="text-xs font-medium mb-1">Start Date</div>
-                  <div className="border rounded-md p-2 text-sm">
-                    {format(localDateRange.startDate, 'MMM d, yyyy')}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-xs font-medium mb-1">End Date</div>
-                  <div className="border rounded-md p-2 text-sm">
-                    {format(localDateRange.endDate, 'MMM d, yyyy')}
-                  </div>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1">
-                <Calendar
-                  mode="range"
-                  selected={{
-                    from: localDateRange.startDate,
-                    to: localDateRange.endDate,
-                  }}
-                  onSelect={(range) => {
-                    if (range && range.from && range.to) {
-                      setLocalDateRange({
-                        startDate: range.from,
-                        endDate: range.to,
-                      });
-                      setSelectedPreset(null);
-                    }
-                  }}
-                  numberOfMonths={1}
-                  disabled={(date) => date > new Date()}
-                />
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-end gap-2">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={handleCancel}
-              >
-                Cancel
-              </Button>
-              <Button 
-                size="sm"
-                onClick={handleApply}
-              >
-                Apply
-              </Button>
-            </div>
+          </div>
+          <div className="p-3">
+            <Calendar
+              initialFocus
+              mode="range"
+              defaultMonth={dateRange.from}
+              selected={{
+                from: dateRange.from || undefined,
+                to: dateRange.to || undefined,
+              }}
+              onSelect={(range) => {
+                if (range?.from) {
+                  setDateRange({
+                    from: range.from,
+                    to: range.to || range.from,
+                  });
+                  
+                  if (range.to) {
+                    setSelectedPreset('custom');
+                  }
+                } else {
+                  setDateRange({ from: null, to: null });
+                }
+              }}
+              numberOfMonths={2}
+            />
+          </div>
+          <div className="p-3 border-t">
+            <Button
+              size="sm"
+              className="w-full"
+              onClick={() => setIsOpen(false)}
+            >
+              Apply range
+            </Button>
           </div>
         </PopoverContent>
       </Popover>
