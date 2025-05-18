@@ -1,200 +1,161 @@
-import React, { useEffect, useState } from "react";
-import { addDays, format, isValid } from "date-fns";
-import { Calendar as CalendarIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import React, { useState } from 'react';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+import { useDateRange } from '@/providers/date-context';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { useDateRange } from "@/providers/date-context";
-import { cn } from "@/lib/utils";
+} from '@/components/ui/select';
+import { CalendarIcon } from 'lucide-react';
 
-interface ImprovedDateRangePickerProps {
-  isLoading?: boolean;
-  onApply?: () => void;
+export interface ImprovedDateRangePickerProps {
   className?: string;
 }
 
-export function ImprovedDateRangePicker({
-  isLoading = false,
-  onApply,
-  className = "",
-}: ImprovedDateRangePickerProps) {
-  const {
-    dateRange,
-    setDateRange,
-    presets,
-    selectedPreset,
-    setSelectedPreset,
-  } = useDateRange();
-
+export function ImprovedDateRangePicker({ className }: ImprovedDateRangePickerProps) {
+  const { dateRange, setDateRange, presetRanges, applyDateRange } = useDateRange();
   const [isOpen, setIsOpen] = useState(false);
-  const [date, setDate] = useState<{
-    from: Date;
-    to: Date | undefined;
-  }>({
+  const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
+  const [tempDateRange, setTempDateRange] = useState({
     from: dateRange.startDate,
     to: dateRange.endDate,
   });
 
-  // Update local state when dateRange changes
-  useEffect(() => {
-    setDate({
+  // Format the currently selected date range for display
+  const formattedDateRange = React.useMemo(() => {
+    return `${format(dateRange.startDate, 'MMM d, yyyy')} - ${format(dateRange.endDate, 'MMM d, yyyy')}`;
+  }, [dateRange.startDate, dateRange.endDate]);
+
+  // Handle preset selection
+  const handlePresetSelect = (value: string) => {
+    setSelectedPreset(value);
+    
+    // Find the selected preset
+    const preset = presetRanges.find(preset => preset.label === value);
+    
+    if (preset) {
+      // Update the temporary date range
+      setTempDateRange({
+        from: preset.range.startDate,
+        to: preset.range.endDate,
+      });
+    }
+  };
+
+  // Apply the date range and close the popover
+  const handleApply = () => {
+    if (tempDateRange.from && tempDateRange.to) {
+      applyDateRange({
+        startDate: tempDateRange.from,
+        endDate: tempDateRange.to,
+        label: selectedPreset || undefined,
+      });
+    }
+    
+    setIsOpen(false);
+  };
+
+  // Reset to the current date range
+  const handleCancel = () => {
+    setTempDateRange({
       from: dateRange.startDate,
       to: dateRange.endDate,
     });
-  }, [dateRange]);
-
-  // Handle preset selection
-  const handleSelectPreset = (preset: string | null) => {
-    if (!preset) return;
-    setSelectedPreset(preset);
-    
-    if (preset in presets) {
-      const newRange = presets[preset];
-      setDateRange(newRange);
-      setDate({
-        from: newRange.startDate,
-        to: newRange.endDate,
-      });
-    }
+    setSelectedPreset(null);
+    setIsOpen(false);
   };
 
-  // Handle custom date selection
-  const handleCustomDateChange = (selectedDate: { from: Date; to: Date | undefined }) => {
-    setDate(selectedDate);
-    
-    // Only update if we have a complete range
-    if (selectedDate.from && selectedDate.to) {
-      setSelectedPreset(null); // Custom range
-    }
-  };
-
-  // Apply button handler
-  const handleApply = () => {
-    if (date.from && date.to && isValid(date.from) && isValid(date.to)) {
-      // Update the date range
-      setDateRange({
-        startDate: date.from,
-        endDate: date.to,
-      });
-      
-      // Close the popover
-      setIsOpen(false);
-      
-      // Call onApply callback if provided
-      if (onApply) {
-        onApply();
-      }
-    }
-  };
+  // When date range changes externally, update the temp range
+  React.useEffect(() => {
+    setTempDateRange({
+      from: dateRange.startDate,
+      to: dateRange.endDate,
+    });
+  }, [dateRange.startDate, dateRange.endDate]);
 
   return (
-    <div className={cn("grid gap-2", className)}>
+    <div className={cn('flex items-center space-x-2', className)}>
       <Popover open={isOpen} onOpenChange={setIsOpen}>
         <PopoverTrigger asChild>
           <Button
-            id="date"
-            variant={"outline"}
+            variant="outline"
             size="sm"
-            disabled={isLoading}
             className={cn(
-              "w-[260px] justify-start text-left font-normal",
-              !date && "text-muted-foreground"
+              'h-10 px-3 py-2 justify-start text-left font-normal',
+              !dateRange && 'text-muted-foreground'
             )}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
-            {date.from && date.to ? (
-              selectedPreset ? (
-                <span>{selectedPreset}</span>
-              ) : (
-                <span>
-                  {format(date.from, "MMM d, yyyy")} -{" "}
-                  {format(date.to, "MMM d, yyyy")}
-                </span>
-              )
-            ) : (
-              <span>Select date range</span>
-            )}
+            {formattedDateRange}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
-          <div className="flex flex-col sm:flex-row">
-            <div className="p-3 border-b sm:border-r sm:border-b-0">
-              <Select
-                value={selectedPreset || "custom"}
-                onValueChange={(value) => handleSelectPreset(value === "custom" ? null : value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select range" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="custom">Custom Range</SelectItem>
-                  {Object.keys(presets).map((preset) => (
-                    <SelectItem key={preset} value={preset}>
-                      {preset}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              
-              <div className="mt-3 space-y-2">
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="flex flex-col space-y-1">
-                    <span className="text-xs text-muted-foreground">Start Date</span>
-                    <span className="text-sm font-medium">
-                      {date.from ? format(date.from, "MMM d, yyyy") : "Select"}
-                    </span>
-                  </div>
-                  <div className="flex flex-col space-y-1">
-                    <span className="text-xs text-muted-foreground">End Date</span>
-                    <span className="text-sm font-medium">
-                      {date.to ? format(date.to, "MMM d, yyyy") : "Select"}
-                    </span>
-                  </div>
+          <div className="p-4 space-y-4">
+            <div className="grid gap-2">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <h3 className="text-sm font-medium mb-1">Start Date</h3>
+                  <div className="text-sm">{tempDateRange.from ? format(tempDateRange.from, 'PPP') : 'Pick a date'}</div>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="mt-2"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    size="sm"
-                    className="mt-2"
-                    onClick={handleApply}
-                    disabled={!date.from || !date.to}
-                  >
-                    Apply
-                  </Button>
+                <div>
+                  <h3 className="text-sm font-medium mb-1">End Date</h3>
+                  <div className="text-sm">{tempDateRange.to ? format(tempDateRange.to, 'PPP') : 'Pick a date'}</div>
                 </div>
               </div>
             </div>
             
-            <div className="p-3">
+            <div>
+              <h3 className="text-sm font-medium mb-1">Preset Ranges</h3>
+              <Select value={selectedPreset || ''} onValueChange={handlePresetSelect}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a preset" />
+                </SelectTrigger>
+                <SelectContent>
+                  {presetRanges.map((preset) => (
+                    <SelectItem key={preset.label} value={preset.label}>
+                      {preset.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
               <Calendar
                 mode="range"
-                defaultMonth={date.from}
-                selected={{
-                  from: date.from,
-                  to: date.to,
+                selected={{ 
+                  from: tempDateRange.from, 
+                  to: tempDateRange.to 
                 }}
-                onSelect={handleCustomDateChange}
-                numberOfMonths={1}
-                disabled={isLoading}
+                onSelect={(range) => {
+                  if (range) {
+                    // Reset preset selection if manually selecting dates
+                    setSelectedPreset(null);
+                    setTempDateRange({
+                      from: range.from || tempDateRange.from,
+                      to: range.to || range.from || tempDateRange.to,
+                    });
+                  }
+                }}
+                initialFocus
+                numberOfMonths={2}
+                className="rounded-md border shadow"
               />
+            </div>
+            
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" size="sm" onClick={handleCancel}>
+                Cancel
+              </Button>
+              <Button size="sm" onClick={handleApply}>
+                Apply
+              </Button>
             </div>
           </div>
         </PopoverContent>

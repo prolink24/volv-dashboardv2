@@ -1,71 +1,44 @@
-import React from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import React from 'react';
+import { cn } from '@/lib/utils';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-interface StatsItem {
-  name: string;
-  value: number | string;
-  description?: string;
-}
-
-interface ImprovedStatsCardProps {
+export interface ImprovedStatsCardProps {
   title: string;
+  statValue: string | number;
   description?: string;
-  items: StatsItem[];
+  icon?: React.ReactNode;
   isLoading?: boolean;
   className?: string;
 }
 
-export function ImprovedStatsCard({ 
-  title, 
-  description, 
-  items,
+export function ImprovedStatsCard({
+  title,
+  statValue,
+  description,
+  icon,
   isLoading = false,
-  className = ""
+  className,
 }: ImprovedStatsCardProps) {
-  if (isLoading) {
-    return (
-      <Card className={className}>
-        <CardHeader className="pb-2">
-          <Skeleton className="h-5 w-1/3 mb-1" />
-          <Skeleton className="h-3 w-2/3" />
-        </CardHeader>
-        <CardContent className="pt-0">
-          <div className="space-y-4">
-            {[1, 2, 3].map((item, index) => (
-              <div key={index} className="flex items-center justify-between">
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-4 w-16" />
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
-    <Card className={className}>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">{title}</CardTitle>
-        {description && <CardDescription>{description}</CardDescription>}
+    <Card className={cn('overflow-hidden', className)}>
+      <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        {icon && <div className="h-4 w-4 text-muted-foreground">{icon}</div>}
       </CardHeader>
-      <CardContent className="pt-0">
-        <div className="space-y-4">
-          {items.map((item, index) => (
-            <div key={index} className="flex items-center justify-between">
-              <div className="flex flex-col">
-                <span className="text-sm font-medium">{item.name}</span>
-                {item.description && (
-                  <span className="text-xs text-muted-foreground">{item.description}</span>
-                )}
-              </div>
-              <span className="font-medium">
-                {typeof item.value === 'number' ? item.value.toLocaleString() : item.value}
-              </span>
-            </div>
-          ))}
-        </div>
+      <CardContent>
+        {isLoading ? (
+          <div className="animate-pulse">
+            <div className="h-9 bg-muted rounded w-2/3 mb-2"></div>
+            {description && <div className="h-4 bg-muted rounded w-full"></div>}
+          </div>
+        ) : (
+          <>
+            <div className="text-2xl font-bold">{statValue}</div>
+            {description && (
+              <p className="text-xs text-muted-foreground mt-1">{description}</p>
+            )}
+          </>
+        )}
       </CardContent>
     </Card>
   );

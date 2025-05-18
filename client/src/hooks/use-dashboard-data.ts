@@ -1,8 +1,8 @@
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/query-client';
 import { useDateRange } from '@/providers/date-context';
 
-// Types for dashboard data
+// Dashboard data interface
 export interface DashboardData {
   kpis: {
     deals: { current: number; previous: number; change: number };
@@ -68,7 +68,7 @@ export interface DashboardData {
   attributionAccuracy: number;
 }
 
-// Types for attribution stats
+// Attribution stats interface
 export interface AttributionStats {
   contactStats: {
     totalContacts: number;
@@ -103,96 +103,79 @@ export interface AttributionStats {
   channelBreakdown: Record<string, number>;
 }
 
+// Parameters for dashboard data
 interface DashboardParams {
   userId?: string;
   useEnhanced?: boolean;
 }
 
-// Hook to fetch dashboard data
+// Hook for fetching dashboard data
 export function useDashboardData(params: DashboardParams = {}) {
   const { dateRange } = useDateRange();
   
-  // Format dates for API
-  const startDate = dateRange.startDate.toISOString().split('T')[0];
-  const endDate = dateRange.endDate.toISOString().split('T')[0];
-  
-  // Build query key based on parameters
-  const queryKey = [
-    '/api/dashboard',
-    startDate,
-    endDate,
-    params.userId || 'all',
-    params.useEnhanced ? 'enhanced' : 'standard'
-  ];
-  
   return useQuery({
-    queryKey,
+    queryKey: ['dashboard', dateRange.startDate.toISOString(), dateRange.endDate.toISOString(), params.userId, params.useEnhanced],
     queryFn: async () => {
-      // Construct query string with parameters
-      const queryParams = new URLSearchParams({
-        startDate,
-        endDate,
-        ...(params.userId ? { userId: params.userId } : {}),
-        ...(params.useEnhanced ? { enhanced: 'true' } : {})
-      });
+      // Build query parameters
+      const queryParams = new URLSearchParams();
+      queryParams.append('from', dateRange.startDate.toISOString());
+      queryParams.append('to', dateRange.endDate.toISOString());
       
-      const url = `/api/dashboard?${queryParams.toString()}`;
-      const data = await fetch(url).then(res => {
-        if (!res.ok) {
-          throw new Error(`Error fetching dashboard data: ${res.status}`);
-        }
-        return res.json();
-      });
+      if (params.userId) {
+        queryParams.append('userId', params.userId);
+      }
       
-      return data as DashboardData;
+      if (params.useEnhanced !== undefined) {
+        queryParams.append('enhanced', params.useEnhanced.toString());
+      }
+      
+      return apiRequest<DashboardData>({
+        url: `/api/dashboard?${queryParams.toString()}`,
+      });
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }
 
-// Hook to fetch attribution stats
+// Hook for fetching attribution stats
 export function useAttributionStats() {
   const { dateRange } = useDateRange();
   
-  // Format dates for API
-  const startDate = dateRange.startDate.toISOString().split('T')[0];
-  const endDate = dateRange.endDate.toISOString().split('T')[0];
-  
   return useQuery({
-    queryKey: ['/api/attribution-stats', startDate, endDate],
+    queryKey: ['attribution-stats', dateRange.startDate.toISOString(), dateRange.endDate.toISOString()],
     queryFn: async () => {
-      const queryParams = new URLSearchParams({
-        startDate,
-        endDate
-      });
+      // Build query parameters
+      const queryParams = new URLSearchParams();
+      queryParams.append('from', dateRange.startDate.toISOString());
+      queryParams.append('to', dateRange.endDate.toISOString());
       
-      const url = `/api/attribution-stats?${queryParams.toString()}`;
-      const data = await fetch(url).then(res => {
-        if (!res.ok) {
-          throw new Error(`Error fetching attribution stats: ${res.status}`);
-        }
-        return res.json();
+      return apiRequest<AttributionStats>({
+        url: `/api/attribution-stats?${queryParams.toString()}`,
       });
-      
-      return data as AttributionStats;
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }
 
-// Function to trigger data sync
+// Function to trigger a sync operation
 export async function syncData(): Promise<boolean> {
   try {
-    const result = await apiRequest<{ success: boolean }>('/api/sync', 'POST');
-    return result.success;
+    await apiRequest<{ success: boolean }>({
+      url: '/api/sync',
+      method: 'POST',
+    });
+    
+    // Invalidate all dashboard queries to refresh the data
+    await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    await queryClient.invalidateQueries({ queryKey: ['attribution-stats'] });
+    
+    return true;
   } catch (error) {
     console.error('Error syncing data:', error);
-    throw error;
+    return false;
   }
 }
 
-// Function to invalidate dashboard data in cache
+// Function to invalidate dashboard data
 export async function invalidateDashboardData(): Promise<void> {
-  await queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
-  await queryClient.invalidateQueries({ queryKey: ['/api/attribution-stats'] });
+  await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+  await queryClient.invalidateQueries({ queryKey: ['attribution-stats'] });
 }

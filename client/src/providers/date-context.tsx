@@ -1,170 +1,182 @@
-import React, { createContext, useState, useContext, ReactNode, useEffect } from "react";
-import { add, sub, format, isValid, parseISO } from "date-fns";
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { getDateWithTime } from '@/lib/utils';
 
 interface DateRange {
   startDate: Date;
   endDate: Date;
+  label?: string;
 }
 
-interface DateContextProps {
+interface DateContextType {
   dateRange: DateRange;
   setDateRange: (range: DateRange) => void;
-  presets: Record<string, DateRange>;
-  selectedPreset: string | null;
-  setSelectedPreset: (preset: string | null) => void;
+  presetRanges: {
+    label: string;
+    range: DateRange;
+  }[];
+  applyDateRange: (range: DateRange) => void;
 }
 
-const DateContext = createContext<DateContextProps>({
+// Create context with default values
+const DateContext = createContext<DateContextType>({
   dateRange: {
-    startDate: sub(new Date(), { months: 1 }),
+    startDate: new Date(new Date().setDate(new Date().getDate() - 30)),
     endDate: new Date(),
   },
   setDateRange: () => {},
-  presets: {},
-  selectedPreset: null,
-  setSelectedPreset: () => {},
+  presetRanges: [],
+  applyDateRange: () => {},
 });
 
+// Custom hook to use the date context
+export const useDateRange = () => useContext(DateContext);
+
 interface DateProviderProps {
-  children: ReactNode;
+  children: React.ReactNode;
 }
 
-const LOCAL_STORAGE_KEY = "crm-dashboard-date-range";
-
-export function DateProvider({ children }: DateProviderProps) {
-  // Initialize with default date range (last 30 days)
+export const DateProvider: React.FC<DateProviderProps> = ({ children }) => {
+  // Default to last 30 days
   const [dateRange, setDateRangeState] = useState<DateRange>({
-    startDate: sub(new Date(), { months: 1 }),
-    endDate: new Date(),
+    startDate: getDateWithTime(new Date(new Date().setDate(new Date().getDate() - 30))),
+    endDate: getDateWithTime(new Date(), true),
+    label: 'Last 30 days',
   });
 
-  const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
-
-  // Date range presets
-  const presets: Record<string, DateRange> = {
-    "Today": {
-      startDate: new Date(),
-      endDate: new Date(),
-    },
-    "Yesterday": {
-      startDate: sub(new Date(), { days: 1 }),
-      endDate: sub(new Date(), { days: 1 }),
-    },
-    "Last 7 days": {
-      startDate: sub(new Date(), { days: 6 }),
-      endDate: new Date(),
-    },
-    "Last 30 days": {
-      startDate: sub(new Date(), { days: 29 }),
-      endDate: new Date(),
-    },
-    "This month": {
-      startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-      endDate: new Date(),
-    },
-    "Last month": {
-      startDate: new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1),
-      endDate: new Date(new Date().getFullYear(), new Date().getMonth(), 0),
-    },
-    "This quarter": {
-      startDate: new Date(new Date().getFullYear(), Math.floor(new Date().getMonth() / 3) * 3, 1),
-      endDate: new Date(),
-    },
-    "Last quarter": {
-      startDate: new Date(
-        new Date().getFullYear(),
-        Math.floor(new Date().getMonth() / 3) * 3 - 3,
-        1
-      ),
-      endDate: new Date(
-        new Date().getFullYear(),
-        Math.floor(new Date().getMonth() / 3) * 3,
-        0
-      ),
-    },
-    "This year": {
-      startDate: new Date(new Date().getFullYear(), 0, 1),
-      endDate: new Date(),
-    },
-    "Last year": {
-      startDate: new Date(new Date().getFullYear() - 1, 0, 1),
-      endDate: new Date(new Date().getFullYear() - 1, 11, 31),
-    },
-    "All time": {
-      startDate: new Date(2020, 0, 1),
-      endDate: new Date(),
-    },
-  };
-
-  // Load date range from localStorage on initial render
-  useEffect(() => {
-    const savedRange = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (savedRange) {
-      try {
-        const { startDate, endDate, preset } = JSON.parse(savedRange);
-        
-        // Ensure dates are valid
-        const parsedStartDate = parseISO(startDate);
-        const parsedEndDate = parseISO(endDate);
-        
-        if (isValid(parsedStartDate) && isValid(parsedEndDate)) {
-          setDateRangeState({ 
-            startDate: parsedStartDate, 
-            endDate: parsedEndDate 
-          });
-          
-          // Restore preset if available
-          if (preset && preset in presets) {
-            setSelectedPreset(preset);
-          }
-        }
-      } catch (error) {
-        console.error("Error parsing saved date range:", error);
-        // If there's an error, just use the default range
-      }
-    } else {
-      // Default to "Last 30 days" if no saved range
-      setSelectedPreset("Last 30 days");
-      setDateRangeState(presets["Last 30 days"]);
-    }
-  }, []);
-
-  // Custom wrapper to update the state and save to localStorage
-  const setDateRange = (range: DateRange) => {
-    setDateRangeState(range);
+  // Generate preset date ranges
+  const getPresetRanges = () => {
+    const today = new Date();
     
-    // Save to localStorage with ISO string format for dates
-    localStorage.setItem(
-      LOCAL_STORAGE_KEY,
-      JSON.stringify({
-        startDate: range.startDate.toISOString(),
-        endDate: range.endDate.toISOString(),
-        preset: selectedPreset
-      })
-    );
+    // Last 7 days
+    const last7Start = new Date(today);
+    last7Start.setDate(today.getDate() - 6);
+    
+    // Last 14 days
+    const last14Start = new Date(today);
+    last14Start.setDate(today.getDate() - 13);
+    
+    // Last 30 days
+    const last30Start = new Date(today);
+    last30Start.setDate(today.getDate() - 29);
+    
+    // Last 90 days
+    const last90Start = new Date(today);
+    last90Start.setDate(today.getDate() - 89);
+    
+    // This month
+    const thisMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    
+    // Last month
+    const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
+    
+    // This quarter
+    const thisQuarterStart = new Date(today.getFullYear(), Math.floor(today.getMonth() / 3) * 3, 1);
+    
+    // This year
+    const thisYearStart = new Date(today.getFullYear(), 0, 1);
+    
+    // Last year
+    const lastYearStart = new Date(today.getFullYear() - 1, 0, 1);
+    const lastYearEnd = new Date(today.getFullYear() - 1, 11, 31);
+    
+    return [
+      {
+        label: 'Last 7 days',
+        range: {
+          startDate: getDateWithTime(last7Start),
+          endDate: getDateWithTime(today, true),
+        },
+      },
+      {
+        label: 'Last 14 days',
+        range: {
+          startDate: getDateWithTime(last14Start),
+          endDate: getDateWithTime(today, true),
+        },
+      },
+      {
+        label: 'Last 30 days',
+        range: {
+          startDate: getDateWithTime(last30Start),
+          endDate: getDateWithTime(today, true),
+        },
+      },
+      {
+        label: 'Last 90 days',
+        range: {
+          startDate: getDateWithTime(last90Start),
+          endDate: getDateWithTime(today, true),
+        },
+      },
+      {
+        label: 'This month',
+        range: {
+          startDate: getDateWithTime(thisMonthStart),
+          endDate: getDateWithTime(today, true),
+        },
+      },
+      {
+        label: 'Last month',
+        range: {
+          startDate: getDateWithTime(lastMonthStart),
+          endDate: getDateWithTime(lastMonthEnd, true),
+        },
+      },
+      {
+        label: 'This quarter',
+        range: {
+          startDate: getDateWithTime(thisQuarterStart),
+          endDate: getDateWithTime(today, true),
+        },
+      },
+      {
+        label: 'This year',
+        range: {
+          startDate: getDateWithTime(thisYearStart),
+          endDate: getDateWithTime(today, true),
+        },
+      },
+      {
+        label: 'Last year',
+        range: {
+          startDate: getDateWithTime(lastYearStart),
+          endDate: getDateWithTime(lastYearEnd, true),
+        },
+      },
+    ];
   };
 
-  return (
-    <DateContext.Provider
-      value={{
-        dateRange,
-        setDateRange,
-        presets,
-        selectedPreset,
-        setSelectedPreset,
-      }}
-    >
-      {children}
-    </DateContext.Provider>
-  );
-}
+  const presetRanges = getPresetRanges();
 
-export function useDateRange() {
-  const context = useContext(DateContext);
-  if (!context) {
-    throw new Error("useDateRange must be used within a DateProvider");
-  }
-  return context;
-}
+  // Set date range with applied start/end timestamps
+  const setDateRange = (range: DateRange) => {
+    // Make sure the start date is at the beginning of the day (00:00:00)
+    const formattedStartDate = getDateWithTime(range.startDate);
+    
+    // Make sure the end date is at the end of the day (23:59:59)
+    const formattedEndDate = getDateWithTime(range.endDate, true);
+    
+    setDateRangeState({
+      startDate: formattedStartDate,
+      endDate: formattedEndDate,
+      label: range.label,
+    });
+  };
 
-export default DateProvider;
+  // Apply a date range and trigger any needed updates
+  const applyDateRange = (range: DateRange) => {
+    setDateRange(range);
+    // Any additional logic for when date range changes can go here
+  };
+
+  // Context value
+  const value = {
+    dateRange,
+    setDateRange,
+    presetRanges,
+    applyDateRange,
+  };
+
+  return <DateContext.Provider value={value}>{children}</DateContext.Provider>;
+};

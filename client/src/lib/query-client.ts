@@ -1,73 +1,52 @@
 import { QueryClient } from '@tanstack/react-query';
+import axios from 'axios';
 
-// Default fetcher function for React Query
-export async function defaultFetcher<T>(url: string): Promise<T> {
-  const response = await fetch(url);
-  
-  if (!response.ok) {
-    // Handle API errors
-    const errorData = await response.json().catch(() => ({
-      message: 'Unknown error occurred',
-    }));
-    
-    throw new Error(
-      errorData.message || `API error: ${response.status} ${response.statusText}`
-    );
-  }
-  
-  return response.json();
-}
-
-// Helper function for API requests with different methods
-export async function apiRequest<T, U = void>(
-  url: string,
-  method: 'POST' | 'PATCH' | 'DELETE' | 'PUT' = 'POST',
-  data?: U
-): Promise<T> {
-  const response = await fetch(url, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: data ? JSON.stringify(data) : undefined,
-  });
-  
-  if (!response.ok) {
-    // Handle API errors
-    const errorData = await response.json().catch(() => ({
-      message: 'Unknown error occurred',
-    }));
-    
-    throw new Error(
-      errorData.message || `API error: ${response.status} ${response.statusText}`
-    );
-  }
-  
-  // For DELETE operations, we might not have a response body
-  if (method === 'DELETE' && response.status === 204) {
-    return {} as T;
-  }
-  
-  return response.json();
-}
-
-// Create a client with default configuration
-export const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 60 * 1000, // 1 minute
-      retry: 1,
-      refetchOnWindowFocus: false,
-      queryFn: ({ queryKey }) => {
-        // Convert array query keys to URL path
-        const url = Array.isArray(queryKey) 
-          ? queryKey.join('/') 
-          : queryKey.toString();
-          
-        return defaultFetcher(url);
-      },
-    },
+// Create a custom axios instance for API requests
+export const apiClient = axios.create({
+  baseURL: '/',
+  headers: {
+    'Content-Type': 'application/json',
   },
 });
 
-export default queryClient;
+// Helper function to handle API requests
+export const apiRequest = async <T>({
+  url,
+  method = 'GET',
+  data,
+  params,
+}: {
+  url: string;
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+  data?: any;
+  params?: any;
+}): Promise<T> => {
+  try {
+    const response = await apiClient({
+      url,
+      method,
+      data,
+      params,
+    });
+    
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      // Extract the error message from the response
+      const message = error.response.data?.message || error.message;
+      throw new Error(message);
+    }
+    throw error;
+  }
+};
+
+// Create a client with default options
+export const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+      staleTime: 1000 * 60 * 5, // 5 minutes
+    },
+  },
+});
