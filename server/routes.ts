@@ -20,7 +20,8 @@ import kpiConfiguratorRouter from "./api/kpi-configurator";
 import customerJourneyRoutes from "./routes/customer-journey";
 import typeformRoutes from "./routes/typeform";
 import dataEnhancementRoutes from "./routes/data-enhancement"; 
-import dashboardRouter from "./routes/dashboard";
+import * as dashboardModule from "./routes/dashboard";
+const dashboardRouter = dashboardModule.default;
 import { CloseUser } from "@shared/schema";
 
 // Enhanced attribution response types

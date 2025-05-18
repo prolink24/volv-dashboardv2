@@ -124,4 +124,5 @@ router.get('/performance', async (req: Request, res: Response) => {
   }
 });
 
+// Export the router
 export default router;
