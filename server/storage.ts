@@ -33,7 +33,6 @@ import {
   type InsertDealUserAssignment
 } from "@shared/schema";
 
-// Define interface for storage operations
 export interface IStorage {
   // User operations
   getUser(id: number): Promise<User | undefined>;
@@ -62,7 +61,6 @@ export interface IStorage {
   query(sqlQuery: string, params?: any[]): Promise<any[]>;
   searchContacts(query: string, limit?: number, offset?: number): Promise<Contact[]>;
   getContactsCount(): Promise<number>;
-  getAllContacts(): Promise<Contact[]>;
 
   // Activity operations
   getActivity(id: number): Promise<Activity | undefined>;
@@ -77,7 +75,6 @@ export interface IStorage {
   getDeal(id: number): Promise<Deal | undefined>;
   getDealBySourceId(source: string, sourceId: string): Promise<Deal | undefined>;
   createDeal(deal: InsertDeal): Promise<Deal>;
-  updateDeal(id: number, deal: Partial<InsertDeal>): Promise<Deal | undefined>;
   getDealsByContactId(contactId: number): Promise<Deal[]>;
   getDealsCount(): Promise<number>;
 
@@ -86,10 +83,8 @@ export interface IStorage {
   getMeetingByCalendlyEventId(eventId: string): Promise<Meeting | undefined>;
   getMeetingsByInviteeEmail(email: string): Promise<Meeting[]>;
   createMeeting(meeting: InsertMeeting): Promise<Meeting>;
-  updateMeeting(id: number, meeting: Partial<InsertMeeting>): Promise<Meeting | undefined>;
   getMeetingsByContactId(contactId: number): Promise<Meeting[]>;
   getMeetingsCount(): Promise<number>;
-  getAllMeetings(): Promise<Meeting[]>;
   getSampleMeetings(limit: number): Promise<Meeting[]>;
 
   // Form operations
@@ -125,27 +120,17 @@ export interface IStorage {
   getDashboardData(date: Date | { startDate: Date, endDate: Date }, userId?: string, role?: string): Promise<any>;
 }
 
-// Implementation with database storage using Drizzle ORM
 export class DatabaseStorage implements IStorage {
-  // Get deals by status implementation
-  async getDealsByStatus(status: string): Promise<Deal[]> {
-    return db
-      .select()
-      .from(deals)
-      .where(eq(deals.status, status))
-      .orderBy(desc(deals.createdAt));
-  }
-  
   async query(sqlQuery: string, params?: any[]): Promise<any[]> {
     try {
       const result = await db.execute(sql.raw(sqlQuery, params || []));
-      return result.rows || [];
+      return result;
     } catch (error) {
-      console.error('Error executing SQL query:', error);
-      throw error;
+      console.error("Database query error:", error);
+      return [];
     }
   }
-  // User operations
+
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user || undefined;
@@ -164,7 +149,6 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  // Contact operations
   async getContact(id: number): Promise<Contact | undefined> {
     const [contact] = await db.select().from(contacts).where(eq(contacts.id, id));
     return contact || undefined;
@@ -176,27 +160,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getContactByExternalId(source: string, externalId: string): Promise<Contact | undefined> {
-    // Find a contact where the sourceId matches and the leadSource matches the specified source
     const [contact] = await db
       .select()
       .from(contacts)
       .where(
         and(
-          eq(contacts.sourceId, externalId),
-          eq(contacts.leadSource, source)
+          eq(contacts.leadSource, source),
+          eq(contacts.sourceId, externalId)
         )
       );
     return contact || undefined;
   }
 
   async getContactSample(limit: number): Promise<Contact[]> {
-    // Get a random sample of contacts for analytics purposes
-    // Using SQL RANDOM() for true randomness
-    return db
-      .select()
-      .from(contacts)
-      .orderBy(sql`RANDOM()`)
-      .limit(limit);
+    return await db.select().from(contacts).limit(limit);
   }
 
   async createContact(contact: InsertContact): Promise<Contact> {
@@ -217,50 +194,39 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getContacts(limit: number = 100, offset: number = 0): Promise<Contact[]> {
-    return db
+    return await db
       .select()
       .from(contacts)
       .limit(limit)
-      .offset(offset)
-      .orderBy(desc(contacts.createdAt));
+      .offset(offset);
   }
 
   async searchContacts(query: string, limit: number = 100, offset: number = 0): Promise<Contact[]> {
-    return db
+    return await db
       .select()
       .from(contacts)
       .where(
-        sql`
-          ${contacts.name} ILIKE ${`%${query}%`} OR
-          ${contacts.email} ILIKE ${`%${query}%`} OR
-          ${contacts.company} ILIKE ${`%${query}%`}
-        `
+        or(
+          like(contacts.name, `%${query}%`),
+          like(contacts.email, `%${query}%`),
+          like(contacts.company, `%${query}%`)
+        )
       )
       .limit(limit)
       .offset(offset);
   }
 
   async getContactsCount(): Promise<number> {
-    const result = await db.select({ count: sql<number>`COUNT(*)` }).from(contacts);
-    return result[0]?.count || 0;
-  }
-  
-  async getAllContacts(): Promise<Contact[]> {
-    return db.select().from(contacts).orderBy(desc(contacts.createdAt));
-  }
-  
-  async getRecentContacts(limit: number, startDate: string, endDate: string): Promise<Contact[]> {
-    return db.select()
-      .from(contacts)
-      .where(and(
-        sql`${contacts.createdAt}::text >= ${startDate}::text`,
-        sql`${contacts.createdAt}::text <= ${endDate}::text`
-      ))
-      .orderBy(desc(contacts.createdAt))
-      .limit(limit);
+    const [result] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(contacts);
+    return result?.count || 0;
   }
 
-  // Activity operations
+  async getAllContacts(): Promise<Contact[]> {
+    return await db.select().from(contacts);
+  }
+
   async getActivity(id: number): Promise<Activity | undefined> {
     const [activity] = await db.select().from(activities).where(eq(activities.id, id));
     return activity || undefined;
@@ -272,8 +238,8 @@ export class DatabaseStorage implements IStorage {
       .from(activities)
       .where(
         and(
-          eq(activities.sourceId, sourceId),
-          eq(activities.source, source)
+          eq(activities.source, source),
+          eq(activities.sourceId, sourceId)
         )
       );
     return activity || undefined;
@@ -297,7 +263,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getActivitiesByContactId(contactId: number): Promise<Activity[]> {
-    return db
+    return await db
       .select()
       .from(activities)
       .where(eq(activities.contactId, contactId))
@@ -305,30 +271,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getActivitiesCount(): Promise<number> {
-    const result = await db.select({ count: sql<number>`COUNT(*)` }).from(activities);
-    return result[0]?.count || 0;
+    const [result] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(activities);
+    return result?.count || 0;
   }
-  
+
   async getSampleActivities(limit: number): Promise<Activity[]> {
-    return db
+    return await db
       .select()
       .from(activities)
-      .orderBy(sql`RANDOM()`)
-      .limit(limit);
-  }
-  
-  async getRecentActivities(limit: number, startDate: string, endDate: string): Promise<Activity[]> {
-    return db.select()
-      .from(activities)
-      .where(and(
-        sql`${activities.date}::text >= ${startDate}::text`,
-        sql`${activities.date}::text <= ${endDate}::text`
-      ))
-      .orderBy(desc(activities.date))
       .limit(limit);
   }
 
-  // Deal operations
   async getDeal(id: number): Promise<Deal | undefined> {
     const [deal] = await db.select().from(deals).where(eq(deals.id, id));
     return deal || undefined;
@@ -338,12 +293,7 @@ export class DatabaseStorage implements IStorage {
     const [deal] = await db
       .select()
       .from(deals)
-      .where(
-        and(
-          eq(deals.closeId, sourceId),
-          sql`1=1` // Cannot filter by source as it's not in the schema
-        )
-      );
+      .where(eq(deals.closeId, sourceId));
     return deal || undefined;
   }
 
@@ -365,30 +315,26 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getDealsByContactId(contactId: number): Promise<Deal[]> {
-    return db
+    return await db
       .select()
       .from(deals)
-      .where(eq(deals.contactId, contactId))
-      .orderBy(desc(deals.createdAt));
+      .where(eq(deals.contactId, contactId));
   }
 
   async getDealsCount(): Promise<number> {
-    const result = await db.select({ count: sql<number>`COUNT(*)` }).from(deals);
-    return result[0]?.count || 0;
-  }
-  
-  async getRecentDeals(limit: number, startDate: string, endDate: string): Promise<Deal[]> {
-    return db.select()
-      .from(deals)
-      .where(and(
-        sql`${deals.createdAt}::text >= ${startDate}::text`,
-        sql`${deals.createdAt}::text <= ${endDate}::text`
-      ))
-      .orderBy(desc(deals.createdAt))
-      .limit(limit);
+    const [result] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(deals);
+    return result?.count || 0;
   }
 
-  // Meeting operations
+  async getDealsByStatus(status: string): Promise<Deal[]> {
+    return await db
+      .select()
+      .from(deals)
+      .where(eq(deals.status, status));
+  }
+
   async getMeeting(id: number): Promise<Meeting | undefined> {
     const [meeting] = await db.select().from(meetings).where(eq(meetings.id, id));
     return meeting || undefined;
@@ -401,14 +347,12 @@ export class DatabaseStorage implements IStorage {
       .where(eq(meetings.calendlyEventId, eventId));
     return meeting || undefined;
   }
-  
+
   async getMeetingsByInviteeEmail(email: string): Promise<Meeting[]> {
-    // Use SQL ILIKE for case-insensitive matching of invitee email
-    return db
+    return await db
       .select()
       .from(meetings)
-      .where(sql`${meetings.inviteeEmail} ILIKE ${email}`)
-      .orderBy(desc(meetings.startTime));
+      .where(eq(meetings.inviteeEmail, email));
   }
 
   async createMeeting(meeting: InsertMeeting): Promise<Meeting> {
@@ -429,60 +373,31 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getMeetingsByContactId(contactId: number): Promise<Meeting[]> {
-    return db
+    return await db
       .select()
       .from(meetings)
       .where(eq(meetings.contactId, contactId))
-      .orderBy(desc(meetings.startTime));
-  }
-  
-  // Get meetings ordered by when they were booked (for accurate timeline placement)
-  async getMeetingsByContactIdOrderedByBookingTime(contactId: number): Promise<Meeting[]> {
-    return db
-      .select()
-      .from(meetings)
-      .where(eq(meetings.contactId, contactId))
-      .orderBy(desc(meetings.bookedAt));
-  }
-  
-  // Get meetings by sequence number (for NC1/C2 tracking)
-  async getMeetingsBySequence(sequenceNumber: number): Promise<Meeting[]> {
-    return db
-      .select()
-      .from(meetings)
-      .where(eq(meetings.sequence, sequenceNumber))
       .orderBy(desc(meetings.startTime));
   }
 
   async getMeetingsCount(): Promise<number> {
-    const result = await db.select({ count: sql<number>`COUNT(*)` }).from(meetings);
-    return result[0]?.count || 0;
+    const [result] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(meetings);
+    return result?.count || 0;
   }
-  
-  async getRecentMeetings(limit: number, startDate: string, endDate: string): Promise<Meeting[]> {
-    return db.select()
-      .from(meetings)
-      .where(and(
-        sql`${meetings.startTime}::text >= ${startDate}::text`,
-        sql`${meetings.startTime}::text <= ${endDate}::text`
-      ))
-      .orderBy(desc(meetings.startTime))
-      .limit(limit);
-  }
-  
+
   async getAllMeetings(): Promise<Meeting[]> {
-    return db.select().from(meetings).orderBy(desc(meetings.startTime));
+    return await db.select().from(meetings);
   }
-  
+
   async getSampleMeetings(limit: number): Promise<Meeting[]> {
-    return db
+    return await db
       .select()
       .from(meetings)
-      .orderBy(sql`RANDOM()`)
       .limit(limit);
   }
 
-  // Form operations
   async getForm(id: number): Promise<Form | undefined> {
     const [form] = await db.select().from(forms).where(eq(forms.id, id));
     return form || undefined;
@@ -497,27 +412,26 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getFormsByContactId(contactId: number): Promise<Form[]> {
-    return db
+    return await db
       .select()
       .from(forms)
-      .where(eq(forms.contactId, contactId))
-      .orderBy(desc(forms.submittedAt));
+      .where(eq(forms.contactId, contactId));
   }
 
   async getFormsCount(): Promise<number> {
-    const result = await db.select({ count: sql<number>`COUNT(*)` }).from(forms);
-    return result[0]?.count || 0;
+    const [result] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(forms);
+    return result?.count || 0;
   }
-  
+
   async getSampleForms(limit: number): Promise<Form[]> {
-    return db
+    return await db
       .select()
       .from(forms)
-      .orderBy(sql`RANDOM()`)
       .limit(limit);
   }
 
-  // Close User operations
   async getCloseUser(id: number): Promise<CloseUser | undefined> {
     const [user] = await db.select().from(closeUsers).where(eq(closeUsers.id, id));
     return user || undefined;
@@ -542,7 +456,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getCloseUsers(limit: number = 100, offset: number = 0): Promise<CloseUser[]> {
-    return db
+    return await db
       .select()
       .from(closeUsers)
       .limit(limit)
@@ -550,11 +464,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getCloseUsersCount(): Promise<number> {
-    const result = await db.select({ count: sql<number>`COUNT(*)` }).from(closeUsers);
-    return result[0]?.count || 0;
+    const [result] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(closeUsers);
+    return result?.count || 0;
   }
 
-  // Contact-to-user assignments
   async createContactUserAssignment(assignment: InsertContactUserAssignment): Promise<ContactUserAssignment> {
     const [newAssignment] = await db
       .insert(contactToUserAssignments)
@@ -564,7 +479,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getContactUserAssignments(contactId: number): Promise<ContactUserAssignment[]> {
-    return db
+    return await db
       .select()
       .from(contactToUserAssignments)
       .where(eq(contactToUserAssignments.contactId, contactId));
@@ -576,19 +491,16 @@ export class DatabaseStorage implements IStorage {
       .from(contactToUserAssignments)
       .where(eq(contactToUserAssignments.closeUserId, closeUserId));
     
-    const contactIds = assignments.map(assignment => assignment.contactId);
+    if (assignments.length === 0) return [];
     
-    if (contactIds.length === 0) {
-      return [];
-    }
+    const contactIds = assignments.map(a => a.contactId);
     
-    return db
+    return await db
       .select()
       .from(contacts)
       .where(sql`${contacts.id} IN (${contactIds.join(',')})`);
   }
 
-  // Deal-to-user assignments
   async createDealUserAssignment(assignment: InsertDealUserAssignment): Promise<DealUserAssignment> {
     const [newAssignment] = await db
       .insert(dealToUserAssignments)
@@ -598,7 +510,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getDealUserAssignments(dealId: number): Promise<DealUserAssignment[]> {
-    return db
+    return await db
       .select()
       .from(dealToUserAssignments)
       .where(eq(dealToUserAssignments.dealId, dealId));
@@ -610,19 +522,16 @@ export class DatabaseStorage implements IStorage {
       .from(dealToUserAssignments)
       .where(eq(dealToUserAssignments.closeUserId, closeUserId));
     
-    const dealIds = assignments.map(assignment => assignment.dealId);
+    if (assignments.length === 0) return [];
     
-    if (dealIds.length === 0) {
-      return [];
-    }
+    const dealIds = assignments.map(a => a.dealId);
     
-    return db
+    return await db
       .select()
       .from(deals)
       .where(sql`${deals.id} IN (${dealIds.join(',')})`);
   }
 
-  // Metrics operations
   async createMetrics(metricsData: InsertMetrics): Promise<Metrics> {
     const [newMetrics] = await db
       .insert(metrics)
@@ -630,12 +539,9 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return newMetrics;
   }
-  
+
   async getMetrics(id: number): Promise<Metrics | undefined> {
-    const [metricsData] = await db
-      .select()
-      .from(metrics)
-      .where(eq(metrics.id, id));
+    const [metricsData] = await db.select().from(metrics).where(eq(metrics.id, id));
     return metricsData || undefined;
   }
 
@@ -649,296 +555,142 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getMetricsByDate(date: string, userId?: string): Promise<Metrics | undefined> {
-    const conditions = userId 
+    const query = userId 
       ? and(eq(metrics.date, date), eq(metrics.userId, userId))
       : eq(metrics.date, date);
     
     const [metricsData] = await db
       .select()
       .from(metrics)
-      .where(conditions);
+      .where(query);
     
     return metricsData || undefined;
   }
 
-  // Dashboard data with real database information
   async getDashboardData(date: Date | { startDate: Date, endDate: Date }, userId?: string, role?: string): Promise<any> {
     try {
-      // Handle both single date and date range
+      // Set date range
       let startDate: Date, endDate: Date;
-      
-      if (date instanceof Date) {
-        // Single date provided
-        startDate = date;
-        endDate = date;
-        console.log(`Fetching dashboard data for single date: ${startDate.toISOString()}`);
-      } else {
-        // Date range provided
+      if ('startDate' in date && 'endDate' in date) {
         startDate = date.startDate;
         endDate = date.endDate;
-        console.log(`Fetching dashboard data for date range: ${startDate.toISOString()} to ${endDate.toISOString()}`);
+      } else {
+        startDate = date;
+        endDate = date;
       }
-      
-      // Format dates for PostgreSQL
-      const startDateString = startDate.toISOString().split('T')[0];
-      const endDateString = endDate.toISOString().split('T')[0];
-      
-      console.log(`Using date range: ${startDateString} to ${endDateString}`);
-      if (userId) {
-        console.log(`Filtering for user ID: ${userId}`);
-      }
-      if (role) {
-        console.log(`Filtering for role: ${role}`);
-      }
-      
-      // Create date filters for database queries
-      const contactsDateFilter = and(
-        gte(contacts.createdAt, sql`${startDateString}`),
-        lte(contacts.createdAt, sql`${endDateString}`)
-      );
-      
-      const dealsDateFilter = and(
-        gte(deals.createdAt, sql`${startDateString}`),
-        lte(deals.createdAt, sql`${endDateString}`)
-      );
-      
-      const meetingsDateFilter = and(
-        gte(meetings.startTime, sql`${startDateString}`),
-        lte(meetings.startTime, sql`${endDateString}`)
-      );
-      
-      const activitiesDateFilter = and(
-        gte(activities.date, sql`${startDateString}`),
-        lte(activities.date, sql`${endDateString}`)
-      );
-      
-      // Query basic metrics
-      const totalContacts = await db.select({ count: sql<number>`COUNT(*)` })
-        .from(contacts)
-        .where(contactsDateFilter)
-        .then(result => result[0]?.count || 0);
-      
-      const totalDeals = await db.select({ count: sql<number>`COUNT(*)` })
-        .from(deals)
-        .where(dealsDateFilter)
-        .then(result => result[0]?.count || 0);
-        
-      const totalMeetings = await db.select({ count: sql<number>`COUNT(*)` })
-        .from(meetings)
-        .where(meetingsDateFilter)
-        .then(result => result[0]?.count || 0);
-        
-      const totalActivities = await db.select({ count: sql<number>`COUNT(*)` })
-        .from(activities)
-        .where(activitiesDateFilter)
-        .then(result => result[0]?.count || 0);
-      
-      // Get contacts with multiple sources
-      const contactsWithMultipleSources = await db.select({ count: sql<number>`COUNT(*)` })
-        .from(contacts)
-        .where(and(
-          contactsDateFilter,
-          gt(contacts.sourcesCount, 1)
-        ))
-        .then(result => result[0]?.count || 0);
-        
-      // Get revenue metrics
-      const revenueMetrics = await db.select({
-        totalRevenue: sql<string>`COALESCE(SUM(CASE WHEN ${deals.status} = 'won' THEN NULLIF(${deals.value}, '')::numeric ELSE 0 END), 0)`,
-        totalCashCollected: sql<string>`COALESCE(SUM(CASE WHEN ${deals.status} = 'won' THEN NULLIF(${deals.cashCollected}, '')::numeric ELSE 0 END), 0)`
-      })
-      .from(deals)
-      .where(dealsDateFilter)
-      .then(result => result[0]);
-      
-      const totalRevenue = parseFloat(revenueMetrics?.totalRevenue || '0');
-      const totalCashCollected = parseFloat(revenueMetrics?.totalCashCollected || '0');
-      
-      // Calculate rates
-      const conversionRate = totalContacts > 0 ? (totalDeals / totalContacts) * 100 : 0;
-      const multiSourceRate = totalContacts > 0 ? (contactsWithMultipleSources / totalContacts) * 100 : 0;
-      const cashCollectedRate = totalRevenue > 0 ? (totalCashCollected / totalRevenue) * 100 : 0;
-      
-      // Get sales team data
-      let salesTeam = [];
-      
-      // Get all users or filtered by role
-      const userQuery = role 
-        ? db.select().from(closeUsers).where(eq(closeUsers.role, role))
-        : db.select().from(closeUsers);
-        
-      const users = await userQuery;
-      
-      // Process each user's performance data
-      salesTeam = await Promise.all(users.map(async (user) => {
-        const userDeals = await db.select()
-          .from(deals)
-          .innerJoin(dealToUserAssignments, eq(deals.id, dealToUserAssignments.dealId))
-          .where(and(
-            dealsDateFilter,
-            eq(dealToUserAssignments.closeUserId, user.id)
-          ));
-          
-        const userMeetings = await db.select()
-          .from(meetings)
-          .where(and(
-            meetingsDateFilter,
-            eq(meetings.assignedTo, user.closeId)
-          ));
-          
-        const userActivities = await db.select()
-          .from(activities)
-          .where(and(
-            activitiesDateFilter,
-            eq(activities.taskAssignedTo, user.closeId)
-          ));
-        
-        // Calculate user metrics
-        const userWonDeals = userDeals.filter(deal => deal.deals.status === 'won');
-        const userClosedDeals = userDeals.filter(deal => 
-          deal.deals.status === 'won' || deal.deals.status === 'lost'
-        );
-        
-        // Calculate financial metrics
-        const userRevenue = userWonDeals.reduce((sum, deal) => {
-          const value = parseFloat(deal.deals.value || '0');
-          return sum + (isNaN(value) ? 0 : value);
-        }, 0);
-        
-        const userCashCollected = userWonDeals.reduce((sum, deal) => {
-          const cash = parseFloat(deal.deals.cashCollected || '0');
-          return sum + (isNaN(cash) ? 0 : cash);
-        }, 0);
-        
-        const userContractedValue = userWonDeals.reduce((sum, deal) => {
-          const value = parseFloat(deal.deals.contractedValue || '0');
-          return sum + (isNaN(value) ? 0 : value);
-        }, 0);
-        
-        const closingRate = userClosedDeals.length > 0 
-          ? (userWonDeals.length / userClosedDeals.length) * 100 
-          : 0;
-          
-        const userCalls = userActivities.filter(a => a.activities.type === 'call').length;
-        
-        return {
-          id: user.closeId,
-          name: `${user.firstName} ${user.lastName}`.trim(),
-          role: user.role || 'Sales Representative',
-          deals: userDeals.length,
-          meetings: userMeetings.length, 
-          activities: userActivities.length,
-          performance: Math.round(closingRate * 10) / 10,
-          closed: userClosedDeals.length,
-          cashCollected: Math.round(userCashCollected),
-          revenue: Math.round(userRevenue),
-          contractedValue: Math.round(userContractedValue),
-          calls: userCalls,
-          closingRate: Math.round(closingRate)
-        };
-      }));
-      
-      // If userId specified, filter to just that user
-      if (userId) {
-        salesTeam = salesTeam.filter(member => member.id === userId);
-      }
-        
-      // Format the data for the dashboard response
-      const dashboardData = {
-        currentPeriod: {
-          totalContacts,
-          totalRevenue: Math.round(totalRevenue),
-          totalCashCollected: Math.round(totalCashCollected),
-          totalDeals,
-          totalMeetings,
-          totalActivities,
-          conversionRate: Math.round(conversionRate * 10) / 10,
-          multiSourceRate: Math.round(multiSourceRate * 10) / 10,
-          cashCollectedRate: Math.round(cashCollectedRate * 10) / 10,
-          salesTeam
-        }
-      };
-      
-      return dashboardData;
-    } catch (error) {
-      console.error("Error in getDashboardData:", error);
-      
-      // Fallback to sample data in case of database errors
-      const sampleData = {
-        currentPeriod: {
-          totalContacts: 120,
-          totalRevenue: 210000,
-          totalCashCollected: 185000,
-          totalDeals: 45,
-          totalMeetings: 72,
-          totalActivities: 310,
-          conversionRate: 37.5,
-          multiSourceRate: 29.2,
-          cashCollectedRate: 88.1,
-          salesTeam: [
-            {
-              id: "1",
-              name: "John Smith",
-              role: "Account Executive",
-              deals: 12,
-              meetings: 24,
-              activities: 105,
-              performance: 95,
-              closed: 10,
-              cashCollected: 85000,
-              revenue: 92000,
-              contractedValue: 110000,
-              calls: 65,
-              closingRate: 83
-            },
-            {
-              id: "2", 
-              name: "Emily Johnson",
-              role: "Sales Development Rep",
-              deals: 9,
-              meetings: 18,
-              activities: 78,
-              performance: 87,
-              closed: 7,
-              cashCollected: 45000,
-              revenue: 51000,
-              contractedValue: 58000,
-              calls: 48,
-              closingRate: 77
-            },
-            {
-              id: "3",
-              name: "Michael Chen",
-              role: "Sales Manager",
-              deals: 14,
-              meetings: 10,
-              activities: 62,
-              performance: 92,
-              closed: 12,
-              cashCollected: 55000,
-              revenue: 67000,
-              contractedValue: 72000,
-              calls: 42,
-              closingRate: 85
-            }
-          ]
-        }
-      };
-      
-      console.log("Using sample data due to database error");
-      return sampleData;
-    }
-  }
 
-/**
- * Get deals by status
- * @param status - The status to filter by
- * @returns Array of deals matching the status
- */
-async getDealsByStatus(status: string): Promise<Deal[]> {
-  const result = await db.select().from(deals).where(eq(deals.status, status));
-  return result;
-}
+      // Format dates for SQL
+      const startDateStr = startDate.toISOString().split('T')[0];
+      const endDateStr = endDate.toISOString().split('T')[0];
+
+      // Create date filters
+      const contactsDateFilter = and(
+        gte(contacts.createdAt, startDateStr),
+        lte(contacts.createdAt, endDateStr + 'T23:59:59.999Z')
+      );
+
+      const dealsDateFilter = and(
+        gte(deals.createdAt, startDateStr),
+        lte(deals.createdAt, endDateStr + 'T23:59:59.999Z')
+      );
+
+      const meetingsDateFilter = and(
+        gte(meetings.startTime, startDateStr),
+        lte(meetings.startTime, endDateStr + 'T23:59:59.999Z')
+      );
+
+      const activitiesDateFilter = and(
+        gte(activities.date, startDateStr),
+        lte(activities.date, endDateStr + 'T23:59:59.999Z')
+      );
+
+      // Get contacts count
+      const [contactsCountResult] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(contacts)
+        .where(contactsDateFilter);
+      
+      const totalContacts = contactsCountResult?.count || 0;
+
+      // Get deals count
+      const [dealsCountResult] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(deals)
+        .where(dealsDateFilter);
+      
+      const totalDeals = dealsCountResult?.count || 0;
+
+      // Get contacts with deals
+      const [contactsWithDealsResult] = await db
+        .select({ count: sql<number>`count(DISTINCT ${contacts.id})` })
+        .from(contacts)
+        .where(
+          exists(
+            db.select()
+              .from(deals)
+              .where(eq(deals.contactId, contacts.id))
+          )
+        );
+      
+      const contactsWithDeals = contactsWithDealsResult?.count || 0;
+
+      // Get contacts with meetings
+      const [contactsWithMeetingsResult] = await db
+        .select({ count: sql<number>`count(DISTINCT ${contacts.id})` })
+        .from(contacts)
+        .where(
+          exists(
+            db.select()
+              .from(meetings)
+              .where(eq(meetings.contactId, contacts.id))
+          )
+        );
+      
+      const contactsWithMeetings = contactsWithMeetingsResult?.count || 0;
+
+      // Get multi-source contacts
+      const [multiSourceContactsResult] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(contacts)
+        .where(gte(contacts.sourcesCount, 2));
+      
+      const multiSourceContacts = multiSourceContactsResult?.count || 0;
+
+      // Get activities count
+      const [activitiesCountResult] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(activities)
+        .where(activitiesDateFilter);
+      
+      const totalActivities = activitiesCountResult?.count || 0;
+
+      // Get meetings count
+      const [meetingsCountResult] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(meetings)
+        .where(meetingsDateFilter);
+      
+      const totalMeetings = meetingsCountResult?.count || 0;
+
+      // Calculate conversion rates and ratios
+      const conversionRate = totalContacts > 0 ? (contactsWithDeals / totalContacts) * 100 : 0;
+      const multiSourceRate = totalContacts > 0 ? (multiSourceContacts / totalContacts) * 100 : 0;
+
+      // Get revenue metrics
+      const revenueResult = await db
+        .select({
+          totalRevenue: sql<string>`COALESCE(SUM(NULLIF(${deals.value}, '')::numeric), 0)`,
+          totalCashCollected: sql<string>`COALESCE(SUM(NULLIF(${deals.cashCollected}, '')::numeric), 0)`
+        })
+        .from(deals)
+        .where(and(
+          dealsDateFilter,
+          eq(deals.status, 'won')
+        ));
+      
+      // Extract revenue values with safe parsing
+      let totalRevenue = 0;
+      let totalCashCollected = 0;
       
       try {
         totalRevenue = parseFloat(revenueResult[0]?.totalRevenue || '0');
@@ -946,573 +698,140 @@ async getDealsByStatus(status: string): Promise<Deal[]> {
         
         totalCashCollected = parseFloat(revenueResult[0]?.totalCashCollected || '0');
         if (isNaN(totalCashCollected)) totalCashCollected = 0;
-      } catch (error) {
-        console.error("Error parsing revenue values:", error);
-        // Use default values if parsing fails
-        totalRevenue = 0;
-        totalCashCollected = 0;
+      } catch (e) {
+        console.error('Error parsing revenue values', e);
       }
-      
+
+      // Calculate cash collected rate
       const cashCollectedRate = totalRevenue > 0 ? (totalCashCollected / totalRevenue) * 100 : 0;
-      
+
       // Get sales team performance data
-      let salesTeamData: any[] = [];
-      
-      if (userId) {
-        // Get single user data
-        const user = await db.select().from(closeUsers).where(eq(closeUsers.closeId, userId));
-        
-        if (user.length > 0) {
-          const closeUserId = user[0].id;
-          
-          // Get user's deals
-          const userDeals = await db.select()
-            .from(deals)
-            .innerJoin(dealToUserAssignments, eq(deals.id, dealToUserAssignments.dealId))
-            .where(and(
-              dealsDateFilter,
-              eq(dealToUserAssignments.closeUserId, closeUserId)
-            ));
-          
-          // Get user's meetings
-          const userMeetings = await db.select()
-            .from(meetings)
-            .where(and(
-              meetingsDateFilter,
-              eq(meetings.assignedTo, userId)
-            ));
-          
-          // Get user's activities
-          const userActivities = await db.select()
-            .from(activities)
-            .where(and(
-              activitiesDateFilter,
-              eq(activities.taskAssignedTo, userId)
-            ));
-          
-          // Calculate user-specific metrics
-          const userWonDeals = userDeals.filter(deal => deal.deals.status === 'won');
-          const userClosedDeals = userDeals.filter(deal => 
-            deal.deals.status === 'won' || deal.deals.status === 'lost'
-          );
-          
-          let userRevenue = 0;
-          let userCashCollected = 0;
-          let userContractedValue = 0;
-          
-          for (const deal of userWonDeals) {
-            try {
-              const value = parseFloat(deal.deals.value || '0');
-              if (!isNaN(value)) userRevenue += value;
-              
-              const cashCollected = parseFloat(deal.deals.cashCollected || '0');
-              if (!isNaN(cashCollected)) userCashCollected += cashCollected;
-              
-              const contractedValue = parseFloat(deal.deals.contractedValue || '0');
-              if (!isNaN(contractedValue)) userContractedValue += contractedValue;
-            } catch (e) {
-              console.error("Error parsing deal values:", e);
-            }
-          }
-          
-          const closingRate = userClosedDeals.length > 0 
-            ? (userWonDeals.length / userClosedDeals.length) * 100 
-            : 0;
-          
-          // Add to sales team array
-          salesTeamData.push({
-            id: userId,
-            name: `${user[0].first_name} ${user[0].last_name}`.trim(),
-            role: user[0].role || 'Sales Representative',
-            deals: userDeals.length,
-            meetings: userMeetings.length,
-            activities: userActivities.length,
-            performance: closingRate,
-            closed: userClosedDeals.length,
-            cashCollected: userCashCollected,
-            revenue: userRevenue,
-            contractedValue: userContractedValue,
-            calls: userActivities.filter(a => a.type === 'call').length,
-            closingRate: closingRate
-          });
-        }
-      } else {
-        // Get all users
-        const users = await db.select().from(closeUsers);
-        
-        // Process data for each user
-        for (const user of users) {
-          // Get user's deals
-          const userDeals = await db.select()
-            .from(deals)
-            .innerJoin(dealToUserAssignments, eq(deals.id, dealToUserAssignments.dealId))
-            .where(and(
-              dealsDateFilter,
-              eq(dealToUserAssignments.closeUserId, user.id)
-            ));
-          
-          // Get user's meetings
-          const userMeetings = await db.select()
-            .from(meetings)
-            .where(and(
-              meetingsDateFilter,
-              eq(meetings.assignedTo, user.closeId)
-            ));
-          
-          // Get user's activities
-          const userActivities = await db.select()
-            .from(activities)
-            .where(and(
-              activitiesDateFilter,
-              eq(activities.taskAssignedTo, user.closeId)
-            ));
-          
-          // Calculate user-specific metrics
-          const userWonDeals = userDeals.filter(deal => deal.deals.status === 'won');
-          const userClosedDeals = userDeals.filter(deal => 
-            deal.deals.status === 'won' || deal.deals.status === 'lost'
-          );
-          
-          let userRevenue = 0;
-          let userCashCollected = 0;
-          let userContractedValue = 0;
-          
-          for (const deal of userWonDeals) {
-            try {
-              const value = parseFloat(deal.deals.value || '0');
-              if (!isNaN(value)) userRevenue += value;
-              
-              const cashCollected = parseFloat(deal.deals.cashCollected || '0');
-              if (!isNaN(cashCollected)) userCashCollected += cashCollected;
-              
-              const contractedValue = parseFloat(deal.deals.contractedValue || '0');
-              if (!isNaN(contractedValue)) userContractedValue += contractedValue;
-            } catch (e) {
-              console.error("Error parsing deal values:", e);
-            }
-          }
-          
-          const closingRate = userClosedDeals.length > 0 
-            ? (userWonDeals.length / userClosedDeals.length) * 100 
-            : 0;
-          
-          // Add to sales team array
-          salesTeamData.push({
-            id: user.closeId,
-            name: `${user.first_name} ${user.last_name}`.trim(),
-            role: user.role || 'Sales Representative',
-            deals: userDeals.length,
-            meetings: userMeetings.length,
-            activities: userActivities.length,
-            performance: closingRate,
-            closed: userClosedDeals.length,
-            cashCollected: userCashCollected,
-            revenue: userRevenue,
-            contractedValue: userContractedValue,
-            calls: userActivities.filter(a => a.type === 'call').length,
-            closingRate: closingRate
-          });
-        }
-      }
-      
-      // Ensure no extreme values (for data quality)
-      const salesTeam = salesTeamData.map(member => ({
-        ...member,
-        // Cap extremely high values to prevent UI issues
-        revenue: Math.min(member.revenue, 10000000), // Cap at 10M
-        cashCollected: Math.min(member.cashCollected, 10000000), // Cap at 10M
-        contractedValue: Math.min(member.contractedValue, 10000000), // Cap at 10M
-      }));
-      
-      // Construct response object
-      return {
-        totalContacts,
-        totalRevenue,
-        totalCashCollected,
-        totalDeals,
-        totalMeetings,
-        totalActivities,
-        conversionRate,
-        multiSourceRate,
-        cashCollectedRate,
-        salesTeam
-      };
-    } catch (error) {
-      console.error("Error fetching dashboard data:", error);
-      throw error;
-    }
-  }
-        contactsDateFilter,
-        or(
-          exists(db.select({ value: sql`1` }).from(activities).where(eq(activities.contactId, contacts.id))),
-          exists(db.select({ value: sql`1` }).from(meetings).where(eq(meetings.contactId, contacts.id))),
-          exists(db.select({ value: sql`1` }).from(deals).where(eq(deals.contactId, contacts.id)))
-        )
-      ));
-    const totalContactsWithAttribution = attributionQuery[0]?.count || 0;
-    
-    // Get sales team data
-    let salesTeam = [];
-    try {
-      // Get the sales users
-      const userResults = await db.select().from(closeUsers);
-      
-      // For each user, get their associated metrics
-      salesTeam = await Promise.all(userResults.map(async (user) => {
-        // Get deals assigned to this user
-        const userDeals = await db.select()
-          .from(dealToUserAssignments)
-          .innerJoin(deals, eq(dealToUserAssignments.dealId, deals.id))
-          .where(and(
-            eq(dealToUserAssignments.closeUserId, user.id),
-            gte(deals.createdAt, sql`${startDate}`),
-            lte(deals.createdAt, sql`${endDate}`)
-          ));
-        
-        // Get activities assigned to this user
-        const userActivities = await db.select({ count: sql<number>`COUNT(*)` })
-          .from(activities)
-          .innerJoin(contactToUserAssignments, eq(activities.contactId, contactToUserAssignments.contactId))
-          .where(and(
-            eq(contactToUserAssignments.closeUserId, user.id),
-            gte(activities.date, sql`${startDate}`),
-            lte(activities.date, sql`${endDate}`)
-          ));
-        
-        // Get meetings related to this user's contacts
-        const userMeetings = await db.select({ count: sql<number>`COUNT(*)` })
-          .from(meetings)
-          .innerJoin(contactToUserAssignments, eq(meetings.contactId, contactToUserAssignments.contactId))
-          .where(and(
-            eq(contactToUserAssignments.closeUserId, user.id),
-            gte(meetings.startTime, sql`${startDate}`),
-            lte(meetings.startTime, sql`${endDate}`)
-          ));
-        
-        // Calculate performance score (simple algorithm: deals + activities + meetings)
-        const performance = userDeals.length + (userActivities[0]?.count || 0) + (userMeetings[0]?.count || 0);
-        
-        // Sum up deal values
-        const closedDeals = userDeals.filter(d => d.deals.status === 'won').length;
-        
-        // Properly parse and validate deal values to prevent extreme values
-        const totalRevenueValue = userDeals.reduce((sum, d) => {
-          if (!d.deals.value) return sum;
-          
-          try {
-            // Convert to string first to ensure consistent handling
-            const valueStr = String(d.deals.value);
-            
-            // Basic validation to ignore obviously incorrect values
-            if (valueStr.length > 20 || valueStr.includes('e') || valueStr.includes('E')) {
-              console.warn(`[STORAGE] Ignoring extreme deal value: ${valueStr}`);
-              return sum;
-            }
-            
-            // Parse the value safely
-            const numValue = parseFloat(valueStr.replace(/[^0-9.-]/g, ''));
-            
-            // Apply reasonable limits
-            if (!isFinite(numValue) || isNaN(numValue)) return sum;
-            if (Math.abs(numValue) > 500000) {
-              console.warn(`[STORAGE] Capping extreme deal value: ${numValue} to 500000`);
-              return sum + (numValue > 0 ? 500000 : -500000);
-            }
-            
-            return sum + numValue;
-          } catch (e) {
-            console.error(`[STORAGE] Error parsing deal value: ${d.deals.value}`, e);
-            return sum;
-          }
-        }, 0);
-        
-        // Separately calculate cash collected from the cashCollected field
-        // If cash_collected is missing, use a percentage of the deal value as a fallback
-        const totalCashCollected = userDeals.reduce((sum, d) => {
-          // First try to use the actual cash_collected value if it exists
-          if (d.deals.cash_collected && d.deals.cash_collected !== '0' && d.deals.cash_collected !== '') {
-            try {
-              // Convert to string first to ensure consistent handling
-              const valueStr = String(d.deals.cash_collected);
-              
-              // Basic validation to ignore obviously incorrect values
-              if (valueStr.length > 20 || valueStr.includes('e') || valueStr.includes('E')) {
-                console.warn(`[STORAGE] Ignoring extreme cash collected value: ${valueStr}`);
-                return sum;
-              }
-              
-              // Parse the value safely
-              const numValue = parseFloat(valueStr.replace(/[^0-9.-]/g, ''));
-              
-              // Apply reasonable limits
-              if (!isFinite(numValue) || isNaN(numValue)) return sum;
-              if (Math.abs(numValue) > 500000) {
-                console.warn(`[STORAGE] Capping extreme cash collected value: ${numValue} to 500000`);
-                return sum + (numValue > 0 ? 500000 : -500000);
-              }
-              
-              return sum + numValue;
-            } catch (e) {
-              console.error(`[STORAGE] Error parsing cash collected value: ${d.deals.cash_collected}`, e);
-              return sum;
-            }
-          } 
-          // For won deals, if cash_collected is missing, use 60% of the deal value as an estimate
-          else if (d.deals.status === 'won' && d.deals.value) {
-            try {
-              const dealValue = parseFloat(String(d.deals.value));
-              if (isFinite(dealValue) && !isNaN(dealValue)) {
-                // Use 60% of deal value as a cash collected estimate for won deals
-                return sum + (dealValue * 0.6);
-              }
-            } catch (e) {
-              // If there's an error, just continue with the sum
-              return sum;
-            }
-          }
-          
-          return sum;
-        }, 0);
-        
-        // Separately calculate contracted value from the contractedValue field
-        const totalContractedValue = userDeals.reduce((sum, d) => {
-          if (!d.deals.contractedValue) return sum;
-          
-          try {
-            // Convert to string first to ensure consistent handling
-            const valueStr = String(d.deals.contractedValue);
-            
-            // Basic validation to ignore obviously incorrect values
-            if (valueStr.length > 20 || valueStr.includes('e') || valueStr.includes('E')) {
-              console.warn(`[STORAGE] Ignoring extreme contracted value: ${valueStr}`);
-              return sum;
-            }
-            
-            // Parse the value safely
-            const numValue = parseFloat(valueStr.replace(/[^0-9.-]/g, ''));
-            
-            // Apply reasonable limits
-            if (!isFinite(numValue) || isNaN(numValue)) return sum;
-            if (Math.abs(numValue) > 500000) {
-              console.warn(`[STORAGE] Capping extreme contracted value: ${numValue} to 500000`);
-              return sum + (numValue > 0 ? 500000 : -500000);
-            }
-            
-            return sum + numValue;
-          } catch (e) {
-            console.error(`[STORAGE] Error parsing contracted value: ${d.deals.contractedValue}`, e);
-            return sum;
-          }
-        }, 0);
-        
-        return {
-          id: user.closeId,
-          // Properly format the user's name from first and last name fields
-          name: `${user.first_name || ''} ${user.last_name || ''}`.trim(),
-          role: user.role || 'Sales Rep',
-          deals: userDeals.length,
-          meetings: userMeetings[0]?.count || 0,
-          activities: userActivities[0]?.count || 0,
-          performance,
-          closed: closedDeals,
-          cashCollected: totalCashCollected,
-          revenue: totalRevenueValue,
-          contractedValue: totalContractedValue,
-          calls: userActivities[0]?.count || 0,
-          closingRate: closedDeals > 0 && userDeals.length > 0 ? Math.round((closedDeals / userDeals.length) * 100) : 0
-        };
-      }));
-    } catch (error) {
-      console.error('Error fetching sales team data:', error);
-      salesTeam = [];
-    }
-    
-    // Calculate KPIs
-    const previousStartDate = new Date(startDate);
-    previousStartDate.setMonth(previousStartDate.getMonth() - 1);
-    const previousEndDate = new Date(endDate);
-    previousEndDate.setMonth(previousEndDate.getMonth() - 1);
-    
-    // Create date range filters for previous period
-    const previousContactsDateFilter = and(
-      gte(contacts.createdAt, sql`${previousStartDate}`),
-      lte(contacts.createdAt, sql`${previousEndDate}`)
-    );
-    
-    const previousDealsDateFilter = and(
-      gte(deals.createdAt, sql`${previousStartDate}`),
-      lte(deals.createdAt, sql`${previousEndDate}`)
-    );
-    
-    const previousActivitiesDateFilter = and(
-      gte(activities.date, sql`${previousStartDate}`),
-      lte(activities.date, sql`${previousEndDate}`)
-    );
-    
-    const previousMeetingsDateFilter = and(
-      gte(meetings.startTime, sql`${previousStartDate}`),
-      lte(meetings.startTime, sql`${previousEndDate}`)
-    );
-    
-    // Get previous period metrics for comparison
-    const [
-      previousContactsResult,
-      previousDealsResult,
-      previousActivitiesResult,
-      previousMeetingsResult,
-      previousRevenueResult
-    ] = await Promise.all([
-      db.select({ count: sql<number>`COUNT(*)` })
-        .from(contacts)
-        .where(previousContactsDateFilter),
-      db.select({ count: sql<number>`COUNT(*)` })
-        .from(deals)
-        .where(previousDealsDateFilter),
-      db.select({ count: sql<number>`COUNT(*)` })
-        .from(activities)
-        .where(previousActivitiesDateFilter),
-      db.select({ count: sql<number>`COUNT(*)` })
-        .from(meetings)
-        .where(previousMeetingsDateFilter),
-      db.select({ sum: sql<number>`COALESCE(SUM(${deals.value}), 0)` })
-        .from(deals)
-        .where(previousDealsDateFilter)
-    ]);
-    
-    const previousContacts = previousContactsResult[0]?.count || 0;
-    const previousDeals = previousDealsResult[0]?.count || 0;
-    const previousActivities = previousActivitiesResult[0]?.count || 0;
-    const previousMeetings = previousMeetingsResult[0]?.count || 0;
-    const previousRevenue = previousRevenueResult[0]?.sum || 0;
-    
-    // Calculate total revenue for current period - with safe validation
-    // Instead of using raw SQL SUM which can't handle validation,
-    // we'll fetch the values and aggregate them in JS with proper validation
-    const dealsInPeriod = await db.select({
-      value: deals.value
-    })
-    .from(deals)
-    .where(sql`${deals.createdAt} BETWEEN ${startDate.toISOString()} AND ${endDate.toISOString()}`);
-    
-    // Process deal values with the same validation as the individual user calculations
-    const totalRevenue = dealsInPeriod.reduce((sum, deal) => {
-      if (!deal.value) return sum;
+      let salesTeam = [];
       
       try {
-        // Convert to string for consistent handling
-        const valueStr = String(deal.value);
+        const users = await db.select().from(closeUsers);
         
-        // Skip extremely large or scientific notation values 
-        if (valueStr.length > 20 || valueStr.includes('e') || valueStr.includes('E')) {
-          console.warn(`[STORAGE] Skipping extreme revenue value: ${valueStr}`);
-          return sum;
+        for (const user of users) {
+          // Get user's deals
+          const userDeals = await this.getDealsByCloseUserId(user.id);
+          const userWonDeals = userDeals.filter(d => d.status === 'won');
+          
+          // Get user's meetings
+          const userContactIds = (await this.getContactsByCloseUserId(user.id)).map(c => c.id);
+          let userMeetings: Meeting[] = [];
+          
+          for (const contactId of userContactIds) {
+            const meetings = await this.getMeetingsByContactId(contactId);
+            userMeetings = [...userMeetings, ...meetings];
+          }
+          
+          // Get activities
+          let userActivities: Activity[] = [];
+          for (const contactId of userContactIds) {
+            const activities = await this.getActivitiesByContactId(contactId);
+            userActivities = [...userActivities, ...activities];
+          }
+          
+          // Calculate performance metrics
+          const totalUserDeals = userDeals.length;
+          const totalUserWonDeals = userWonDeals.length;
+          const totalUserMeetings = userMeetings.length;
+          const totalUserActivities = userActivities.length;
+          const totalUserCalls = userActivities.filter(a => a.type === 'call').length;
+          
+          // Calculate closing rate
+          const closingRate = totalUserDeals > 0 ? (totalUserWonDeals / totalUserDeals) * 100 : 0;
+          
+          // Calculate revenue and cash collected
+          let userRevenue = 0;
+          let userCashCollected = 0;
+          let userContractedValue = 0;
+          
+          for (const deal of userWonDeals) {
+            try {
+              const dealValue = parseFloat(deal.value || '0');
+              const dealCashCollected = parseFloat(deal.cashCollected || '0');
+              const dealContractedValue = parseFloat(deal.contractedValue || '0');
+              
+              if (!isNaN(dealValue)) userRevenue += dealValue;
+              if (!isNaN(dealCashCollected)) userCashCollected += dealCashCollected;
+              if (!isNaN(dealContractedValue)) userContractedValue += dealContractedValue;
+            } catch (e) {
+              console.error(`Error parsing deal values for user ${user.id}`, e);
+            }
+          }
+          
+          // Calculate performance score (simplified)
+          const performanceScore = (closingRate * 0.3) + 
+                                  (userActivities.length * 0.2) + 
+                                  (userMeetings.length * 0.2) + 
+                                  (userWonDeals.length * 0.3);
+          
+          // Add user to sales team
+          salesTeam.push({
+            id: user.id.toString(),
+            name: `${user.first_name || ''} ${user.last_name || ''}`.trim(),
+            role: user.role || 'Sales Rep',
+            deals: totalUserDeals,
+            meetings: totalUserMeetings,
+            activities: totalUserActivities,
+            performance: Math.round(performanceScore * 10) / 10,
+            closed: totalUserWonDeals,
+            cashCollected: userCashCollected,
+            revenue: userRevenue,
+            contractedValue: userContractedValue,
+            calls: totalUserCalls,
+            closingRate: Math.round(closingRate * 10) / 10
+          });
         }
-        
-        // Parse safely
-        const numValue = parseFloat(valueStr.replace(/[^0-9.-]/g, ''));
-        
-        // Apply safety limits
-        if (!isFinite(numValue) || isNaN(numValue)) return sum;
-        if (Math.abs(numValue) > 500000) {
-          console.warn(`[STORAGE] Capping extreme revenue value: ${numValue} to 500000`);
-          return sum + (numValue > 0 ? 500000 : -500000);
-        }
-        
-        return sum + numValue;
       } catch (e) {
-        console.error(`[STORAGE] Error parsing revenue value: ${deal.value}`, e);
-        return sum;
+        console.error('Error getting sales team data', e);
       }
-    }, 0);
-    
-    // Calculate performance metrics
-    const overallPerformance = salesTeam.reduce((sum, user) => sum + user.performance, 0);
-    const previousPerformance = Math.round(overallPerformance * 0.9); // Estimate for comparison
-    
-    // Format the dashboard data
-    const dateValue = date instanceof Date ? 
-      date.toISOString() : 
-      { startDate: date.startDate.toISOString(), endDate: date.endDate.toISOString() };
-    
-    // Create common dashboard data with real values
-    const dashboardData = {
-      date: dateValue,
-      userId: userId || 'all',
-      success: true,
-      salesTeam,
-      stats: {
-        totalContacts,
-        totalDeals,
-        totalActivities,
-        totalMeetings,
-        averageDealValue,
-        averageDealCycle,
-        contactsWithMultipleSources,
-        totalContactsWithAttribution
-      },
-      kpis: {
-        contacts: {
-          current: totalContacts,
-          previous: previousContacts,
-          change: previousContacts > 0 ? Math.round(((totalContacts - previousContacts) / previousContacts) * 100) : 0
-        },
-        deals: {
-          current: totalDeals,
-          previous: previousDeals,
-          change: previousDeals > 0 ? Math.round(((totalDeals - previousDeals) / previousDeals) * 100) : 0
-        },
-        revenue: {
-          current: totalRevenue,
-          previous: previousRevenue,
-          change: previousRevenue > 0 ? Math.round(((totalRevenue - previousRevenue) / previousRevenue) * 100) : 0
-        },
-        activities: {
-          current: totalActivities,
-          previous: previousActivities,
-          change: previousActivities > 0 ? Math.round(((totalActivities - previousActivities) / previousActivities) * 100) : 0
-        },
-        meetings: {
-          current: totalMeetings,
-          previous: previousMeetings,
-          change: previousMeetings > 0 ? Math.round(((totalMeetings - previousMeetings) / previousMeetings) * 100) : 0
-        },
-        performance: {
-          current: overallPerformance,
-          previous: previousPerformance,
-          change: previousPerformance > 0 ? Math.round(((overallPerformance - previousPerformance) / previousPerformance) * 100) : 0
-        },
-        closedDeals: {
-          current: salesTeam.reduce((sum, user) => sum + (user.closed || 0), 0),
-          previous: Math.round(salesTeam.reduce((sum, user) => sum + (user.closed || 0), 0) * 0.9),
-          change: 10 // Estimated for comparison
-        },
-        cashCollected: {
-          current: salesTeam.reduce((sum, user) => sum + (user.cashCollected || 0), 0),
-          previous: Math.round(salesTeam.reduce((sum, user) => sum + (user.cashCollected || 0), 0) * 0.85),
-          change: 15 // Estimated for comparison
-        },
-        revenueGenerated: {
-          current: salesTeam.reduce((sum, user) => sum + (user.revenue || 0), 0),
-          previous: Math.round(salesTeam.reduce((sum, user) => sum + (user.revenue || 0), 0) * 0.88),
-          change: 12 // Estimated for comparison
+
+      // Filter by role if specified
+      if (role) {
+        salesTeam = salesTeam.filter(user => 
+          user.role && user.role.toLowerCase() === role.toLowerCase()
+        );
+      }
+
+      // Build the response
+      return {
+        currentPeriod: {
+          totalContacts,
+          totalRevenue,
+          totalCashCollected,
+          totalDeals,
+          totalMeetings,
+          totalActivities,
+          conversionRate,
+          multiSourceRate,
+          cashCollectedRate,
+          salesTeam
         }
-      },
-      dashboardType: role || 'default',
-      title: role ? `${role.charAt(0).toUpperCase() + role.slice(1)} Dashboard` : 'Dashboard'
-    };
-    
-    return dashboardData;
-  }
-  
-  /**
-   * Get deals by status
-   */
-  async getDealsByStatus(status: string): Promise<Deal[]> {
-    return db
-      .select()
-      .from(deals)
-      .where(eq(deals.status, status))
-      .orderBy(desc(deals.createdAt));
+      };
+    } catch (error) {
+      console.error("Database error in getDashboardData:", error);
+      
+      // Return sample data instead of throwing an error
+      const sampleData = {
+        currentPeriod: {
+          totalContacts: 0,
+          totalRevenue: 0,
+          totalCashCollected: 0,
+          totalDeals: 0,
+          totalMeetings: 0,
+          totalActivities: 0,
+          conversionRate: 0,
+          multiSourceRate: 0,
+          cashCollectedRate: 0,
+          salesTeam: []
+        }
+      };
+      
+      console.log("Using sample data due to database error");
+      return sampleData;
+    }
   }
 }
 
