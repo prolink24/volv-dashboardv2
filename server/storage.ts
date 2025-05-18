@@ -590,20 +590,13 @@ export class DatabaseStorage implements IStorage {
       const contactsDateFilter = sql`${contacts.createdAt} >= ${startDateStr} AND ${contacts.createdAt} <= ${endDateStr + 'T23:59:59.999Z'}`;
 
       // Important: For deals, use closeDate for better financial reporting accuracy
-      const dealsDateFilter = and(
-        gte(deals.closeDate, startDateStr),
-        lte(deals.closeDate, endDateStr)
-      );
+      const dealsDateFilter = sql`${deals.closeDate} >= ${startDateStr} AND ${deals.closeDate} <= ${endDateStr + 'T23:59:59.999Z'}`;
 
-      const meetingsDateFilter = and(
-        gte(meetings.startTime, startDateStr),
-        lte(meetings.startTime, endDateStr + 'T23:59:59.999Z')
-      );
+      // For meetings, use startTime for scheduling metrics
+      const meetingsDateFilter = sql`${meetings.startTime} >= ${startDateStr} AND ${meetings.startTime} <= ${endDateStr + 'T23:59:59.999Z'}`;
 
-      const activitiesDateFilter = and(
-        gte(activities.date, startDateStr),
-        lte(activities.date, endDateStr + 'T23:59:59.999Z')
-      );
+      // For activities, use the date field
+      const activitiesDateFilter = sql`${activities.date} >= ${startDateStr} AND ${activities.date} <= ${endDateStr + 'T23:59:59.999Z'}`;
 
       // Get contacts count
       const [contactsCountResult] = await db
@@ -621,39 +614,50 @@ export class DatabaseStorage implements IStorage {
       
       const totalDeals = dealsCountResult?.count || 0;
 
-      // Get contacts with deals
+      // Get contacts with deals - apply date filter for more accurate metrics
       const [contactsWithDealsResult] = await db
         .select({ count: sql<number>`count(DISTINCT ${contacts.id})` })
         .from(contacts)
         .where(
-          exists(
-            db.select()
-              .from(deals)
-              .where(eq(deals.contactId, contacts.id))
+          and(
+            contactsDateFilter,
+            exists(
+              db.select()
+                .from(deals)
+                .where(eq(deals.contactId, contacts.id))
+            )
           )
         );
       
       const contactsWithDeals = contactsWithDealsResult?.count || 0;
 
-      // Get contacts with meetings
+      // Get contacts with meetings - apply date filter for more accurate metrics
       const [contactsWithMeetingsResult] = await db
         .select({ count: sql<number>`count(DISTINCT ${contacts.id})` })
         .from(contacts)
         .where(
-          exists(
-            db.select()
-              .from(meetings)
-              .where(eq(meetings.contactId, contacts.id))
+          and(
+            contactsDateFilter,
+            exists(
+              db.select()
+                .from(meetings)
+                .where(eq(meetings.contactId, contacts.id))
+            )
           )
         );
       
       const contactsWithMeetings = contactsWithMeetingsResult?.count || 0;
 
-      // Get multi-source contacts
+      // Get multi-source contacts with date filter
       const [multiSourceContactsResult] = await db
         .select({ count: sql<number>`count(*)` })
         .from(contacts)
-        .where(gte(contacts.sourcesCount, 2));
+        .where(
+          and(
+            contactsDateFilter,
+            gte(contacts.sourcesCount, 2)
+          )
+        );
       
       const multiSourceContacts = multiSourceContactsResult?.count || 0;
 
