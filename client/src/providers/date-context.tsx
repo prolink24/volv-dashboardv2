@@ -50,7 +50,7 @@ const DateRangeContext = createContext<DateRangeContextType>({
 export const useDateContext = () => useContext(DateContext);
 export const useDateRange = () => useContext(DateRangeContext);
 
-export function DateContextProvider({ children }: { children: React.ReactNode }) {
+export function DateProvider({ children }: { children: React.ReactNode }) {
   const [currentRange, setCurrentRange] = useState<DateRange>(defaultCurrentRange);
   const [previousRange, setPreviousRange] = useState<DateRange | null>(defaultPreviousRange);
   const [isLoading, setIsLoading] = useState(false);

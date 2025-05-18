@@ -94,6 +94,12 @@ export function useToast() {
   };
 }
 
+// Export toast function directly for easier import
+export const toast = (props: ToastProps) => {
+  const { toast: toastFn } = useToast();
+  return toastFn(props);
+};
+
 // Initialization function to be called in ToastProvider
 export function initializeToastStore(newStore: ReturnType<typeof useToastStore>) {
   store = newStore;
