@@ -1,85 +1,65 @@
-import { createContext, useState, useContext, ReactNode, useEffect } from "react";
-import { useDateRange } from "@/providers/date-context";
-import { invalidateDashboardData } from "@/hooks/use-dashboard-data";
+import { createContext, useState, useContext, ReactNode } from "react";
 
-interface DashboardContextType {
-  activeTab: string;
-  setActiveTab: (tab: string) => void;
+interface DashboardContextProps {
   userFilter: string;
   setUserFilter: (user: string) => void;
-  refreshData: () => void;
+  refreshData: boolean;
+  setRefreshData: (refresh: boolean) => void;
   isRefreshing: boolean;
+  setIsRefreshing: (refreshing: boolean) => void;
+  activeTab: string;
+  setActiveTab: (tab: string) => void;
 }
 
-const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
+const DashboardContext = createContext<DashboardContextProps>({
+  userFilter: "All Users",
+  setUserFilter: () => {},
+  refreshData: false,
+  setRefreshData: () => {},
+  isRefreshing: false,
+  setIsRefreshing: () => {},
+  activeTab: "overview",
+  setActiveTab: () => {}
+});
 
 interface DashboardProviderProps {
   children: ReactNode;
+  initialUserFilter?: string;
 }
 
-export function DashboardProvider({ children }: DashboardProviderProps) {
-  const [activeTab, setActiveTab] = useState<string>("team-performance");
-  const [userFilter, setUserFilter] = useState<string>("All Users");
+export const DashboardProvider = ({ 
+  children, 
+  initialUserFilter = "All Users" 
+}: DashboardProviderProps) => {
+  const [userFilter, setUserFilter] = useState<string>(initialUserFilter);
+  const [refreshData, setRefreshData] = useState<boolean>(false);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-  
-  // Get the date context
-  const { refreshData: refreshDateData } = useDateRange();
+  const [activeTab, setActiveTab] = useState<string>("overview");
 
-  // Refresh all data
-  const refreshData = async () => {
-    console.log("[DashboardProvider] Refreshing all dashboard data");
-    setIsRefreshing(true);
-    
-    try {
-      // Invalidate cache first
-      await invalidateDashboardData();
-      
-      // Make API call to refresh data
-      const response = await fetch("/api/sync/all", {
-        method: "POST",
-        credentials: "include",
-      });
-      
-      if (!response.ok) {
-        throw new Error(`API sync failed: ${response.status} ${response.statusText}`);
-      }
-      
-      // Trigger refresh in date context too
-      refreshDateData();
-      
-      console.log("[DashboardProvider] Data refresh complete");
-    } catch (error) {
-      console.error("[DashboardProvider] Error refreshing data:", error);
-    } finally {
-      // Debounce to avoid UI flicker
-      setTimeout(() => {
-        setIsRefreshing(false);
-      }, 300);
-    }
-  };
-  
   return (
     <DashboardContext.Provider
       value={{
-        activeTab,
-        setActiveTab,
         userFilter,
         setUserFilter,
         refreshData,
+        setRefreshData,
         isRefreshing,
+        setIsRefreshing,
+        activeTab,
+        setActiveTab
       }}
     >
       {children}
     </DashboardContext.Provider>
   );
-}
+};
 
-export function useDashboard() {
+export const useDashboard = () => {
   const context = useContext(DashboardContext);
-  
   if (context === undefined) {
     throw new Error("useDashboard must be used within a DashboardProvider");
   }
-  
   return context;
-}
+};
+
+export default DashboardProvider;
