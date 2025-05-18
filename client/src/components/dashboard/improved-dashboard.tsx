@@ -1,15 +1,19 @@
 import React from 'react';
-import { useDashboard } from '@/providers/dashboard-provider';
-import { formatCurrency, formatNumber } from '@/lib/utils';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { 
+  Activity, 
+  CreditCard, 
+  DollarSign, 
+  Users, 
+  CalendarClock,
+  Briefcase 
+} from 'lucide-react';
 import { ImprovedKPICard } from './improved-kpi-card';
 import { ImprovedDateRangePicker } from './improved-date-range-picker';
 import { ImprovedUserFilter } from './improved-user-filter';
 import { ImprovedPerformanceTable } from './improved-performance-table';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, AlertTriangle, ArrowUpRightIcon, CalendarDays, DollarSign, FileDigit, Users, ArrowDownRightIcon } from 'lucide-react';
+import { useDashboardData } from '@/hooks/use-dashboard-data';
+import { formatCurrency, formatNumber, formatPercent } from '@/lib/utils';
+import { SalesTeamMember } from '@/hooks/use-dashboard-data';
 
 /**
  * Main Dashboard Component
@@ -18,196 +22,136 @@ import { AlertCircle, AlertTriangle, ArrowUpRightIcon, CalendarDays, DollarSign,
  * using data from the dashboard provider
  */
 export function ImprovedDashboard() {
-  const {
-    dashboardData,
-    attributionStats,
-    salesTeamMembers,
-    selectedUserId,
-    selectUser,
+  const { 
+    totalContacts,
+    totalRevenue,
+    totalCashCollected,
+    totalDeals,
+    totalMeetings,
+    totalActivities,
+    conversionRate,
+    multiSourceRate,
+    cashCollectedRate,
+    salesTeam,
     isLoading,
-    error,
-    refetchDashboard
-  } = useDashboard();
-
-  // Error state
-  if (error) {
-    return (
-      <Alert variant="destructive" className="mb-6">
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Error loading dashboard</AlertTitle>
-        <AlertDescription>
-          Failed to load dashboard data. Please try again later or contact support.
-          <button
-            onClick={() => refetchDashboard()}
-            className="ml-2 underline"
-          >
-            Retry
-          </button>
-        </AlertDescription>
-      </Alert>
-    );
-  }
+    previousPeriod,
+    selectedUserId,
+    selectUser
+  } = useDashboardData();
 
   return (
-    <div className="space-y-6">
-      {/* Top controls */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div className="flex-1">
-          <ImprovedDateRangePicker />
-        </div>
-        <div className="w-full md:w-64">
-          <ImprovedUserFilter
-            users={salesTeamMembers}
-            selectedUserId={selectedUserId}
-            onSelectUser={selectUser}
-          />
+    <div className="space-y-8">
+      <div className="flex flex-col-reverse md:flex-row md:justify-between gap-4">
+        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full md:w-auto">
+          <div className="md:w-[280px]">
+            <ImprovedDateRangePicker />
+          </div>
+          <div className="md:w-[250px]">
+            <ImprovedUserFilter 
+              users={salesTeam} 
+              selectedUserId={selectedUserId} 
+              onSelectUser={selectUser} 
+            />
+          </div>
         </div>
       </div>
-
-      {/* KPI Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Revenue/Cash KPIs */}
+      
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <ImprovedKPICard
-          title="Revenue Generated"
-          value={isLoading ? undefined : formatCurrency(dashboardData?.revenueGenerated || 0)}
-          previousValue={dashboardData?.previousPeriod?.totalRevenue}
+          title="Total Contacts"
+          currentValue={totalContacts?.current}
+          previousValue={previousPeriod ? totalContacts?.previous : undefined}
+          formatter={formatNumber}
+          icon={<Users className="h-4 w-4" />}
+          help="Total number of contacts in the CRM system"
+          isLoading={isLoading}
+        />
+        <ImprovedKPICard
+          title="Total Revenue"
+          currentValue={totalRevenue?.current}
+          previousValue={previousPeriod ? totalRevenue?.previous : undefined}
           formatter={formatCurrency}
-          icon={<DollarSign className="h-5 w-5" />}
+          icon={<DollarSign className="h-4 w-4" />}
+          help="Sum of all deal values for the selected period"
+          isLoading={isLoading}
         />
         <ImprovedKPICard
           title="Cash Collected"
-          value={isLoading ? undefined : formatCurrency(dashboardData?.cashCollected || 0)}
-          previousValue={dashboardData?.previousPeriod?.cashCollected}
+          currentValue={totalCashCollected?.current}
+          previousValue={previousPeriod ? totalCashCollected?.previous : undefined}
           formatter={formatCurrency}
-          icon={<DollarSign className="h-5 w-5" />}
-        />
-
-        {/* Contact KPIs */}
-        <ImprovedKPICard
-          title="Total Contacts"
-          value={isLoading ? undefined : formatNumber(dashboardData?.totalContacts || 0)}
-          previousValue={dashboardData?.previousPeriod?.totalContacts}
-          formatter={formatNumber}
-          icon={<Users className="h-5 w-5" />}
+          icon={<CreditCard className="h-4 w-4" />}
+          help="Total cash collected from won deals"
+          isLoading={isLoading}
         />
         <ImprovedKPICard
           title="Total Deals"
-          value={isLoading ? undefined : formatNumber(dashboardData?.totalDeals || 0)}
-          previousValue={dashboardData?.previousPeriod?.totalDeals}
+          currentValue={totalDeals?.current}
+          previousValue={previousPeriod ? totalDeals?.previous : undefined}
           formatter={formatNumber}
-          icon={<FileDigit className="h-5 w-5" />}
+          icon={<Briefcase className="h-4 w-4" />}
+          help="Number of deals created in the selected period"
+          isLoading={isLoading}
         />
-
-        {/* Activity KPIs */}
         <ImprovedKPICard
           title="Total Meetings"
-          value={isLoading ? undefined : formatNumber(dashboardData?.totalMeetings || 0)}
-          previousValue={dashboardData?.previousPeriod?.totalMeetings}
+          currentValue={totalMeetings?.current}
+          previousValue={previousPeriod ? totalMeetings?.previous : undefined}
           formatter={formatNumber}
-          icon={<CalendarDays className="h-5 w-5" />}
+          icon={<CalendarClock className="h-4 w-4" />}
+          help="Number of meetings scheduled in the selected period"
+          isLoading={isLoading}
         />
         <ImprovedKPICard
           title="Total Activities"
-          value={isLoading ? undefined : formatNumber(dashboardData?.totalActivities || 0)}
-          previousValue={dashboardData?.previousPeriod?.totalActivities}
+          currentValue={totalActivities?.current}
+          previousValue={previousPeriod ? totalActivities?.previous : undefined}
           formatter={formatNumber}
-          icon={<ArrowUpRightIcon className="h-5 w-5" />}
-        />
-
-        {/* Attribution KPIs */}
-        <ImprovedKPICard
-          title="Multi-Source Rate"
-          value={isLoading ? undefined : `${Math.round(dashboardData?.multiSourceRate || 0)}%`}
-          help="Percentage of contacts with data from multiple sources"
-          icon={<ArrowDownRightIcon className="h-5 w-5" />}
-        />
-        <ImprovedKPICard
-          title="Field Coverage"
-          value={isLoading ? undefined : `${Math.round(dashboardData?.fieldCoverageRate || 0)}%`}
-          help="Percentage of contact fields with data"
-          icon={<AlertTriangle className="h-5 w-5" />}
+          icon={<Activity className="h-4 w-4" />}
+          help="Number of activities (calls, emails, tasks) in the selected period"
+          isLoading={isLoading}
         />
       </div>
-
-      {/* Performance Table */}
-      <Tabs defaultValue="performance" className="w-full">
-        <TabsList>
-          <TabsTrigger value="performance">Performance</TabsTrigger>
-          <TabsTrigger value="attribution">Attribution</TabsTrigger>
-        </TabsList>
-        <TabsContent value="performance">
-          <Card>
-            <CardHeader>
-              <CardTitle>Sales Team Performance</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <Skeleton className="w-full h-52" />
-              ) : (
-                <ImprovedPerformanceTable salesTeam={dashboardData?.salesTeam || []} />
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-        <TabsContent value="attribution">
-          <Card>
-            <CardHeader>
-              <CardTitle>Attribution Metrics</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <Skeleton className="w-full h-52" />
-              ) : attributionStats ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <h3 className="text-lg font-medium mb-2">Contact Coverage</h3>
-                    <dl className="space-y-2">
-                      <div className="flex justify-between">
-                        <dt>Contacts with Deals:</dt>
-                        <dd className="font-medium">{attributionStats.contactStats.contactsWithDeals} ({Math.round(attributionStats.contactStats.contactsWithDeals / attributionStats.contactStats.totalContacts * 100)}%)</dd>
-                      </div>
-                      <div className="flex justify-between">
-                        <dt>Contacts with Meetings:</dt>
-                        <dd className="font-medium">{attributionStats.contactStats.contactsWithMeetings} ({Math.round(attributionStats.contactStats.contactsWithMeetings / attributionStats.contactStats.totalContacts * 100)}%)</dd>
-                      </div>
-                      <div className="flex justify-between">
-                        <dt>Contacts with Forms:</dt>
-                        <dd className="font-medium">{attributionStats.contactStats.contactsWithForms} ({Math.round(attributionStats.contactStats.contactsWithForms / attributionStats.contactStats.totalContacts * 100)}%)</dd>
-                      </div>
-                      <div className="flex justify-between text-green-600">
-                        <dt>Conversion Rate:</dt>
-                        <dd className="font-medium">{Math.round(attributionStats.contactStats.conversionRate * 100)}%</dd>
-                      </div>
-                    </dl>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-medium mb-2">Field Coverage</h3>
-                    <dl className="space-y-2">
-                      {Object.entries(attributionStats.fieldCoverage)
-                        .filter(([key]) => key !== 'averageCoverage')
-                        .sort(([, valueA], [, valueB]) => (valueB as number) - (valueA as number))
-                        .map(([key, value]) => (
-                          <div key={key} className="flex justify-between">
-                            <dt className="capitalize">{key}:</dt>
-                            <dd className="font-medium">{Math.round((value as number) * 100)}%</dd>
-                          </div>
-                        ))}
-                      <div className="flex justify-between border-t pt-2 text-green-600">
-                        <dt>Average Field Coverage:</dt>
-                        <dd className="font-medium">{Math.round(attributionStats.fieldCoverage.averageCoverage * 100)}%</dd>
-                      </div>
-                    </dl>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-4 text-muted-foreground">
-                  No attribution data available for the selected period
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      
+      <div className="grid gap-4 md:grid-cols-3">
+        <ImprovedKPICard
+          title="Deal Conversion Rate"
+          currentValue={conversionRate?.current}
+          previousValue={previousPeriod ? conversionRate?.previous : undefined}
+          formatter={formatPercent}
+          help="Percentage of contacts that have deals"
+          isLoading={isLoading}
+        />
+        <ImprovedKPICard
+          title="Multi-Source Rate"
+          currentValue={multiSourceRate?.current}
+          previousValue={previousPeriod ? multiSourceRate?.previous : undefined}
+          formatter={formatPercent}
+          help="Percentage of contacts with data from multiple platforms"
+          isLoading={isLoading}
+        />
+        <ImprovedKPICard
+          title="Cash Collected Rate"
+          currentValue={cashCollectedRate?.current}
+          previousValue={previousPeriod ? cashCollectedRate?.previous : undefined}
+          formatter={formatPercent}
+          help="Percentage of won deals with cash collected values"
+          isLoading={isLoading}
+        />
+      </div>
+      
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold tracking-tight">Team Performance</h2>
+        {isLoading ? (
+          <div className="h-64 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        ) : (
+          <ImprovedPerformanceTable salesTeam={salesTeam} />
+        )}
+      </div>
     </div>
   );
 }

@@ -1,60 +1,54 @@
 import React, { createContext, useContext, useState } from 'react';
 
-// Type definitions for our context
+// Set default date range (last 30 days)
+const now = new Date();
+const defaultStartDate = new Date(now);
+defaultStartDate.setDate(now.getDate() - 30);
+const defaultEndDate = new Date(now);
+
 interface DateContextType {
   startDate: Date;
   endDate: Date;
-  setDateRange: (start: Date, end: Date) => void;
   comparePreviousPeriod: boolean;
+  setDateRange: (start: Date, end: Date) => void;
   setComparePreviousPeriod: (compare: boolean) => void;
 }
 
-// Create the context with default values
-const DateContext = createContext<DateContextType>({
-  startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1), // First day of current month
-  endDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0), // Last day of current month
-  setDateRange: () => {},
-  comparePreviousPeriod: false,
-  setComparePreviousPeriod: () => {},
-});
+const DateContext = createContext<DateContextType | undefined>(undefined);
 
-// Provider component
-export const DateContextProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Default to current month
-  const currentDate = new Date();
-  const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-  const lastDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-  
-  // Initialize state
-  const [startDate, setStartDate] = useState<Date>(firstDayOfMonth);
-  const [endDate, setEndDate] = useState<Date>(lastDayOfMonth);
-  const [comparePreviousPeriod, setComparePreviousPeriod] = useState<boolean>(false);
-  
-  // Function to update date range
+interface DateProviderProps {
+  children: React.ReactNode;
+}
+
+export function DateProvider({ children }: DateProviderProps) {
+  const [startDate, setStartDate] = useState<Date>(defaultStartDate);
+  const [endDate, setEndDate] = useState<Date>(defaultEndDate);
+  const [comparePreviousPeriod, setComparePreviousPeriod] = useState<boolean>(true);
+
   const setDateRange = (start: Date, end: Date) => {
     setStartDate(start);
     setEndDate(end);
   };
-  
-  // Context value
-  const value = {
-    startDate,
-    endDate,
-    setDateRange,
-    comparePreviousPeriod,
-    setComparePreviousPeriod,
-  };
-  
-  return <DateContext.Provider value={value}>{children}</DateContext.Provider>;
-};
 
-// Custom hook to use the date context
-export const useDateContext = () => {
+  return (
+    <DateContext.Provider
+      value={{
+        startDate,
+        endDate,
+        comparePreviousPeriod,
+        setDateRange,
+        setComparePreviousPeriod,
+      }}
+    >
+      {children}
+    </DateContext.Provider>
+  );
+}
+
+export function useDateContext() {
   const context = useContext(DateContext);
-  
   if (context === undefined) {
-    throw new Error('useDateContext must be used within a DateContextProvider');
+    throw new Error('useDateContext must be used within a DateProvider');
   }
-  
   return context;
-};
+}

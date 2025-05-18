@@ -2,108 +2,120 @@ import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
 /**
- * Combines class names with Tailwind CSS utility classes
+ * Combines multiple class names using clsx and tailwind-merge
  */
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
 /**
- * Format currency values with $ sign and commas
+ * Formats a number with thousands separators
  */
-export function formatCurrency(value: number | string): string {
-  // Handle string values
-  const numValue = typeof value === 'string' 
-    ? parseFloat(value.replace(/[^0-9.-]/g, '')) 
-    : value;
-  
-  // Check for valid numbers
-  if (isNaN(numValue) || !isFinite(numValue)) {
-    return '$0';
-  }
+export function formatNumber(value: number): string {
+  return new Intl.NumberFormat("en-US").format(value);
+}
 
-  // Format with $ sign, commas, and 2 decimal places
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
+/**
+ * Formats a number as a currency with $ symbol
+ */
+export function formatCurrency(value: number): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
     minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(numValue);
+    maximumFractionDigits: 0,
+  }).format(value);
 }
 
 /**
- * Format numbers with commas for thousands separators
+ * Formats a number as a percentage
  */
-export function formatNumber(value: number | string): string {
-  // Handle string values
-  const numValue = typeof value === 'string' 
-    ? parseFloat(value.replace(/[^0-9.-]/g, '')) 
-    : value;
+export function formatPercent(value: number): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "percent",
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }).format(value / 100);
+}
+
+/**
+ * Calculates the date range for different period options
+ */
+export function getDateRangeByOption(option: string): { start: Date; end: Date } {
+  const now = new Date();
+  const start = new Date();
+  const end = new Date();
   
-  // Check for valid numbers
-  if (isNaN(numValue) || !isFinite(numValue)) {
-    return '0';
+  switch (option) {
+    case "today":
+      break;
+    case "yesterday":
+      start.setDate(now.getDate() - 1);
+      end.setDate(now.getDate() - 1);
+      break;
+    case "this-week":
+      start.setDate(now.getDate() - now.getDay());
+      break;
+    case "last-week":
+      start.setDate(now.getDate() - now.getDay() - 7);
+      end.setDate(now.getDate() - now.getDay() - 1);
+      break;
+    case "this-month":
+      start.setDate(1);
+      break;
+    case "last-month":
+      start.setMonth(now.getMonth() - 1);
+      start.setDate(1);
+      end.setDate(0);
+      break;
+    case "this-quarter": {
+      const quarter = Math.floor(now.getMonth() / 3);
+      start.setMonth(quarter * 3);
+      start.setDate(1);
+      end.setMonth(quarter * 3 + 3);
+      end.setDate(0);
+      break;
+    }
+    case "last-quarter": {
+      const quarter = Math.floor(now.getMonth() / 3) - 1;
+      const year = quarter < 0 ? now.getFullYear() - 1 : now.getFullYear();
+      start.setFullYear(year);
+      start.setMonth((quarter < 0 ? 4 : quarter) * 3);
+      start.setDate(1);
+      end.setFullYear(year);
+      end.setMonth((quarter < 0 ? 4 : quarter) * 3 + 3);
+      end.setDate(0);
+      break;
+    }
+    case "this-year":
+      start.setMonth(0);
+      start.setDate(1);
+      break;
+    case "last-year":
+      start.setFullYear(now.getFullYear() - 1);
+      start.setMonth(0);
+      start.setDate(1);
+      end.setFullYear(now.getFullYear() - 1);
+      end.setMonth(11);
+      end.setDate(31);
+      break;
+    case "last-7-days":
+      start.setDate(now.getDate() - 6);
+      break;
+    case "last-30-days":
+      start.setDate(now.getDate() - 29);
+      break;
+    case "last-90-days":
+      start.setDate(now.getDate() - 89);
+      break;
+    default:
+      // Last 30 days by default
+      start.setDate(now.getDate() - 29);
   }
-
-  // Format with commas
-  return new Intl.NumberFormat('en-US').format(numValue);
-}
-
-/**
- * Calculate percentage change between two values
- */
-export function calculatePercentChange(current: number, previous: number): number {
-  if (previous === 0) {
-    return current > 0 ? 100 : 0;
-  }
-  return ((current - previous) / Math.abs(previous)) * 100;
-}
-
-/**
- * Format a date to readable format: Jan 1, 2025
- */
-export function formatDate(date: Date): string {
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  }).format(date);
-}
-
-/**
- * Format a date range as a string: Jan 1 - Jan 31, 2025
- */
-export function formatDateRange(startDate: Date, endDate: Date): string {
-  const start = new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-  }).format(startDate);
   
-  const end = new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  }).format(endDate);
+  // Reset hours to 00:00:00 for start and 23:59:59 for end
+  start.setHours(0, 0, 0, 0);
+  end.setHours(23, 59, 59, 999);
   
-  return `${start} - ${end}`;
-}
-
-/**
- * Check if two date ranges overlap
- */
-export function dateRangesOverlap(
-  startA: Date,
-  endA: Date,
-  startB: Date,
-  endB: Date
-): boolean {
-  return startA <= endB && startB <= endA;
-}
-
-/**
- * Truncate text with ellipsis after specified length
- */
-export function truncateText(text: string, maxLength: number): string {
-  if (!text || text.length <= maxLength) return text;
-  return `${text.slice(0, maxLength)}...`;
+  return { start, end };
 }
