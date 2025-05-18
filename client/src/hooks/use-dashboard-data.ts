@@ -1,7 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/query-client";
-import { useDateRange } from "@/providers/date-context";
-import { format } from "date-fns";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/query-client";
 
 export interface DashboardOptions {
   userId?: string;
@@ -72,24 +70,37 @@ export interface AttributionStats {
  * Format date range for API requests
  */
 export const formatDateRangeParam = (startDate: Date, endDate: Date): string => {
-  return `${format(startDate, "yyyy-MM-dd")}_${format(endDate, "yyyy-MM-dd")}`;
+  const formatDate = (date: Date) => {
+    return date.toISOString().split('T')[0]; // YYYY-MM-DD
+  };
+  
+  return `${formatDate(startDate)},${formatDate(endDate)}`;
 };
 
 /**
  * Custom hook to fetch dashboard data
  */
 export const useDashboardData = (options: DashboardOptions = {}) => {
-  const { dateRange } = useDateRange();
-  const dateRangeParam = formatDateRangeParam(dateRange.startDate, dateRange.endDate);
+  const { userId, useEnhanced = true } = options;
   
-  const endpoint = options.useEnhanced 
-    ? `/api/dashboard/enhanced?dateRange=${dateRangeParam}${options.userId ? `&userId=${options.userId}` : ''}` 
-    : `/api/dashboard?dateRange=${dateRangeParam}${options.userId ? `&userId=${options.userId}` : ''}`;
-
   return useQuery({
-    queryKey: [endpoint],
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    queryKey: ['/api/dashboard', userId, useEnhanced],
+    queryFn: async () => {
+      const endpoint = '/api/dashboard';
+      const params: Record<string, any> = {};
+      
+      if (userId) {
+        params.userId = userId;
+      }
+      
+      if (useEnhanced) {
+        params.enhanced = "true";
+      }
+      
+      return await apiRequest(endpoint, { params });
+    },
     refetchOnWindowFocus: false,
+    refetchInterval: 5 * 60 * 1000, // 5 minutes
   });
 };
 
@@ -97,25 +108,13 @@ export const useDashboardData = (options: DashboardOptions = {}) => {
  * Custom hook to fetch attribution stats
  */
 export const useAttributionStats = () => {
-  const { dateRange } = useDateRange();
-  const dateRangeParam = formatDateRangeParam(dateRange.startDate, dateRange.endDate);
-  
-  console.log("[AttributionStats] Fetching data for date range:", dateRange.startDate.toDateString(), "to", dateRange.endDate.toDateString());
-  console.log("[AttributionStats] API URL:", `/api/attribution/stats?dateRange=${dateRangeParam}`);
-
-  return useQuery<AttributionStats>({
-    queryKey: [`/api/attribution/stats`, dateRangeParam],
-    refetchOnWindowFocus: false,
-    staleTime: 10 * 60 * 1000, // 10 minutes
-    retry: 1,
-    retryDelay: 1000,
-    timeout: 15000, // 15 seconds timeout
-    onSuccess: (data) => {
-      console.log("[AttributionStats] Successfully fetched data:", data);
+  return useQuery({
+    queryKey: ['/api/attribution-stats'],
+    queryFn: async () => {
+      return await apiRequest('/api/attribution-stats');
     },
-    onError: (error) => {
-      console.error("[AttributionStats] Request timed out after 15 seconds");
-    }
+    refetchOnWindowFocus: false,
+    refetchInterval: 10 * 60 * 1000, // 10 minutes
   });
 };
 
@@ -124,11 +123,18 @@ export const useAttributionStats = () => {
  */
 export const syncData = async (): Promise<boolean> => {
   try {
-    const response = await apiRequest('/api/sync', { method: 'POST' });
-    return response.success === true;
+    const result = await apiRequest('/api/sync', {
+      method: 'POST',
+    });
+    
+    // Invalidate queries to refresh data
+    queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/attribution-stats'] });
+    
+    return result.success || false;
   } catch (error) {
     console.error('Error syncing data:', error);
-    throw new Error('Failed to sync data from external sources');
+    return false;
   }
 };
 
@@ -136,8 +142,15 @@ export const syncData = async (): Promise<boolean> => {
  * Function to invalidate dashboard data cache
  */
 export const invalidateDashboardData = async (): Promise<void> => {
-  const queryClient = useQueryClient();
-  await queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
-  await queryClient.invalidateQueries({ queryKey: ['/api/dashboard/enhanced'] });
-  await queryClient.invalidateQueries({ queryKey: ['/api/attribution/stats'] });
+  try {
+    await apiRequest('/api/dashboard/invalidate', {
+      method: 'POST',
+    });
+    
+    // Invalidate queries to refresh data
+    queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
+  } catch (error) {
+    console.error('Error invalidating dashboard cache:', error);
+    throw error;
+  }
 };
