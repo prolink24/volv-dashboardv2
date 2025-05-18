@@ -70,7 +70,6 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <ToastProvider>
-          <ShadcnToastProvider>
             <DateProvider>
               <DashboardProvider>
                 <DataFlowDebugger />
@@ -78,7 +77,6 @@ function App() {
                 <CustomToaster />
               </DashboardProvider>
             </DateProvider>
-          </ShadcnToastProvider>
         </ToastProvider>
       </TooltipProvider>
     </QueryClientProvider>

@@ -124,7 +124,7 @@ export class DatabaseStorage implements IStorage {
   async query(sqlQuery: string, params?: any[]): Promise<any[]> {
     try {
       const result = await db.execute(sql.raw(sqlQuery, params || []));
-      return result;
+      return result.rows || [];
     } catch (error) {
       console.error("Database query error:", error);
       return [];
@@ -709,13 +709,14 @@ export class DatabaseStorage implements IStorage {
       
       try {
         // Parse with additional validation to ensure proper financial reporting
-        const revenueStr = revenueResult[0]?.totalRevenue?.toString() || '0';
+        console.log("Revenue query result:", JSON.stringify(revenueResult));
+        const revenueStr = revenueResult[0]?.totalrevenue?.toString() || revenueResult[0]?.totalRevenue?.toString() || '0';
         totalRevenue = Math.max(0, parseFloat(revenueStr));
         
-        const cashStr = revenueResult[0]?.totalCashCollected?.toString() || '0';
+        const cashStr = revenueResult[0]?.totalcashcollected?.toString() || revenueResult[0]?.totalCashCollected?.toString() || '0';
         totalCashCollected = Math.max(0, parseFloat(cashStr));
         
-        wonDealsCount = Math.max(0, revenueResult[0]?.wonDealsCount || 0);
+        wonDealsCount = Math.max(0, revenueResult[0]?.wondealscount || revenueResult[0]?.wonDealsCount || 0);
         
         // Round to 2 decimal places for financial reporting
         totalRevenue = Math.round(totalRevenue * 100) / 100;
