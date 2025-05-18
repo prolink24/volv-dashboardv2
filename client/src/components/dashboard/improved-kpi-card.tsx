@@ -1,91 +1,72 @@
 import React from 'react';
-import { cn, formatCurrency, formatNumber, formatPercent, getTrendClass } from '@/lib/utils';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowDownIcon, ArrowUpIcon, MinusIcon } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ArrowDownIcon, ArrowUpIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-export interface ImprovedKPICardProps {
+interface ImprovedKPICardProps {
   title: string;
   value: number;
   previousValue?: number;
-  change?: number;
   formatType?: 'number' | 'currency' | 'percentage';
   icon?: React.ReactNode;
   className?: string;
   isLoading?: boolean;
-  size?: 'default' | 'sm';
 }
 
 export function ImprovedKPICard({
   title,
   value,
   previousValue,
-  change,
   formatType = 'number',
   icon,
   className,
-  isLoading = false,
-  size = 'default',
+  isLoading = false
 }: ImprovedKPICardProps) {
+  // Format the value based on the type
   const formattedValue = formatValue(value, formatType);
-  const calculatedChange = change ?? (
-    previousValue !== undefined 
-      ? ((value - previousValue) / (previousValue || 1)) * 100 
-      : 0
-  );
+  
+  // Calculate percentage change if previous value exists
+  const percentChange = calculatePercentChange(value, previousValue);
+  
+  // Determine if the trend is positive (true) or negative (false)
+  // For most metrics, up is good. For some metrics like "churn rate", up would be bad,
+  // but we're not handling those special cases in this simple component
+  const isPositiveTrend = percentChange > 0;
   
   return (
-    <Card className={cn('overflow-hidden', className)}>
-      <CardContent className={cn(
-        'flex flex-col p-6',
-        size === 'sm' && 'p-4'
-      )}>
-        <div className="flex items-center justify-between space-x-2">
-          <p className={cn(
-            "text-sm font-medium text-muted-foreground",
-            size === 'sm' && 'text-xs'
-          )}>
-            {title}
-          </p>
-          {icon && (
-            <div className="h-4 w-4 text-muted-foreground">
-              {icon}
-            </div>
-          )}
-        </div>
-        
+    <Card className={cn("overflow-hidden", className)}>
+      <CardContent className="p-6">
         {isLoading ? (
-          <div className="mt-3 space-y-2">
-            <Skeleton className="h-10 w-3/4" />
-            <Skeleton className="h-4 w-1/2" />
+          <div className="space-y-3">
+            <div className="h-4 bg-gray-200 rounded animate-pulse w-24"></div>
+            <div className="h-8 bg-gray-200 rounded animate-pulse w-32"></div>
+            <div className="h-4 bg-gray-200 rounded animate-pulse w-16"></div>
           </div>
         ) : (
           <>
-            <div className={cn(
-              "mt-3 text-2xl font-bold",
-              size === 'sm' ? 'text-xl mt-2' : 'text-3xl'
-            )}>
-              {formattedValue}
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
+              {icon && <div className="text-muted-foreground">{icon}</div>}
             </div>
             
-            {(previousValue !== undefined || change !== undefined) && (
-              <div className="mt-2 flex items-center">
-                {calculatedChange > 0 ? (
-                  <ArrowUpIcon className="h-4 w-4 text-green-500" />
-                ) : calculatedChange < 0 ? (
-                  <ArrowDownIcon className="h-4 w-4 text-red-500" />
-                ) : (
-                  <MinusIcon className="h-4 w-4 text-gray-500" />
-                )}
-                
-                <span 
+            <div className="text-2xl font-bold">{formattedValue}</div>
+            
+            {percentChange !== null && (
+              <div className="flex items-center mt-2">
+                <div
                   className={cn(
-                    "ml-1 text-sm",
-                    getTrendClass(calculatedChange)
+                    "flex items-center text-xs font-medium",
+                    isPositiveTrend ? "text-green-600" : "text-red-600"
                   )}
                 >
-                  {Math.abs(calculatedChange).toFixed(1)}% {calculatedChange > 0 ? 'increase' : calculatedChange < 0 ? 'decrease' : ''}
-                </span>
+                  {isPositiveTrend ? (
+                    <ArrowUpIcon className="h-3 w-3 mr-1" />
+                  ) : (
+                    <ArrowDownIcon className="h-3 w-3 mr-1" />
+                  )}
+                  <span>{Math.abs(percentChange).toFixed(1)}%</span>
+                </div>
+                <span className="text-xs text-muted-foreground ml-1.5">vs previous period</span>
               </div>
             )}
           </>
@@ -95,14 +76,30 @@ export function ImprovedKPICard({
   );
 }
 
+// Helper functions
 function formatValue(value: number, formatType: 'number' | 'currency' | 'percentage'): string {
   switch (formatType) {
     case 'currency':
-      return formatCurrency(value);
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      }).format(value);
+    
     case 'percentage':
-      return formatPercent(value);
+      return `${value}%`;
+    
     case 'number':
     default:
-      return formatNumber(value);
+      return new Intl.NumberFormat('en-US').format(value);
   }
+}
+
+function calculatePercentChange(currentValue: number, previousValue?: number): number | null {
+  if (previousValue === undefined || previousValue === null || previousValue === 0) {
+    return null;
+  }
+  
+  return ((currentValue - previousValue) / previousValue) * 100;
 }

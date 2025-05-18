@@ -1,77 +1,114 @@
-import { type ClassValue, clsx } from 'clsx';
+import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
 /**
- * Combines multiple class names and merges Tailwind CSS classes efficiently
+ * Combines and merges class names with Tailwind CSS. This utility helps prevent duplicate
+ * class names and handles conditional classes elegantly.
+ * @param inputs - Class values or conditional class objects
+ * @returns Merged class string
  */
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
 /**
- * Formats a number as currency
+ * Format a number as currency (USD)
+ * @param value - Number to format
+ * @param minimumFractionDigits - Minimum fraction digits to show
+ * @param maximumFractionDigits - Maximum fraction digits to show
+ * @returns Formatted currency string
  */
-export function formatCurrency(value: number): string {
+export function formatCurrency(
+  value: number, 
+  minimumFractionDigits = 0, 
+  maximumFractionDigits = 0
+): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
-    maximumFractionDigits: 0,
+    minimumFractionDigits,
+    maximumFractionDigits
   }).format(value);
 }
 
 /**
- * Formats a number as a percentage
- */
-export function formatPercent(value: number): string {
-  return `${value.toFixed(1)}%`;
-}
-
-/**
- * Formats a number with commas
+ * Format a number with thousands separators
+ * @param value - Number to format
+ * @returns Formatted number string
  */
 export function formatNumber(value: number): string {
   return new Intl.NumberFormat('en-US').format(value);
 }
 
 /**
- * Calculates the percent change between two values
+ * Format a percentage
+ * @param value - Number to format as percentage 
+ * @param decimals - Number of decimal places
+ * @returns Formatted percentage string
  */
-export function calculatePercentChange(current: number, previous: number): number {
-  if (previous === 0) return current > 0 ? 100 : 0;
-  return Number(((current - previous) / previous * 100).toFixed(1));
+export function formatPercent(value: number, decimals = 1): string {
+  return `${value.toFixed(decimals)}%`;
 }
 
 /**
- * Truncates text to a maximum length
+ * Calculate the percent change between two values
+ * @param current - Current value
+ * @param previous - Previous value
+ * @returns Percentage change or null if previous is 0 or null
  */
-export function truncateText(text: string, maxLength: number): string {
-  if (text.length <= maxLength) return text;
-  return `${text.substring(0, maxLength)}...`;
+export function calculatePercentChange(current: number, previous?: number): number | null {
+  if (previous === undefined || previous === null || previous === 0) {
+    return null;
+  }
+  
+  return ((current - previous) / previous) * 100;
 }
 
 /**
- * Gets CSS class based on value trend (positive, negative, neutral)
+ * Truncate a string to a specified length and add ellipsis
+ * @param str - String to truncate
+ * @param length - Maximum length
+ * @returns Truncated string
  */
-export function getTrendClass(value: number): string {
-  if (value > 0) return 'text-green-500';
-  if (value < 0) return 'text-red-500';
-  return 'text-gray-500';
+export function truncateString(str: string, length = 30): string {
+  if (!str) return '';
+  if (str.length <= length) return str;
+  
+  return str.substring(0, length) + '...';
 }
 
 /**
- * Creates a debounced function
+ * Delays execution for specified milliseconds
+ * @param ms - Milliseconds to delay
+ * @returns Promise that resolves after the specified time
+ */
+export function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Creates a debounced function that delays invoking the provided function
+ * until after the specified wait time has elapsed since the last invocation.
+ * @param func - Function to debounce
+ * @param wait - Wait time in milliseconds
+ * @returns Debounced function
  */
 export function debounce<T extends (...args: any[]) => any>(
-  fn: T,
-  delay: number
+  func: T, 
+  wait: number
 ): (...args: Parameters<T>) => void {
-  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  let timeout: ReturnType<typeof setTimeout> | null = null;
   
-  return function (...args: Parameters<T>) {
-    if (timeoutId) clearTimeout(timeoutId);
+  return function(...args: Parameters<T>): void {
+    const later = () => {
+      timeout = null;
+      func(...args);
+    };
     
-    timeoutId = setTimeout(() => {
-      fn.apply(this, args);
-    }, delay);
+    if (timeout !== null) {
+      clearTimeout(timeout);
+    }
+    
+    timeout = setTimeout(later, wait);
   };
 }
