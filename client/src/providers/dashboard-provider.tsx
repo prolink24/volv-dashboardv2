@@ -1,6 +1,9 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useDateContext } from './date-context';
+import { format } from 'date-fns';
 
-export type SalesTeamMember = {
+export interface SalesTeamMember {
   id: string;
   name: string;
   role: string;
@@ -14,9 +17,9 @@ export type SalesTeamMember = {
   contractedValue: number;
   calls: number;
   closingRate: number;
-};
+}
 
-export type DashboardData = {
+export interface CurrentPeriodData {
   totalContacts: number;
   totalRevenue: number;
   totalCashCollected: number;
@@ -27,18 +30,23 @@ export type DashboardData = {
   multiSourceRate: number;
   cashCollectedRate: number;
   salesTeam: SalesTeamMember[];
-};
+}
 
-export type DashboardContextType = {
-  currentPeriod: DashboardData;
-  previousPeriod: DashboardData | null;
-  selectedUserId: string | null;
-  setSelectedUserId: (userId: string | null) => void;
+export interface PreviousPeriodData extends CurrentPeriodData {}
+
+export interface DashboardContextType {
+  currentPeriod: CurrentPeriodData;
+  previousPeriod: PreviousPeriodData | null;
   isLoading: boolean;
-  error: string | null;
-};
+  isError: boolean;
+  error: Error | null;
+  selectedUserId: string | null;
+  setSelectedUserId: (id: string | null) => void;
+  refresh: () => void;
+}
 
-const defaultDashboardData: DashboardData = {
+// Default values
+const defaultCurrentPeriod: CurrentPeriodData = {
   totalContacts: 0,
   totalRevenue: 0,
   totalCashCollected: 0,
@@ -51,36 +59,85 @@ const defaultDashboardData: DashboardData = {
   salesTeam: [],
 };
 
-export const DashboardContext = createContext<DashboardContextType>({
-  currentPeriod: defaultDashboardData,
+// Create the context
+const DashboardContext = createContext<DashboardContextType>({
+  currentPeriod: defaultCurrentPeriod,
   previousPeriod: null,
+  isLoading: false,
+  isError: false,
+  error: null,
   selectedUserId: null,
   setSelectedUserId: () => {},
-  isLoading: false,
-  error: null,
+  refresh: () => {},
 });
 
-export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentPeriod, setCurrentPeriod] = useState<DashboardData>(defaultDashboardData);
-  const [previousPeriod, setPreviousPeriod] = useState<DashboardData | null>(null);
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
+// Custom hook to use the dashboard context
+export const useDashboard = () => useContext(DashboardContext);
 
+export function DashboardProvider({ children }: { children: React.ReactNode }) {
+  const { currentRange, previousRange } = useDateContext();
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  
+  // Format the dates for the API
+  const formatDateParam = (date: Date): string => format(date, 'yyyy-MM-dd');
+  
+  // Create query parameters
+  const getQueryParams = () => {
+    const params = new URLSearchParams({
+      startDate: formatDateParam(currentRange.startDate),
+      endDate: formatDateParam(currentRange.endDate),
+    });
+    
+    if (selectedUserId) {
+      params.append('userId', selectedUserId);
+    }
+    
+    if (previousRange) {
+      params.append('compareStartDate', formatDateParam(previousRange.startDate));
+      params.append('compareEndDate', formatDateParam(previousRange.endDate));
+    }
+    
+    return params.toString();
+  };
+  
+  // Fetch dashboard data
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+    refetch
+  } = useQuery({
+    queryKey: ['/api/dashboard', currentRange, previousRange, selectedUserId],
+    queryFn: async () => {
+      const response = await fetch(`/api/dashboard?${getQueryParams()}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch dashboard data');
+      }
+      return response.json();
+    },
+    refetchOnWindowFocus: false,
+  });
+  
+  // Extract the data
+  const currentPeriod = data?.currentPeriod || defaultCurrentPeriod;
+  const previousPeriod = data?.previousPeriod || null;
+  
+  // Provide the context values
+  const contextValue: DashboardContextType = {
+    currentPeriod,
+    previousPeriod,
+    isLoading,
+    isError,
+    error,
+    selectedUserId,
+    setSelectedUserId,
+    refresh: refetch,
+  };
+  
   return (
-    <DashboardContext.Provider
-      value={{
-        currentPeriod,
-        previousPeriod,
-        selectedUserId,
-        setSelectedUserId,
-        isLoading,
-        error,
-      }}
-    >
+    <DashboardContext.Provider value={contextValue}>
       {children}
     </DashboardContext.Provider>
   );
-};
-
-export const useDashboard = () => useContext(DashboardContext);
+}

@@ -1,140 +1,157 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import {
+  startOfDay,
+  endOfDay,
+  startOfWeek,
+  endOfWeek,
+  startOfMonth,
+  endOfMonth,
+  startOfQuarter,
+  endOfQuarter,
+  startOfYear,
+  endOfYear,
+  subDays,
+  subWeeks,
+  subMonths,
+  subQuarters,
+  subYears
+} from "date-fns";
 
-/**
- * Combines multiple class names using clsx and tailwind-merge
- */
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
 /**
- * Formats a number with thousands separators
+ * Format a number with commas as thousand separators
  */
-export function formatNumber(value: number): string {
-  return new Intl.NumberFormat('en-US').format(value);
+export function formatNumber(value: number | string | null | undefined): string {
+  if (value === null || value === undefined) return "0";
+  
+  const num = typeof value === "string" ? parseFloat(value) : value;
+  
+  // Handle NaN
+  if (isNaN(num)) return "0";
+  
+  // Format with commas
+  return num.toLocaleString("en-US", { maximumFractionDigits: 0 });
 }
 
 /**
- * Formats a number as a currency with $ symbol
+ * Format a number as currency with $ sign and commas
  */
-export function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
+export function formatCurrency(value: number | string | null | undefined): string {
+  if (value === null || value === undefined) return "$0";
+  
+  const num = typeof value === "string" ? parseFloat(value) : value;
+  
+  // Handle NaN
+  if (isNaN(num)) return "$0";
+  
+  // Format as currency
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
     maximumFractionDigits: 0
-  }).format(value);
+  }).format(num);
 }
 
 /**
- * Formats a number as a percentage
+ * Format a number as a percentage
  */
-export function formatPercent(value: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'percent',
-    maximumFractionDigits: 1
-  }).format(value / 100);
+export function formatPercent(value: number | string | null | undefined, decimals = 0): string {
+  if (value === null || value === undefined) return "0%";
+  
+  const num = typeof value === "string" ? parseFloat(value) : value;
+  
+  // Handle NaN
+  if (isNaN(num)) return "0%";
+  
+  // Format as percentage
+  return new Intl.NumberFormat("en-US", {
+    style: "percent",
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals
+  }).format(num / 100);
 }
 
 /**
- * Calculates the date range for different period options
+ * Get a date range based on a preset option
  */
-export function getDateRangeByOption(option: string): { start: Date; end: Date } {
+export function getDateRangeByOption(option: string) {
   const today = new Date();
-  today.setHours(23, 59, 59, 999);
-  
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-  yesterday.setHours(0, 0, 0, 0);
-  
-  const now = new Date(today);
   
   switch (option) {
-    case 'today':
+    case "today":
       return {
-        start: new Date(today.setHours(0, 0, 0, 0)),
-        end: now
+        start: startOfDay(today),
+        end: endOfDay(today)
       };
-    case 'yesterday':
+      
+    case "yesterday":
+      const yesterday = subDays(today, 1);
       return {
-        start: yesterday,
-        end: new Date(yesterday.setHours(23, 59, 59, 999))
+        start: startOfDay(yesterday),
+        end: endOfDay(yesterday)
       };
-    case 'this-week': {
-      const first = today.getDate() - today.getDay();
-      const start = new Date(today.setDate(first));
-      start.setHours(0, 0, 0, 0);
+      
+    case "this-week":
       return {
-        start,
-        end: now
+        start: startOfWeek(today, { weekStartsOn: 1 }),
+        end: endOfWeek(today, { weekStartsOn: 1 })
       };
-    }
-    case 'last-week': {
-      const first = today.getDate() - today.getDay() - 7;
-      const start = new Date(today.setDate(first));
-      start.setHours(0, 0, 0, 0);
-      const end = new Date(start);
-      end.setDate(end.getDate() + 6);
-      end.setHours(23, 59, 59, 999);
+      
+    case "last-week":
+      const lastWeek = subWeeks(today, 1);
       return {
-        start,
-        end
+        start: startOfWeek(lastWeek, { weekStartsOn: 1 }),
+        end: endOfWeek(lastWeek, { weekStartsOn: 1 })
       };
-    }
-    case 'this-month': {
-      const start = new Date(today.getFullYear(), today.getMonth(), 1);
+      
+    case "this-month":
       return {
-        start,
-        end: now
+        start: startOfMonth(today),
+        end: endOfMonth(today)
       };
-    }
-    case 'last-month': {
-      const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-      const end = new Date(today.getFullYear(), today.getMonth(), 0);
-      end.setHours(23, 59, 59, 999);
+      
+    case "last-month":
+      const lastMonth = subMonths(today, 1);
       return {
-        start,
-        end
+        start: startOfMonth(lastMonth),
+        end: endOfMonth(lastMonth)
       };
-    }
-    case 'this-quarter': {
-      const currentQuarter = Math.floor(today.getMonth() / 3);
-      const start = new Date(today.getFullYear(), currentQuarter * 3, 1);
+      
+    case "this-quarter":
       return {
-        start,
-        end: now
+        start: startOfQuarter(today),
+        end: endOfQuarter(today)
       };
-    }
-    case 'last-quarter': {
-      const currentQuarter = Math.floor(today.getMonth() / 3);
-      const start = new Date(today.getFullYear(), (currentQuarter - 1) * 3, 1);
-      const end = new Date(today.getFullYear(), currentQuarter * 3, 0);
-      end.setHours(23, 59, 59, 999);
+      
+    case "last-quarter":
+      const lastQuarter = subQuarters(today, 1);
       return {
-        start,
-        end
+        start: startOfQuarter(lastQuarter),
+        end: endOfQuarter(lastQuarter)
       };
-    }
-    case 'this-year': {
-      const start = new Date(today.getFullYear(), 0, 1);
+      
+    case "this-year":
       return {
-        start,
-        end: now
+        start: startOfYear(today),
+        end: endOfYear(today)
       };
-    }
-    case 'last-year': {
-      const start = new Date(today.getFullYear() - 1, 0, 1);
-      const end = new Date(today.getFullYear(), 0, 0);
-      end.setHours(23, 59, 59, 999);
+      
+    case "last-year":
+      const lastYear = subYears(today, 1);
       return {
-        start,
-        end
+        start: startOfYear(lastYear),
+        end: endOfYear(lastYear)
       };
-    }
+      
     default:
+      // Default to this month
       return {
-        start: new Date(today.getFullYear(), today.getMonth(), 1),
-        end: now
+        start: startOfMonth(today),
+        end: endOfMonth(today)
       };
   }
 }
