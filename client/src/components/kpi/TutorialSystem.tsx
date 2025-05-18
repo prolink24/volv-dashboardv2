@@ -71,7 +71,7 @@ const availableTutorials: TutorialData[] = [
       {
         id: 'intro',
         title: 'Welcome to the KPI Configurator',
-        description: 'This tutorial will guide you through creating your first KPI formula using the visual formula builder. You'll learn how to add fields, operations, and see your formula in action.',
+        description: "This tutorial will guide you through creating your first KPI formula using the visual formula builder. You'll learn how to add fields, operations, and see your formula in action.",
         position: 'bottom',
         tip: 'The visual formula builder makes it easy to create complex KPI formulas without writing code!'
       },
@@ -136,7 +136,7 @@ const availableTutorials: TutorialData[] = [
       {
         id: 'completion',
         title: 'Congratulations!',
-        description: 'You've successfully created your first KPI formula. It will now be available in your dashboards and reports.',
+        description: "You've successfully created your first KPI formula. It will now be available in your dashboards and reports.",
         position: 'bottom',
         tip: 'Try creating a formula for conversion rate: count(deals) / count(meetings) * 100'
       }
@@ -152,7 +152,7 @@ const availableTutorials: TutorialData[] = [
       {
         id: 'intro-functions',
         title: 'Advanced Formulas with Functions',
-        description: 'Functions let you perform complex calculations beyond basic arithmetic. In this tutorial, you'll learn how to use functions in your KPI formulas.',
+        description: "Functions let you perform complex calculations beyond basic arithmetic. In this tutorial, you'll learn how to use functions in your KPI formulas.",
         position: 'bottom',
         tip: 'Functions can transform, aggregate, and analyze your data in powerful ways.'
       },
@@ -179,9 +179,9 @@ const availableTutorials: TutorialData[] = [
       {
         id: 'intro-templates',
         title: 'Formula Templates',
-        description: 'Templates provide pre-built formulas for common KPIs. This tutorial shows how to use and customize templates.',
+        description: "Templates provide pre-built formulas for common KPIs. This tutorial shows how to use and customize templates.",
         position: 'bottom',
-        tip: 'Templates can save you time and ensure you're using industry-standard calculations.'
+        tip: "Templates can save you time and ensure you're using industry-standard calculations."
       },
       // Additional steps would continue here...
     ]
