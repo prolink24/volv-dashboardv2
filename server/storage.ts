@@ -580,17 +580,14 @@ export class DatabaseStorage implements IStorage {
         endDate = date;
       }
 
-      // Format dates for SQL
+      // Format dates for SQL with better SQL compatibility
       const startDateStr = startDate.toISOString().split('T')[0];
       const endDateStr = endDate.toISOString().split('T')[0];
       
       console.log(`Dashboard data for date range: ${startDateStr} to ${endDateStr}`);
 
-      // Create date filters for different date fields depending on the entity
-      const contactsDateFilter = and(
-        gte(contacts.createdAt, startDateStr),
-        lte(contacts.createdAt, endDateStr + 'T23:59:59.999Z')
-      );
+      // Use SQL literals for date filtering to avoid type issues
+      const contactsDateFilter = sql`${contacts.createdAt} >= ${startDateStr} AND ${contacts.createdAt} <= ${endDateStr + 'T23:59:59.999Z'}`;
 
       // Important: For deals, use closeDate for better financial reporting accuracy
       const dealsDateFilter = and(
