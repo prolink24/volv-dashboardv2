@@ -1,145 +1,139 @@
-import { Router } from 'express';
+import express from 'express';
 import { storage } from '../storage';
 import { z } from 'zod';
 
-// Create a router for dashboard routes
-const router = Router();
+const router = express.Router();
 
-// Schema for validating date range query params
-const dateRangeSchema = z.object({
-  startDate: z.string()
-    .refine(value => !isNaN(Date.parse(value)), { 
-      message: 'Invalid start date format' 
-    }),
-  endDate: z.string()
-    .refine(value => !isNaN(Date.parse(value)), { 
-      message: 'Invalid end date format' 
-    }),
+// Schema for validating dashboard query parameters
+const dashboardQuerySchema = z.object({
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
   userId: z.string().optional(),
-  includePreviousPeriod: z.enum(['true', 'false']).optional().default('false')
+  comparePreviousPeriod: z.enum(['true', 'false']).optional().default('false'),
 });
 
-// GET /api/dashboard - Retrieve dashboard data with optional date range
+/**
+ * GET /api/dashboard
+ * 
+ * Returns dashboard data filtered by date range and user
+ * Can also include comparison data for previous period
+ */
 router.get('/', async (req, res) => {
   try {
-    // Extract and validate query params
-    const result = dateRangeSchema.safeParse(req.query);
+    // Validate and parse query parameters
+    const result = dashboardQuerySchema.safeParse(req.query);
     
     if (!result.success) {
-      return res.status(400).json({ 
-        error: 'Invalid parameters', 
-        details: result.error.format() 
+      return res.status(400).json({
+        error: 'Invalid query parameters',
+        details: result.error.issues,
       });
     }
     
-    const { startDate, endDate, userId, includePreviousPeriod } = result.data;
-    const dateRange = { 
-      startDate: new Date(startDate), 
-      endDate: new Date(endDate) 
-    };
+    const { startDate, endDate, userId, comparePreviousPeriod } = result.data;
+    const shouldCompare = comparePreviousPeriod === 'true';
     
-    // Fetch dashboard data from storage
-    const dashboardData = await storage.getDashboardData(dateRange, userId);
+    // Parse dates or use default (current month)
+    let start: Date, end: Date;
     
-    // If includePreviousPeriod is true, calculate the previous period as the same time span
-    // but prior to the startDate
-    if (includePreviousPeriod === 'true') {
-      const timeSpanInMs = dateRange.endDate.getTime() - dateRange.startDate.getTime();
-      const previousStartDate = new Date(dateRange.startDate.getTime() - timeSpanInMs);
-      const previousEndDate = new Date(dateRange.endDate.getTime() - timeSpanInMs);
-      
-      const previousPeriodDateRange = {
-        startDate: previousStartDate,
-        endDate: previousEndDate
-      };
-      
-      const previousPeriodData = await storage.getDashboardData(previousPeriodDateRange, userId);
-      
-      // Add previous period data for comparison
-      dashboardData.previousPeriod = {
-        totalContacts: previousPeriodData.totalContacts || 0,
-        totalDeals: previousPeriodData.totalDeals || 0,
-        totalRevenue: previousPeriodData.totalRevenue || 0,
-        cashCollected: previousPeriodData.cashCollected || 0
-      };
+    if (startDate && endDate) {
+      start = new Date(startDate);
+      end = new Date(endDate);
+    } else {
+      // Default to current month
+      const now = new Date();
+      start = new Date(now.getFullYear(), now.getMonth(), 1);
+      end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     }
     
-    res.json(dashboardData);
+    // Get main dashboard data
+    const dashboardData = await storage.getDashboardData({ 
+      startDate: start, 
+      endDate: end 
+    }, userId || undefined);
+    
+    // If comparison is requested, get data for previous period
+    let previousPeriodData = null;
+    
+    if (shouldCompare) {
+      // Calculate previous period with same duration
+      const duration = end.getTime() - start.getTime();
+      const prevEnd = new Date(start.getTime() - 1); // Day before current start
+      const prevStart = new Date(prevEnd.getTime() - duration);
+      
+      previousPeriodData = await storage.getDashboardData({
+        startDate: prevStart,
+        endDate: prevEnd
+      }, userId || undefined);
+    }
+    
+    // Return combined data
+    res.json({
+      ...dashboardData,
+      previousPeriod: shouldCompare ? {
+        totalContacts: previousPeriodData.totalContacts,
+        totalDeals: previousPeriodData.totalDeals,
+        totalActivities: previousPeriodData.totalActivities,
+        totalMeetings: previousPeriodData.totalMeetings,
+        totalRevenue: previousPeriodData.revenueGenerated,
+        cashCollected: previousPeriodData.cashCollected
+      } : undefined
+    });
   } catch (error) {
-    console.error('Error retrieving dashboard data:', error);
-    res.status(500).json({ error: 'Failed to retrieve dashboard data' });
+    console.error('Error fetching dashboard data:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch dashboard data',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 });
 
-// GET /api/dashboard/deals - Retrieve deals data with optional date range
-router.get('/deals', async (req, res) => {
+/**
+ * GET /api/dashboard/sales-team
+ * 
+ * Returns sales team performance data
+ */
+router.get('/sales-team', async (req, res) => {
   try {
-    // Extract and validate query params
-    const result = dateRangeSchema.safeParse(req.query);
+    const result = dashboardQuerySchema.safeParse(req.query);
     
     if (!result.success) {
-      return res.status(400).json({ 
-        error: 'Invalid parameters', 
-        details: result.error.format() 
-      });
-    }
-    
-    const { startDate, endDate, userId } = result.data;
-    const dateRange = { 
-      startDate: new Date(startDate), 
-      endDate: new Date(endDate) 
-    };
-    
-    // Fetch deals data from storage
-    const startDateString = dateRange.startDate.toISOString().split('T')[0];
-    const endDateString = dateRange.endDate.toISOString().split('T')[0];
-    const dealsData = await storage.getRecentDeals(100, startDateString, endDateString);
-    
-    // Process the deals data for dashboard display
-    const processedDeals = dealsData.map(deal => ({
-      id: deal.id,
-      title: deal.title,
-      value: parseFloat(deal.value || '0'),
-      status: deal.status,
-      closeDate: deal.closeDate,
-      cashCollected: parseFloat(deal.cashCollected || '0'),
-      assignedTo: deal.assignedTo
-    }));
-    
-    res.json(processedDeals);
-  } catch (error) {
-    console.error('Error retrieving deals data:', error);
-    res.status(500).json({ error: 'Failed to retrieve deals data' });
-  }
-});
-
-// GET /api/dashboard/team - Retrieve team performance data
-router.get('/team', async (req, res) => {
-  try {
-    // Extract and validate query params
-    const result = dateRangeSchema.safeParse(req.query);
-    
-    if (!result.success) {
-      return res.status(400).json({ 
-        error: 'Invalid parameters', 
-        details: result.error.format() 
+      return res.status(400).json({
+        error: 'Invalid query parameters',
+        details: result.error.issues,
       });
     }
     
     const { startDate, endDate } = result.data;
-    const dateRange = { 
-      startDate: new Date(startDate), 
-      endDate: new Date(endDate) 
-    };
     
-    // Fetch team data from storage
-    const dashboardData = await storage.getDashboardData(dateRange);
-    const teamData = dashboardData.salesTeam || [];
+    // Parse dates or use default (current month)
+    let start: Date, end: Date;
     
-    res.json(teamData);
+    if (startDate && endDate) {
+      start = new Date(startDate);
+      end = new Date(endDate);
+    } else {
+      // Default to current month
+      const now = new Date();
+      start = new Date(now.getFullYear(), now.getMonth(), 1);
+      end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    }
+    
+    // Get dashboard data which includes sales team performance
+    const dashboardData = await storage.getDashboardData({ 
+      startDate: start, 
+      endDate: end 
+    });
+    
+    res.json({
+      salesTeam: dashboardData.salesTeam
+    });
   } catch (error) {
-    console.error('Error retrieving team data:', error);
-    res.status(500).json({ error: 'Failed to retrieve team data' });
+    console.error('Error fetching sales team data:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch sales team data',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 });
 
