@@ -1,88 +1,53 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  MinusIcon,
-  DollarSign,
-  Users,
-  Briefcase,
-  Calendar,
-  MessageSquare,
-  PercentIcon
-} from "lucide-react";
-import { formatCurrency, formatNumber, formatPercent } from '@/lib/utils';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
+import { ArrowDownIcon, ArrowUpIcon } from 'lucide-react';
 
-// Props for the KPI card component
-interface ImprovedKpiCardProps {
+interface KPICardProps {
   title: string;
-  value: number;
-  previousValue?: number;
+  value: string;
+  icon: React.ReactNode;
   change?: number;
-  type?: 'number' | 'currency' | 'percent';
-  icon?: 'users' | 'dollar' | 'deals' | 'meetings' | 'activities' | 'percent';
+  className?: string;
   loading?: boolean;
 }
 
-/**
- * Improved KPI Card Component
- * 
- * Displays a metric with optional trend indicator showing change
- * from previous period
- */
-export function ImprovedKpiCard({
-  title,
-  value,
-  previousValue,
-  change,
-  type = 'number',
-  icon = 'users',
-  loading = false,
-}: ImprovedKpiCardProps) {
-  // Format the value based on its type
-  const formattedValue = 
-    type === 'currency' ? formatCurrency(value) : 
-    type === 'percent' ? formatPercent(value) :
-    formatNumber(value);
+export function ImprovedKPICard({ title, value, icon, change, className, loading = false }: KPICardProps) {
+  // Determine trend direction and color
+  const isPositive = change && change > 0;
+  const isNegative = change && change < 0;
+  const isNeutral = change === 0 || change === undefined;
   
-  // Determine the icon to display
-  const IconComponent = 
-    icon === 'users' ? Users :
-    icon === 'dollar' ? DollarSign :
-    icon === 'deals' ? Briefcase :
-    icon === 'meetings' ? Calendar :
-    icon === 'activities' ? MessageSquare :
-    icon === 'percent' ? PercentIcon :
-    Users;
-  
-  // Determine trend display
-  let TrendComponent = MinusIcon;
-  let trendColor = 'text-gray-500';
-  let formattedChange = '0%';
-  
-  if (change !== undefined) {
-    TrendComponent = change > 0 ? TrendingUp : change < 0 ? TrendingDown : MinusIcon;
-    trendColor = change > 0 ? 'text-green-500' : change < 0 ? 'text-red-500' : 'text-gray-500';
-    formattedChange = `${change > 0 ? '+' : ''}${change.toFixed(1)}%`;
-  }
+  // Apply appropriate color based on trend
+  const trendColor = isPositive ? 'text-emerald-500' : isNegative ? 'text-rose-500' : 'text-gray-500';
   
   return (
-    <Card className="shadow-md hover:shadow-lg transition-shadow">
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-medium text-gray-700">{title}</CardTitle>
-        <IconComponent className="h-4 w-4 text-gray-600" />
+    <Card className={cn('overflow-hidden shadow-md', className)}>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <div className="rounded-full p-2 bg-muted">{icon}</div>
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="h-10 w-full animate-pulse bg-gray-200 rounded"></div>
+          <div className="h-8 w-3/4 bg-gray-200 animate-pulse rounded"></div>
         ) : (
           <>
-            <div className="text-2xl font-bold">{formattedValue}</div>
-            {previousValue !== undefined && (
-              <div className="flex items-center mt-1">
-                <TrendComponent className={`h-4 w-4 mr-1 ${trendColor}`} />
-                <span className={`text-xs ${trendColor}`}>{formattedChange}</span>
-                <span className="text-xs text-gray-500 ml-1">vs previous period</span>
+            <div className="text-2xl font-bold">{value}</div>
+            
+            {!isNeutral && (
+              <div className="flex items-center mt-2">
+                {isPositive ? <ArrowUpIcon className="h-4 w-4 mr-1 text-emerald-500" /> : <ArrowDownIcon className="h-4 w-4 mr-1 text-rose-500" />}
+                <p className={cn("text-xs font-medium", trendColor)}>
+                  {Math.abs(change || 0)}% from previous period
+                </p>
+              </div>
+            )}
+            
+            {isNeutral && (
+              <div className="flex items-center mt-2">
+                <p className="text-xs font-medium text-gray-500">
+                  No change from previous period
+                </p>
               </div>
             )}
           </>
