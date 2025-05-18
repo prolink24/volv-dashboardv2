@@ -1,98 +1,88 @@
 import React from 'react';
-import { cn } from '@/lib/utils';
-import { HelpCircle, TrendingDown, TrendingUp } from 'lucide-react';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { 
+  TrendingUp, 
+  TrendingDown, 
+  MinusIcon,
+  DollarSign,
+  Users,
+  Briefcase,
+  Calendar,
+  MessageSquare,
+  PercentIcon
+} from "lucide-react";
+import { formatCurrency, formatNumber, formatPercent } from '@/lib/utils';
 
-interface ImprovedKPICardProps {
+// Props for the KPI card component
+interface ImprovedKpiCardProps {
   title: string;
-  value?: string;
+  value: number;
   previousValue?: number;
-  currentValue?: number;
-  icon?: React.ReactNode;
-  formatter?: (value: number) => string;
-  help?: string;
-  isLoading?: boolean;
+  change?: number;
+  type?: 'number' | 'currency' | 'percent';
+  icon?: 'users' | 'dollar' | 'deals' | 'meetings' | 'activities' | 'percent';
+  loading?: boolean;
 }
 
 /**
- * KPI Card Component
+ * Improved KPI Card Component
  * 
- * Displays a key performance indicator with trend indicator when previous value is available
+ * Displays a metric with optional trend indicator showing change
+ * from previous period
  */
-export function ImprovedKPICard({
+export function ImprovedKpiCard({
   title,
   value,
   previousValue,
-  currentValue,
-  icon,
-  formatter = (val) => val.toString(),
-  help,
-  isLoading = false,
-}: ImprovedKPICardProps) {
-  // Calculate percentage change when both values are available
-  const percentChange = React.useMemo(() => {
-    if (previousValue === undefined || currentValue === undefined || previousValue === 0) {
-      return null;
-    }
-    return ((currentValue - previousValue) / previousValue) * 100;
-  }, [previousValue, currentValue]);
-
+  change,
+  type = 'number',
+  icon = 'users',
+  loading = false,
+}: ImprovedKpiCardProps) {
+  // Format the value based on its type
+  const formattedValue = 
+    type === 'currency' ? formatCurrency(value) : 
+    type === 'percent' ? formatPercent(value) :
+    formatNumber(value);
+  
+  // Determine the icon to display
+  const IconComponent = 
+    icon === 'users' ? Users :
+    icon === 'dollar' ? DollarSign :
+    icon === 'deals' ? Briefcase :
+    icon === 'meetings' ? Calendar :
+    icon === 'activities' ? MessageSquare :
+    icon === 'percent' ? PercentIcon :
+    Users;
+  
+  // Determine trend display
+  let TrendComponent = MinusIcon;
+  let trendColor = 'text-gray-500';
+  let formattedChange = '0%';
+  
+  if (change !== undefined) {
+    TrendComponent = change > 0 ? TrendingUp : change < 0 ? TrendingDown : MinusIcon;
+    trendColor = change > 0 ? 'text-green-500' : change < 0 ? 'text-red-500' : 'text-gray-500';
+    formattedChange = `${change > 0 ? '+' : ''}${change.toFixed(1)}%`;
+  }
+  
   return (
-    <Card className="h-full">
+    <Card className="shadow-md hover:shadow-lg transition-shadow">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-medium flex items-center gap-1">
-          {title}
-          {help && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
-                </TooltipTrigger>
-                <TooltipContent className="max-w-xs">
-                  <p>{help}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
-        </CardTitle>
-        {icon && <div className="text-muted-foreground">{icon}</div>}
+        <CardTitle className="text-sm font-medium text-gray-700">{title}</CardTitle>
+        <IconComponent className="h-4 w-4 text-gray-600" />
       </CardHeader>
       <CardContent>
-        {isLoading ? (
-          <div className="space-y-2">
-            <div className="h-6 w-24 animate-pulse rounded-md bg-muted"></div>
-            <div className="h-4 w-12 animate-pulse rounded-md bg-muted"></div>
-          </div>
+        {loading ? (
+          <div className="h-10 w-full animate-pulse bg-gray-200 rounded"></div>
         ) : (
           <>
-            <div className="text-2xl font-bold">{value || (currentValue !== undefined ? formatter(currentValue) : 'N/A')}</div>
-            {percentChange !== null && (
-              <div className="flex items-center gap-1 mt-1 text-xs">
-                {percentChange > 0 ? (
-                  <TrendingUp className={cn("h-3.5 w-3.5 text-emerald-500")} />
-                ) : percentChange < 0 ? (
-                  <TrendingDown className={cn("h-3.5 w-3.5 text-rose-500")} />
-                ) : null}
-                <span
-                  className={cn(
-                    percentChange > 0 && "text-emerald-500",
-                    percentChange < 0 && "text-rose-500",
-                    percentChange === 0 && "text-muted-foreground"
-                  )}
-                >
-                  {Math.abs(percentChange).toFixed(1)}% {percentChange > 0 ? 'increase' : percentChange < 0 ? 'decrease' : 'no change'} from previous period
-                </span>
+            <div className="text-2xl font-bold">{formattedValue}</div>
+            {previousValue !== undefined && (
+              <div className="flex items-center mt-1">
+                <TrendComponent className={`h-4 w-4 mr-1 ${trendColor}`} />
+                <span className={`text-xs ${trendColor}`}>{formattedChange}</span>
+                <span className="text-xs text-gray-500 ml-1">vs previous period</span>
               </div>
             )}
           </>

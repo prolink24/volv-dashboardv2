@@ -1,11 +1,21 @@
-import { Request, Response } from 'express';
+import express, { Request, Response } from 'express';
 import { storage } from '../storage';
+import cacheService from '../services/cache';
+
+const router = express.Router();
 
 /**
  * GET /api/dashboard
- * Fetches dashboard data for the given date range and user filter
+ * 
+ * Fetches dashboard data based on date range and user filters
+ * Query parameters:
+ * - startDate: start of date range (ISO string)
+ * - endDate: end of date range (ISO string)
+ * - userId: optional user ID to filter by
+ * - previousStartDate: optional previous period start for comparison
+ * - previousEndDate: optional previous period end for comparison
  */
-export async function getDashboardData(req: Request, res: Response) {
+router.get('/', cacheService.cacheMiddleware(300), async (req: Request, res: Response) => {
   try {
     const { 
       startDate, 
@@ -28,8 +38,7 @@ export async function getDashboardData(req: Request, res: Response) {
 
     // Get current period data
     const currentPeriodData = await storage.getDashboardData(
-      currentPeriodStart,
-      currentPeriodEnd,
+      { startDate: currentPeriodStart, endDate: currentPeriodEnd },
       userId as string | undefined
     );
     
@@ -40,8 +49,7 @@ export async function getDashboardData(req: Request, res: Response) {
       const prevEnd = new Date(previousEndDate as string);
       
       previousPeriodData = await storage.getDashboardData(
-        prevStart,
-        prevEnd,
+        { startDate: prevStart, endDate: prevEnd },
         userId as string | undefined
       );
     }
@@ -82,4 +90,6 @@ export async function getDashboardData(req: Request, res: Response) {
     console.error('Error fetching dashboard data:', error);
     return res.status(500).json({ error: 'Failed to fetch dashboard data' });
   }
-}
+});
+
+export default router;

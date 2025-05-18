@@ -1,82 +1,80 @@
-import React, { createContext, useContext } from 'react';
-import { useDashboardData, useAttributionStats, useSalesTeamData } from '@/hooks/use-dashboard-data';
-import { useDateContext } from './date-context';
+import React, { createContext, useContext, useState } from 'react';
+import { useDashboardData, type SalesTeamMember } from '@/hooks/use-dashboard-data';
 
-// Create context
-const DashboardContext = createContext<ReturnType<typeof useDashboardState> | undefined>(undefined);
-
-// Hook to manage dashboard state
-function useDashboardState() {
-  const { startDate, endDate, comparePreviousPeriod } = useDateContext();
-  const [selectedUserId, setSelectedUserId] = React.useState<string | undefined>(undefined);
-  
-  // Fetch dashboard data
-  const dashboardQuery = useDashboardData(selectedUserId);
-  const attributionQuery = useAttributionStats();
-  const salesTeamQuery = useSalesTeamData();
-  
-  // Loading state
-  const isLoading = 
-    dashboardQuery.isLoading || 
-    attributionQuery.isLoading || 
-    salesTeamQuery.isLoading;
-  
-  // Error state
-  const error = 
-    dashboardQuery.error || 
-    attributionQuery.error || 
-    salesTeamQuery.error;
-  
-  // Create derived data for dashboard
-  const salesTeamMembers = salesTeamQuery.data?.salesTeam || [];
-  
-  // Function to change selected user
-  const selectUser = (userId: string | undefined) => {
-    setSelectedUserId(userId);
-  };
-  
-  return {
-    // Date range info
-    dateRange: { startDate, endDate, comparePreviousPeriod },
-    
-    // User filtering
-    selectedUserId,
-    selectUser,
-    salesTeamMembers,
-    
-    // Raw data
-    dashboardData: dashboardQuery.data,
-    attributionStats: attributionQuery.data,
-    
-    // Query state
-    isLoading,
-    error,
-    
-    // Refetch functions
-    refetchDashboard: dashboardQuery.refetch,
-    refetchAttribution: attributionQuery.refetch,
-    refetchSalesTeam: salesTeamQuery.refetch,
-  };
+// Define the type for dashboard context
+interface DashboardContextType {
+  isLoading: boolean;
+  isError: boolean;
+  error: Error | null;
+  salesTeam: SalesTeamMember[];
+  selectedUserId: string | null;
+  setSelectedUserId: (userId: string | null) => void;
+  refetchDashboard: () => Promise<void>;
 }
 
-// Provider component
-export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const dashboardState = useDashboardState();
+// Create the context with default values
+const DashboardContext = createContext<DashboardContextType>({
+  isLoading: false,
+  isError: false,
+  error: null,
+  salesTeam: [],
+  selectedUserId: null,
+  setSelectedUserId: () => {},
+  refetchDashboard: async () => {},
+});
+
+// Props for the dashboard provider
+interface DashboardProviderProps {
+  children: React.ReactNode;
+}
+
+/**
+ * Provider component for dashboard data and state
+ */
+export function DashboardProvider({ children }: DashboardProviderProps) {
+  // State for user selection
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  
+  // Fetch dashboard data using the hook
+  const {
+    dashboardData,
+    salesTeam = [],
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useDashboardData(selectedUserId || undefined);
+  
+  // Refetch dashboard data
+  const refetchDashboard = async () => {
+    await refetch();
+  };
+  
+  // Context value
+  const value: DashboardContextType = {
+    isLoading,
+    isError,
+    error,
+    salesTeam,
+    selectedUserId,
+    setSelectedUserId,
+    refetchDashboard,
+  };
   
   return (
-    <DashboardContext.Provider value={dashboardState}>
+    <DashboardContext.Provider value={value}>
       {children}
     </DashboardContext.Provider>
   );
-};
+}
 
-// Hook to use the dashboard context
-export const useDashboard = () => {
+/**
+ * Hook to use the dashboard context
+ */
+export function useDashboard() {
   const context = useContext(DashboardContext);
-  
   if (context === undefined) {
     throw new Error('useDashboard must be used within a DashboardProvider');
   }
-  
   return context;
-};
+}
