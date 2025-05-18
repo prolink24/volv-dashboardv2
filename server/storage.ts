@@ -585,23 +585,28 @@ export class DatabaseStorage implements IStorage {
         endDate = date;
       }
 
-      // Format dates for SQL with better SQL compatibility
-      const startDateStr = startDate.toISOString().split('T')[0];
-      const endDateStr = endDate.toISOString().split('T')[0];
+      // Format dates for SQL with better SQL compatibility - handle potentially invalid dates
+      const startDateStr = (startDate instanceof Date && !isNaN(startDate.getTime())) 
+        ? startDate.toISOString().split('T')[0]
+        : new Date().toISOString().split('T')[0]; // Fallback to current date if invalid
+        
+      const endDateStr = (endDate instanceof Date && !isNaN(endDate.getTime()))
+        ? endDate.toISOString().split('T')[0]
+        : new Date().toISOString().split('T')[0]; // Fallback to current date if invalid
       
       console.log(`Dashboard data for date range: ${startDateStr} to ${endDateStr}`);
 
-      // Use SQL literals for date filtering to avoid type issues
-      const contactsDateFilter = sql`${contacts.createdAt} >= ${startDateStr} AND ${contacts.createdAt} <= ${endDateStr + 'T23:59:59.999Z'}`;
+      // Use SQL literals with direct string interpolation for PostgreSQL compatibility
+      const contactsDateFilter = sql`${contacts.createdAt}::date >= ${startDateStr}::date AND ${contacts.createdAt}::date <= ${endDateStr}::date`;
 
       // Important: For deals, use closeDate for better financial reporting accuracy
-      const dealsDateFilter = sql`${deals.closeDate} >= ${startDateStr} AND ${deals.closeDate} <= ${endDateStr + 'T23:59:59.999Z'}`;
+      const dealsDateFilter = sql`${deals.closeDate}::date >= ${startDateStr}::date AND ${deals.closeDate}::date <= ${endDateStr}::date`;
 
       // For meetings, use startTime for scheduling metrics
-      const meetingsDateFilter = sql`${meetings.startTime} >= ${startDateStr} AND ${meetings.startTime} <= ${endDateStr + 'T23:59:59.999Z'}`;
+      const meetingsDateFilter = sql`${meetings.startTime}::date >= ${startDateStr}::date AND ${meetings.startTime}::date <= ${endDateStr}::date`;
 
       // For activities, use the date field
-      const activitiesDateFilter = sql`${activities.date} >= ${startDateStr} AND ${activities.date} <= ${endDateStr + 'T23:59:59.999Z'}`;
+      const activitiesDateFilter = sql`${activities.date}::date >= ${startDateStr}::date AND ${activities.date}::date <= ${endDateStr}::date`;
 
       // Get contacts count
       const [contactsCountResult] = await db
