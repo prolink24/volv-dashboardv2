@@ -235,7 +235,9 @@ const Dashboard = () => {
         },
         {
           title: "Field Coverage",
-          description: `${attributionStatsData.stats.fieldCoverage.toFixed(1)}% of contacts have complete data`,
+          description: `${typeof attributionStatsData.stats.fieldCoverage === 'object' 
+            ? attributionStatsData.stats.fieldCoverage.average.toFixed(1) 
+            : attributionStatsData.stats.fieldCoverage.toFixed(1)}% of contacts have complete data`,
           icon: <FileCheck className="h-5 w-5 text-blue-500" />,
           badge: { text: "Complete", variant: "default" }
         },

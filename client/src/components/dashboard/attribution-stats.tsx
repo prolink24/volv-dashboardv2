@@ -361,10 +361,18 @@ const AttributionStatsContent = ({
                   </TooltipProvider>
                 </div>
                 <span className="text-sm font-medium">
-                  {stats.fieldCoverage.toFixed(1)}%
+                  {typeof stats.fieldCoverage === 'object' 
+                    ? (stats.fieldCoverage.average || 0).toFixed(1) 
+                    : (stats.fieldCoverage || 0).toFixed(1)}%
                 </span>
               </div>
-              <Progress value={stats.fieldCoverage} max={100} className="h-2" />
+              <Progress 
+                value={typeof stats.fieldCoverage === 'object' 
+                  ? stats.fieldCoverage.average || 0 
+                  : stats.fieldCoverage || 0} 
+                max={100} 
+                className="h-2" 
+              />
             </div>
           )}
 
