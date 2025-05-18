@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useDateContext } from './date-context';
+import { useDateRange } from './date-context';
 import { format } from 'date-fns';
 
 export interface SalesTeamMember {
@@ -75,7 +75,7 @@ const DashboardContext = createContext<DashboardContextType>({
 export const useDashboard = () => useContext(DashboardContext);
 
 export function DashboardProvider({ children }: { children: React.ReactNode }) {
-  const { currentRange, previousRange } = useDateContext();
+  const { dateRange, comparePreviousPeriod } = useDateRange();
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   
   // Format the dates for the API
@@ -84,17 +84,24 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   // Create query parameters
   const getQueryParams = () => {
     const params = new URLSearchParams({
-      startDate: formatDateParam(currentRange.startDate),
-      endDate: formatDateParam(currentRange.endDate),
+      startDate: formatDateParam(dateRange.startDate),
+      endDate: formatDateParam(dateRange.endDate),
     });
     
     if (selectedUserId) {
       params.append('userId', selectedUserId);
     }
     
-    if (previousRange) {
-      params.append('compareStartDate', formatDateParam(previousRange.startDate));
-      params.append('compareEndDate', formatDateParam(previousRange.endDate));
+    if (comparePreviousPeriod) {
+      // Calculate previous period based on current selection
+      const diffInDays = Math.round((dateRange.endDate.getTime() - dateRange.startDate.getTime()) / (1000 * 60 * 60 * 24));
+      const prevStart = new Date(dateRange.startDate);
+      prevStart.setDate(prevStart.getDate() - diffInDays - 1);
+      const prevEnd = new Date(dateRange.endDate);
+      prevEnd.setDate(prevEnd.getDate() - diffInDays - 1);
+      
+      params.append('compareStartDate', formatDateParam(prevStart));
+      params.append('compareEndDate', formatDateParam(prevEnd));
     }
     
     return params.toString();
@@ -108,7 +115,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     error,
     refetch
   } = useQuery({
-    queryKey: ['/api/dashboard', currentRange, previousRange, selectedUserId],
+    queryKey: ['/api/dashboard', dateRange, comparePreviousPeriod, selectedUserId],
     queryFn: async () => {
       const response = await fetch(`/api/dashboard?${getQueryParams()}`);
       if (!response.ok) {
