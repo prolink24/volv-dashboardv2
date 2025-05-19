@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { db } from '../db';
 import { activities, type InsertActivity, forms, type InsertForm, contacts } from '@shared/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 
 // Typeform API Client
 const typeformClient = axios.create({
@@ -302,16 +302,40 @@ export async function syncTypeformResponses() {
       throw new Error('No forms returned from Typeform API');
     }
     
-    const forms = formsData.items || [];
-    console.log(`Found ${forms.length} forms from Typeform API`);
+    const typeformForms = formsData.items || [];
+    console.log(`Found ${typeformForms.length} forms from Typeform API`);
+    
+    // Log the first form to debug
+    if (typeformForms.length > 0) {
+      console.log('Sample form data:', JSON.stringify(typeformForms[0]).substring(0, 300) + '...');
+    }
     
     let totalResponsesProcessed = 0;
     let totalResponsesSynced = 0;
     let failedResponses = 0;
     
     // Process each form
-    for (const form of forms) {
+    for (const form of typeformForms) {
       console.log(`Processing form: ${form.title} (${form.id})`);
+      
+      // Test a single request first to debug
+      try {
+        const testParams = { 
+          completed: true,
+          page_size: 2 // Just get a few for testing
+        };
+        
+        const testResponse = await getFormResponses(form.id, testParams);
+        console.log(`Test response for form ${form.id}: ${testResponse ? 'SUCCESS' : 'FAILED'}`);
+        
+        if (testResponse && testResponse.items && testResponse.items.length > 0) {
+          console.log(`Sample response data:`, JSON.stringify(testResponse.items[0]).substring(0, 300) + '...');
+        }
+      } catch (testError) {
+        console.error(`Error testing form ${form.id}:`, testError);
+        continue; // Skip to next form if test fails
+      }
+      
       let hasMoreResponses = true;
       let beforeParam = '';
       
@@ -320,7 +344,7 @@ export async function syncTypeformResponses() {
         try {
           const params: Record<string, any> = { 
             completed: true,
-            page_size: 100 // Maximum page size to reduce API calls
+            page_size: 50 // Reduced page size to avoid timeouts
           };
           
           if (beforeParam) {
@@ -480,8 +504,8 @@ export async function syncTypeformResponses() {
     }
     
     // Get count of imported form submissions
-    const formCount = await db.select({ count: sql`count(*)` }).from(forms);
-    const formSubmissionsCount = formCount[0]?.count || 0;
+    const formCount = await db.select({ count: sql`count(${forms.id})` }).from(forms);
+    const formSubmissionsCount = Number(formCount[0]?.count) || 0;
     
     console.log(`Typeform sync completed. Processed ${totalResponsesProcessed} responses, synced ${totalResponsesSynced} activities. Failed: ${failedResponses}`);
     console.log(`Typeform sync completed. Imported ${formSubmissionsCount} form submissions`);
