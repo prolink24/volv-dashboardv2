@@ -287,7 +287,7 @@ const DatabaseHealth: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{healthData.entityCounts.contacts.toLocaleString()}</div>
+                <div className="text-2xl font-bold">{healthData && 'entityCounts' in healthData ? healthData.entityCounts.contacts.toLocaleString() : '0'}</div>
               </CardContent>
             </Card>
             
@@ -298,7 +298,7 @@ const DatabaseHealth: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{healthData.entityCounts.deals.toLocaleString()}</div>
+                <div className="text-2xl font-bold">{healthData && 'entityCounts' in healthData ? healthData.entityCounts.deals.toLocaleString() : '0'}</div>
               </CardContent>
             </Card>
             
@@ -309,7 +309,7 @@ const DatabaseHealth: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{healthData.entityCounts.activities.toLocaleString()}</div>
+                <div className="text-2xl font-bold">{healthData && typeof healthData === 'object' && 'entityCounts' in healthData ? healthData.entityCounts.activities.toLocaleString() : '0'}</div>
               </CardContent>
             </Card>
             
@@ -320,7 +320,7 @@ const DatabaseHealth: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{healthData.entityCounts.meetings.toLocaleString()}</div>
+                <div className="text-2xl font-bold">{healthData && typeof healthData === 'object' && 'entityCounts' in healthData ? healthData.entityCounts.meetings.toLocaleString() : '0'}</div>
               </CardContent>
             </Card>
           </div>
@@ -333,7 +333,7 @@ const DatabaseHealth: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {healthData.healthMetrics.map((metric) => (
+                {healthData && typeof healthData === 'object' && 'healthMetrics' in healthData ? healthData.healthMetrics.map((metric: HealthMetric) => (
                   <div key={metric.id} className="space-y-1">
                     <div className="flex justify-between items-center">
                       <div className="flex items-center">
