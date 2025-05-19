@@ -1976,7 +1976,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             name: "Multi-Source Contact Rate",
             value: 42,
             status: "healthy",
-            lastChecked: new Date().toISOString(),
+            lastChecked: now,
             target: 90,
             description: "Percentage of deals with proper attribution to users"
           },
@@ -1985,7 +1985,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             name: "Source Integrity",
             value: 95,
             status: "healthy",
-            lastChecked: new Date().toISOString(),
+            lastChecked: now,
             target: 95,
             description: "Data consistency across integrated sources"
           },
@@ -1994,7 +1994,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             name: "Meeting Linkage",
             value: 78,
             status: "warning",
-            lastChecked: new Date().toISOString(),
+            lastChecked: now,
             target: 85,
             description: "Percentage of meetings successfully linked to contacts"
           }
@@ -2004,7 +2004,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             id: "source_1",
             name: "Close CRM",
             status: "healthy",
-            lastSync: new Date().toISOString(),
+            lastSync: now,
             recordCount: 5425,
             integrity: 95,
             syncFrequency: "Every 15 minutes"
@@ -2013,7 +2013,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             id: "source_2",
             name: "Calendly",
             status: "healthy",
-            lastSync: new Date().toISOString(),
+            lastSync: now,
             recordCount: 3250,
             integrity: 89,
             syncFrequency: "Every 30 minutes"
@@ -2022,7 +2022,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             id: "source_3",
             name: "Typeform",
             status: "healthy",
-            lastSync: new Date().toISOString(),
+            lastSync: now,
             recordCount: 2876,
             integrity: 92,
             syncFrequency: "Every hour"
