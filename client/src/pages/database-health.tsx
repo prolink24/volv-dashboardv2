@@ -31,6 +31,14 @@ interface HealthMetric {
   description: string;
 }
 
+interface SourceDetails {
+  contacts?: { count: number; complete: number; incomplete: number };
+  deals?: { count: number; linked: number; unlinked: number };
+  activities?: { count: number; linked: number; unlinked: number };
+  meetings?: { count: number; linked: number; unlinked: number };
+  submissions?: { count: number; linked: number; unlinked: number };
+}
+
 interface DataSource {
   id: string;
   name: string;
@@ -39,6 +47,7 @@ interface DataSource {
   recordCount: number;
   integrity: number;
   syncFrequency: string;
+  details?: SourceDetails;
 }
 
 interface EntityCounts {
@@ -62,17 +71,17 @@ const mockDatabaseHealth: DatabaseHealthResponse = {
   healthMetrics: [
     {
       id: "metric_1",
-      name: "Data Completeness",
-      value: 95,
+      name: "Contact Completeness",
+      value: 92,
       status: "healthy",
       lastChecked: new Date().toISOString(),
       target: 90,
-      description: "Percentage of required fields with valid data across all entities"
+      description: "Percentage of contacts with complete, high-quality data"
     },
     {
       id: "metric_2",
       name: "Multi-Source Contact Rate",
-      value: 42,
+      value: 48,
       status: "warning",
       lastChecked: new Date().toISOString(),
       target: 50,
@@ -80,6 +89,33 @@ const mockDatabaseHealth: DatabaseHealthResponse = {
     },
     {
       id: "metric_3",
+      name: "Meeting Linkage Rate",
+      value: 96,
+      status: "healthy",
+      lastChecked: new Date().toISOString(),
+      target: 95,
+      description: "Percentage of Calendly meetings linked to the correct contact"
+    },
+    {
+      id: "metric_4",
+      name: "Form Submission Linkage",
+      value: 92,
+      status: "healthy",
+      lastChecked: new Date().toISOString(),
+      target: 90,
+      description: "Percentage of Typeform submissions linked to the correct contact"
+    },
+    {
+      id: "metric_5",
+      name: "Deal Assignment Coverage",
+      value: 100,
+      status: "healthy",
+      lastChecked: new Date().toISOString(),
+      target: 100,
+      description: "Percentage of deals assigned to users"
+    },
+    {
+      id: "metric_6",
       name: "Data Integration Health",
       value: 98,
       status: "healthy",
@@ -88,13 +124,13 @@ const mockDatabaseHealth: DatabaseHealthResponse = {
       description: "Health of data integration between systems"
     },
     {
-      id: "metric_4",
-      name: "Deal Assignment Coverage",
+      id: "metric_7",
+      name: "Email Normalization Coverage",
       value: 100,
       status: "healthy",
       lastChecked: new Date().toISOString(),
-      target: 100,
-      description: "Percentage of deals assigned to users"
+      target: 98,
+      description: "Percentage of contact emails that are properly normalized"
     }
   ],
   dataSources: [
@@ -105,7 +141,12 @@ const mockDatabaseHealth: DatabaseHealthResponse = {
       lastSync: new Date().toISOString(),
       recordCount: 2450,
       integrity: 98,
-      syncFrequency: "Every 15 minutes"
+      syncFrequency: "Every 15 minutes",
+      details: {
+        contacts: { count: 1600, complete: 1472, incomplete: 128 },
+        deals: { count: 850, linked: 850, unlinked: 0 },
+        activities: { count: 3200, linked: 3168, unlinked: 32 }
+      }
     },
     {
       id: "source_2",
@@ -113,8 +154,23 @@ const mockDatabaseHealth: DatabaseHealthResponse = {
       status: "healthy",
       lastSync: new Date().toISOString(),
       recordCount: 1280,
-      integrity: 100,
-      syncFrequency: "Every 30 minutes"
+      integrity: 96,
+      syncFrequency: "Every 30 minutes",
+      details: {
+        meetings: { count: 1280, linked: 1229, unlinked: 51 }
+      }
+    },
+    {
+      id: "source_3",
+      name: "Typeform",
+      status: "healthy",
+      lastSync: new Date().toISOString(),
+      recordCount: 865,
+      integrity: 92,
+      syncFrequency: "Every hour",
+      details: {
+        submissions: { count: 865, linked: 796, unlinked: 69 }
+      }
     }
   ],
   entityCounts: {
@@ -325,6 +381,107 @@ const DatabaseHealth: React.FC = () => {
             </Card>
           </div>
           
+          {/* Contact Completeness - One Source of Truth Visualization */}
+          <Card className="border-primary/20">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center">
+                <Users className="mr-2 h-5 w-5 text-primary" /> 
+                Contact Completeness - One Source of Truth
+              </CardTitle>
+              <CardDescription>
+                Shows how well our system integrates contact data from all platforms into a single, complete record
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {/* Find the contact completeness metric */}
+              {(() => {
+                const contactCompletenessMetric = healthData.healthMetrics.find(m => m.id === "metric_1");
+                if (!contactCompletenessMetric) return null;
+                
+                return (
+                  <div className="space-y-4">
+                    <div className="flex flex-col items-center justify-center p-6">
+                      <div className="relative h-40 w-40 mb-6">
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="text-4xl font-bold text-primary">
+                            {contactCompletenessMetric.value}%
+                          </div>
+                        </div>
+                        <svg className="h-full w-full" viewBox="0 0 100 100">
+                          <circle 
+                            cx="50" 
+                            cy="50" 
+                            r="45" 
+                            fill="none" 
+                            stroke="#e2e8f0" 
+                            strokeWidth="10" 
+                          />
+                          <circle 
+                            cx="50" 
+                            cy="50" 
+                            r="45" 
+                            fill="none" 
+                            stroke="#3b82f6" 
+                            strokeWidth="10" 
+                            strokeDasharray={`${2 * Math.PI * 45 * contactCompletenessMetric.value / 100} ${2 * Math.PI * 45 * (1 - contactCompletenessMetric.value / 100)}`}
+                            strokeDashoffset={2 * Math.PI * 45 * 0.25}
+                            className="transition-all duration-1000 ease-in-out"
+                          />
+                        </svg>
+                      </div>
+                      <div className="text-center space-y-2">
+                        <div className="font-medium">Contact Data Health</div>
+                        <div className="text-sm text-muted-foreground">
+                          {contactCompletenessMetric.description}
+                        </div>
+                        <div className={`text-sm font-medium ${
+                          contactCompletenessMetric.status === 'healthy' ? 'text-green-500' : 
+                          contactCompletenessMetric.status === 'warning' ? 'text-yellow-500' : 
+                          'text-red-500'
+                        }`}>
+                          Status: {contactCompletenessMetric.status.charAt(0).toUpperCase() + contactCompletenessMetric.status.slice(1)}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Target: {contactCompletenessMetric.target}% • Last checked: {formatDate(contactCompletenessMetric.lastChecked)}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="p-4 bg-secondary/10 rounded-md">
+                        <div className="text-sm font-medium">Multi-Source Contacts</div>
+                        <div className="text-xl font-bold mt-1">
+                          {healthData.healthMetrics.find(m => m.id === "metric_2")?.value || 0}%
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Contacts with data from multiple platforms
+                        </div>
+                      </div>
+                      <div className="p-4 bg-secondary/10 rounded-md">
+                        <div className="text-sm font-medium">Meeting Linkage</div>
+                        <div className="text-xl font-bold mt-1">
+                          {healthData.healthMetrics.find(m => m.id === "metric_3")?.value || 0}%
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Calendly meetings linked to contacts
+                        </div>
+                      </div>
+                      <div className="p-4 bg-secondary/10 rounded-md">
+                        <div className="text-sm font-medium">Form Submission Linkage</div>
+                        <div className="text-xl font-bold mt-1">
+                          {healthData.healthMetrics.find(m => m.id === "metric_4")?.value || 0}%
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Typeform submissions linked to contacts
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
+          
           {/* Health Metrics Summary */}
           <Card>
             <CardHeader>
@@ -373,19 +530,95 @@ const DatabaseHealth: React.FC = () => {
             <CardContent>
               <div className="space-y-4">
                 {healthData.dataSources.map((source) => (
-                  <div key={source.id} className="flex items-center justify-between border-b pb-2">
-                    <div className="flex items-center">
-                      {getStatusIcon(source.status)}
-                      <div className="ml-2">
-                        <div className="font-medium">{source.name}</div>
-                        <div className="text-sm text-gray-500">
-                          {source.recordCount.toLocaleString()} records • {source.syncFrequency}
+                  <div key={source.id} className="flex flex-col border-b pb-4 mb-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        {getStatusIcon(source.status)}
+                        <div className="ml-2">
+                          <div className="font-medium">{source.name}</div>
+                          <div className="text-sm text-gray-500">
+                            {source.recordCount.toLocaleString()} records • {source.syncFrequency}
+                          </div>
                         </div>
                       </div>
+                      <Badge variant={getBadgeVariant(source.status)}>
+                        {source.status}
+                      </Badge>
                     </div>
-                    <Badge variant={getBadgeVariant(source.status)}>
-                      {source.status}
-                    </Badge>
+                    
+                    {/* Show detailed linkage metrics for each source */}
+                    {source.details && (
+                      <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
+                        {source.name === "Close CRM" && source.details.contacts && (
+                          <div className="flex flex-col p-2 bg-secondary/10 rounded-md">
+                            <span className="text-xs text-muted-foreground">Contact Completeness</span>
+                            <div className="flex justify-between mt-1 items-center">
+                              <span className="text-sm font-medium">
+                                {((source.details.contacts.complete / source.details.contacts.count) * 100).toFixed(1)}%
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {source.details.contacts.complete} / {source.details.contacts.count}
+                              </span>
+                            </div>
+                            <Progress 
+                              value={(source.details.contacts.complete / source.details.contacts.count) * 100} 
+                              className="h-1 mt-1"
+                            />
+                          </div>
+                        )}
+                        {source.name === "Close CRM" && source.details.activities && (
+                          <div className="flex flex-col p-2 bg-secondary/10 rounded-md">
+                            <span className="text-xs text-muted-foreground">Activity Linkage</span>
+                            <div className="flex justify-between mt-1 items-center">
+                              <span className="text-sm font-medium">
+                                {((source.details.activities.linked / source.details.activities.count) * 100).toFixed(1)}%
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {source.details.activities.linked} / {source.details.activities.count}
+                              </span>
+                            </div>
+                            <Progress 
+                              value={(source.details.activities.linked / source.details.activities.count) * 100} 
+                              className="h-1 mt-1"
+                            />
+                          </div>
+                        )}
+                        {source.name === "Calendly" && source.details.meetings && (
+                          <div className="flex flex-col p-2 bg-secondary/10 rounded-md">
+                            <span className="text-xs text-muted-foreground">Meeting Linkage</span>
+                            <div className="flex justify-between mt-1 items-center">
+                              <span className="text-sm font-medium">
+                                {((source.details.meetings.linked / source.details.meetings.count) * 100).toFixed(1)}%
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {source.details.meetings.linked} / {source.details.meetings.count}
+                              </span>
+                            </div>
+                            <Progress 
+                              value={(source.details.meetings.linked / source.details.meetings.count) * 100} 
+                              className="h-1 mt-1"
+                            />
+                          </div>
+                        )}
+                        {source.name === "Typeform" && source.details.submissions && (
+                          <div className="flex flex-col p-2 bg-secondary/10 rounded-md">
+                            <span className="text-xs text-muted-foreground">Form Submission Linkage</span>
+                            <div className="flex justify-between mt-1 items-center">
+                              <span className="text-sm font-medium">
+                                {((source.details.submissions.linked / source.details.submissions.count) * 100).toFixed(1)}%
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {source.details.submissions.linked} / {source.details.submissions.count}
+                              </span>
+                            </div>
+                            <Progress 
+                              value={(source.details.submissions.linked / source.details.submissions.count) * 100} 
+                              className="h-1 mt-1"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
