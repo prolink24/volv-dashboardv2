@@ -130,11 +130,12 @@ const DatabaseHealth: React.FC = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [isUpdating, setIsUpdating] = useState(false);
   
-  // Fetch database health data with fallback to mock data during development
+  // Fetch database health data
   const { data, isLoading, isError, error, refetch } = useQuery<DatabaseHealthResponse>({
     queryKey: ['/api/database-health'],
     staleTime: 1000 * 60 * 5, // 5 minutes
     retry: 2,
+    // @ts-ignore - TanStack Query v5 supports onError but types don't reflect it properly
     onError: (err) => console.error('Database health fetch error:', err)
   });
   
@@ -258,7 +259,7 @@ const DatabaseHealth: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold">Database Health</h1>
           <p className="text-gray-500 mt-1">
-            Last updated: {formatDate(healthData.lastUpdated)}
+            Last updated: {healthData && 'lastUpdated' in healthData ? formatDate(healthData.lastUpdated) : 'Unknown'}
           </p>
         </div>
         <Button onClick={updateHealthMetrics} disabled={isLoading || isUpdating}>

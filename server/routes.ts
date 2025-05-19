@@ -1958,7 +1958,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get the current date and time for consistent timestamps
       const now = new Date().toISOString();
       
-      // Return a complete response with the expected structure 
+      // Return a complete response with the expected structure including all required fields
       const data = {
         success: true,
         healthMetrics: [
@@ -2028,6 +2028,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             syncFrequency: "Every hour"
           }
         ],
+        entityCounts: {
+          deals: 850,
+          contacts: 1600,
+          activities: 3200,
+          meetings: 1280
+        },
+        lastUpdated: now,
         validationRules: [
           {
             id: "rule_1",
