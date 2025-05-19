@@ -8,7 +8,8 @@ const typeformClient = axios.create({
   baseURL: 'https://api.typeform.com',
   headers: {
     'Authorization': `Bearer ${process.env.TYPEFORM_API_TOKEN}`
-  }
+  },
+  timeout: 30000 // Extend timeout to 30 seconds for larger data requests
 });
 
 /**
@@ -247,11 +248,17 @@ export async function syncTypeformResponses() {
   try {
     // Get all forms
     const formsData = await getForms();
+    
+    if (!formsData || !formsData.items) {
+      throw new Error('No forms returned from Typeform API');
+    }
+    
     const forms = formsData.items || [];
-    console.log(`Found ${forms.length} forms`);
+    console.log(`Found ${forms.length} forms from Typeform API`);
     
     let totalResponsesProcessed = 0;
     let totalResponsesSynced = 0;
+    let failedResponses = 0;
     
     // Process each form
     for (const form of forms) {
@@ -259,142 +266,176 @@ export async function syncTypeformResponses() {
       let hasMoreResponses = true;
       let beforeParam = '';
       
-      // Paginate through all responses
+      // Paginate through all responses with improved error handling
       while (hasMoreResponses) {
-        const params: Record<string, any> = { completed: true };
-        if (beforeParam) {
-          params.before = beforeParam;
-        }
-        
-        const responsesData = await getFormResponses(form.id, params);
-        const responses = responsesData.items || [];
-        
-        console.log(`Processing ${responses.length} responses from form ${form.title}`);
-        totalResponsesProcessed += responses.length;
-        
-        for (const response of responses) {
-          const email = extractEmailFromResponse(response);
-          if (!email) {
-            console.log(`No email found for response ${response.response_id}`);
-            continue;
-          }
-          
-          // Find contact by email
-          const existingContact = await db.select()
-            .from(contacts)
-            .where(eq(contacts.email, email))
-            .limit(1);
-          
-          if (existingContact.length === 0) {
-            console.log(`No matching contact found for email: ${email}. Creating new contact...`);
-            
-            // Create a new contact from the form submission
-            const name = extractNameFromResponse(response) || 'Unknown';
-            const company = extractCompanyFromResponse(response);
-            
-            // Create new contact record
-            const newContact = await db.insert(contacts).values({
-              name: name,
-              email: email,
-              company: company,
-              leadSource: 'typeform',
-              sourcesCount: 1,
-              fieldCoverage: 70,
-              firstTouchDate: new Date(response.submitted_at),
-              sourceData: response
-            }).returning();
-            
-            if (newContact.length === 0) {
-              console.error(`Failed to create new contact for email: ${email}`);
-              continue;
-            }
-            
-            console.log(`Created new contact: ${name} (${email})`);
-            
-            // Continue processing with the newly created contact
-            const contact = newContact[0];
-            
-            // Create form record
-            const formTitle = response.form_title || form.title;
-            await createFormRecord(contact.id, response, form.id, formTitle);
-            
-            totalResponsesSynced++;
-            continue;
-          }
-          
-          const contact = existingContact[0];
-          
-          // Check if form submission already exists
-          const existingForm = await db.select()
-            .from(forms)
-            .where(eq(forms.typeformResponseId, response.response_id))
-            .limit(1);
-          
-          if (existingForm.length > 0) {
-            console.log(`Form submission already exists for response ${response.response_id}`);
-            continue;
-          }
-          
-          // Create form record
-          const formTitle = response.form_title || form.title;
-          await createFormRecord(contact.id, response, form.id, formTitle);
-          
-          // Also create activity for form submission to ensure visibility in timeline
-          const submissionDate = new Date(response.submitted_at);
-          const activityData = {
-            type: 'form_submission',
-            source: 'typeform',
-            title: `Form Submitted: ${formTitle}`,
-            date: submissionDate,
-            contactId: contact.id,
-            sourceId: `typeform_${response.response_id}`,
-            description: `Submitted application form: ${formTitle}`,
-            metadata: response,
-            fieldCoverage: 100
+        try {
+          const params: Record<string, any> = { 
+            completed: true,
+            page_size: 100 // Maximum page size to reduce API calls
           };
           
-          await db.insert(activities).values(activityData);
-          
-          // Update contact to mark as multi-source if it wasn't already
-          if (!contact.leadSource || !contact.leadSource.includes('typeform')) {
-            const newLeadSource = contact.leadSource ? 
-              `${contact.leadSource},typeform` : 
-              'typeform';
-            
-            const newSourcesCount = (contact.sourcesCount || 0) + 1;
-            
-            await db.update(contacts)
-              .set({ 
-                leadSource: newLeadSource, 
-                sourcesCount: newSourcesCount,
-                lastActivityDate: submissionDate
-              })
-              .where(eq(contacts.id, contact.id));
-            
-            console.log(`Updated contact ${contact.name} (${contact.email}) to include Typeform as a source`);
+          if (beforeParam) {
+            params.before = beforeParam;
           }
           
-          totalResponsesSynced++;
+          const responsesData = await getFormResponses(form.id, params);
           
-          console.log(`Added Typeform submission activity for contact: ${contact.name} (${contact.email})`);
-        }
-        
-        // Check if there are more responses to fetch
-        if (responsesData.page_count > 1 && responsesData.items.length > 0) {
-          // Get the last response's token for pagination
-          const lastResponse = responses[responses.length - 1];
-          beforeParam = lastResponse.token;
-        } else {
+          if (!responsesData || !responsesData.items) {
+            console.warn(`No responses returned for form ${form.id}`);
+            break;
+          }
+          
+          const responses = responsesData.items || [];
+          
+          console.log(`Processing ${responses.length} responses from form ${form.title}`);
+          totalResponsesProcessed += responses.length;
+          
+          if (responses.length === 0) {
+            hasMoreResponses = false;
+            continue;
+          }
+          
+          // Process each response
+          for (const response of responses) {
+            try {
+              const email = extractEmailFromResponse(response);
+              if (!email) {
+                console.log(`No email found for response ${response.response_id}`);
+                failedResponses++;
+                continue;
+              }
+              
+              // Find contact by email
+              const existingContact = await db.select()
+                .from(contacts)
+                .where(eq(contacts.email, email))
+                .limit(1);
+              
+              if (existingContact.length === 0) {
+                console.log(`No matching contact found for email: ${email}. Creating new contact...`);
+                
+                // Create a new contact from the form submission
+                const name = extractNameFromResponse(response) || 'Unknown';
+                const company = extractCompanyFromResponse(response);
+                
+                // Create new contact record
+                const newContact = await db.insert(contacts).values({
+                  name: name,
+                  email: email,
+                  company: company,
+                  leadSource: 'typeform',
+                  sourcesCount: 1,
+                  fieldCoverage: 70,
+                  firstTouchDate: new Date(response.submitted_at),
+                  sourceData: response
+                }).returning();
+                
+                if (newContact.length === 0) {
+                  console.error(`Failed to create new contact for email: ${email}`);
+                  failedResponses++;
+                  continue;
+                }
+                
+                console.log(`Created new contact: ${name} (${email})`);
+                
+                // Continue processing with the newly created contact
+                const contact = newContact[0];
+                
+                // Create form record
+                const formTitle = response.form_title || form.title;
+                await createFormRecord(contact.id, response, form.id, formTitle);
+                
+                totalResponsesSynced++;
+                continue;
+              }
+              
+              const contact = existingContact[0];
+              
+              // Check if form submission already exists
+              const existingForm = await db.select()
+                .from(forms)
+                .where(eq(forms.typeformResponseId, response.response_id))
+                .limit(1);
+              
+              if (existingForm.length > 0) {
+                console.log(`Form submission already exists for response ${response.response_id}`);
+                continue;
+              }
+              
+              // Create form record
+              const formTitle = response.form_title || form.title;
+              await createFormRecord(contact.id, response, form.id, formTitle);
+              
+              // Also create activity for form submission to ensure visibility in timeline
+              const submissionDate = new Date(response.submitted_at);
+              const activityData: InsertActivity = {
+                type: 'form_submission',
+                source: 'typeform',
+                title: `Form Submitted: ${formTitle}`,
+                date: submissionDate,
+                contactId: contact.id,
+                sourceId: `typeform_${response.response_id}`,
+                description: `Submitted application form: ${formTitle}`,
+                metadata: response,
+                fieldCoverage: 100
+              };
+              
+              await db.insert(activities).values(activityData);
+              
+              // Update contact to mark as multi-source if it wasn't already
+              if (!contact.leadSource || !contact.leadSource.includes('typeform')) {
+                const newLeadSource = contact.leadSource ? 
+                  `${contact.leadSource},typeform` : 
+                  'typeform';
+                
+                const newSourcesCount = (contact.sourcesCount || 0) + 1;
+                
+                await db.update(contacts)
+                  .set({ 
+                    leadSource: newLeadSource, 
+                    sourcesCount: newSourcesCount,
+                    lastActivityDate: submissionDate
+                  })
+                  .where(eq(contacts.id, contact.id));
+                
+                console.log(`Updated contact ${contact.name} (${contact.email}) to include Typeform as a source`);
+              }
+              
+              totalResponsesSynced++;
+              
+              console.log(`Added Typeform submission activity for contact: ${contact.name} (${contact.email})`);
+            } catch (responseError) {
+              console.error(`Error processing response ${response.response_id}:`, responseError);
+              failedResponses++;
+              // Continue with next response despite error
+              continue;
+            }
+          }
+          
+          // Check if there are more responses to fetch
+          if (responsesData.page_count > 1 && responses.length === params.page_size) {
+            // Get the last response's token for pagination
+            const lastResponse = responses[responses.length - 1];
+            beforeParam = lastResponse.token;
+            console.log(`Fetching next page of responses for form ${form.title}`);
+          } else {
+            hasMoreResponses = false;
+          }
+        } catch (pageError) {
+          console.error(`Error fetching page of responses for form ${form.id}:`, pageError);
+          // If we hit an error with pagination, move to the next form
           hasMoreResponses = false;
+          continue;
         }
       }
     }
     
-    console.log(`Typeform sync completed. Processed ${totalResponsesProcessed} responses, synced ${totalResponsesSynced} activities.`);
+    console.log(`Typeform sync completed. Processed ${totalResponsesProcessed} responses, synced ${totalResponsesSynced} activities. Failed: ${failedResponses}`);
     return {
       success: true,
       processed: totalResponsesProcessed,
-      synced: totalResponsesSynced
+      synced: totalResponsesSynced,
+      failed: failedResponses
     };
   } catch (error) {
     console.error('Error syncing Typeform responses:', error);

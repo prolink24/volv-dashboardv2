@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDate } from "@/lib/utils";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import {
   Card,
@@ -42,93 +43,86 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertCircle,
+  RefreshCw,
+  Loader2
+} from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-// Mock form submissions data
-const mockForms = [
-  {
-    id: 1,
-    contactName: "Joshua Fuchs",
-    contactEmail: "joshua@globalfarm.com",
-    formName: "Investment Strategy Questionnaire",
-    submittedAt: "2025-04-01T10:30:00",
-    answers: {
-      "Investment Experience": "5-10 years",
-      "Risk Tolerance": "Moderate",
-      "Investment Amount": "$250,000",
-      "Investment Goals": "Retirement and growth",
-    },
-  },
-  {
-    id: 2,
-    contactName: "Victor Aguirre",
-    contactEmail: "victor.aguirre747@gmail.com",
-    formName: "New Client Intake Form",
-    submittedAt: "2025-03-30T14:45:00",
-    answers: {
-      "Annual Income": "$120,000",
-      "Current Investments": "Stocks and Bonds",
-      "Financial Goals": "Save for retirement",
-      "Retirement Age": "65",
-    },
-  },
-  {
-    id: 3,
-    contactName: "Zach Gordon",
-    contactEmail: "zgordon5@yahoo.com",
-    formName: "Investment Strategy Questionnaire",
-    submittedAt: "2025-03-25T09:15:00",
-    answers: {
-      "Investment Experience": "2-5 years",
-      "Risk Tolerance": "Aggressive",
-      "Investment Amount": "$100,000",
-      "Investment Goals": "Growth and income",
-    },
-  },
-  {
-    id: 4,
-    contactName: "Dan Lee Vogler",
-    contactEmail: "dan.vogler@averysecm.com",
-    formName: "Financial Planning Survey",
-    submittedAt: "2025-03-20T16:20:00",
-    answers: {
-      "Current Age": "42",
-      "Retirement Goals": "Travel and leisure",
-      "Current Savings": "$350,000",
-      "Monthly Contribution": "$2,000",
-    },
-  },
-  {
-    id: 5,
-    contactName: "Darrin Stallings",
-    contactEmail: "darrinstall1992@gmail.com",
-    formName: "New Client Intake Form",
-    submittedAt: "2025-03-18T11:10:00",
-    answers: {
-      "Annual Income": "$85,000",
-      "Current Investments": "401k only",
-      "Financial Goals": "Buy a house",
-      "Retirement Age": "70",
-    },
-  },
-];
+interface FormSubmission {
+  id: number;
+  contactId: number;
+  contactName: string;
+  contactEmail: string;
+  formName: string;
+  formId: string;
+  typeformResponseId: string;
+  submittedAt: string;
+  answers: Record<string, any>;
+  hiddenFields?: Record<string, any>;
+  calculatedFields?: Record<string, any>;
+  formCategory?: string;
+  formTags?: string[];
+  completionPercentage?: number;
+}
 
 const Forms = () => {
+  const queryClient = useQueryClient();
   const { toast } = useToast();
   const [selectedForm, setSelectedForm] = useState<string>("all");
   const [page, setPage] = useState(1);
-  const [viewForm, setViewForm] = useState<any | null>(null);
+  const [viewForm, setViewForm] = useState<FormSubmission | null>(null);
   const limit = 10;
+  
+  // Fetch form submissions from API
+  const { data: formsData, isLoading, isError, error } = useQuery({
+    queryKey: ['/api/typeform/submissions'],
+    retry: 2
+  });
+
+  // Mutate function for syncing typeform data
+  const syncMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch("/api/typeform/sync", {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error('Failed to sync with Typeform');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      // Invalidate form submissions query to refresh data
+      queryClient.invalidateQueries({ queryKey: ['/api/typeform/submissions'] });
+      toast({
+        title: "Sync Complete",
+        description: "Successfully synced data with Typeform",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Sync Failed",
+        description: error.message || "Failed to sync with Typeform",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Default to empty array if no forms data
+  const forms: FormSubmission[] = formsData?.forms || [];
   
   // Filter forms based on selected form type
   const filteredForms = selectedForm === "all"
-    ? mockForms
-    : mockForms.filter(form => form.formName === selectedForm);
+    ? forms
+    : forms.filter(form => form.formName === selectedForm);
   
   const totalPages = Math.ceil(filteredForms.length / limit);
   const displayedForms = filteredForms.slice((page - 1) * limit, page * limit);
   
   // Get unique form names for filter
-  const formNames = Array.from(new Set(mockForms.map(form => form.formName)));
+  const formNames = Array.from(new Set(forms.map(form => form.formName)));
   
   return (
     <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-background">
@@ -147,32 +141,34 @@ const Forms = () => {
                 title: "Sync with Typeform",
                 description: "Starting data sync with Typeform",
               });
-              
-              // This would trigger the API call to sync Typeform data
-              fetch("/api/sync/typeform", {
-                method: "POST",
-                credentials: "include",
-              })
-                .then((res) => res.json())
-                .then(() => {
-                  toast({
-                    title: "Sync Complete",
-                    description: "Successfully synced data with Typeform",
-                  });
-                })
-                .catch((error) => {
-                  toast({
-                    title: "Sync Failed",
-                    description: error.message || "Failed to sync with Typeform",
-                    variant: "destructive",
-                  });
-                });
+              syncMutation.mutate();
             }}
+            disabled={syncMutation.isPending}
           >
-            Sync with Typeform
+            {syncMutation.isPending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Syncing...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Sync with Typeform
+              </>
+            )}
           </Button>
         </div>
       </div>
+      
+      {isError && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>
+            Failed to load form submissions: {(error as Error)?.message || "Unknown error"}
+          </AlertDescription>
+        </Alert>
+      )}
       
       <Card className="mb-6">
         <CardHeader>
@@ -197,6 +193,13 @@ const Forms = () => {
                 </SelectContent>
               </Select>
             </div>
+            {forms.length > 0 && (
+              <div className="flex items-end">
+                <div className="text-sm text-muted-foreground">
+                  Total: {forms.length} form submissions from {formNames.length} form types
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -215,50 +218,66 @@ const Forms = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {displayedForms.map((form) => (
-                  <TableRow key={form.id}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{form.contactName}</div>
-                        <div className="text-sm text-muted-foreground">{form.contactEmail}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="font-normal">
-                        {form.formName}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{formatDate(form.submittedAt)}</TableCell>
-                    <TableCell>
-                      <div className="max-w-[300px] truncate">
-                        {Object.entries(form.answers).slice(0, 2).map(([key, value]) => (
-                          <div key={key} className="text-sm">
-                            <span className="font-medium">{key}:</span> {value as string}
-                          </div>
-                        ))}
-                        {Object.keys(form.answers).length > 2 && (
-                          <div className="text-sm text-muted-foreground">
-                            + {Object.keys(form.answers).length - 2} more fields
-                          </div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setViewForm(form)}
-                      >
-                        View
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                
-                {displayedForms.length === 0 && (
+                {isLoading ? (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center py-6">
-                      No form submissions found matching your filters
+                      <div className="flex items-center justify-center space-x-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Loading form submissions...</span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : displayedForms.length > 0 ? (
+                  displayedForms.map((form) => (
+                    <TableRow key={form.id}>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{form.contactName}</div>
+                          <div className="text-sm text-muted-foreground">{form.contactEmail}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="font-normal">
+                          {form.formName}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{formatDate(form.submittedAt)}</TableCell>
+                      <TableCell>
+                        <div className="max-w-[300px] truncate">
+                          {form.answers && Object.entries(form.answers).slice(0, 2).map(([key, value]) => (
+                            <div key={key} className="text-sm">
+                              <span className="font-medium">{key}:</span> {typeof value === 'string' ? value : JSON.stringify(value)}
+                            </div>
+                          ))}
+                          {form.answers && Object.keys(form.answers).length > 2 && (
+                            <div className="text-sm text-muted-foreground">
+                              + {Object.keys(form.answers).length - 2} more fields
+                            </div>
+                          )}
+                          {!form.answers && (
+                            <div className="text-sm text-muted-foreground">
+                              No answer data available
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setViewForm(form)}
+                        >
+                          View
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-6">
+                      {forms.length > 0 
+                        ? "No form submissions found matching your filters"
+                        : "No form submissions found. Click 'Sync with Typeform' to import data."}
                     </TableCell>
                   </TableRow>
                 )}
@@ -308,11 +327,11 @@ const Forms = () => {
       </Card>
       
       <Dialog open={!!viewForm} onOpenChange={() => setViewForm(null)}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Form Submission Details</DialogTitle>
             <DialogDescription>
-              {viewForm?.formName} submitted by {viewForm?.contactName}
+              {viewForm?.formName} submitted by {viewForm?.contactName || "Unknown"}
             </DialogDescription>
           </DialogHeader>
           
@@ -320,27 +339,69 @@ const Forms = () => {
             <h3 className="font-semibold">Contact Information</h3>
             <div className="grid grid-cols-2 gap-2">
               <div className="text-sm text-muted-foreground">Name:</div>
-              <div className="text-sm">{viewForm?.contactName}</div>
+              <div className="text-sm">{viewForm?.contactName || "Unknown"}</div>
               <div className="text-sm text-muted-foreground">Email:</div>
-              <div className="text-sm">{viewForm?.contactEmail}</div>
+              <div className="text-sm">{viewForm?.contactEmail || "Not available"}</div>
             </div>
             
             <h3 className="font-semibold mt-4">Submission Details</h3>
             <div className="grid grid-cols-2 gap-2">
               <div className="text-sm text-muted-foreground">Form:</div>
-              <div className="text-sm">{viewForm?.formName}</div>
+              <div className="text-sm">{viewForm?.formName || "Unknown"}</div>
+              <div className="text-sm text-muted-foreground">Form ID:</div>
+              <div className="text-sm">{viewForm?.formId || "Not available"}</div>
               <div className="text-sm text-muted-foreground">Date Submitted:</div>
-              <div className="text-sm">{formatDate(viewForm?.submittedAt)}</div>
+              <div className="text-sm">{viewForm?.submittedAt ? formatDate(viewForm.submittedAt) : "Unknown"}</div>
+              {viewForm?.completionPercentage !== undefined && (
+                <>
+                  <div className="text-sm text-muted-foreground">Completion:</div>
+                  <div className="text-sm">{viewForm.completionPercentage}%</div>
+                </>
+              )}
             </div>
             
-            <h3 className="font-semibold mt-4">Form Answers</h3>
-            <div className="grid grid-cols-2 gap-2">
-              {viewForm && Object.entries(viewForm.answers).map(([key, value]) => (
-                <React.Fragment key={key}>
-                  <div className="text-sm font-medium">{key}:</div>
-                  <div className="text-sm">{value as string}</div>
-                </React.Fragment>
-              ))}
+            {viewForm?.answers && Object.keys(viewForm.answers).length > 0 && (
+              <>
+                <h3 className="font-semibold mt-4">Form Answers</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {Object.entries(viewForm.answers).map(([key, value]) => (
+                    <div key={key} className="contents">
+                      <div className="text-sm font-medium">{key}:</div>
+                      <div className="text-sm break-words">
+                        {typeof value === 'string' 
+                          ? value 
+                          : typeof value === 'object' 
+                            ? JSON.stringify(value, null, 2) 
+                            : String(value)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+            
+            {viewForm?.hiddenFields && Object.keys(viewForm.hiddenFields).length > 0 && (
+              <>
+                <h3 className="font-semibold mt-4">Hidden Fields</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {Object.entries(viewForm.hiddenFields).map(([key, value]) => (
+                    <div key={key} className="contents">
+                      <div className="text-sm font-medium">{key}:</div>
+                      <div className="text-sm break-words">
+                        {typeof value === 'string' 
+                          ? value 
+                          : typeof value === 'object' 
+                            ? JSON.stringify(value, null, 2) 
+                            : String(value)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+            
+            <div className="mt-4 text-xs text-muted-foreground">
+              <p>Typeform Response ID: {viewForm?.typeformResponseId}</p>
             </div>
           </div>
         </DialogContent>
