@@ -35,19 +35,21 @@ const BarChart = ({
         <div className="h-52">
           <ResponsiveContainer width="100%" height="100%">
             <RechartsBarChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
               <XAxis 
                 dataKey="name" 
                 axisLine={false}
                 tickLine={false}
                 tickMargin={8}
                 fontSize={12}
+                tick={{ fill: "var(--foreground)" }}
               />
               <YAxis 
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={formatYAxis}
                 fontSize={12}
+                tick={{ fill: "var(--foreground)" }}
               />
               <Tooltip
                 formatter={formatValue}
@@ -56,13 +58,16 @@ const BarChart = ({
                   border: "1px solid var(--border)",
                   borderRadius: "var(--radius)",
                   fontSize: "12px",
+                  color: "var(--foreground)"
                 }}
+                labelStyle={{ color: "var(--foreground)" }}
+                itemStyle={{ color: "var(--foreground)" }}
               />
               {data.map((entry, index) => (
                 <Bar
                   key={`bar-${index}`}
                   dataKey="value"
-                  fill={entry.color || "var(--primary)"}
+                  fill={entry.color || "hsl(var(--chart-1))"}
                   radius={[4, 4, 0, 0]}
                   name={entry.name}
                   data={[entry]}
