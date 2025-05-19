@@ -188,42 +188,20 @@ function extractCompanyFromResponse(response: any): string | null {
  */
 async function createFormRecord(contactId: number, response: any, formId: string, formName: string): Promise<any> {
   try {
+    console.log(`Creating form record for contact ID: ${contactId}, response ID: ${response.response_id}`);
+    
     // Calculate completion percentage based on answer count vs total questions
     const questionCount = response.calculated?.variables?.length || 0;
     const answeredCount = response.answers?.length || 0;
     const completionPercentage = questionCount > 0 ? 
       Math.floor((answeredCount / questionCount) * 100) : 100;
 
-    // Extract metadata like IP, completion time, etc.
-    const metadata = {
-      platform: 'typeform',
-      browser: response.metadata?.browser,
-      platform_details: response.metadata?.platform,
-      user_agent: response.metadata?.user_agent,
-      referer: response.metadata?.referer,
-      network_id: response.metadata?.network_id,
-      response_id: response.response_id
-    };
-
-    // Prepare the form data
-    const formData: InsertForm = {
-      contactId: contactId,
-      typeformResponseId: response.response_id,
-      formName: formName,
-      formId: formId,
-      submittedAt: new Date(response.submitted_at),
-      answers: {}, // Initialize with empty object first
-      hiddenFields: {}, // Initialize with empty object first
-      calculatedFields: {}, // Initialize with empty object first
-      completionPercentage: completionPercentage
-    };
+    // Process answers into a structured object
+    const processedAnswers: Record<string, any> = {};
     
-    // Transform answers array into a key-value object for better storage
     if (response.answers && Array.isArray(response.answers)) {
-      const answersObj: Record<string, any> = {};
       for (const answer of response.answers) {
         if (answer.field && answer.field.title) {
-          // Use the field title as the key and the appropriate value based on type
           const key = answer.field.title;
           let value = null;
           
@@ -259,32 +237,65 @@ async function createFormRecord(contactId: number, response: any, formId: string
               value = answer.payment;
               break;
             default:
+              // For any other type, store a stringified version
               value = JSON.stringify(answer);
           }
           
-          answersObj[key] = value;
+          processedAnswers[key] = value;
         }
       }
-      formData.answers = answersObj;
     }
     
-    // Handle hidden fields
-    if (response.hidden) {
-      formData.hiddenFields = response.hidden;
-    }
+    // Prepare hidden fields
+    const processedHiddenFields = response.hidden || {};
     
-    // Handle calculated fields
-    if (response.calculated) {
-      formData.calculatedFields = response.calculated;
-    }
+    // Prepare calculated fields
+    const processedCalculatedFields = response.calculated || {};
+    
+    // Determine UTM parameters from hidden fields
+    const utmSource = processedHiddenFields.utm_source || null;
+    const utmMedium = processedHiddenFields.utm_medium || null;
+    const utmCampaign = processedHiddenFields.utm_campaign || null;
+    
+    // Create the form data record
+    const formData: InsertForm = {
+      contactId,
+      typeformResponseId: response.response_id,
+      formName: formName,
+      formId: formId,
+      submittedAt: new Date(response.submitted_at),
+      answers: processedAnswers,
+      hiddenFields: processedHiddenFields,
+      calculatedFields: processedCalculatedFields,
+      completionPercentage: completionPercentage,
+      // Add additional fields if available from the schema
+      respondentEmail: extractEmailFromResponse(response),
+      respondentName: extractNameFromResponse(response),
+      respondentIp: response.metadata?.network_id || null,
+      completionTime: response.metadata?.time_to_complete || null,
+      utmSource,
+      utmMedium,
+      utmCampaign
+    };
+    
+    console.log(`Inserting form record with data:`, JSON.stringify({
+      contactId: formData.contactId,
+      typeformResponseId: formData.typeformResponseId,
+      formName: formData.formName,
+      submittedAt: formData.submittedAt
+    }));
 
-    // Insert the form record
-    const result = await db.insert(forms).values(formData);
-    
-    console.log(`Created form record for response ID: ${response.response_id}`);
-    return result;
+    // Insert the form record and explicitly log any error
+    try {
+      const result = await db.insert(forms).values(formData);
+      console.log(`Successfully created form record for response ID: ${response.response_id}`);
+      return result;
+    } catch (insertError) {
+      console.error('Database error creating form record:', insertError);
+      throw insertError;
+    }
   } catch (error) {
-    console.error('Error creating form record:', error);
+    console.error('Error in createFormRecord:', error);
     throw error;
   }
 }
@@ -305,11 +316,6 @@ export async function syncTypeformResponses() {
     const typeformForms = formsData.items || [];
     console.log(`Found ${typeformForms.length} forms from Typeform API`);
     
-    // Log the first form to debug
-    if (typeformForms.length > 0) {
-      console.log('Sample form data:', JSON.stringify(typeformForms[0]).substring(0, 300) + '...');
-    }
-    
     let totalResponsesProcessed = 0;
     let totalResponsesSynced = 0;
     let failedResponses = 0;
@@ -318,55 +324,23 @@ export async function syncTypeformResponses() {
     for (const form of typeformForms) {
       console.log(`Processing form: ${form.title} (${form.id})`);
       
-      // Test a single request first to debug
       try {
-        const testParams = { 
+        // Get responses for this form
+        const params = { 
           completed: true,
-          page_size: 2 // Just get a few for testing
+          page_size: 20 // Start with a reasonable page size
         };
         
-        const testResponse = await getFormResponses(form.id, testParams);
-        console.log(`Test response for form ${form.id}: ${testResponse ? 'SUCCESS' : 'FAILED'}`);
+        const responsesData = await getFormResponses(form.id, params);
         
-        if (testResponse && testResponse.items && testResponse.items.length > 0) {
-          console.log(`Sample response data:`, JSON.stringify(testResponse.items[0]).substring(0, 300) + '...');
+        if (!responsesData || !responsesData.items || responsesData.items.length === 0) {
+          console.log(`No responses found for form: ${form.title}`);
+          continue;
         }
-      } catch (testError) {
-        console.error(`Error testing form ${form.id}:`, testError);
-        continue; // Skip to next form if test fails
-      }
-      
-      let hasMoreResponses = true;
-      let beforeParam = '';
-      
-      // Paginate through all responses with improved error handling
-      while (hasMoreResponses) {
-        try {
-          const params: Record<string, any> = { 
-            completed: true,
-            page_size: 50 // Reduced page size to avoid timeouts
-          };
-          
-          if (beforeParam) {
-            params.before = beforeParam;
-          }
-          
-          const responsesData = await getFormResponses(form.id, params);
-          
-          if (!responsesData || !responsesData.items) {
-            console.warn(`No responses returned for form ${form.id}`);
-            break;
-          }
-          
-          const responses = responsesData.items || [];
-          
-          console.log(`Processing ${responses.length} responses from form ${form.title}`);
-          totalResponsesProcessed += responses.length;
-          
-          if (responses.length === 0) {
-            hasMoreResponses = false;
-            continue;
-          }
+        
+        const responses = responsesData.items;
+        console.log(`Found ${responses.length} responses for form: ${form.title}`);
+        totalResponsesProcessed += responses.length;
           
           // Process each response
           for (const response of responses) {
