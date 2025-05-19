@@ -455,7 +455,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Calculate revenue with consistent date filtering (using close_date by default)
       // This gives us a standardized way to calculate revenue metrics
-      if (typeof formattedDateParam !== 'string' && formattedDateParam.startDate && formattedDateParam.endDate) {
+      if (typeof formattedDateParam !== 'string' && 'startDate' in formattedDateParam && 'endDate' in formattedDateParam) {
         try {
           console.log('[REVENUE] Enhancing dashboard with consistent revenue calculation');
           const revenueData = await calculateRevenue({

@@ -88,9 +88,11 @@ export async function calculateRevenue(options: RevenueCalculationOptions): Prom
           lte(deals.closeDate, sql`${endDate}`)
         );
       case RevenueCalculationMode.UPDATED_DATE:
+        // Fallback to created date since updatedAt is not in the schema
+        console.log('[REVENUE] Warning: Using createdAt instead of updatedAt (not in schema)');
         return and(
-          gte(deals.updatedAt, sql`${startDate}`),
-          lte(deals.updatedAt, sql`${endDate}`)
+          gte(deals.createdAt, sql`${startDate}`),
+          lte(deals.createdAt, sql`${endDate}`)
         );
     }
   })();
