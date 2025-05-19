@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useTheme } from "@/providers/theme-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DateRangePicker } from "@/components/global/DateRangePicker";
@@ -14,12 +13,11 @@ import {
   Search,
   Bell,
   Settings,
-  Sun,
-  Moon,
   ChevronDown,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import MobileSidebar from "./mobile-sidebar";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 const pathToTitle: Record<string, string> = {
   "/": "Dashboard",
@@ -37,12 +35,7 @@ const pathToTitle: Record<string, string> = {
 
 const Header = () => {
   const [location] = useLocation();
-  const { setTheme, theme } = useTheme();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  const toggleTheme = () => {
-    setTheme(theme === "dark" ? "light" : "dark");
-  };
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -94,13 +87,7 @@ const Header = () => {
               <Settings className="h-5 w-5" />
             </Button>
 
-            <Button variant="ghost" size="icon" onClick={toggleTheme}>
-              {theme === "dark" ? (
-                <Sun className="h-5 w-5" />
-              ) : (
-                <Moon className="h-5 w-5" />
-              )}
-            </Button>
+            <ThemeToggle variant="ghost" size="icon" />
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
