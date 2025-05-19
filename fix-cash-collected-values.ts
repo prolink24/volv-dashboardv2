@@ -5,88 +5,152 @@
  * ensuring accurate financial data when filtering by date range.
  */
 
-import { db } from "./server/db";
-import { deals } from "./shared/schema";
-import { sql, eq } from "drizzle-orm";
+import chalk from 'chalk';
+import { db } from './server/db';
+import { deals } from './shared/schema';
+import { eq, and, isNotNull, sql } from 'drizzle-orm';
 
 async function fixCashCollectedValues() {
-  try {
-    console.log("Starting fix for inflated cash_collected values...");
-    
-    // Find all deals with potentially inflated cash_collected values (where cash_collected is much higher than deal value)
-    const dealsWithInflatedValues = await db.select({
-      id: deals.id,
-      title: deals.title,
-      value: deals.value,
-      cash_collected: deals.cashCollected,
-      close_date: deals.closeDate,
-      status: deals.status
-    }).from(deals)
-      .where(sql`status = 'won' AND cash_collected IS NOT NULL AND cash_collected != '0' AND cash_collected != ''`);
-    
-    console.log(`Found ${dealsWithInflatedValues.length} won deals to check for inflated cash_collected values`);
-    
-    // Filter for deals where cash_collected is significantly higher than value (at least 10x)
-    const inflatedDeals = dealsWithInflatedValues.filter(deal => {
-      if (!deal.value || !deal.cash_collected) return false;
-      
-      const valueNum = parseFloat(String(deal.value));
-      const cashCollectedNum = parseFloat(String(deal.cash_collected));
-      
-      return !isNaN(valueNum) && 
-             !isNaN(cashCollectedNum) && 
-             cashCollectedNum > valueNum * 10;  // Threshold: cash_collected is 10x+ higher than value
-    });
-    
-    console.log(`Found ${inflatedDeals.length} deals with inflated cash_collected values`);
-    
-    // Log the deals with inflated values for verification
-    if (inflatedDeals.length > 0) {
-      console.log("Deals with inflated cash_collected values:");
-      inflatedDeals.forEach(deal => {
-        console.log(`ID: ${deal.id}, Title: ${deal.title}, Value: ${deal.value}, Cash Collected: ${deal.cash_collected}, Close Date: ${deal.close_date}`);
-      });
+  console.log(chalk.blue('=== Fixing Cash Collected Values ===\n'));
+
+  // Step 1: Get all won deals with cash_collected values
+  console.log(chalk.blue('Step 1: Finding deals with inflated cash_collected values...'));
+
+  const dealsWithCashCollected = await db.select({
+    id: deals.id,
+    closeId: deals.closeId,
+    title: deals.title,
+    value: deals.value,
+    status: deals.status,
+    cashCollected: deals.cashCollected
+  })
+  .from(deals)
+  .where(
+    and(
+      eq(deals.status, 'won'),
+      isNotNull(deals.cashCollected)
+    )
+  );
+
+  console.log(`Found ${dealsWithCashCollected.length} won deals with cash_collected values`);
+
+  // Step 2: Identify deals with inflated cash_collected values
+  const inflatedDeals = dealsWithCashCollected.filter(deal => {
+    let dealValue = 0;
+    let cashCollected = 0;
+
+    // Parse the values safely
+    if (deal.value) {
+      try {
+        dealValue = typeof deal.value === 'string' ? parseFloat(deal.value) : deal.value;
+      } catch (e) {
+        dealValue = 0;
+      }
     }
-    
-    // Fix inflated values - set cash_collected to the actual deal value
-    const updatePromises = inflatedDeals.map(deal => {
-      // Use the deal value as the correct cash_collected value
-      const correctedCashCollected = deal.value || "0";
+
+    if (deal.cashCollected) {
+      try {
+        cashCollected = typeof deal.cashCollected === 'string' ? 
+          parseFloat(deal.cashCollected) : deal.cashCollected;
+      } catch (e) {
+        cashCollected = 0;
+      }
+    }
+
+    // Consider it inflated if cash_collected is more than 2x the deal value
+    // (allowing for some reasonable buffer)
+    return cashCollected > (dealValue * 2) && dealValue > 0;
+  });
+
+  console.log(`Identified ${inflatedDeals.length} deals with inflated cash_collected values`);
+
+  // Step 3: Update the deals to correct cash_collected values
+  console.log(chalk.blue('\nStep 3: Updating deals with correct cash_collected values...'));
+
+  let updatedCount = 0;
+  let errorCount = 0;
+
+  for (const deal of inflatedDeals) {
+    try {
+      let dealValue = 0;
       
-      return db.update(deals)
-        .set({
-          cashCollected: correctedCashCollected
+      // Parse the value safely
+      if (deal.value) {
+        dealValue = typeof deal.value === 'string' ? parseFloat(deal.value) : deal.value;
+      }
+
+      // Set cash_collected to exactly match the deal value
+      await db.update(deals)
+        .set({ 
+          cashCollected: dealValue.toString()
         })
         .where(eq(deals.id, deal.id));
-    });
-    
-    // Execute all updates in parallel
-    await Promise.all(updatePromises);
-    
-    console.log(`Updated cash_collected values for ${inflatedDeals.length} deals`);
-    
-    // Specifically check April 2025 deals
-    const aprilDeals = await db.select({
+
+      updatedCount++;
+      console.log(chalk.green(`✅ Fixed deal #${deal.id}: ${deal.title || 'Untitled'}`));
+      console.log(`   Before: $${deal.cashCollected}, After: $${dealValue}`);
+    } catch (error) {
+      errorCount++;
+      console.log(chalk.red(`❌ Error fixing deal #${deal.id}: ${error.message}`));
+    }
+  }
+
+  // Step 4: Verify the fixes
+  console.log(chalk.blue('\nStep 4: Verifying the fixes...'));
+
+  // Verify each deal individually to avoid SQL parameter size limitations
+  const verifiedDeals = [];
+  for (const deal of inflatedDeals) {
+    const result = await db.select({
       id: deals.id,
       title: deals.title,
       value: deals.value,
-      cash_collected: deals.cashCollected,
-      close_date: deals.closeDate
-    }).from(deals)
-      .where(sql`close_date >= '2025-04-01' AND close_date <= '2025-04-30' AND status = 'won'`);
+      cashCollected: deals.cashCollected
+    })
+    .from(deals)
+    .where(eq(deals.id, deal.id));
     
-    console.log(`\nApril 2025 deals after fix:`);
-    aprilDeals.forEach(deal => {
-      console.log(`ID: ${deal.id}, Title: ${deal.title}, Value: ${deal.value}, Cash Collected: ${deal.cash_collected}, Close Date: ${deal.close_date}`);
-    });
+    if (result.length > 0) {
+      verifiedDeals.push(result[0]);
+    }
+  }
+
+  let correctCount = 0;
+  for (const deal of verifiedDeals) {
+    let dealValue = typeof deal.value === 'string' ? parseFloat(deal.value) : (deal.value || 0);
+    let cashCollected = typeof deal.cashCollected === 'string' ? 
+      parseFloat(deal.cashCollected) : (deal.cashCollected || 0);
     
-    console.log("\nFix completed successfully");
-  } catch (error) {
-    console.error("Error fixing cash_collected values:", error);
+    // Allow for small rounding differences
+    if (Math.abs(dealValue - cashCollected) < 1) {
+      correctCount++;
+    } else {
+      console.log(chalk.yellow(`⚠️ Deal #${deal.id} still has incorrect values:`));
+      console.log(`   Value: $${dealValue}, Cash Collected: $${cashCollected}`);
+    }
+  }
+
+  console.log(chalk.blue('\n=== Summary ==='));
+  console.log(`Total won deals with cash_collected: ${dealsWithCashCollected.length}`);
+  console.log(`Deals with inflated values: ${inflatedDeals.length}`);
+  console.log(`Successfully updated: ${updatedCount}`);
+  console.log(`Verified correct: ${correctCount}/${inflatedDeals.length}`);
+  console.log(`Errors encountered: ${errorCount}`);
+
+  if (correctCount === inflatedDeals.length) {
+    console.log(chalk.green('\n✅ All deals fixed successfully!'));
+  } else {
+    console.log(chalk.yellow(`\n⚠️ Some deals may still have incorrect values (${inflatedDeals.length - correctCount})`));
   }
 }
 
-// Run the function
+// Run the fix
 fixCashCollectedValues()
-  .then(() => console.log("Script completed successfully"))
-  .catch(err => console.error("Script failed:", err));
+  .then(() => {
+    console.log('Fix completed');
+    process.exit(0);
+  })
+  .catch(error => {
+    console.error('Error running fix:', error);
+    process.exit(1);
+  });
