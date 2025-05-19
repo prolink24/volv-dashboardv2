@@ -401,7 +401,7 @@ const DatabaseHealth: React.FC = () => {
               <CardDescription>Detailed information about your data sources</CardDescription>
             </CardHeader>
             <CardContent>
-              {healthData.dataSources.map((source) => (
+              {healthData && typeof healthData === 'object' && 'dataSources' in healthData ? healthData.dataSources.map((source: DataSource) => (
                 <div key={source.id} className="mb-6 last:mb-0">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center">
@@ -450,7 +450,7 @@ const DatabaseHealth: React.FC = () => {
               <CardDescription>Detailed information about data health metrics</CardDescription>
             </CardHeader>
             <CardContent>
-              {healthData.healthMetrics.map((metric) => (
+              {healthData && typeof healthData === 'object' && 'healthMetrics' in healthData ? healthData.healthMetrics.map((metric: HealthMetric) => (
                 <div key={metric.id} className="mb-6 last:mb-0">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center">
