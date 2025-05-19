@@ -6,6 +6,8 @@ import {
   SheetTitle 
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { 
   LayoutDashboard, 
   Users, 
@@ -112,7 +114,13 @@ const MobileSidebar = ({ isOpen, onClose, currentPath }: MobileSidebarProps) => 
           })}
         </div>
         
-        <div className="p-4 mt-auto border-t border-border">
+        <div className="p-4 mt-auto">
+          <Separator className="mb-4" />
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm font-medium">Switch Theme</p>
+            <ThemeToggle variant="outline" size="sm" />
+          </div>
+          <Separator className="mb-4" />
           <div className="flex items-center">
             <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">
               <span className="font-medium text-sm">JS</span>

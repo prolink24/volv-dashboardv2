@@ -21,33 +21,25 @@ export function ThemeToggle({
   };
 
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          variant={variant}
-          size={size}
-          onClick={toggleTheme}
-          className="gap-2"
-          aria-label="Toggle theme"
-        >
-          {theme === "dark" ? (
-            <>
-              <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-              <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-              {showLabel && <span className="ml-2">Light mode</span>}
-            </>
-          ) : (
-            <>
-              <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-              <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-              {showLabel && <span className="ml-2">Dark mode</span>}
-            </>
-          )}
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent>
-        <p>Switch to {theme === "dark" ? "light" : "dark"} mode</p>
-      </TooltipContent>
-    </Tooltip>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant={variant}
+            size={size}
+            onClick={toggleTheme}
+            className="gap-2 relative"
+            aria-label="Toggle theme"
+          >
+            <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+            <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+            {showLabel && <span className="ml-2">{theme === "dark" ? "Light mode" : "Dark mode"}</span>}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Switch to {theme === "dark" ? "light" : "dark"} mode</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
