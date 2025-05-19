@@ -1,5 +1,5 @@
 import { db } from "../db";
-import { deals } from "../schema";
+import { deals } from "../../shared/schema";
 import { and, gte, lte, isNotNull, sql, eq } from "drizzle-orm";
 
 /**

@@ -444,10 +444,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       }
       
+      // Import the revenue calculation service
+      const { calculateRevenue, RevenueCalculationMode } = await import('./services/revenue-calculation');
+      
+      // Get base dashboard data
       const dashboardData = await storage.getDashboardData(
         formattedDateParam, 
         userId
       );
+      
+      // Calculate revenue with consistent date filtering (using close_date by default)
+      // This gives us a standardized way to calculate revenue metrics
+      if (typeof formattedDateParam !== 'string' && formattedDateParam.startDate && formattedDateParam.endDate) {
+        try {
+          console.log('[REVENUE] Enhancing dashboard with consistent revenue calculation');
+          const revenueData = await calculateRevenue({
+            startDate: formattedDateParam.startDate,
+            endDate: formattedDateParam.endDate,
+            userId: userId,
+            calculationMode: RevenueCalculationMode.CLOSE_DATE
+          });
+          
+          // Update the dashboard KPIs with the consistent revenue numbers
+          if (dashboardData.kpis) {
+            dashboardData.kpis.revenue.current = revenueData.totalRevenue;
+            dashboardData.kpis.cashCollected.current = revenueData.totalCashCollected;
+            // Also update revenueGenerated as this is used in some dashboard components
+            dashboardData.kpis.revenueGenerated.current = revenueData.totalRevenue;
+            
+            // Add a flag to indicate we used the enhanced calculation
+            dashboardData.usingEnhancedRevenueCalculation = true;
+          }
+          
+          console.log(`[REVENUE] Updated dashboard KPIs with consistent calculation: $${revenueData.totalRevenue} revenue, $${revenueData.totalCashCollected} cash collected`);
+        } catch (error) {
+          console.error('[REVENUE] Error enhancing dashboard with consistent revenue calculation:', error);
+        }
+      }
+      
       console.timeEnd('get-dashboard-data');
       
       // Get missing data properties or provide empty arrays
