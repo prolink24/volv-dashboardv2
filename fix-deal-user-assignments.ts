@@ -10,7 +10,7 @@
 
 import { db } from "./server/db";
 import { deals, closeUsers, dealToUserAssignments } from "./shared/schema";
-import { eq, and, gte, lte, sql, isNotNull } from "drizzle-orm";
+import { eq, and, gte, lte, sql, isNotNull, inArray } from "drizzle-orm";
 
 async function fixDealUserAssignments() {
   console.log("\n=== Fixing Deal User Assignments ===\n");
@@ -126,14 +126,19 @@ async function fixDealUserAssignments() {
   
   const dealIdsToCheck = validAssignments.map(a => a.dealId);
   
-  const existingAssignments = await db.select({
-    dealId: dealToUserAssignments.dealId,
-    closeUserId: dealToUserAssignments.closeUserId
-  })
-  .from(dealToUserAssignments)
-  .where(
-    sql`${dealToUserAssignments.dealId} IN (${dealIdsToCheck.join(',')})`
-  );
+  // Handle case where there are no deals to check
+  let existingAssignments = [];
+  if (dealIdsToCheck.length > 0) {
+    // Use Drizzle's built-in inArray operator for proper parameter handling
+    existingAssignments = await db.select({
+      dealId: dealToUserAssignments.dealId,
+      closeUserId: dealToUserAssignments.closeUserId
+    })
+    .from(dealToUserAssignments)
+    .where(
+      inArray(dealToUserAssignments.dealId, dealIdsToCheck)
+    );
+  }
   
   console.log(`Found ${existingAssignments.length} existing assignments in junction table`);
   
@@ -182,12 +187,13 @@ async function fixDealUserAssignments() {
   // Step 6: Verify the assignments
   console.log("\nStep 6: Verifying assignments...");
   
+  // Use the same inArray operator for verification
   const finalAssignments = await db.select({
     count: sql<number>`COUNT(*)`
   })
   .from(dealToUserAssignments)
   .where(
-    sql`${dealToUserAssignments.dealId} IN (${dealIdsToCheck.join(',')})`
+    inArray(dealToUserAssignments.dealId, dealIdsToCheck)
   );
   
   const finalCount = finalAssignments[0]?.count || 0;
