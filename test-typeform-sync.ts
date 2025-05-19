@@ -271,15 +271,12 @@ async function testTypeformSync() {
             contactId = existingContact[0].id;
             console.log(`Using existing contact ID: ${contactId}`);
           } else {
-            // Create a new contact
+            // Create a new contact with required name field
             const contactResult = await db.insert(contacts).values({
-              email,
-              firstName: extractNameFromResponse(testResponse) || 'Test',
-              lastName: '',
-              company: extractCompanyFromResponse(testResponse) || 'Test Company',
-              source: 'typeform',
-              createdAt: new Date(),
-              updatedAt: new Date()
+              email: email,
+              name: extractNameFromResponse(testResponse) || 'Unknown Contact',
+              company: extractCompanyFromResponse(testResponse) || 'Unknown Company',
+              leadSource: 'typeform'
             }).returning();
             
             contactId = contactResult[0].id;
@@ -296,13 +293,15 @@ async function testTypeformSync() {
             type: 'form_submission',
             source: 'typeform',
             sourceId: testResponse.response_id,
+            title: `Form Submission: ${testForm.title}`,
             description: `Submitted form: ${testForm.title}`,
             metadata: {
               formId: testForm.id,
               formName: testForm.title,
               submittedAt: testResponse.submitted_at
             },
-            timestamp: new Date(testResponse.submitted_at)
+            // Use the date field for timestamp in the activity
+            date: new Date(testResponse.submitted_at)
           };
           
           const activityResult = await db.insert(activities).values(activityData).returning();
