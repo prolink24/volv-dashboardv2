@@ -16,6 +16,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { useLocation } from "wouter";
+import { useTheme } from "@/providers/theme-provider";
 import MobileSidebar from "./mobile-sidebar";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
