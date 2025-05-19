@@ -35,6 +35,9 @@ const Settings = () => {
   // Mock sync settings states
   const [autoSync, setAutoSync] = useState(true);
   const [syncInterval, setSyncInterval] = useState("hourly");
+  const [typeformSyncInterval, setTypeformSyncInterval] = useState("hourly");
+  const [closeSyncInterval, setCloseSyncInterval] = useState("hourly");
+  const [calendlySyncInterval, setCalendlySyncInterval] = useState("hourly");
   const [syncHistory, setSyncHistory] = useState([
     { id: 1, source: "All Sources", status: "success", date: "2025-04-02T12:30:00", count: 285 },
     { id: 2, source: "Calendly", status: "success", date: "2025-04-02T11:15:00", count: 44 },
@@ -56,9 +59,25 @@ const Settings = () => {
   };
   
   const handleSaveSyncSettings = () => {
+    // In a real implementation, this would save settings to the server
+    // via an API call to persist the sync intervals for each platform
+    
+    const platformIntervals = [
+      `Close CRM: ${closeSyncInterval}`,
+      `Calendly: ${calendlySyncInterval}`,
+      `Typeform: ${typeformSyncInterval}`
+    ].join(', ');
+    
     toast({
       title: "Sync Settings Updated",
-      description: `Auto-sync ${autoSync ? 'enabled' : 'disabled'} with ${syncInterval} interval.`,
+      description: `Auto-sync ${autoSync ? 'enabled' : 'disabled'}. Global: ${syncInterval}. Platform intervals set.`,
+    });
+    
+    console.log('Saved sync intervals:', {
+      global: syncInterval,
+      closeCRM: closeSyncInterval,
+      calendly: calendlySyncInterval,
+      typeform: typeformSyncInterval
     });
   };
   
@@ -311,7 +330,7 @@ const Settings = () => {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="syncInterval">Sync Interval</Label>
+                <Label htmlFor="syncInterval">Global Sync Interval</Label>
                 <Select
                   value={syncInterval}
                   onValueChange={setSyncInterval}
@@ -327,6 +346,79 @@ const Settings = () => {
                     <SelectItem value="daily">Daily</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              
+              <Separator className="my-4" />
+              <p className="text-sm text-muted-foreground mb-2">Platform-Specific Sync Settings</p>
+              
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="closeSyncInterval">Close CRM Sync</Label>
+                    <Select
+                      value={closeSyncInterval}
+                      onValueChange={setCloseSyncInterval}
+                      disabled={!autoSync}
+                    >
+                      <SelectTrigger id="closeSyncInterval">
+                        <SelectValue placeholder="Select interval" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="15min">Every 15 minutes</SelectItem>
+                        <SelectItem value="30min">Every 30 minutes</SelectItem>
+                        <SelectItem value="hourly">Hourly</SelectItem>
+                        <SelectItem value="2hours">Every 2 hours</SelectItem>
+                        <SelectItem value="6hours">Every 6 hours</SelectItem>
+                        <SelectItem value="12hours">Every 12 hours</SelectItem>
+                        <SelectItem value="daily">Daily</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="calendlySyncInterval">Calendly Sync</Label>
+                    <Select
+                      value={calendlySyncInterval}
+                      onValueChange={setCalendlySyncInterval}
+                      disabled={!autoSync}
+                    >
+                      <SelectTrigger id="calendlySyncInterval">
+                        <SelectValue placeholder="Select interval" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="15min">Every 15 minutes</SelectItem>
+                        <SelectItem value="30min">Every 30 minutes</SelectItem>
+                        <SelectItem value="hourly">Hourly</SelectItem>
+                        <SelectItem value="2hours">Every 2 hours</SelectItem>
+                        <SelectItem value="6hours">Every 6 hours</SelectItem>
+                        <SelectItem value="12hours">Every 12 hours</SelectItem>
+                        <SelectItem value="daily">Daily</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="typeformSyncInterval">Typeform Sync</Label>
+                    <Select
+                      value={typeformSyncInterval}
+                      onValueChange={setTypeformSyncInterval}
+                      disabled={!autoSync}
+                    >
+                      <SelectTrigger id="typeformSyncInterval">
+                        <SelectValue placeholder="Select interval" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="15min">Every 15 minutes</SelectItem>
+                        <SelectItem value="30min">Every 30 minutes</SelectItem>
+                        <SelectItem value="hourly">Hourly</SelectItem>
+                        <SelectItem value="2hours">Every 2 hours</SelectItem>
+                        <SelectItem value="6hours">Every 6 hours</SelectItem>
+                        <SelectItem value="12hours">Every 12 hours</SelectItem>
+                        <SelectItem value="daily">Daily</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
               
               <Separator className="my-4" />
