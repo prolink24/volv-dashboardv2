@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { db } from '../db';
-import { activities, type InsertActivity } from '@shared/schema';
+import { activities, type InsertActivity, forms, type InsertForm } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 import { contacts } from '@shared/schema';
 
@@ -325,32 +325,56 @@ export async function syncTypeformResponses() {
           
           const contact = existingContact[0];
           
-          // Check if activity for this response already exists
-          const existingActivity = await db.select()
-            .from(activities)
-            .where(eq(activities.sourceId, `typeform_${response.response_id}`))
+          // Check if form submission already exists
+          const existingForm = await db.select()
+            .from(forms)
+            .where(eq(forms.typeformResponseId, response.response_id))
             .limit(1);
           
-          if (existingActivity.length > 0) {
-            console.log(`Activity already exists for response ${response.response_id}`);
+          if (existingForm.length > 0) {
+            console.log(`Form submission already exists for response ${response.response_id}`);
             continue;
           }
           
-          // Create activity for form submission
+          // Create form record
+          const formTitle = response.form_title || form.title;
+          await createFormRecord(contact.id, response, form.id, formTitle);
+          
+          // Also create activity for form submission to ensure visibility in timeline
           const submissionDate = new Date(response.submitted_at);
           const activityData = {
             type: 'form_submission',
-            source: 'Typeform',
-            title: `Form Submitted: ${form.title}`,
+            source: 'typeform',
+            title: `Form Submitted: ${formTitle}`,
             date: submissionDate,
             contactId: contact.id,
             sourceId: `typeform_${response.response_id}`,
-            description: `Submitted application form: ${form.title}`,
+            description: `Submitted application form: ${formTitle}`,
             metadata: response,
             fieldCoverage: 100
           };
           
           await db.insert(activities).values(activityData);
+          
+          // Update contact to mark as multi-source if it wasn't already
+          if (!contact.leadSource || !contact.leadSource.includes('typeform')) {
+            const newLeadSource = contact.leadSource ? 
+              `${contact.leadSource},typeform` : 
+              'typeform';
+            
+            const newSourcesCount = (contact.sourcesCount || 0) + 1;
+            
+            await db.update(contacts)
+              .set({ 
+                leadSource: newLeadSource, 
+                sourcesCount: newSourcesCount,
+                lastActivityDate: submissionDate
+              })
+              .where(eq(contacts.id, contact.id));
+            
+            console.log(`Updated contact ${contact.name} (${contact.email}) to include Typeform as a source`);
+          }
+          
           totalResponsesSynced++;
           
           console.log(`Added Typeform submission activity for contact: ${contact.name} (${contact.email})`);

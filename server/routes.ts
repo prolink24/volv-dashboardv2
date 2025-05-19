@@ -1952,21 +1952,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
   apiRouter.use('/customer-journey', customerJourneyRoutes);
   apiRouter.use('/typeform', typeformRoutes);
   
-  // Database Health Monitoring - Simplified endpoint for dashboard health page
-  apiRouter.get('/database-health', (req: Request, res: Response) => {
+  // Database Health Monitoring - Real-time database metrics
+  apiRouter.get('/database-health', async (req: Request, res: Response) => {
     try {
       // Get the current date and time for consistent timestamps
       const now = new Date().toISOString();
       
-      // Return a complete response with the expected structure including all required fields
+      // Get actual record counts from the database
+      const contactCount = await db.select({ count: sql`count(*)` }).from(contacts);
+      const dealCount = await db.select({ count: sql`count(*)` }).from(deals);
+      const activityCount = await db.select({ count: sql`count(*)` }).from(activities);
+      const meetingCount = await db.select({ count: sql`count(*)` }).from(meetings);
+      const formCount = await db.select({ count: sql`count(*)` }).from(forms);
+      
+      // Count activities by source
+      const closeCrmActivities = await db.select({ count: sql`count(*)` })
+        .from(activities)
+        .where(eq(activities.source, 'close'));
+      
+      // Count activities with source containing 'typeform' (case insensitive)
+      const typeformActivities = await db.select({ count: sql`count(*)` })
+        .from(activities)
+        .where(sql`lower(${activities.source}) = 'typeform'`);
+      
+      // Get multi-source contacts count (contacts with leadSource containing commas)
+      const multiSourceContacts = await db.select({ count: sql`count(*)` })
+        .from(contacts)
+        .where(sql`${contacts.sourcesCount} > 1`);
+      
+      // Calculate multi-source rate
+      const multiSourceRate = contactCount[0].count > 0 
+        ? Math.round((Number(multiSourceContacts[0].count) / Number(contactCount[0].count)) * 100) 
+        : 0;
+      
+      // Calculate metrics for field coverage
+      const avgFieldCoverage = await db.select({ 
+        avg: sql`avg(${contacts.fieldCoverage})` 
+      }).from(contacts);
+      
+      // Count meetings linked to contacts
+      const meetingsWithContacts = await db.select({ count: sql`count(*)` })
+        .from(meetings)
+        .where(sql`${meetings.contactId} IS NOT NULL`);
+      
+      const meetingLinkageRate = meetingCount[0].count > 0 
+        ? Math.round((Number(meetingsWithContacts[0].count) / Number(meetingCount[0].count)) * 100) 
+        : 100;
+      
+      // Return a complete response with real data
       const data = {
         success: true,
         healthMetrics: [
           {
             id: "metric_1",
             name: "Contact Completeness",
-            value: 95,
-            status: "healthy",
+            value: Math.round(Number(avgFieldCoverage[0].avg) || 0),
+            status: (avgFieldCoverage[0].avg || 0) > 80 ? "healthy" : "warning",
             lastChecked: now,
             target: 80,
             description: "Percentage of contacts with complete required fields"
@@ -1974,16 +2015,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           {
             id: "metric_2",
             name: "Multi-Source Contact Rate",
-            value: 42,
-            status: "healthy",
+            value: multiSourceRate,
+            status: multiSourceRate > 30 ? "healthy" : "warning",
             lastChecked: now,
-            target: 90,
-            description: "Percentage of deals with proper attribution to users"
+            target: 40,
+            description: "Percentage of contacts with multiple data sources"
           },
           {
             id: "metric_3",
             name: "Source Integrity",
-            value: 95,
+            value: 95, // Default value for this metric
             status: "healthy",
             lastChecked: now,
             target: 95,
@@ -1992,8 +2033,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           {
             id: "metric_4",
             name: "Meeting Linkage",
-            value: 78,
-            status: "warning",
+            value: meetingLinkageRate,
+            status: meetingLinkageRate > 85 ? "healthy" : "warning",
             lastChecked: now,
             target: 85,
             description: "Percentage of meetings successfully linked to contacts"
@@ -2005,7 +2046,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             name: "Close CRM",
             status: "healthy",
             lastSync: now,
-            recordCount: 5425,
+            recordCount: Number(closeCrmActivities[0].count),
             integrity: 95,
             syncFrequency: "Every 15 minutes"
           },
@@ -2014,7 +2055,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             name: "Calendly",
             status: "healthy",
             lastSync: now,
-            recordCount: 3250,
+            recordCount: Number(meetingCount[0].count),
             integrity: 89,
             syncFrequency: "Every 30 minutes"
           },
@@ -2023,16 +2064,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             name: "Typeform",
             status: "healthy",
             lastSync: now,
-            recordCount: 2876,
+            recordCount: Number(formCount[0].count || 0) + Number(typeformActivities[0].count || 0),
             integrity: 92,
             syncFrequency: "Every hour"
           }
         ],
         entityCounts: {
-          deals: 850,
-          contacts: 1600,
-          activities: 3200,
-          meetings: 1280
+          deals: Number(dealCount[0].count),
+          contacts: Number(contactCount[0].count),
+          activities: Number(activityCount[0].count),
+          meetings: Number(meetingCount[0].count)
         },
         lastUpdated: now,
         validationRules: [
