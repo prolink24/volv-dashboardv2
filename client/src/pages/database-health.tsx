@@ -372,7 +372,7 @@ const DatabaseHealth: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {healthData.dataSources.map((source) => (
+                {healthData && typeof healthData === 'object' && 'dataSources' in healthData ? healthData.dataSources.map((source: DataSource) => (
                   <div key={source.id} className="flex items-center justify-between border-b pb-2">
                     <div className="flex items-center">
                       {getStatusIcon(source.status)}
