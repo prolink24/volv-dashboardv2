@@ -1,16 +1,26 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { AlertTriangle, CheckCircle, Database, AlertCircle, Activity, RefreshCw, Server, Clock } from "lucide-react";
+import { 
+  Database, 
+  AlertCircle, 
+  Activity, 
+  RefreshCw, 
+  CheckCircle, 
+  XCircle,
+  AlertTriangle,
+  Users,
+  Calendar,
+  MessageSquare,
+  Briefcase
+} from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import DataCompletenessCard from "@/components/database-health/data-completeness-card";
 
-// Types
+// Simplified types for our database health data
 interface HealthMetric {
   id: string;
   name: string;
@@ -31,87 +41,108 @@ interface DataSource {
   syncFrequency: string;
 }
 
-interface FieldMapping {
-  id: string;
-  sourceField: string;
-  destinationField: string;
-  dataType: string;
-  coverage: number;
-  status: 'active' | 'missing' | 'mismatched';
-}
-
-interface ValidationError {
-  id: string;
-  ruleId: string;
-  entityType: string;
-  entityId: number;
-  field: string;
-  message: string;
-  severity: 'low' | 'medium' | 'high';
-  createdAt: string;
-  resolved: boolean;
-}
-
-interface SyncHistory {
-  id: string;
-  source: string;
-  startTime: string;
-  endTime: string;
-  status: 'success' | 'partial' | 'failed';
-  recordsProcessed: number;
-  recordsUpdated: number;
-  recordsCreated: number;
-  recordsFailed: number;
-  duration: number;
-  error?: string;
+interface EntityCounts {
+  deals: number;
+  contacts: number;
+  activities: number;
+  meetings: number;
 }
 
 interface DatabaseHealthResponse {
   success: boolean;
   healthMetrics: HealthMetric[];
   dataSources: DataSource[];
-  validationRules: any[];
-  entityCounts: {
-    deals: number;
-    contacts: number;
-    activities: number;
-    meetings: number;
-  };
-  fieldMappings: FieldMapping[];
-  validationErrors: ValidationError[];
-  syncHistory: SyncHistory[];
+  entityCounts: EntityCounts;
   lastUpdated: string;
 }
 
-const DatabaseHealth = () => {
+// Mock data to use when the backend is not available
+const mockDatabaseHealth: DatabaseHealthResponse = {
+  success: true,
+  healthMetrics: [
+    {
+      id: "metric_1",
+      name: "Data Completeness",
+      value: 95,
+      status: "healthy",
+      lastChecked: new Date().toISOString(),
+      target: 90,
+      description: "Percentage of required fields with valid data across all entities"
+    },
+    {
+      id: "metric_2",
+      name: "Multi-Source Contact Rate",
+      value: 42,
+      status: "warning",
+      lastChecked: new Date().toISOString(),
+      target: 50,
+      description: "Percentage of contacts with data from multiple sources"
+    },
+    {
+      id: "metric_3",
+      name: "Data Integration Health",
+      value: 98,
+      status: "healthy",
+      lastChecked: new Date().toISOString(),
+      target: 95,
+      description: "Health of data integration between systems"
+    },
+    {
+      id: "metric_4",
+      name: "Deal Assignment Coverage",
+      value: 100,
+      status: "healthy",
+      lastChecked: new Date().toISOString(),
+      target: 100,
+      description: "Percentage of deals assigned to users"
+    }
+  ],
+  dataSources: [
+    {
+      id: "source_1",
+      name: "Close CRM",
+      status: "healthy",
+      lastSync: new Date().toISOString(),
+      recordCount: 2450,
+      integrity: 98,
+      syncFrequency: "Every 15 minutes"
+    },
+    {
+      id: "source_2",
+      name: "Calendly",
+      status: "healthy",
+      lastSync: new Date().toISOString(),
+      recordCount: 1280,
+      integrity: 100,
+      syncFrequency: "Every 30 minutes"
+    }
+  ],
+  entityCounts: {
+    deals: 850,
+    contacts: 1600,
+    activities: 3200,
+    meetings: 1280
+  },
+  lastUpdated: new Date().toISOString()
+};
+
+const DatabaseHealth: React.FC = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [isUpdating, setIsUpdating] = useState(false);
   
-  // Fetch database health data
+  // Fetch database health data with fallback to mock data during development
   const { data, isLoading, isError, error, refetch } = useQuery<DatabaseHealthResponse>({
     queryKey: ['/api/database-health'],
     staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: 2,
+    onError: (err) => console.error('Database health fetch error:', err)
   });
   
-  // Function to force update the health metrics
+  // Function to refresh data
   const updateHealthMetrics = async () => {
     try {
       setIsUpdating(true);
-      
-      // Call the endpoint to recalculate health metrics
-      const response = await fetch('/api/refresh-health-metrics', {
-        method: 'POST',
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to update health metrics');
-      }
-      
-      // Refetch the data after metrics are updated
       await refetch();
-      
-      // Show success message (you could add toast notification here)
-      console.log('Health metrics updated successfully');
     } catch (error) {
       console.error('Error updating health metrics:', error);
     } finally {
@@ -119,569 +150,343 @@ const DatabaseHealth = () => {
     }
   };
 
+  // Helper functions
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'healthy':
-        return 'bg-green-500';
-      case 'warning':
-        return 'bg-yellow-500';
-      case 'critical':
-        return 'bg-red-500';
-      case 'offline':
-        return 'bg-gray-500';
-      default:
-        return 'bg-gray-500';
+      case 'healthy': return 'bg-green-500';
+      case 'warning': return 'bg-yellow-500';
+      case 'critical': return 'bg-red-500';
+      default: return 'bg-gray-500';
     }
   };
-
+  
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'healthy':
-        return <CheckCircle className="h-5 w-5 text-green-500" />;
-      case 'warning':
-        return <AlertTriangle className="h-5 w-5 text-yellow-500" />;
-      case 'critical':
-      case 'failed':
-        return <AlertCircle className="h-5 w-5 text-red-500" />;
-      case 'offline':
-        return <AlertCircle className="h-5 w-5 text-gray-500" />;
-      case 'success':
-        return <CheckCircle className="h-5 w-5 text-green-500" />;
-      case 'partial':
-        return <AlertTriangle className="h-5 w-5 text-yellow-500" />;
-      default:
-        return <Database className="h-5 w-5 text-blue-500" />;
+      case 'healthy': return <CheckCircle className="h-6 w-6 text-green-500" />;
+      case 'warning': return <AlertTriangle className="h-6 w-6 text-yellow-500" />;
+      case 'critical': return <AlertCircle className="h-6 w-6 text-red-500" />;
+      case 'offline': return <XCircle className="h-6 w-6 text-gray-500" />;
+      default: return <Database className="h-6 w-6 text-gray-500" />;
+    }
+  };
+  
+  const getBadgeVariant = (status: string): "default" | "destructive" | "outline" | "secondary" => {
+    switch (status) {
+      case 'healthy': return 'outline';
+      case 'warning': return 'secondary';
+      case 'critical': return 'destructive';
+      case 'offline': return 'outline';
+      default: return 'default';
+    }
+  };
+  
+  const formatDate = (dateStr: string) => {
+    try {
+      const date = new Date(dateStr);
+      return new Intl.DateTimeFormat('en-US', {
+        year: 'numeric', month: 'short', day: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      }).format(date);
+    } catch {
+      return 'Invalid date';
     }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric', 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    }).format(date);
-  };
-
-  const formatDuration = (ms: number) => {
-    const seconds = Math.floor(ms / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    
-    if (minutes === 0) {
-      return `${seconds} seconds`;
-    }
-    
-    return `${minutes}m ${remainingSeconds}s`;
-  };
-
+  // Loading state
   if (isLoading) {
     return (
-      <div className="p-8 flex flex-col items-center justify-center min-h-[500px]">
-        <Database className="h-12 w-12 text-primary animate-pulse mb-4" />
-        <h2 className="text-2xl font-bold mb-2">Loading database health data...</h2>
-        <p className="text-muted-foreground">Please wait while we analyze your database.</p>
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-center">
+          <Activity className="h-12 w-12 text-blue-500 animate-spin mx-auto mb-4" />
+          <h2 className="text-2xl font-semibold">Loading Database Health...</h2>
+          <p className="text-gray-500">Gathering metrics and statistics</p>
+        </div>
       </div>
     );
   }
-
-  if (isError) {
+  
+  // Error state
+  if (isError || !data) {
     return (
-      <div className="p-8 flex flex-col items-center justify-center min-h-[500px] text-center">
-        <AlertCircle className="h-12 w-12 text-destructive mb-4" />
-        <h2 className="text-2xl font-bold mb-2">Error loading database health data</h2>
-        <p className="text-muted-foreground mb-4">
-          {error instanceof Error ? error.message : "An unknown error occurred while fetching database health information."}
-        </p>
-        <Button onClick={() => refetch()}>Try Again</Button>
+      <div className="flex flex-col gap-8 p-8">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold">Database Health</h1>
+            <p className="text-gray-500 mt-1">Error loading database health data</p>
+          </div>
+          <Button onClick={() => refetch()} disabled={isLoading || isUpdating}>
+            <RefreshCw className={`mr-2 h-4 w-4 ${isUpdating ? 'animate-spin' : ''}`} /> 
+            {isUpdating ? 'Refreshing...' : 'Retry'}
+          </Button>
+        </div>
+        
+        <Card className="border-red-300">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <AlertCircle className="h-6 w-6 text-red-500 mr-2" />
+              Error Loading Data
+            </CardTitle>
+            <CardDescription>
+              We encountered an error while loading the database health data
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-red-500">
+              {error instanceof Error ? error.message : "Unknown error occurred"}
+            </p>
+            <p className="mt-4">
+              This could be due to:
+            </p>
+            <ul className="list-disc list-inside mt-2 text-gray-600">
+              <li>API endpoint unavailable</li>
+              <li>Database connection issue</li>
+              <li>Temporary server error</li>
+            </ul>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
-  if (!data || !data.success) {
-    return (
-      <div className="p-8 flex flex-col items-center justify-center min-h-[500px] text-center">
-        <AlertCircle className="h-12 w-12 text-destructive mb-4" />
-        <h2 className="text-2xl font-bold mb-2">Database health data unavailable</h2>
-        <p className="text-muted-foreground mb-4">
-          The database health information could not be retrieved at this time.
-        </p>
-        <Button onClick={() => refetch()}>Try Again</Button>
-      </div>
-    );
-  }
-
+  // Choose between real data or mock data (for development)
+  const healthData = data || mockDatabaseHealth;
+  
   return (
-    <div className="p-8 space-y-6 max-h-screen overflow-y-auto pb-20">
+    <div className="flex flex-col gap-8 p-8">
+      {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Database Health</h1>
-          <p className="text-muted-foreground">
-            Monitor and maintain data integrity across all your integrated systems.
+          <h1 className="text-3xl font-bold">Database Health</h1>
+          <p className="text-gray-500 mt-1">
+            Last updated: {formatDate(healthData.lastUpdated)}
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button 
-            onClick={updateHealthMetrics} 
-            disabled={isUpdating} 
-            variant="default" 
-            className="gap-2"
-          >
-            <Activity className="h-4 w-4" />
-            {isUpdating ? 'Updating...' : 'Update Metrics'}
-          </Button>
-          <Button onClick={() => refetch()} className="gap-2">
-            <RefreshCw className="h-4 w-4" />
-            Refresh
-          </Button>
-        </div>
+        <Button onClick={updateHealthMetrics} disabled={isLoading || isUpdating}>
+          <RefreshCw className={`mr-2 h-4 w-4 ${isUpdating ? 'animate-spin' : ''}`} />
+          {isUpdating ? 'Refreshing...' : 'Refresh Data'}
+        </Button>
       </div>
-
-      <div className="text-sm text-muted-foreground">
-        Last updated: {formatDate(data.lastUpdated)}
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {data.healthMetrics.map((metric) => (
-          <DataCompletenessCard 
-            key={metric.id}
-            completeness={metric.value}
-            target={metric.target}
-            description={metric.description}
-            title={metric.name}
-          />
-        ))}
-      </div>
-
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid grid-cols-4 mb-8">
+      
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="field-mappings">Field Mappings</TabsTrigger>
-          <TabsTrigger value="validation">Data Validation</TabsTrigger>
-          <TabsTrigger value="sync-history">Sync History</TabsTrigger>
+          <TabsTrigger value="datasources">Data Sources</TabsTrigger>
+          <TabsTrigger value="metrics">Health Metrics</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="overview" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        {/* Overview Tab */}
+        <TabsContent value="overview" className="space-y-4">
+          {/* Entity Count Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Database className="h-5 w-5" />
-                  Data Sources
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium flex items-center">
+                  <Users className="mr-2 h-4 w-4" /> Contacts
                 </CardTitle>
-                <CardDescription>Connected systems and their status</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {data.dataSources.map((source) => (
-                    <div key={source.id} className="border rounded-lg p-4">
-                      <div className="flex justify-between items-center mb-3">
-                        <div className="flex items-center gap-2">
-                          <div className={`w-3 h-3 rounded-full ${getStatusColor(source.status)}`}></div>
-                          <span className="font-medium">{source.name}</span>
-                        </div>
-                        <Badge variant={source.status === 'healthy' ? 'outline' : 'secondary'}>
-                          {source.recordCount.toLocaleString()} records
-                        </Badge>
-                      </div>
-                      <div className="grid grid-cols-3 gap-2 text-sm">
-                        <div>
-                          <div className="text-muted-foreground">Integrity</div>
-                          <div className="font-medium">{source.integrity.toFixed(1)}%</div>
-                        </div>
-                        <div>
-                          <div className="text-muted-foreground">Last Sync</div>
-                          <div className="font-medium">{formatDate(source.lastSync)}</div>
-                        </div>
-                        <div>
-                          <div className="text-muted-foreground">Frequency</div>
-                          <div className="font-medium">{source.syncFrequency}</div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <div className="text-2xl font-bold">{healthData.entityCounts.contacts.toLocaleString()}</div>
               </CardContent>
             </Card>
-
+            
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Activity className="h-5 w-5" />
-                  Entity Overview
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium flex items-center">
+                  <Briefcase className="mr-2 h-4 w-4" /> Deals
                 </CardTitle>
-                <CardDescription>Current record counts by entity type</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="border rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                      <span className="font-medium">Deals</span>
-                      <Badge variant="outline">{data.entityCounts.deals.toLocaleString()}</Badge>
-                    </div>
-                    <Progress value={100} max={100} className="h-2 bg-blue-100" />
-                  </div>
-                  
-                  <div className="border rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                      <span className="font-medium">Contacts</span>
-                      <Badge variant="outline">{data.entityCounts.contacts.toLocaleString()}</Badge>
-                    </div>
-                    <Progress value={100} max={100} className="h-2 bg-green-100" />
-                  </div>
-                  
-                  <div className="border rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="w-3 h-3 rounded-full bg-purple-500"></div>
-                      <span className="font-medium">Activities</span>
-                      <Badge variant="outline">{data.entityCounts.activities.toLocaleString()}</Badge>
-                    </div>
-                    <Progress value={100} max={100} className="h-2 bg-purple-100" />
-                  </div>
-                  
-                  <div className="border rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="w-3 h-3 rounded-full bg-amber-500"></div>
-                      <span className="font-medium">Meetings</span>
-                      <Badge variant="outline">{data.entityCounts.meetings.toLocaleString()}</Badge>
-                    </div>
-                    <Progress value={100} max={100} className="h-2 bg-amber-100" />
-                  </div>
-                </div>
+                <div className="text-2xl font-bold">{healthData.entityCounts.deals.toLocaleString()}</div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium flex items-center">
+                  <MessageSquare className="mr-2 h-4 w-4" /> Activities
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{healthData.entityCounts.activities.toLocaleString()}</div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium flex items-center">
+                  <Calendar className="mr-2 h-4 w-4" /> Meetings
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{healthData.entityCounts.meetings.toLocaleString()}</div>
               </CardContent>
             </Card>
           </div>
-
+          
+          {/* Health Metrics Summary */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5" />
-                Validation Summary
-              </CardTitle>
-              <CardDescription>
-                {data.validationErrors.length} issue{data.validationErrors.length !== 1 ? 's' : ''} found across all entities
-              </CardDescription>
+              <CardTitle>Health Metrics Summary</CardTitle>
+              <CardDescription>Key health indicators for your data</CardDescription>
             </CardHeader>
             <CardContent>
-              {data.validationErrors.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <CheckCircle className="h-12 w-12 text-green-500 mb-4" />
-                  <h3 className="text-xl font-medium mb-1">All validation checks pass</h3>
-                  <p className="text-muted-foreground">No data issues were found in your database.</p>
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Field</TableHead>
-                      <TableHead>Message</TableHead>
-                      <TableHead>Severity</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {data.validationErrors.slice(0, 5).map((error) => (
-                      <TableRow key={error.id}>
-                        <TableCell>{error.entityType}</TableCell>
-                        <TableCell>{error.field}</TableCell>
-                        <TableCell>{error.message}</TableCell>
-                        <TableCell>
-                          <Badge variant={error.severity === 'high' ? 'destructive' : error.severity === 'medium' ? 'warning' : 'outline'}>
-                            {error.severity}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {data.validationErrors.length > 5 && (
-                      <TableRow>
-                        <TableCell colSpan={4} className="text-center text-muted-foreground">
-                          + {data.validationErrors.length - 5} more issues
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="field-mappings" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Server className="h-5 w-5" />
-                Field Mappings
-              </CardTitle>
-              <CardDescription>
-                How data is mapped between external systems and your database
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Source Field</TableHead>
-                    <TableHead>Destination Field</TableHead>
-                    <TableHead>Data Type</TableHead>
-                    <TableHead>Coverage</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.fieldMappings.map((mapping) => (
-                    <TableRow key={mapping.id}>
-                      <TableCell>{mapping.sourceField}</TableCell>
-                      <TableCell>{mapping.destinationField}</TableCell>
-                      <TableCell>{mapping.dataType}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Progress value={mapping.coverage} max={100} className="h-2 w-24" />
-                          <span>{mapping.coverage.toFixed(1)}%</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant={
-                            mapping.status === 'active' ? 'default' : 
-                            mapping.status === 'missing' ? 'destructive' : 
-                            'warning'
-                          }
-                        >
-                          {mapping.status}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <div className="space-y-4">
+                {healthData.healthMetrics.map((metric) => (
+                  <div key={metric.id} className="space-y-1">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center">
+                        {getStatusIcon(metric.status)}
+                        <span className="ml-2 font-medium">{metric.name}</span>
+                      </div>
+                      <Badge variant={getBadgeVariant(metric.status)}>
+                        {metric.status}
+                      </Badge>
+                    </div>
+                    <Progress 
+                      value={metric.value} 
+                      className={`h-2 ${
+                        metric.status === 'healthy' 
+                          ? 'bg-gray-100' 
+                          : metric.status === 'warning' 
+                            ? 'bg-yellow-100' 
+                            : 'bg-red-100'
+                      }`}
+                    />
+                    <div className="flex justify-between text-sm text-gray-500">
+                      <span>{metric.value}% (Target: {metric.target}%)</span>
+                      <span>Last checked: {formatDate(metric.lastChecked)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
           
+          {/* Data Sources Summary */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5" />
-                Field Coverage Issues
-              </CardTitle>
-              <CardDescription>
-                Fields with low coverage that may need attention
-              </CardDescription>
+              <CardTitle>Data Sources</CardTitle>
+              <CardDescription>Status of connected data sources</CardDescription>
             </CardHeader>
             <CardContent>
-              {data.fieldMappings.filter(m => m.coverage < 90).length === 0 ? (
-                <div className="text-center py-6">
-                  <CheckCircle className="h-10 w-10 text-green-500 mx-auto mb-4" />
-                  <p className="text-muted-foreground">No significant coverage issues found</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {data.fieldMappings
-                    .filter(m => m.coverage < 90)
-                    .map((mapping) => (
-                      <div key={mapping.id} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div>
-                          <p className="font-medium">{mapping.destinationField}</p>
-                          <p className="text-sm text-muted-foreground">
-                            Source: {mapping.sourceField} ({mapping.dataType})
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-lg font-bold text-amber-600">
-                            {mapping.coverage.toFixed(1)}%
-                          </p>
-                          <p className="text-sm text-muted-foreground">coverage</p>
+              <div className="space-y-4">
+                {healthData.dataSources.map((source) => (
+                  <div key={source.id} className="flex items-center justify-between border-b pb-2">
+                    <div className="flex items-center">
+                      {getStatusIcon(source.status)}
+                      <div className="ml-2">
+                        <div className="font-medium">{source.name}</div>
+                        <div className="text-sm text-gray-500">
+                          {source.recordCount.toLocaleString()} records • {source.syncFrequency}
                         </div>
                       </div>
-                    ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="validation" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertCircle className="h-5 w-5" />
-                Validation Errors
-              </CardTitle>
-              <CardDescription>
-                Data integrity issues requiring attention
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {data.validationErrors.length === 0 ? (
-                <div className="text-center py-10">
-                  <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-                  <h3 className="text-xl font-medium mb-2">All validation checks pass</h3>
-                  <p className="text-muted-foreground max-w-md mx-auto">
-                    Your database appears to be in excellent health with no validation errors detected.
-                  </p>
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Entity</TableHead>
-                      <TableHead>Field</TableHead>
-                      <TableHead>Issue</TableHead>
-                      <TableHead>Severity</TableHead>
-                      <TableHead>Detected</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {data.validationErrors.map((error) => (
-                      <TableRow key={error.id}>
-                        <TableCell>{error.entityType} #{error.entityId}</TableCell>
-                        <TableCell>{error.field}</TableCell>
-                        <TableCell>{error.message}</TableCell>
-                        <TableCell>
-                          <Badge variant={
-                            error.severity === 'high' ? 'destructive' : 
-                            error.severity === 'medium' ? 'warning' : 
-                            'outline'
-                          }>
-                            {error.severity}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{formatDate(error.createdAt)}</TableCell>
-                        <TableCell>
-                          <Badge variant={error.resolved ? 'default' : 'outline'}>
-                            {error.resolved ? 'Resolved' : 'Unresolved'}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="sync-history" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                Sync History
-              </CardTitle>
-              <CardDescription>
-                Recent synchronization operations with external systems
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Source</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Time</TableHead>
-                    <TableHead>Records</TableHead>
-                    <TableHead>Changes</TableHead>
-                    <TableHead>Duration</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.syncHistory.map((sync) => (
-                    <TableRow key={sync.id}>
-                      <TableCell>{sync.source}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          {getStatusIcon(sync.status)}
-                          <span>{sync.status}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>{formatDate(sync.startTime)}</TableCell>
-                      <TableCell>{sync.recordsProcessed.toLocaleString()}</TableCell>
-                      <TableCell>
-                        <div className="text-xs">
-                          <div className="text-green-600">+{sync.recordsCreated} created</div>
-                          <div className="text-blue-600">~{sync.recordsUpdated} updated</div>
-                          {sync.recordsFailed > 0 && (
-                            <div className="text-red-600">!{sync.recordsFailed} failed</div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>{formatDuration(sync.duration)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Server className="h-5 w-5" />
-                Sync Performance
-              </CardTitle>
-              <CardDescription>
-                Performance metrics for data synchronization operations
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                <div>
-                  <h3 className="font-medium mb-2">Records Processed Per Sync</h3>
-                  <div className="h-60 flex items-end gap-4 justify-between border-b pb-2">
-                    {data.syncHistory.map((sync) => {
-                      // Calculate percentage instead of raw ratio for safer height calculation
-                      const maxRecords = Math.max(...data.syncHistory.map(s => s.recordsProcessed));
-                      const percentage = maxRecords > 0 ? (sync.recordsProcessed / maxRecords) * 100 : 0;
-                      // Scale percentage to a reasonable height (max 180px)
-                      const heightInPx = (percentage / 100) * 180;
-                      
-                      return (
-                        <div key={sync.id} className="flex flex-col items-center">
-                          <div className="text-xs mb-1">{sync.recordsProcessed}</div>
-                          <div 
-                            className={`w-14 ${
-                              sync.status === 'success' ? 'bg-green-500' : 
-                              sync.status === 'partial' ? 'bg-yellow-500' : 
-                              'bg-red-500'
-                            } rounded-t`}
-                            style={{ height: `${heightInPx}px` }}
-                          ></div>
-                          <div className="text-xs mt-2 w-16 text-center truncate">{sync.source}</div>
-                        </div>
-                      );
-                    })}
+                    </div>
+                    <Badge variant={getBadgeVariant(source.status)}>
+                      {source.status}
+                    </Badge>
                   </div>
-                </div>
-
-                <div>
-                  <h3 className="font-medium mb-2">Sync Duration (seconds)</h3>
-                  <div className="h-40 flex items-end gap-4 justify-between border-b pb-2">
-                    {data.syncHistory.map((sync) => {
-                      // Calculate percentage instead of raw ratio for safer height calculation
-                      const maxDuration = Math.max(...data.syncHistory.map(s => s.duration));
-                      const percentage = maxDuration > 0 ? (sync.duration / maxDuration) * 100 : 0;
-                      // Scale percentage to a reasonable height (max 120px)
-                      const heightInPx = (percentage / 100) * 120;
-                      
-                      return (
-                        <div key={`duration-${sync.id}`} className="flex flex-col items-center">
-                          <div className="text-xs mb-1">{(sync.duration / 1000).toFixed(0)}s</div>
-                          <div 
-                            className="w-14 bg-blue-500 rounded-t"
-                            style={{ height: `${heightInPx}px` }}
-                          ></div>
-                          <div className="text-xs mt-2 w-16 text-center truncate">{sync.source}</div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+                ))}
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        {/* Data Sources Tab */}
+        <TabsContent value="datasources" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Connected Data Sources</CardTitle>
+              <CardDescription>Detailed information about your data sources</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {healthData.dataSources.map((source) => (
+                <div key={source.id} className="mb-6 last:mb-0">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center">
+                      {getStatusIcon(source.status)}
+                      <h3 className="ml-2 text-lg font-semibold">{source.name}</h3>
+                    </div>
+                    <Badge variant={getBadgeVariant(source.status)}>
+                      {source.status}
+                    </Badge>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-md">
+                    <div>
+                      <p className="text-sm text-gray-500">Last Synced</p>
+                      <p className="font-medium">{formatDate(source.lastSync)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Record Count</p>
+                      <p className="font-medium">{source.recordCount.toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Data Integrity</p>
+                      <div className="flex items-center">
+                        <span className="font-medium">{source.integrity}%</span>
+                        <Progress value={source.integrity} className="ml-2 h-2 w-20" />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-2 text-sm text-gray-500">
+                    Sync Frequency: {source.syncFrequency}
+                  </div>
+                  
+                  <Separator className="my-4" />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        {/* Health Metrics Tab */}
+        <TabsContent value="metrics" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Health Metrics Details</CardTitle>
+              <CardDescription>Detailed information about data health metrics</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {healthData.healthMetrics.map((metric) => (
+                <div key={metric.id} className="mb-6 last:mb-0">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center">
+                      {getStatusIcon(metric.status)}
+                      <h3 className="ml-2 text-lg font-semibold">{metric.name}</h3>
+                    </div>
+                    <Badge variant={getBadgeVariant(metric.status)}>
+                      {metric.status}
+                    </Badge>
+                  </div>
+                  
+                  <p className="text-gray-600 mb-2">{metric.description}</p>
+                  
+                  <div className="mt-2 mb-4">
+                    <div className="flex justify-between text-sm mb-1">
+                      <span>Current Value: {metric.value}%</span>
+                      <span>Target: {metric.target}%</span>
+                    </div>
+                    <Progress 
+                      value={metric.value}
+                      className={`h-3 ${
+                        metric.status === 'healthy' 
+                          ? 'bg-gray-100' 
+                          : metric.status === 'warning' 
+                            ? 'bg-yellow-100' 
+                            : 'bg-red-100'
+                      }`}
+                    />
+                  </div>
+                  
+                  <div className="text-sm text-gray-500">
+                    Last checked: {formatDate(metric.lastChecked)}
+                  </div>
+                  
+                  <Separator className="my-4" />
+                </div>
+              ))}
             </CardContent>
           </Card>
         </TabsContent>
