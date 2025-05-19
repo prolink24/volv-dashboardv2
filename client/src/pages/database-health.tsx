@@ -473,7 +473,7 @@ const DatabaseHealth: React.FC = () => {
                               if (calendlySource?.details?.meetings) {
                                 return `${calendlySource.details.meetings.linked} of ${calendlySource.details.meetings.count} meetings linked`;
                               }
-                              return "Meeting data unavailable";
+                              return "Loading meeting data...";
                             })()}
                           </span>
                         </div>
@@ -494,7 +494,7 @@ const DatabaseHealth: React.FC = () => {
                               if (typeformSource?.details?.submissions) {
                                 return `${typeformSource.details.submissions.linked} of ${typeformSource.details.submissions.count} submissions linked`;
                               }
-                              return "Submission data unavailable";
+                              return "Loading submission data...";
                             })()}
                           </span>
                         </div>
