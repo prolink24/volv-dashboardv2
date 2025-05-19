@@ -1,8 +1,7 @@
 import axios from 'axios';
 import { db } from '../db';
-import { activities, type InsertActivity, forms, type InsertForm } from '@shared/schema';
+import { activities, type InsertActivity, forms, type InsertForm, contacts } from '@shared/schema';
 import { eq } from 'drizzle-orm';
-import { contacts } from '@shared/schema';
 
 // Typeform API Client
 const typeformClient = axios.create({
@@ -186,7 +185,7 @@ function extractCompanyFromResponse(response: any): string | null {
  * @param formId The Typeform form ID
  * @param formName The name/title of the form
  */
-async function createFormRecord(contactId: number, response: any, formId: string, formName: string) {
+async function createFormRecord(contactId: number, response: any, formId: string, formName: string): Promise<any> {
   try {
     // Calculate completion percentage based on answer count vs total questions
     const questionCount = response.calculated?.variables?.length || 0;
