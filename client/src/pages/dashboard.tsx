@@ -414,30 +414,83 @@ const Dashboard = () => {
       
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {/* Cash Collected Chart */}
+        {/* Cash Collected Chart - V2 with improved time period revenue data */}
         <div className="bg-card rounded-lg shadow-sm p-4 border border-border">
-          <h3 className="text-base font-medium mb-4">Cash Collected by Rep</h3>
-          <div className="space-y-4">
-            {dashboardData?.salesTeam && Array.isArray(dashboardData.salesTeam) ? 
-              dashboardData.salesTeam.map((person, index) => (
-                <div key={index}>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm">{person?.name || 'Unknown'}</span>
-                    <span className="text-sm font-medium">{formatCurrency(person?.cashCollected || 0)}</span>
-                  </div>
-                  <ProgressBar 
-                    value={person?.cashCollected || 0} 
-                    max={dashboardData.salesTeam && dashboardData.salesTeam.length > 0 
-                      ? Math.max(...dashboardData.salesTeam.map(p => p?.cashCollected || 0)) 
-                      : 100} 
-                  />
-                </div>
-              )) 
-              : (
-                <div className="text-sm text-muted-foreground">No sales team data available</div>
-              )
-            }
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-base font-medium">Cash Collected by Rep</h3>
+            <div className="text-xs text-muted-foreground">
+              {dateRange && (
+                <span>
+                  {dateRange.startDate.toLocaleDateString()} - {dateRange.endDate.toLocaleDateString()}
+                </span>
+              )}
+            </div>
           </div>
+          
+          <div className="space-y-4">
+            {dashboardData?.salesTeam && Array.isArray(dashboardData.salesTeam) ? (
+              dashboardData.salesTeam
+                .filter(person => person?.cashCollected > 0 || person?.revenue > 0) // Only show reps with revenue
+                .sort((a, b) => (b?.cashCollected || 0) - (a?.cashCollected || 0)) // Sort by highest cash collected
+                .map((person, index) => (
+                  <div key={index} className="relative">
+                    <div className="flex justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">{person?.name || 'Unknown'}</span>
+                        {person?.role && (
+                          <span className="text-xs px-1.5 py-0.5 bg-secondary text-secondary-foreground rounded">
+                            {person.role}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-sm font-medium">{formatCurrency(person?.cashCollected || 0)}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <ProgressBar 
+                        value={person?.cashCollected || 0} 
+                        max={dashboardData.salesTeam && dashboardData.salesTeam.length > 0 
+                          ? Math.max(...dashboardData.salesTeam.map(p => p?.cashCollected || 0)) 
+                          : 100}
+                        className="flex-1" 
+                      />
+                      {person?.closingRate && (
+                        <div className="text-xs text-muted-foreground whitespace-nowrap">
+                          {person.closingRate}% close rate
+                        </div>
+                      )}
+                    </div>
+                    {person?.deals > 0 && (
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {person.deals} deal{person.deals !== 1 ? 's' : ''} | Avg: {formatCurrency((person?.cashCollected || 0) / person.deals)}
+                      </div>
+                    )}
+                  </div>
+                ))
+            ) : (
+              <div className="text-sm text-muted-foreground py-8 text-center">
+                <div className="mb-2">No revenue data available for this time period</div>
+                <div className="text-xs">Try selecting a different date range</div>
+              </div>
+            )}
+            
+            {dashboardData?.salesTeam && 
+             Array.isArray(dashboardData.salesTeam) && 
+             dashboardData.salesTeam.filter(p => p?.cashCollected > 0).length === 0 && (
+              <div className="text-sm text-muted-foreground py-8 text-center">
+                <div className="mb-2">No revenue data for this time period</div>
+                <div className="text-xs">Try selecting a different date range</div>
+              </div>
+            )}
+          </div>
+          
+          {dashboardData?.kpis?.revenueGenerated && (
+            <div className="mt-4 pt-3 border-t border-border">
+              <div className="flex justify-between text-sm">
+                <span className="font-medium">Total Cash Collected:</span>
+                <span className="font-bold">{formatCurrency(dashboardData.kpis.cashCollected?.current || 0)}</span>
+              </div>
+            </div>
+          )}
         </div>
         
         {/* Closing Rate Chart */}
