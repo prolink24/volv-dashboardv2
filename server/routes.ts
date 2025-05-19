@@ -1955,7 +1955,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Database Health Monitoring
   apiRouter.get('/database-health', cacheService.cacheMiddleware(60), async (req: Request, res: Response) => {
     try {
-      const data = await databaseHealth.getDatabaseHealth();
+      // Use the improved handler
+      const data = await require('./api/database-health-handler').getDatabaseHealth();
       res.json(data);
     } catch (error) {
       console.error("Error fetching database health data:", error);
@@ -1970,7 +1971,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   apiRouter.post('/refresh-health-metrics', async (_req: Request, res: Response) => {
     try {
       console.log('Manually refreshing database health metrics...');
-      const metricsResult = await updateHealthMetrics();
+      const metricsResult = await require('./api/database-health-handler').updateHealthMetrics();
       
       // Clear any cached database health data
       cacheService.clearCache('/api/database-health');
