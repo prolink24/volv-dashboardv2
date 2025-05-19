@@ -206,28 +206,77 @@ async function createFormRecord(contactId: number, response: any, formId: string
     };
 
     // Prepare the form data
-    const formData = {
+    const formData: InsertForm = {
       contactId: contactId,
       typeformResponseId: response.response_id,
       formName: formName,
       formId: formId,
       submittedAt: new Date(response.submitted_at),
-      respondentEmail: extractEmailFromResponse(response),
-      respondentName: extractNameFromResponse(response),
-      respondentIp: response.metadata?.network_id || null,
-      completionTime: response.metadata?.time_to_complete || null,
-      completionPercentage: completionPercentage,
-      questionCount: questionCount,
-      answeredCount: answeredCount,
-      answers: response.answers || {},
-      hiddenFields: response.hidden || {},
-      calculatedFields: response.calculated || {},
-      utmSource: response.hidden?.utm_source || null,
-      utmMedium: response.hidden?.utm_medium || null,
-      utmCampaign: response.hidden?.utm_campaign || null,
-      fieldCoverage: 85, // Since we're capturing most fields
-      metadata: metadata
+      answers: {}, // Initialize with empty object first
+      hiddenFields: {}, // Initialize with empty object first
+      calculatedFields: {}, // Initialize with empty object first
+      completionPercentage: completionPercentage
     };
+    
+    // Transform answers array into a key-value object for better storage
+    if (response.answers && Array.isArray(response.answers)) {
+      const answersObj: Record<string, any> = {};
+      for (const answer of response.answers) {
+        if (answer.field && answer.field.title) {
+          // Use the field title as the key and the appropriate value based on type
+          const key = answer.field.title;
+          let value = null;
+          
+          switch(answer.type) {
+            case 'text':
+              value = answer.text;
+              break;
+            case 'email':
+              value = answer.email;
+              break;
+            case 'number':
+              value = answer.number;
+              break;
+            case 'choice':
+              value = answer.choice?.label;
+              break;
+            case 'choices':
+              value = answer.choices?.labels;
+              break;
+            case 'boolean':
+              value = answer.boolean;
+              break;
+            case 'date':
+              value = answer.date;
+              break;
+            case 'url':
+              value = answer.url;
+              break;
+            case 'file_url':
+              value = answer.file_url;
+              break;
+            case 'payment':
+              value = answer.payment;
+              break;
+            default:
+              value = JSON.stringify(answer);
+          }
+          
+          answersObj[key] = value;
+        }
+      }
+      formData.answers = answersObj;
+    }
+    
+    // Handle hidden fields
+    if (response.hidden) {
+      formData.hiddenFields = response.hidden;
+    }
+    
+    // Handle calculated fields
+    if (response.calculated) {
+      formData.calculatedFields = response.calculated;
+    }
 
     // Insert the form record
     const result = await db.insert(forms).values(formData);
@@ -430,12 +479,19 @@ export async function syncTypeformResponses() {
       }
     }
     
+    // Get count of imported form submissions
+    const formCount = await db.select({ count: sql`count(*)` }).from(forms);
+    const formSubmissionsCount = formCount[0]?.count || 0;
+    
     console.log(`Typeform sync completed. Processed ${totalResponsesProcessed} responses, synced ${totalResponsesSynced} activities. Failed: ${failedResponses}`);
+    console.log(`Typeform sync completed. Imported ${formSubmissionsCount} form submissions`);
+    
     return {
       success: true,
       processed: totalResponsesProcessed,
       synced: totalResponsesSynced,
-      failed: failedResponses
+      failed: failedResponses,
+      formSubmissions: formSubmissionsCount
     };
   } catch (error) {
     console.error('Error syncing Typeform responses:', error);
