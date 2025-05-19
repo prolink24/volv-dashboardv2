@@ -196,7 +196,7 @@ const DatabaseHealth: React.FC = () => {
   // Loading state
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
+      <div className="flex justify-center items-center min-h-screen h-screen overflow-auto">
         <div className="text-center">
           <Activity className="h-12 w-12 text-blue-500 animate-spin mx-auto mb-4" />
           <h2 className="text-2xl font-semibold">Loading Database Health...</h2>
@@ -209,8 +209,8 @@ const DatabaseHealth: React.FC = () => {
   // Error state
   if (isError || !data) {
     return (
-      <div className="flex flex-col gap-8 p-8">
-        <div className="flex justify-between items-center">
+      <div className="flex flex-col gap-8 p-8 h-screen overflow-auto">
+        <div className="flex justify-between items-center sticky top-0 bg-white z-10 pb-4">
           <div>
             <h1 className="text-3xl font-bold">Database Health</h1>
             <p className="text-gray-500 mt-1">Error loading database health data</p>
@@ -253,9 +253,9 @@ const DatabaseHealth: React.FC = () => {
   const healthData = data || mockDatabaseHealth;
   
   return (
-    <div className="flex flex-col gap-8 p-8">
+    <div className="flex flex-col gap-8 p-8 h-screen overflow-auto">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center sticky top-0 bg-white z-10 pb-4">
         <div>
           <h1 className="text-3xl font-bold">Database Health</h1>
           <p className="text-gray-500 mt-1">
@@ -270,7 +270,7 @@ const DatabaseHealth: React.FC = () => {
       
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList>
+        <TabsList className="sticky top-20 bg-white z-10">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="datasources">Data Sources</TabsTrigger>
           <TabsTrigger value="metrics">Health Metrics</TabsTrigger>
