@@ -39,11 +39,88 @@ const Settings = () => {
   const [closeSyncInterval, setCloseSyncInterval] = useState("hourly");
   const [calendlySyncInterval, setCalendlySyncInterval] = useState("hourly");
   const [syncHistory, setSyncHistory] = useState([
-    { id: 1, source: "All Sources", status: "success", date: "2025-04-02T12:30:00", count: 285 },
-    { id: 2, source: "Calendly", status: "success", date: "2025-04-02T11:15:00", count: 44 },
-    { id: 3, source: "Typeform", status: "success", date: "2025-04-01T16:45:00", count: 53 },
-    { id: 4, source: "Close CRM", status: "failed", date: "2025-04-01T14:20:00", count: 0 },
-    { id: 5, source: "All Sources", status: "success", date: "2025-03-31T10:00:00", count: 278 },
+    { 
+      id: 1, 
+      source: "All Sources", 
+      status: "success", 
+      date: "2025-05-19T10:30:00", 
+      startTime: "2025-05-19T10:29:15",
+      endTime: "2025-05-19T10:30:45",
+      duration: "1m 30s",
+      count: 285,
+      newRecords: 42, 
+      updatedRecords: 243,
+      details: {
+        close: { new: 18, updated: 112, failed: 0 },
+        calendly: { new: 14, updated: 86, failed: 0 },
+        typeform: { new: 10, updated: 45, failed: 0 }
+      }
+    },
+    { 
+      id: 2, 
+      source: "Typeform", 
+      status: "success", 
+      date: "2025-05-18T15:30:00",
+      startTime: "2025-05-18T15:29:40",
+      endTime: "2025-05-18T15:30:20", 
+      duration: "40s",
+      count: 67, 
+      newRecords: 18, 
+      updatedRecords: 49,
+      details: {
+        contacts: { new: 7, linked: 11 },
+        forms: { new: 18, updated: 49, failed: 0 }
+      }
+    },
+    { 
+      id: 3, 
+      source: "Calendly", 
+      status: "success", 
+      date: "2025-05-18T12:15:00",
+      startTime: "2025-05-18T12:14:22",
+      endTime: "2025-05-18T12:15:38", 
+      duration: "1m 16s",
+      count: 44, 
+      newRecords: 12, 
+      updatedRecords: 32,
+      details: {
+        meetings: { new: 12, updated: 32, failed: 0 },
+        contacts: { new: 3, linked: 9 }
+      }
+    },
+    { 
+      id: 4, 
+      source: "Close CRM", 
+      status: "failed", 
+      date: "2025-05-18T09:20:00",
+      startTime: "2025-05-18T09:19:45",
+      endTime: "2025-05-18T09:20:12", 
+      duration: "27s",
+      count: 0,
+      error: "API rate limit exceeded",
+      details: {
+        contacts: { attempted: 156, synced: 0 },
+        deals: { attempted: 82, synced: 0 },
+        activities: { attempted: 93, synced: 0 }
+      }
+    },
+    { 
+      id: 5, 
+      source: "All Sources", 
+      status: "success", 
+      date: "2025-05-17T10:00:00",
+      startTime: "2025-05-17T09:59:30",
+      endTime: "2025-05-17T10:01:38", 
+      duration: "2m 8s",
+      count: 278, 
+      newRecords: 35, 
+      updatedRecords: 243,
+      details: {
+        close: { new: 15, updated: 128, failed: 0 },
+        calendly: { new: 8, updated: 67, failed: 0 },
+        typeform: { new: 12, updated: 48, failed: 0 }
+      }
+    },
   ]);
   
   // Mock other settings
@@ -467,32 +544,234 @@ const Settings = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {syncHistory.map((item) => (
                   <div
                     key={item.id}
-                    className="flex justify-between items-center py-2 border-b last:border-0"
+                    className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-4 border"
                   >
-                    <div>
-                      <div className="font-medium">{item.source}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {formatDate(item.date)}
+                    {/* Header */}
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-medium text-lg">{item.source}</h3>
+                          <div
+                            className={`px-2 py-1 text-xs rounded-full ${
+                              item.status === "success"
+                                ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                                : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                            }`}
+                          >
+                            {item.status === "success" ? "Success" : "Failed"}
+                          </div>
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {formatDate(item.date)}
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div
-                        className={`px-2 py-1 text-xs rounded-full ${
-                          item.status === "success"
-                            ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                            : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                        }`}
-                      >
-                        {item.status === "success" ? "Success" : "Failed"}
-                      </div>
-                      {item.status === "success" && (
-                        <div className="text-sm font-medium">{item.count} records</div>
+                      
+                      {item.status === "success" ? (
+                        <div className="text-sm font-semibold flex flex-col items-end">
+                          <span className="text-lg">{item.count} records</span>
+                          <span className="text-xs text-muted-foreground">
+                            <span className="text-green-600 dark:text-green-400">+{item.newRecords} new</span> • <span className="text-blue-600 dark:text-blue-400">{item.updatedRecords} updated</span>
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="text-sm text-red-600 dark:text-red-400 font-medium">
+                          {item.error || "Sync failed"}
+                        </div>
                       )}
                     </div>
+                    
+                    {/* Timeline */}
+                    <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400 mb-3">
+                      <span>Started: {formatDate(item.startTime)}</span>
+                      <span>•</span>
+                      <span>Duration: {item.duration}</span>
+                    </div>
+                    
+                    {/* Detailed breakdown */}
+                    {item.details && (
+                      <div className="mt-2 pt-2 border-t">
+                        <h4 className="text-sm font-semibold mb-2">Details</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          {item.source === "All Sources" && (
+                            <>
+                              <div className="p-2 bg-white dark:bg-slate-800 rounded border">
+                                <h5 className="text-xs font-medium mb-1">Close CRM</h5>
+                                <div className="text-xs">
+                                  <div className="flex justify-between">
+                                    <span>New:</span>
+                                    <span className="font-medium">{item.details.close?.new || 0}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Updated:</span>
+                                    <span className="font-medium">{item.details.close?.updated || 0}</span>
+                                  </div>
+                                  {item.details.close?.failed > 0 && (
+                                    <div className="flex justify-between text-red-600 dark:text-red-400">
+                                      <span>Failed:</span>
+                                      <span className="font-medium">{item.details.close.failed}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              <div className="p-2 bg-white dark:bg-slate-800 rounded border">
+                                <h5 className="text-xs font-medium mb-1">Calendly</h5>
+                                <div className="text-xs">
+                                  <div className="flex justify-between">
+                                    <span>New:</span>
+                                    <span className="font-medium">{item.details.calendly?.new || 0}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Updated:</span>
+                                    <span className="font-medium">{item.details.calendly?.updated || 0}</span>
+                                  </div>
+                                  {item.details.calendly?.failed > 0 && (
+                                    <div className="flex justify-between text-red-600 dark:text-red-400">
+                                      <span>Failed:</span>
+                                      <span className="font-medium">{item.details.calendly.failed}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              <div className="p-2 bg-white dark:bg-slate-800 rounded border">
+                                <h5 className="text-xs font-medium mb-1">Typeform</h5>
+                                <div className="text-xs">
+                                  <div className="flex justify-between">
+                                    <span>New:</span>
+                                    <span className="font-medium">{item.details.typeform?.new || 0}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Updated:</span>
+                                    <span className="font-medium">{item.details.typeform?.updated || 0}</span>
+                                  </div>
+                                  {item.details.typeform?.failed > 0 && (
+                                    <div className="flex justify-between text-red-600 dark:text-red-400">
+                                      <span>Failed:</span>
+                                      <span className="font-medium">{item.details.typeform.failed}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </>
+                          )}
+                          
+                          {item.source === "Typeform" && (
+                            <>
+                              <div className="p-2 bg-white dark:bg-slate-800 rounded border">
+                                <h5 className="text-xs font-medium mb-1">Form Submissions</h5>
+                                <div className="text-xs">
+                                  <div className="flex justify-between">
+                                    <span>New:</span>
+                                    <span className="font-medium">{item.details.forms?.new || 0}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Updated:</span>
+                                    <span className="font-medium">{item.details.forms?.updated || 0}</span>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="p-2 bg-white dark:bg-slate-800 rounded border">
+                                <h5 className="text-xs font-medium mb-1">Contacts</h5>
+                                <div className="text-xs">
+                                  <div className="flex justify-between">
+                                    <span>New:</span>
+                                    <span className="font-medium">{item.details.contacts?.new || 0}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Linked:</span>
+                                    <span className="font-medium">{item.details.contacts?.linked || 0}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </>
+                          )}
+                          
+                          {item.source === "Calendly" && (
+                            <>
+                              <div className="p-2 bg-white dark:bg-slate-800 rounded border">
+                                <h5 className="text-xs font-medium mb-1">Meetings</h5>
+                                <div className="text-xs">
+                                  <div className="flex justify-between">
+                                    <span>New:</span>
+                                    <span className="font-medium">{item.details.meetings?.new || 0}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Updated:</span>
+                                    <span className="font-medium">{item.details.meetings?.updated || 0}</span>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="p-2 bg-white dark:bg-slate-800 rounded border">
+                                <h5 className="text-xs font-medium mb-1">Contacts</h5>
+                                <div className="text-xs">
+                                  <div className="flex justify-between">
+                                    <span>New:</span>
+                                    <span className="font-medium">{item.details.contacts?.new || 0}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Linked:</span>
+                                    <span className="font-medium">{item.details.contacts?.linked || 0}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </>
+                          )}
+                          
+                          {item.source === "Close CRM" && item.status === "failed" && (
+                            <>
+                              <div className="p-2 bg-white dark:bg-slate-800 rounded border">
+                                <h5 className="text-xs font-medium mb-1">Contacts</h5>
+                                <div className="text-xs">
+                                  <div className="flex justify-between">
+                                    <span>Attempted:</span>
+                                    <span className="font-medium">{item.details.contacts?.attempted || 0}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Synced:</span>
+                                    <span className="font-medium">{item.details.contacts?.synced || 0}</span>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="p-2 bg-white dark:bg-slate-800 rounded border">
+                                <h5 className="text-xs font-medium mb-1">Deals</h5>
+                                <div className="text-xs">
+                                  <div className="flex justify-between">
+                                    <span>Attempted:</span>
+                                    <span className="font-medium">{item.details.deals?.attempted || 0}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Synced:</span>
+                                    <span className="font-medium">{item.details.deals?.synced || 0}</span>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="p-2 bg-white dark:bg-slate-800 rounded border">
+                                <h5 className="text-xs font-medium mb-1">Activities</h5>
+                                <div className="text-xs">
+                                  <div className="flex justify-between">
+                                    <span>Attempted:</span>
+                                    <span className="font-medium">{item.details.activities?.attempted || 0}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span>Synced:</span>
+                                    <span className="font-medium">{item.details.activities?.synced || 0}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
