@@ -1,5 +1,5 @@
 import { db } from "../db";
-import { deals, dealUserAssignments, closeUsers } from "../../shared/schema";
+import { deals, dealToUserAssignments, closeUsers } from "../../shared/schema";
 import { and, gte, lte, isNotNull, sql, eq, or } from "drizzle-orm";
 
 /**
@@ -118,10 +118,10 @@ export async function calculateRevenue(options: RevenueCalculationOptions): Prom
     })
     .from(deals)
     .innerJoin(
-      dealUserAssignments,
+      dealToUserAssignments,
       and(
-        eq(dealUserAssignments.dealId, deals.id),
-        eq(dealUserAssignments.closeUserId, userDbId)
+        eq(dealToUserAssignments.dealId, deals.id),
+        eq(dealToUserAssignments.closeUserId, userDbId)
       )
     )
     .where(dateFilter) : [];
