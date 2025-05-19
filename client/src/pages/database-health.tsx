@@ -196,11 +196,11 @@ const DatabaseHealth: React.FC = () => {
   // Loading state
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center min-h-screen h-screen overflow-auto">
+      <div className="flex justify-center items-center min-h-screen h-screen overflow-auto bg-background">
         <div className="text-center">
-          <Activity className="h-12 w-12 text-blue-500 animate-spin mx-auto mb-4" />
+          <Activity className="h-12 w-12 text-primary animate-spin mx-auto mb-4" />
           <h2 className="text-2xl font-semibold">Loading Database Health...</h2>
-          <p className="text-gray-500">Gathering metrics and statistics</p>
+          <p className="text-muted-foreground">Gathering metrics and statistics</p>
         </div>
       </div>
     );
@@ -209,11 +209,11 @@ const DatabaseHealth: React.FC = () => {
   // Error state
   if (isError || !data) {
     return (
-      <div className="flex flex-col gap-8 p-8 h-screen overflow-auto">
-        <div className="flex justify-between items-center sticky top-0 bg-white z-10 pb-4">
+      <div className="flex flex-col gap-8 p-8 h-screen overflow-auto bg-background">
+        <div className="flex justify-between items-center sticky top-0 bg-background z-10 pb-4">
           <div>
             <h1 className="text-3xl font-bold">Database Health</h1>
-            <p className="text-gray-500 mt-1">Error loading database health data</p>
+            <p className="text-muted-foreground mt-1">Error loading database health data</p>
           </div>
           <Button onClick={() => refetch()} disabled={isLoading || isUpdating}>
             <RefreshCw className={`mr-2 h-4 w-4 ${isUpdating ? 'animate-spin' : ''}`} /> 
@@ -253,12 +253,12 @@ const DatabaseHealth: React.FC = () => {
   const healthData = data || mockDatabaseHealth;
   
   return (
-    <div className="flex flex-col gap-8 p-8 h-screen overflow-auto">
+    <div className="flex flex-col gap-8 p-8 h-screen overflow-auto bg-background">
       {/* Header */}
-      <div className="flex justify-between items-center sticky top-0 bg-white z-10 pb-4">
+      <div className="flex justify-between items-center sticky top-0 bg-background z-10 pb-4">
         <div>
           <h1 className="text-3xl font-bold">Database Health</h1>
-          <p className="text-gray-500 mt-1">
+          <p className="text-muted-foreground mt-1">
             Last updated: {healthData && 'lastUpdated' in healthData ? formatDate(healthData.lastUpdated) : 'Unknown'}
           </p>
         </div>
@@ -270,7 +270,7 @@ const DatabaseHealth: React.FC = () => {
       
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="sticky top-20 bg-white z-10">
+        <TabsList className="sticky top-20 bg-background z-10">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="datasources">Data Sources</TabsTrigger>
           <TabsTrigger value="metrics">Health Metrics</TabsTrigger>
@@ -354,7 +354,7 @@ const DatabaseHealth: React.FC = () => {
                             : 'bg-red-100'
                       }`}
                     />
-                    <div className="flex justify-between text-sm text-gray-500">
+                    <div className="flex justify-between text-sm text-muted-foreground">
                       <span>{metric.value}% (Target: {metric.target}%)</span>
                       <span>Last checked: {formatDate(metric.lastChecked)}</span>
                     </div>
@@ -413,17 +413,17 @@ const DatabaseHealth: React.FC = () => {
                     </Badge>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-md">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-secondary/10 rounded-md">
                     <div>
-                      <p className="text-sm text-gray-500">Last Synced</p>
+                      <p className="text-sm text-muted-foreground">Last Synced</p>
                       <p className="font-medium">{formatDate(source.lastSync)}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Record Count</p>
+                      <p className="text-sm text-muted-foreground">Record Count</p>
                       <p className="font-medium">{source.recordCount.toLocaleString()}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Data Integrity</p>
+                      <p className="text-sm text-muted-foreground">Data Integrity</p>
                       <div className="flex items-center">
                         <span className="font-medium">{source.integrity}%</span>
                         <Progress value={source.integrity} className="ml-2 h-2 w-20" />
@@ -431,7 +431,7 @@ const DatabaseHealth: React.FC = () => {
                     </div>
                   </div>
                   
-                  <div className="mt-2 text-sm text-gray-500">
+                  <div className="mt-2 text-sm text-muted-foreground">
                     Sync Frequency: {source.syncFrequency}
                   </div>
                   
@@ -481,7 +481,7 @@ const DatabaseHealth: React.FC = () => {
                     />
                   </div>
                   
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm text-muted-foreground">
                     Last checked: {formatDate(metric.lastChecked)}
                   </div>
                   
