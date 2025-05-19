@@ -138,6 +138,109 @@ function extractNameFromResponse(response: any): string | null {
 }
 
 /**
+ * Extract company from form response
+ * @param response The form response object
+ */
+function extractCompanyFromResponse(response: any): string | null {
+  try {
+    // Try to find company fields in the answers
+    if (response.answers) {
+      // Look for specific company field types
+      const companyFields = response.answers.filter((answer: any) => 
+        answer.type === 'text' && 
+        (answer.field?.ref?.toLowerCase().includes('company') || 
+         answer.field?.ref?.toLowerCase().includes('organization') ||
+         (answer.field?.title && (
+           answer.field.title.toLowerCase().includes('company') ||
+           answer.field.title.toLowerCase().includes('organization')
+         )))
+      );
+      
+      if (companyFields.length > 0) {
+        return companyFields[0].text;
+      }
+    }
+    
+    // If no company found in answers, check hidden fields
+    if (response.hidden) {
+      if (response.hidden.company) {
+        return response.hidden.company;
+      }
+      
+      if (response.hidden.organization) {
+        return response.hidden.organization;
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error extracting company from response:', error);
+    return null;
+  }
+}
+
+/**
+ * Create a form submission record in the database
+ * @param contactId The ID of the contact associated with this form
+ * @param response The Typeform response object
+ * @param formId The Typeform form ID
+ * @param formName The name/title of the form
+ */
+async function createFormRecord(contactId: number, response: any, formId: string, formName: string) {
+  try {
+    // Calculate completion percentage based on answer count vs total questions
+    const questionCount = response.calculated?.variables?.length || 0;
+    const answeredCount = response.answers?.length || 0;
+    const completionPercentage = questionCount > 0 ? 
+      Math.floor((answeredCount / questionCount) * 100) : 100;
+
+    // Extract metadata like IP, completion time, etc.
+    const metadata = {
+      platform: 'typeform',
+      browser: response.metadata?.browser,
+      platform_details: response.metadata?.platform,
+      user_agent: response.metadata?.user_agent,
+      referer: response.metadata?.referer,
+      network_id: response.metadata?.network_id,
+      response_id: response.response_id
+    };
+
+    // Prepare the form data
+    const formData = {
+      contactId: contactId,
+      typeformResponseId: response.response_id,
+      formName: formName,
+      formId: formId,
+      submittedAt: new Date(response.submitted_at),
+      respondentEmail: extractEmailFromResponse(response),
+      respondentName: extractNameFromResponse(response),
+      respondentIp: response.metadata?.network_id || null,
+      completionTime: response.metadata?.time_to_complete || null,
+      completionPercentage: completionPercentage,
+      questionCount: questionCount,
+      answeredCount: answeredCount,
+      answers: response.answers || {},
+      hiddenFields: response.hidden || {},
+      calculatedFields: response.calculated || {},
+      utmSource: response.hidden?.utm_source || null,
+      utmMedium: response.hidden?.utm_medium || null,
+      utmCampaign: response.hidden?.utm_campaign || null,
+      fieldCoverage: 85, // Since we're capturing most fields
+      metadata: metadata
+    };
+
+    // Insert the form record
+    const result = await db.insert(forms).values(formData);
+    
+    console.log(`Created form record for response ID: ${response.response_id}`);
+    return result;
+  } catch (error) {
+    console.error('Error creating form record:', error);
+    throw error;
+  }
+}
+
+/**
  * Get all form responses and sync them to the database
  */
 export async function syncTypeformResponses() {
@@ -184,12 +287,39 @@ export async function syncTypeformResponses() {
             .limit(1);
           
           if (existingContact.length === 0) {
-            console.log(`No matching contact found for email: ${email}`);
+            console.log(`No matching contact found for email: ${email}. Creating new contact...`);
             
-            // Option: create a new contact if needed
+            // Create a new contact from the form submission
             const name = extractNameFromResponse(response) || 'Unknown';
-            // -- Implementation for creating contact would go here --
+            const company = extractCompanyFromResponse(response);
             
+            // Create new contact record
+            const newContact = await db.insert(contacts).values({
+              name: name,
+              email: email,
+              company: company,
+              leadSource: 'typeform',
+              sourcesCount: 1,
+              fieldCoverage: 70,
+              firstTouchDate: new Date(response.submitted_at),
+              sourceData: response
+            }).returning();
+            
+            if (newContact.length === 0) {
+              console.error(`Failed to create new contact for email: ${email}`);
+              continue;
+            }
+            
+            console.log(`Created new contact: ${name} (${email})`);
+            
+            // Continue processing with the newly created contact
+            const contact = newContact[0];
+            
+            // Create form record
+            const formTitle = response.form_title || form.title;
+            await createFormRecord(contact.id, response, form.id, formTitle);
+            
+            totalResponsesSynced++;
             continue;
           }
           
