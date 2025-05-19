@@ -176,9 +176,19 @@ export async function calculateRevenue(options: RevenueCalculationOptions): Prom
     totalRevenue += dealValue;
     
     // Parse and validate cash collected (with fallback to deal value for won deals)
-    const cashCollected = deal.cashCollected 
-      ? parseCurrencyValue(deal.cashCollected)
-      : (deal.status === 'won' ? dealValue : 0);
+    let cashCollected = 0;
+    if (deal.cashCollected) {
+      cashCollected = parseCurrencyValue(deal.cashCollected);
+      
+      // Check for inflated values (100x value) and correct them
+      if (deal.status === 'won' && cashCollected > dealValue * 10) {
+        console.log(`[REVENUE] Correcting inflated cash_collected: ${cashCollected} -> ${dealValue}`);
+        cashCollected = dealValue;
+      }
+    } else if (deal.status === 'won') {
+      // If no cash_collected value but deal is won, use deal value
+      cashCollected = dealValue;
+    }
     
     totalCashCollected += cashCollected;
   }
