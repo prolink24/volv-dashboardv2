@@ -457,22 +457,46 @@ const DatabaseHealth: React.FC = () => {
                           Contacts with data from multiple platforms
                         </div>
                       </div>
-                      <div className="p-4 bg-secondary/10 rounded-md">
-                        <div className="text-sm font-medium">Meeting Linkage</div>
+                      <div className="p-4 bg-primary/10 rounded-md border border-primary/30">
+                        <div className="text-sm font-medium text-primary">Meeting Linkage</div>
                         <div className="text-xl font-bold mt-1">
                           {healthData.healthMetrics.find(m => m.id === "metric_3")?.value || 0}%
                         </div>
                         <div className="text-xs text-muted-foreground">
                           Calendly meetings linked to contacts
                         </div>
+                        {/* Add a tooltip for the meeting linkage */}
+                        <div className="mt-2 text-xs">
+                          <span className="inline-flex items-center px-2 py-1 rounded-full bg-primary/20 text-primary font-medium">
+                            {(() => {
+                              const calendlySource = healthData.dataSources.find(s => s.name === "Calendly");
+                              if (calendlySource?.details?.meetings) {
+                                return `${calendlySource.details.meetings.linked} of ${calendlySource.details.meetings.count} meetings linked`;
+                              }
+                              return "Meeting data unavailable";
+                            })()}
+                          </span>
+                        </div>
                       </div>
-                      <div className="p-4 bg-secondary/10 rounded-md">
-                        <div className="text-sm font-medium">Form Submission Linkage</div>
+                      <div className="p-4 bg-primary/10 rounded-md border border-primary/30">
+                        <div className="text-sm font-medium text-primary">Form Submission Linkage</div>
                         <div className="text-xl font-bold mt-1">
                           {healthData.healthMetrics.find(m => m.id === "metric_4")?.value || 0}%
                         </div>
                         <div className="text-xs text-muted-foreground">
                           Typeform submissions linked to contacts
+                        </div>
+                        {/* Add a tooltip for the form submission linkage */}
+                        <div className="mt-2 text-xs">
+                          <span className="inline-flex items-center px-2 py-1 rounded-full bg-primary/20 text-primary font-medium">
+                            {(() => {
+                              const typeformSource = healthData.dataSources.find(s => s.name === "Typeform");
+                              if (typeformSource?.details?.submissions) {
+                                return `${typeformSource.details.submissions.linked} of ${typeformSource.details.submissions.count} submissions linked`;
+                              }
+                              return "Submission data unavailable";
+                            })()}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -667,6 +691,78 @@ const DatabaseHealth: React.FC = () => {
                   <div className="mt-2 text-sm text-muted-foreground">
                     Sync Frequency: {source.syncFrequency}
                   </div>
+                  
+                  {/* Display detailed metrics for Calendly */}
+                  {source.name === "Calendly" && source.details?.meetings && (
+                    <div className="mt-3 p-3 bg-primary/5 rounded-md border border-primary/20">
+                      <h4 className="text-sm font-medium text-primary mb-2">Meeting Linkage Detail</h4>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <div className="text-xs text-muted-foreground">Linked Meetings</div>
+                          <div className="text-sm font-medium">{source.details.meetings.linked}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-muted-foreground">Unlinked Meetings</div>
+                          <div className="text-sm font-medium">{source.details.meetings.unlinked}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-muted-foreground">Total Meetings</div>
+                          <div className="text-sm font-medium">{source.details.meetings.count}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-muted-foreground">Linkage Rate</div>
+                          <div className="text-sm font-medium">
+                            {((source.details.meetings.linked / source.details.meetings.count) * 100).toFixed(1)}%
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-2">
+                        <div className="text-xs text-muted-foreground mb-1">Linkage Progress</div>
+                        <div className="relative h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                          <div 
+                            className="absolute top-0 left-0 h-full bg-primary rounded-full"
+                            style={{ width: `${(source.details.meetings.linked / source.details.meetings.count) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Display detailed metrics for Typeform */}
+                  {source.name === "Typeform" && source.details?.submissions && (
+                    <div className="mt-3 p-3 bg-primary/5 rounded-md border border-primary/20">
+                      <h4 className="text-sm font-medium text-primary mb-2">Form Submission Linkage Detail</h4>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <div className="text-xs text-muted-foreground">Linked Submissions</div>
+                          <div className="text-sm font-medium">{source.details.submissions.linked}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-muted-foreground">Unlinked Submissions</div>
+                          <div className="text-sm font-medium">{source.details.submissions.unlinked}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-muted-foreground">Total Submissions</div>
+                          <div className="text-sm font-medium">{source.details.submissions.count}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-muted-foreground">Linkage Rate</div>
+                          <div className="text-sm font-medium">
+                            {((source.details.submissions.linked / source.details.submissions.count) * 100).toFixed(1)}%
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-2">
+                        <div className="text-xs text-muted-foreground mb-1">Linkage Progress</div>
+                        <div className="relative h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                          <div 
+                            className="absolute top-0 left-0 h-full bg-primary rounded-full"
+                            style={{ width: `${(source.details.submissions.linked / source.details.submissions.count) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   
                   <Separator className="my-4" />
                 </div>
