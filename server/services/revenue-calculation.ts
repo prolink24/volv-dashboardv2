@@ -1,6 +1,6 @@
 import { db } from "../db";
-import { deals } from "../../shared/schema";
-import { and, gte, lte, isNotNull, sql, eq } from "drizzle-orm";
+import { deals, dealUserAssignments, closeUsers } from "../../shared/schema";
+import { and, gte, lte, isNotNull, sql, eq, or } from "drizzle-orm";
 
 /**
  * Revenue calculation modes to ensure consistent application of date filters
@@ -98,19 +98,65 @@ export async function calculateRevenue(options: RevenueCalculationOptions): Prom
   })();
   
   // Add user filter if needed
-  const fullFilter = userId 
-    ? and(dateFilter, eq(deals.assignedTo, userId))
-    : dateFilter;
-  
-  // Fetch deals using consistent filter
-  const dealsInPeriod = await db.select({
-    id: deals.id,
-    value: deals.value,
-    cashCollected: deals.cashCollected,
-    status: deals.status,
-  })
-  .from(deals)
-  .where(fullFilter);
+  let dealsInPeriod;
+  if (userId) {
+    // We need to check both direct assignments and the junction table
+    // First, get user by Close ID if available
+    const userInfo = await db.select()
+      .from(closeUsers)
+      .where(eq(closeUsers.closeId, userId))
+      .limit(1);
+    
+    const userDbId = userInfo.length > 0 ? userInfo[0].id : null;
+    
+    // Get deals through junction table
+    const junctionDeals = userDbId ? await db.select({
+      id: deals.id,
+      value: deals.value,
+      cashCollected: deals.cashCollected,
+      status: deals.status,
+    })
+    .from(deals)
+    .innerJoin(
+      dealUserAssignments,
+      and(
+        eq(dealUserAssignments.dealId, deals.id),
+        eq(dealUserAssignments.closeUserId, userDbId)
+      )
+    )
+    .where(dateFilter) : [];
+    
+    // Get directly assigned deals
+    const directDeals = await db.select({
+      id: deals.id,
+      value: deals.value,
+      cashCollected: deals.cashCollected,
+      status: deals.status,
+    })
+    .from(deals)
+    .where(and(dateFilter, eq(deals.assignedTo, userId)));
+    
+    // Combine and deduplicate deals
+    const combined = [...junctionDeals, ...directDeals];
+    const seen = new Set();
+    dealsInPeriod = combined.filter(deal => {
+      if (seen.has(deal.id)) return false;
+      seen.add(deal.id);
+      return true;
+    });
+    
+    console.log(`[REVENUE] Found ${junctionDeals.length} junction-assigned deals and ${directDeals.length} directly-assigned deals`);
+  } else {
+    // No user filter, get all deals in the period
+    dealsInPeriod = await db.select({
+      id: deals.id,
+      value: deals.value,
+      cashCollected: deals.cashCollected,
+      status: deals.status,
+    })
+    .from(deals)
+    .where(dateFilter);
+  }
   
   console.log(`[REVENUE] Found ${dealsInPeriod.length} deals matching the criteria`);
   
