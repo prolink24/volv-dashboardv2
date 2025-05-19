@@ -2099,47 +2099,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
         validationErrors: [
           {
             id: "error_1",
+            ruleId: "rule_1",
             entityType: "contact",
-            entityId: "12345",
+            entityId: 12345,
             field: "email",
-            error: "Invalid email format",
+            message: "Invalid email format",
             severity: "medium",
-            timestamp: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            resolved: false
           },
           {
             id: "error_2",
+            ruleId: "rule_2",
             entityType: "deal",
-            entityId: "67890",
+            entityId: 67890,
             field: "close_date",
-            error: "Date cannot be in the past",
+            message: "Date cannot be in the past",
             severity: "high",
-            timestamp: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            resolved: false
           }
         ],
         syncHistory: [
           {
             id: "sync_1",
             source: "Close CRM",
-            timestamp: new Date().toISOString(),
+            startTime: new Date().toISOString(),
+            endTime: new Date(Date.now() + 8500).toISOString(),
+            status: "success",
             recordsProcessed: 1245,
-            duration: 8500,
-            status: "success"
+            recordsUpdated: 980,
+            recordsCreated: 200,
+            recordsFailed: 65,
+            duration: 8500
           },
           {
             id: "sync_2",
             source: "Calendly",
-            timestamp: new Date().toISOString(),
+            startTime: new Date().toISOString(),
+            endTime: new Date(Date.now() + 4200).toISOString(),
+            status: "success",
             recordsProcessed: 325,
-            duration: 4200,
-            status: "success"
+            recordsUpdated: 210,
+            recordsCreated: 95,
+            recordsFailed: 20,
+            duration: 4200
           },
           {
             id: "sync_3",
             source: "Typeform",
-            timestamp: new Date().toISOString(),
+            startTime: new Date().toISOString(),
+            endTime: new Date(Date.now() + 3100).toISOString(),
+            status: "success",
             recordsProcessed: 178,
-            duration: 3100,
-            status: "success"
+            recordsUpdated: 125,
+            recordsCreated: 43,
+            recordsFailed: 10,
+            duration: 3100
           }
         ],
         fieldMappingCompleteness: 86,
