@@ -311,7 +311,7 @@ const DatabaseHealth: React.FC = () => {
   return (
     <div className="flex flex-col gap-8 p-8 h-screen overflow-auto bg-background">
       {/* Header */}
-      <div className="flex justify-between items-center sticky top-0 bg-background z-10 pb-4">
+      <div className="flex justify-between items-center pb-4">
         <div>
           <h1 className="text-3xl font-bold">Database Health</h1>
           <p className="text-muted-foreground mt-1">
@@ -326,7 +326,7 @@ const DatabaseHealth: React.FC = () => {
       
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="sticky top-20 bg-background z-10">
+        <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="datasources">Data Sources</TabsTrigger>
           <TabsTrigger value="metrics">Health Metrics</TabsTrigger>
