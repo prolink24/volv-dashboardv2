@@ -25,6 +25,7 @@ import typeformRoutes from "./routes/typeform";
 import dataEnhancementRoutes from "./routes/data-enhancement"; 
 import typeformEnhancedRoutes from './api/typeform-enhanced';
 import { CloseUser } from "@shared/schema";
+import * as meetingDataService from './services/meeting-data-service';
 
 // Enhanced attribution response types
 interface AttributionStatsResponse {
@@ -456,6 +457,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
         formattedDateParam, 
         userId
       );
+      
+      // Calculate Calendly meeting KPIs
+      let meetingKPIs = null;
+      
+      // Only perform this calculation if we have a date range
+      if (typeof formattedDateParam !== 'string' && 'startDate' in formattedDateParam && 'endDate' in formattedDateParam) {
+        try {
+          console.log('[MEETINGS] Enhancing dashboard with Calendly meeting data');
+          
+          // Calculate previous date range with same duration for comparison
+          const currentStart = formattedDateParam.startDate;
+          const currentEnd = formattedDateParam.endDate;
+          const daysDifference = Math.floor((currentEnd.getTime() - currentStart.getTime()) / (1000 * 60 * 60 * 24));
+          
+          const previousStart = new Date(currentStart);
+          previousStart.setDate(previousStart.getDate() - daysDifference);
+          
+          const previousEnd = new Date(previousStart);
+          previousEnd.setDate(previousEnd.getDate() + daysDifference);
+          
+          console.log(`[MEETINGS] Current period: ${currentStart.toISOString()} to ${currentEnd.toISOString()}`);
+          console.log(`[MEETINGS] Previous period: ${previousStart.toISOString()} to ${previousEnd.toISOString()}`);
+          
+          // Get meeting KPIs from the meeting data service
+          meetingKPIs = await meetingDataService.calculateMeetingKPIs(
+            currentStart,
+            currentEnd,
+            previousStart,
+            previousEnd,
+            userId
+          );
+          
+          console.log(`[MEETINGS] Enhanced dashboard with meeting KPIs: ${meetingKPIs.totalCalls.current} total calls`);
+          
+          // Get the actual meeting data for the current period
+          const meetingsData = await meetingDataService.getMeetingsForDateRange(
+            currentStart,
+            currentEnd,
+            userId
+          );
+          
+          // Add meetings to the dashboard data
+          dashboardData.meetings = meetingsData;
+          
+          console.log(`[MEETINGS] Added ${meetingsData.length} meetings to dashboard data`);
+        } catch (error) {
+          console.error('[MEETINGS] Error enhancing dashboard with meeting data:', error);
+        }
+      }
       
       // Calculate revenue with consistent date filtering (using close_date by default)
       // This gives us a standardized way to calculate revenue metrics
