@@ -1,11 +1,32 @@
 import React from "react";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
-import { useDateRange } from "@/hooks/use-date-range";
+import { useDateRange } from "@/providers/date-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
+
+// Define meeting interface to match what's in the API response
+interface Meeting {
+  id: number;
+  contactId: number;
+  calendlyEventId?: string;
+  type: string;
+  title: string;
+  startTime: string;
+  endTime: string;
+  status: string;
+  assignedTo: string;
+  [key: string]: any; // Allow for additional properties
+}
+
+// Extend DashboardData to include meetings
+interface ExtendedDashboardData {
+  meetings?: Meeting[];
+  kpis: any; // Using any for brevity, should match the actual type
+  [key: string]: any; // Allow other dashboard properties
+}
 
 export const MeetingDataDebug = () => {
   const { dateRange } = useDateRange();
@@ -38,18 +59,21 @@ export const MeetingDataDebug = () => {
     refetch
   } = useDashboardData({ 
     useEnhanced: true,
-    dateRangeOverride: dateFilter
+    date: dateFilter || undefined
   });
   
+  // Cast to our extended type that includes meetings
+  const extendedData = dashboardData as unknown as ExtendedDashboardData;
+  
   // Count meeting types
-  const totalMeetings = dashboardData?.meetings?.length || 0;
-  const calendlyMeetings = dashboardData?.meetings?.filter(m => m.calendlyEventId)?.length || 0;
+  const totalMeetings = extendedData?.meetings?.length || 0;
+  const calendlyMeetings = extendedData?.meetings?.filter(m => m.calendlyEventId)?.length || 0;
   
   // Prepare call metrics for display
   const callMetrics = {
-    totalCalls: dashboardData?.kpis?.totalCalls?.current || 0,
-    call1Taken: dashboardData?.kpis?.call1Taken?.current || 0,
-    call2Taken: dashboardData?.kpis?.call2Taken?.current || 0
+    totalCalls: extendedData?.kpis?.totalCalls?.current || 0,
+    call1Taken: extendedData?.kpis?.call1Taken?.current || 0,
+    call2Taken: extendedData?.kpis?.call2Taken?.current || 0
   };
   
   // Pretty-print JSON
@@ -95,7 +119,7 @@ export const MeetingDataDebug = () => {
         ) : isError ? (
           <div className="bg-destructive/10 p-4 rounded-md text-destructive mb-4">
             <p className="font-semibold">Error loading dashboard data:</p>
-            <p>{error?.message || "Unknown error"}</p>
+            <p>{error instanceof Error ? error.message : "Unknown error"}</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -135,15 +159,15 @@ export const MeetingDataDebug = () => {
             <Separator />
             
             <Accordion type="single" collapsible className="w-full">
-              {dashboardData?.meetings && dashboardData.meetings.length > 0 ? (
+              {extendedData?.meetings && extendedData.meetings.length > 0 ? (
                 <AccordionItem value="meetings">
                   <AccordionTrigger className="font-medium">
-                    Meeting Data ({dashboardData.meetings.length} items)
+                    Meeting Data ({extendedData.meetings.length} items)
                   </AccordionTrigger>
                   <AccordionContent>
                     <ScrollArea className="h-[300px] rounded-md border">
                       <div className="p-4 text-xs font-mono whitespace-pre">
-                        {prettyJson(dashboardData.meetings)}
+                        {prettyJson(extendedData.meetings)}
                       </div>
                     </ScrollArea>
                   </AccordionContent>
@@ -161,7 +185,7 @@ export const MeetingDataDebug = () => {
                 <AccordionContent>
                   <ScrollArea className="h-[300px] rounded-md border">
                     <div className="p-4 text-xs font-mono whitespace-pre">
-                      {prettyJson(dashboardData?.kpis || {})}
+                      {prettyJson(extendedData?.kpis || {})}
                     </div>
                   </ScrollArea>
                 </AccordionContent>
@@ -174,7 +198,7 @@ export const MeetingDataDebug = () => {
                 <AccordionContent>
                   <ScrollArea className="h-[300px] rounded-md border">
                     <div className="p-4 text-xs font-mono whitespace-pre">
-                      {prettyJson(dashboardData || {})}
+                      {prettyJson(extendedData || {})}
                     </div>
                   </ScrollArea>
                 </AccordionContent>

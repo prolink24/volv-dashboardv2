@@ -298,6 +298,9 @@ const Dashboard = () => {
           </div>
         </div>
       
+      {/* Meeting Data Debug - Add this to help diagnose Calendly calls issue */}
+      <MeetingDataDebug />
+      
       {/* Attribution Summary */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
         <AttributionStats />
