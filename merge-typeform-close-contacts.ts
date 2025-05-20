@@ -195,11 +195,10 @@ async function getContactsToProcess(limit: number = BATCH_SIZE) {
     .from(contacts)
     .where(
       and(
-        or(
-          like(contacts.leadSource, '%typeform%'),
-          eq(contacts.typeformId, isNull(false))
-        ),
-        eq(contacts.closeId, isNull(true))
+        // Look for any contacts that don't have a Close ID
+        eq(contacts.closeId, isNull(true)),
+        // Only process contacts that have an email (required for Close CRM)
+        isNull(contacts.email, false)
       )
     )
     .limit(limit);
