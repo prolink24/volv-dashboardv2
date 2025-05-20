@@ -142,7 +142,7 @@ const PerformanceTable = ({ data, meetings = [], className }: PerformanceTablePr
                   <TableCell>{member.closed || 0}</TableCell>
                   <TableCell>{formatCurrency(member.cashCollected || 0)}</TableCell>
                   <TableCell>{formatCurrency(member.contractedValue || 0)}</TableCell>
-                  <TableCell>{userCallsMap.get(member.id) || member.calls || 0}</TableCell>
+                  <TableCell>{userCallsMap.get(member.id) || 0}</TableCell>
                   <TableCell>{member.call1 || 0}</TableCell>
                   <TableCell>{member.call2 || 0}</TableCell>
                   <TableCell>{member.call2Sits || 0}</TableCell>
