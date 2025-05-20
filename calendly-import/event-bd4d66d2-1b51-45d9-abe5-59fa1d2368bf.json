@@ -1,0 +1,91 @@
+{
+  "event": {
+    "calendar_event": {
+      "external_id": "6mv34ivlflghm71rj7d2d2lr6c",
+      "kind": "google"
+    },
+    "created_at": "2025-04-20T01:56:16.465171Z",
+    "end_time": "2025-04-22T15:15:00.000000Z",
+    "event_guests": [],
+    "event_memberships": [
+      {
+        "buffered_end_time": "2025-04-22T15:15:00.000000Z",
+        "buffered_start_time": "2025-04-22T15:00:00.000000Z",
+        "user": "https://api.calendly.com/users/58653410-a745-4149-819d-9e9051da2ec3",
+        "user_email": "josh@thedealmaker.io",
+        "user_name": "Josh Sweetnam"
+      }
+    ],
+    "event_type": "https://api.calendly.com/event_types/88f5122b-93e6-471c-b290-4b2f07bddf83",
+    "invitees_counter": {
+      "active": 1,
+      "limit": 1,
+      "total": 1
+    },
+    "location": {
+      "location": null,
+      "type": "custom"
+    },
+    "meeting_notes_html": null,
+    "meeting_notes_plain": null,
+    "name": "Dealmaker | Introduction Call",
+    "start_time": "2025-04-22T15:00:00.000000Z",
+    "status": "active",
+    "updated_at": "2025-04-20T01:56:17.857669Z",
+    "uri": "https://api.calendly.com/scheduled_events/bd4d66d2-1b51-45d9-abe5-59fa1d2368bf"
+  },
+  "invitees": [
+    {
+      "cancel_url": "https://calendly.com/cancellations/aebd9d47-6b6a-4a27-8e4a-7eddc0400ace",
+      "created_at": "2025-04-20T01:56:16.479888Z",
+      "email": "capitalperformancepartners@gmail.com",
+      "event": "https://api.calendly.com/scheduled_events/bd4d66d2-1b51-45d9-abe5-59fa1d2368bf",
+      "first_name": null,
+      "invitee_scheduled_by": null,
+      "last_name": null,
+      "name": "Tim Crowder",
+      "new_invitee": null,
+      "no_show": null,
+      "old_invitee": null,
+      "payment": null,
+      "questions_and_answers": [
+        {
+          "answer": "+1 304-710-9905",
+          "position": 0,
+          "question": "Phone Number"
+        }
+      ],
+      "reconfirmation": null,
+      "reschedule_url": "https://calendly.com/reschedulings/aebd9d47-6b6a-4a27-8e4a-7eddc0400ace",
+      "rescheduled": false,
+      "routing_form_submission": null,
+      "scheduling_method": null,
+      "status": "active",
+      "text_reminder_number": "+1 304-710-9905",
+      "timezone": "America/New_York",
+      "tracking": {
+        "utm_campaign": "Warm Up Blitz - Copy 3",
+        "utm_source": "fb_ad",
+        "utm_medium": "Finance Stacked NA",
+        "utm_content": "Finance Stacked NA",
+        "utm_term": "120222553681840600",
+        "salesforce_uuid": null
+      },
+      "updated_at": "2025-04-21T20:19:44.200736Z",
+      "uri": "https://api.calendly.com/scheduled_events/bd4d66d2-1b51-45d9-abe5-59fa1d2368bf/invitees/aebd9d47-6b6a-4a27-8e4a-7eddc0400ace"
+    }
+  ],
+  "eventDetails": {
+    "calendlyEventId": "bd4d66d2-1b51-45d9-abe5-59fa1d2368bf",
+    "type": "Call 1",
+    "title": "Dealmaker | Introduction Call",
+    "startTime": "2025-04-22T15:00:00.000000Z",
+    "endTime": "2025-04-22T15:15:00.000000Z",
+    "duration": 15,
+    "status": "active",
+    "bookedAt": "2025-04-20T01:56:16.465171Z",
+    "assignedTo": 1,
+    "contactEmail": "capitalperformancepartners@gmail.com",
+    "contactName": "Tim Crowder"
+  }
+}

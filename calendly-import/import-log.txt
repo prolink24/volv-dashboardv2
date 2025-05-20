@@ -1,0 +1,39 @@
+===== Generating SQL for Missing Calendly Events =====
+Started at: 2025-05-20T21:36:39.712Z
+Fetching Most Recent events from 2025-04-20T21:36:39.715Z to 2025-05-20T21:36:39.715Z...
+Found 100 events
+More events available at next page: https://api.calendly.com/scheduled_events?count=100&max_start_time=2025-05-20T21%3A36%3A39.715000Z&min_start_time=2025-04-20T21%3A36%3A39.715000Z&organization=https%3A%2F%2Fapi.calendly.com%2Forganizations%2F54858790-a2e4-4696-9d19-7c6dc22ef508&page_token=7uSBakTWFP75TGqF2rGYcdmvHfrb6g0_&status=active
+Processing 100 Most Recent events...
+Processing event: https://api.calendly.com/scheduled_events/a083f101-590a-4dd9-a056-c4a5facd08fc
+Event has 1 invitees
+Processing event: https://api.calendly.com/scheduled_events/f6342598-c49e-41ee-9c47-8cca99857abc
+Event has 1 invitees
+Processing event: https://api.calendly.com/scheduled_events/378bef2b-6bc7-408c-aff4-820f7e94c517
+Event has 1 invitees
+Processing event: https://api.calendly.com/scheduled_events/866630dc-5002-4627-8a5f-c235d52cf5aa
+Event has 1 invitees
+Processing event: https://api.calendly.com/scheduled_events/31f77584-6265-4c9c-bc14-b6c487981906
+Event has 1 invitees
+Processing event: https://api.calendly.com/scheduled_events/3d1137a8-6efc-4b6f-a8d3-c692ca9cc0e2
+Event has 1 invitees
+Processing event: https://api.calendly.com/scheduled_events/1fbdc56c-a0d2-4363-8396-ed623e112d7f
+Event has 1 invitees
+Processing event: https://api.calendly.com/scheduled_events/22fd5b86-1115-4190-8d69-f42d3189a50c
+Event has 1 invitees
+Processing event: https://api.calendly.com/scheduled_events/2ec4665c-0f3a-4ba5-af9f-6ec58f639594
+Event has 1 invitees
+Processing event: https://api.calendly.com/scheduled_events/343ac0c4-783e-42c5-8fe0-bd7022b40966
+Event has 1 invitees
+Processing event: https://api.calendly.com/scheduled_events/9c194112-93e0-4be4-9c2f-019b6fdbf2fe
+Event has 1 invitees
+Processing event: https://api.calendly.com/scheduled_events/45c176fb-4cf9-47c6-bf65-dd7ab35ef209
+Event has 1 invitees
+Processing event: https://api.calendly.com/scheduled_events/bd4d66d2-1b51-45d9-abe5-59fa1d2368bf
+Event has 1 invitees
+Processing event: https://api.calendly.com/scheduled_events/84bf3924-9d26-4bcd-8f06-dc30b64e788b
+Event has 1 invitees
+Processing event: https://api.calendly.com/scheduled_events/60b5f6dd-d554-47ba-a895-63f439dffdf2
+Event has 1 invitees
+Processing event: https://api.calendly.com/scheduled_events/0912d578-f3f4-46b9-b91b-a7ae413b28e4
+Event has 1 invitees
+Processing event: https://api.calendly.com/scheduled_events/58ae56cf-7ee1-4170-8769-2e17f20c15e8

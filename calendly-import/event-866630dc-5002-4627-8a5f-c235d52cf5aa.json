@@ -1,0 +1,91 @@
+{
+  "event": {
+    "calendar_event": {
+      "external_id": "el8ekdstqnvi096msie5l6e1gc",
+      "kind": "google"
+    },
+    "created_at": "2025-04-20T07:33:44.791939Z",
+    "end_time": "2025-04-21T18:15:00.000000Z",
+    "event_guests": [],
+    "event_memberships": [
+      {
+        "buffered_end_time": "2025-04-21T18:15:00.000000Z",
+        "buffered_start_time": "2025-04-21T18:00:00.000000Z",
+        "user": "https://api.calendly.com/users/d11ce41d-7da6-4c0a-a292-723cbfc11be9",
+        "user_email": "mazin@thedealmaker.io",
+        "user_name": "Mazin Gazar"
+      }
+    ],
+    "event_type": "https://api.calendly.com/event_types/88f5122b-93e6-471c-b290-4b2f07bddf83",
+    "invitees_counter": {
+      "active": 1,
+      "limit": 1,
+      "total": 1
+    },
+    "location": {
+      "location": null,
+      "type": "custom"
+    },
+    "meeting_notes_html": null,
+    "meeting_notes_plain": null,
+    "name": "Dealmaker | Introduction Call",
+    "start_time": "2025-04-21T18:00:00.000000Z",
+    "status": "active",
+    "updated_at": "2025-04-20T07:33:46.414062Z",
+    "uri": "https://api.calendly.com/scheduled_events/866630dc-5002-4627-8a5f-c235d52cf5aa"
+  },
+  "invitees": [
+    {
+      "cancel_url": "https://calendly.com/cancellations/675f54a1-492e-40f0-ba3e-8d0f39d5b5ce",
+      "created_at": "2025-04-20T07:33:44.807588Z",
+      "email": "renee.ross@gmail.com",
+      "event": "https://api.calendly.com/scheduled_events/866630dc-5002-4627-8a5f-c235d52cf5aa",
+      "first_name": null,
+      "invitee_scheduled_by": null,
+      "last_name": null,
+      "name": "Renee ",
+      "new_invitee": null,
+      "no_show": null,
+      "old_invitee": null,
+      "payment": null,
+      "questions_and_answers": [
+        {
+          "answer": "+1 416-878-4622",
+          "position": 0,
+          "question": "Phone Number"
+        }
+      ],
+      "reconfirmation": null,
+      "reschedule_url": "https://calendly.com/reschedulings/675f54a1-492e-40f0-ba3e-8d0f39d5b5ce",
+      "rescheduled": false,
+      "routing_form_submission": null,
+      "scheduling_method": null,
+      "status": "active",
+      "text_reminder_number": "+1 416-878-4622",
+      "timezone": "America/New_York",
+      "tracking": {
+        "utm_campaign": "Warm Up Blitz - Copy 3",
+        "utm_source": "fb_ad",
+        "utm_medium": "Finance Stacked NA",
+        "utm_content": "Finance Stacked NA",
+        "utm_term": "120222553681840600",
+        "salesforce_uuid": null
+      },
+      "updated_at": "2025-04-20T07:33:44.807588Z",
+      "uri": "https://api.calendly.com/scheduled_events/866630dc-5002-4627-8a5f-c235d52cf5aa/invitees/675f54a1-492e-40f0-ba3e-8d0f39d5b5ce"
+    }
+  ],
+  "eventDetails": {
+    "calendlyEventId": "866630dc-5002-4627-8a5f-c235d52cf5aa",
+    "type": "Call 1",
+    "title": "Dealmaker | Introduction Call",
+    "startTime": "2025-04-21T18:00:00.000000Z",
+    "endTime": "2025-04-21T18:15:00.000000Z",
+    "duration": 15,
+    "status": "active",
+    "bookedAt": "2025-04-20T07:33:44.791939Z",
+    "assignedTo": 2,
+    "contactEmail": "renee.ross@gmail.com",
+    "contactName": "Renee "
+  }
+}

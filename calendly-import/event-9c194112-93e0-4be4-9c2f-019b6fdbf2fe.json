@@ -1,0 +1,91 @@
+{
+  "event": {
+    "calendar_event": {
+      "external_id": "dhdaa4u2fhop9e4ihvhtrivav4",
+      "kind": "google"
+    },
+    "created_at": "2025-04-21T03:31:01.970963Z",
+    "end_time": "2025-04-21T23:45:00.000000Z",
+    "event_guests": [],
+    "event_memberships": [
+      {
+        "buffered_end_time": "2025-04-21T23:45:00.000000Z",
+        "buffered_start_time": "2025-04-21T23:30:00.000000Z",
+        "user": "https://api.calendly.com/users/d11ce41d-7da6-4c0a-a292-723cbfc11be9",
+        "user_email": "mazin@thedealmaker.io",
+        "user_name": "Mazin Gazar"
+      }
+    ],
+    "event_type": "https://api.calendly.com/event_types/88f5122b-93e6-471c-b290-4b2f07bddf83",
+    "invitees_counter": {
+      "active": 1,
+      "limit": 1,
+      "total": 1
+    },
+    "location": {
+      "location": null,
+      "type": "custom"
+    },
+    "meeting_notes_html": null,
+    "meeting_notes_plain": null,
+    "name": "Dealmaker | Introduction Call",
+    "start_time": "2025-04-21T23:30:00.000000Z",
+    "status": "active",
+    "updated_at": "2025-04-21T03:31:03.144015Z",
+    "uri": "https://api.calendly.com/scheduled_events/9c194112-93e0-4be4-9c2f-019b6fdbf2fe"
+  },
+  "invitees": [
+    {
+      "cancel_url": "https://calendly.com/cancellations/d06fc6f5-47d9-4bf7-bef9-e567472caf57",
+      "created_at": "2025-04-21T03:31:01.982956Z",
+      "email": "anujjkalra@houzing.ca",
+      "event": "https://api.calendly.com/scheduled_events/9c194112-93e0-4be4-9c2f-019b6fdbf2fe",
+      "first_name": null,
+      "invitee_scheduled_by": null,
+      "last_name": null,
+      "name": "Anuj Kalra",
+      "new_invitee": null,
+      "no_show": null,
+      "old_invitee": null,
+      "payment": null,
+      "questions_and_answers": [
+        {
+          "answer": "+1 403-803-9048",
+          "position": 0,
+          "question": "Phone Number"
+        }
+      ],
+      "reconfirmation": null,
+      "reschedule_url": "https://calendly.com/reschedulings/d06fc6f5-47d9-4bf7-bef9-e567472caf57",
+      "rescheduled": false,
+      "routing_form_submission": null,
+      "scheduling_method": null,
+      "status": "active",
+      "text_reminder_number": "+1 403-803-9048",
+      "timezone": "America/Denver",
+      "tracking": {
+        "utm_campaign": "Warm Up Blitz - Copy 3",
+        "utm_source": "fb_ad",
+        "utm_medium": "Agency Stacked NA",
+        "utm_content": "Agency Stacked NA",
+        "utm_term": "120222553681900600",
+        "salesforce_uuid": null
+      },
+      "updated_at": "2025-04-21T13:58:39.038158Z",
+      "uri": "https://api.calendly.com/scheduled_events/9c194112-93e0-4be4-9c2f-019b6fdbf2fe/invitees/d06fc6f5-47d9-4bf7-bef9-e567472caf57"
+    }
+  ],
+  "eventDetails": {
+    "calendlyEventId": "9c194112-93e0-4be4-9c2f-019b6fdbf2fe",
+    "type": "Call 1",
+    "title": "Dealmaker | Introduction Call",
+    "startTime": "2025-04-21T23:30:00.000000Z",
+    "endTime": "2025-04-21T23:45:00.000000Z",
+    "duration": 15,
+    "status": "active",
+    "bookedAt": "2025-04-21T03:31:01.970963Z",
+    "assignedTo": 2,
+    "contactEmail": "anujjkalra@houzing.ca",
+    "contactName": "Anuj Kalra"
+  }
+}

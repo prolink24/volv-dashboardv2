@@ -1,0 +1,91 @@
+{
+  "event": {
+    "calendar_event": {
+      "external_id": "1tc6is5edtg6tg8pssobc7cbr0",
+      "kind": "google"
+    },
+    "created_at": "2025-04-20T14:20:56.967247Z",
+    "end_time": "2025-04-21T14:45:00.000000Z",
+    "event_guests": [],
+    "event_memberships": [
+      {
+        "buffered_end_time": "2025-04-21T14:45:00.000000Z",
+        "buffered_start_time": "2025-04-21T14:30:00.000000Z",
+        "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+        "user_email": "bryann@thedealmaker.io",
+        "user_name": "Bryann Cabral"
+      }
+    ],
+    "event_type": "https://api.calendly.com/event_types/88f5122b-93e6-471c-b290-4b2f07bddf83",
+    "invitees_counter": {
+      "active": 1,
+      "limit": 1,
+      "total": 1
+    },
+    "location": {
+      "location": null,
+      "type": "custom"
+    },
+    "meeting_notes_html": null,
+    "meeting_notes_plain": null,
+    "name": "Dealmaker | Introduction Call",
+    "start_time": "2025-04-21T14:30:00.000000Z",
+    "status": "active",
+    "updated_at": "2025-04-20T14:20:58.141014Z",
+    "uri": "https://api.calendly.com/scheduled_events/a083f101-590a-4dd9-a056-c4a5facd08fc"
+  },
+  "invitees": [
+    {
+      "cancel_url": "https://calendly.com/cancellations/ff2d2772-e5cd-44da-8bc0-16774d2fd0de",
+      "created_at": "2025-04-20T14:20:56.981472Z",
+      "email": "abelsencion@burgeonassetmgmt.com",
+      "event": "https://api.calendly.com/scheduled_events/a083f101-590a-4dd9-a056-c4a5facd08fc",
+      "first_name": null,
+      "invitee_scheduled_by": null,
+      "last_name": null,
+      "name": "Abel Sencion",
+      "new_invitee": null,
+      "no_show": null,
+      "old_invitee": null,
+      "payment": null,
+      "questions_and_answers": [
+        {
+          "answer": "+1 470-418-0520",
+          "position": 0,
+          "question": "Phone Number"
+        }
+      ],
+      "reconfirmation": null,
+      "reschedule_url": "https://calendly.com/reschedulings/ff2d2772-e5cd-44da-8bc0-16774d2fd0de",
+      "rescheduled": false,
+      "routing_form_submission": null,
+      "scheduling_method": null,
+      "status": "active",
+      "text_reminder_number": "+1 470-418-0520",
+      "timezone": "America/New_York",
+      "tracking": {
+        "utm_campaign": "Warm Up Blitz - New Form",
+        "utm_source": "fb_ad",
+        "utm_medium": "Finance Stacked NA",
+        "utm_content": "Finance Stacked NA",
+        "utm_term": "120222566444630600",
+        "salesforce_uuid": null
+      },
+      "updated_at": "2025-04-20T14:20:56.981472Z",
+      "uri": "https://api.calendly.com/scheduled_events/a083f101-590a-4dd9-a056-c4a5facd08fc/invitees/ff2d2772-e5cd-44da-8bc0-16774d2fd0de"
+    }
+  ],
+  "eventDetails": {
+    "calendlyEventId": "a083f101-590a-4dd9-a056-c4a5facd08fc",
+    "type": "Call 1",
+    "title": "Dealmaker | Introduction Call",
+    "startTime": "2025-04-21T14:30:00.000000Z",
+    "endTime": "2025-04-21T14:45:00.000000Z",
+    "duration": 15,
+    "status": "active",
+    "bookedAt": "2025-04-20T14:20:56.967247Z",
+    "assignedTo": 1,
+    "contactEmail": "abelsencion@burgeonassetmgmt.com",
+    "contactName": "Abel Sencion"
+  }
+}

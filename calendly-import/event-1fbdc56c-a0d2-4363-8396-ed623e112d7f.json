@@ -1,0 +1,91 @@
+{
+  "event": {
+    "calendar_event": {
+      "external_id": "v5oj6f8jrboht3sbq7miib60ek",
+      "kind": "google"
+    },
+    "created_at": "2025-04-20T07:25:40.479730Z",
+    "end_time": "2025-04-21T19:15:00.000000Z",
+    "event_guests": [],
+    "event_memberships": [
+      {
+        "buffered_end_time": "2025-04-21T19:15:00.000000Z",
+        "buffered_start_time": "2025-04-21T19:00:00.000000Z",
+        "user": "https://api.calendly.com/users/58653410-a745-4149-819d-9e9051da2ec3",
+        "user_email": "josh@thedealmaker.io",
+        "user_name": "Josh Sweetnam"
+      }
+    ],
+    "event_type": "https://api.calendly.com/event_types/88f5122b-93e6-471c-b290-4b2f07bddf83",
+    "invitees_counter": {
+      "active": 1,
+      "limit": 1,
+      "total": 1
+    },
+    "location": {
+      "location": null,
+      "type": "custom"
+    },
+    "meeting_notes_html": null,
+    "meeting_notes_plain": null,
+    "name": "Dealmaker | Introduction Call",
+    "start_time": "2025-04-21T19:00:00.000000Z",
+    "status": "active",
+    "updated_at": "2025-04-20T07:25:41.588930Z",
+    "uri": "https://api.calendly.com/scheduled_events/1fbdc56c-a0d2-4363-8396-ed623e112d7f"
+  },
+  "invitees": [
+    {
+      "cancel_url": "https://calendly.com/cancellations/cd266b9f-211f-4b32-b13d-9eaab32cb50f",
+      "created_at": "2025-04-20T07:25:40.501694Z",
+      "email": "jameswalter@goldenpathwayfinancial.com",
+      "event": "https://api.calendly.com/scheduled_events/1fbdc56c-a0d2-4363-8396-ed623e112d7f",
+      "first_name": null,
+      "invitee_scheduled_by": null,
+      "last_name": null,
+      "name": "James Walter",
+      "new_invitee": null,
+      "no_show": null,
+      "old_invitee": null,
+      "payment": null,
+      "questions_and_answers": [
+        {
+          "answer": "+1 714-244-9021",
+          "position": 0,
+          "question": "Phone Number"
+        }
+      ],
+      "reconfirmation": null,
+      "reschedule_url": "https://calendly.com/reschedulings/cd266b9f-211f-4b32-b13d-9eaab32cb50f",
+      "rescheduled": false,
+      "routing_form_submission": null,
+      "scheduling_method": null,
+      "status": "active",
+      "text_reminder_number": "+1 714-244-9021",
+      "timezone": "America/Los_Angeles",
+      "tracking": {
+        "utm_campaign": "Warm Up Blitz - Copy 3",
+        "utm_source": "fb_ad",
+        "utm_medium": "Finance Stacked NA",
+        "utm_content": "Finance Stacked NA",
+        "utm_term": "120222553681840600",
+        "salesforce_uuid": null
+      },
+      "updated_at": "2025-04-20T07:25:40.501694Z",
+      "uri": "https://api.calendly.com/scheduled_events/1fbdc56c-a0d2-4363-8396-ed623e112d7f/invitees/cd266b9f-211f-4b32-b13d-9eaab32cb50f"
+    }
+  ],
+  "eventDetails": {
+    "calendlyEventId": "1fbdc56c-a0d2-4363-8396-ed623e112d7f",
+    "type": "Call 1",
+    "title": "Dealmaker | Introduction Call",
+    "startTime": "2025-04-21T19:00:00.000000Z",
+    "endTime": "2025-04-21T19:15:00.000000Z",
+    "duration": 15,
+    "status": "active",
+    "bookedAt": "2025-04-20T07:25:40.479730Z",
+    "assignedTo": 1,
+    "contactEmail": "jameswalter@goldenpathwayfinancial.com",
+    "contactName": "James Walter"
+  }
+}

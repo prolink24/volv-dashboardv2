@@ -1,0 +1,91 @@
+{
+  "event": {
+    "calendar_event": {
+      "external_id": "s7vu9o0a64kheopp4q5cb1k7pg",
+      "kind": "google"
+    },
+    "created_at": "2025-04-22T11:41:56.718863Z",
+    "end_time": "2025-04-22T16:00:00.000000Z",
+    "event_guests": [],
+    "event_memberships": [
+      {
+        "buffered_end_time": "2025-04-22T16:10:00.000000Z",
+        "buffered_start_time": "2025-04-22T15:45:00.000000Z",
+        "user": "https://api.calendly.com/users/742de81b-242d-4e00-9f1c-768ab3714e0b",
+        "user_email": "morgan@kadenwood.capital",
+        "user_name": "Morgan Clark"
+      }
+    ],
+    "event_type": "https://api.calendly.com/event_types/0f2f7224-868a-4360-8e89-a8f073f3dc62",
+    "invitees_counter": {
+      "active": 1,
+      "limit": 1,
+      "total": 1
+    },
+    "location": {
+      "location": "Phone Call",
+      "type": "custom"
+    },
+    "meeting_notes_html": null,
+    "meeting_notes_plain": null,
+    "name": "Dealmaker | Apprentice Call",
+    "start_time": "2025-04-22T15:45:00.000000Z",
+    "status": "active",
+    "updated_at": "2025-04-22T11:41:57.894236Z",
+    "uri": "https://api.calendly.com/scheduled_events/60b5f6dd-d554-47ba-a895-63f439dffdf2"
+  },
+  "invitees": [
+    {
+      "cancel_url": "https://calendly.com/cancellations/1f37ff01-0ca6-4406-837b-32d5869aecc9",
+      "created_at": "2025-04-22T11:41:56.738010Z",
+      "email": "ivanacuna13@gmail.com",
+      "event": "https://api.calendly.com/scheduled_events/60b5f6dd-d554-47ba-a895-63f439dffdf2",
+      "first_name": "Ivan",
+      "invitee_scheduled_by": "https://api.calendly.com/users/HGFHGYH2RY2VNQQD",
+      "last_name": "Acuna",
+      "name": "Ivan Acuna",
+      "new_invitee": null,
+      "no_show": null,
+      "old_invitee": null,
+      "payment": null,
+      "questions_and_answers": [
+        {
+          "answer": "+1 469-406-9187",
+          "position": 0,
+          "question": "Phone Number"
+        }
+      ],
+      "reconfirmation": null,
+      "reschedule_url": "https://calendly.com/reschedulings/1f37ff01-0ca6-4406-837b-32d5869aecc9",
+      "rescheduled": false,
+      "routing_form_submission": null,
+      "scheduling_method": null,
+      "status": "active",
+      "text_reminder_number": null,
+      "timezone": "America/Chicago",
+      "tracking": {
+        "utm_campaign": null,
+        "utm_source": null,
+        "utm_medium": null,
+        "utm_content": null,
+        "utm_term": null,
+        "salesforce_uuid": null
+      },
+      "updated_at": "2025-04-22T11:41:56.738010Z",
+      "uri": "https://api.calendly.com/scheduled_events/60b5f6dd-d554-47ba-a895-63f439dffdf2/invitees/1f37ff01-0ca6-4406-837b-32d5869aecc9"
+    }
+  ],
+  "eventDetails": {
+    "calendlyEventId": "60b5f6dd-d554-47ba-a895-63f439dffdf2",
+    "type": "Calendly Meeting",
+    "title": "Dealmaker | Apprentice Call",
+    "startTime": "2025-04-22T15:45:00.000000Z",
+    "endTime": "2025-04-22T16:00:00.000000Z",
+    "duration": 15,
+    "status": "active",
+    "bookedAt": "2025-04-22T11:41:56.718863Z",
+    "assignedTo": 1,
+    "contactEmail": "ivanacuna13@gmail.com",
+    "contactName": "Ivan Acuna"
+  }
+}
