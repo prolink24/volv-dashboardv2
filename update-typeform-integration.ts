@@ -113,7 +113,7 @@ async function updateSourceTracking() {
   const otherSourceContacts = await db.select()
     .from(contacts)
     .where(inArray(contacts.email, emails))
-    .where(sql`${contacts.lead_source} != 'typeform'`);
+    .where(sql`${contacts.leadSource} <> 'typeform'`);
   
   log.info(`Found ${otherSourceContacts.length} matching contacts from other sources`);
   
@@ -121,16 +121,26 @@ async function updateSourceTracking() {
   const matchedEmails = otherSourceContacts.map(c => c.email);
   
   if (matchedEmails.length > 0) {
-    // Update typeform contacts that have matches
-    const updateResult = await db.update(contacts)
-      .set({ 
-        sourcesCount: 2,
-        leadSource: sql`concat(${contacts.leadSource}, ',close')`
-      })
-      .where(eq(contacts.leadSource, 'typeform'))
-      .where(inArray(contacts.email, matchedEmails));
+    let updated = 0;
     
-    log.success(`Updated ${updateResult.rowCount} typeform contacts with multiple sources`);
+    // Update each contact individually to avoid SQL syntax issues
+    for (const email of matchedEmails) {
+      try {
+        await db.update(contacts)
+          .set({ 
+            sourcesCount: 2,
+            leadSource: 'typeform,close'
+          })
+          .where(eq(contacts.leadSource, 'typeform'))
+          .where(eq(contacts.email, email));
+        
+        updated++;
+      } catch (error) {
+        log.error(`Error updating contact ${email}: ${error}`);
+      }
+    }
+    
+    log.success(`Updated ${updated} typeform contacts with multiple sources`);
   }
 }
 

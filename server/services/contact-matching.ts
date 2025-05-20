@@ -1,18 +1,31 @@
 /**
  * Contact Matching Service
  * 
- * This service handles matching contacts across different platforms (Close CRM, Calendly, Typeform)
- * to ensure proper data merging and attribution.
+ * This service provides functions to match and merge contacts from different sources.
+ * It's primarily used to match Typeform submissions with Close CRM contacts.
  */
 
 import axios from 'axios';
 import { db } from '../db';
-import { eq, isNull } from 'drizzle-orm';
-import { contacts } from '../../shared/schema';
-import * as closeAPI from '../api/close';
+import { eq, isNull, inArray } from 'drizzle-orm';
+import { contacts, forms } from '../../shared/schema';
+
+// Close CRM API client
+const CLOSE_API_KEY = process.env.CLOSE_API_KEY;
+const closeApi = axios.create({
+  baseURL: 'https://api.close.com/api/v1',
+  auth: {
+    username: CLOSE_API_KEY || '',
+    password: ''
+  },
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  }
+});
 
 /**
- * Normalize email addresses for consistent comparison
+ * Normalize email for consistent comparison
  */
 export function normalizeEmail(email: string): string {
   if (!email) return '';
@@ -20,51 +33,56 @@ export function normalizeEmail(email: string): string {
 }
 
 /**
- * Find a matching contact in Close CRM by email address
+ * Search for a contact in Close CRM by email
  */
-export async function findContactInCloseCRM(email: string): Promise<any> {
+export async function findContactInCloseCRM(email: string): Promise<{
+  success: boolean;
+  contact: any | null;
+  error?: string;
+}> {
+  if (!CLOSE_API_KEY) {
+    return {
+      success: false,
+      contact: null,
+      error: 'Close API key not configured'
+    };
+  }
+
   try {
-    if (!email) {
-      return { success: false, error: 'No email provided', contact: null };
-    }
-    
     const normalizedEmail = normalizeEmail(email);
     
-    // Use the Close API service to search for leads by email
-    const searchResult = await closeAPI.searchLeadsByEmail(normalizedEmail);
+    // Search for leads with this email
+    const response = await closeApi.get('/lead', {
+      params: {
+        query: `email:${normalizedEmail}`,
+        _fields: 'id,display_name,contacts,status_label,organization_name'
+      }
+    });
     
-    if (!searchResult.success) {
-      return { 
-        success: false, 
-        error: searchResult.error || 'Unknown error searching Close CRM',
-        contact: null
-      };
-    }
-    
-    if (searchResult.leads && searchResult.leads.length > 0) {
-      // Return the first matching lead
+    if (response.data && response.data.data && response.data.data.length > 0) {
       return {
         success: true,
-        contact: searchResult.leads[0]
+        contact: response.data.data[0]
       };
     }
     
-    // No matching leads found
+    // No matching contact found
     return {
       success: true,
       contact: null
     };
   } catch (error: any) {
+    console.error('Error searching for contact in Close CRM:', error.message);
     return {
       success: false,
-      error: error.message || 'Unknown error searching for contact in Close CRM',
-      contact: null
+      contact: null,
+      error: error.message || 'Unknown error'
     };
   }
 }
 
 /**
- * Create a new lead in Close CRM with contact information
+ * Create a new contact in Close CRM
  */
 export async function createContactInCloseCRM(contactData: {
   name: string;
@@ -73,258 +91,255 @@ export async function createContactInCloseCRM(contactData: {
   title?: string;
   phone?: string;
   source?: string;
-}): Promise<any> {
+}): Promise<{
+  success: boolean;
+  contact: any | null;
+  error?: string;
+}> {
+  if (!CLOSE_API_KEY) {
+    return {
+      success: false,
+      contact: null,
+      error: 'Close API key not configured'
+    };
+  }
+
   try {
-    // Use the Close API service to create a new lead
-    const result = await closeAPI.createLead({
-      name: contactData.company || 'Unknown Company',
+    // Build the payload for creating a lead in Close CRM
+    const payload = {
+      name: contactData.company || contactData.name,
       contacts: [
         {
-          name: contactData.name || 'Unknown Contact',
+          name: contactData.name,
           title: contactData.title || '',
-          phones: contactData.phone ? [{ phone: contactData.phone, type: 'office' }] : [],
-          emails: [{ email: contactData.email, type: 'office' }]
+          emails: [
+            { email: contactData.email, type: 'office' }
+          ],
+          phones: contactData.phone ? [{ phone: contactData.phone, type: 'office' }] : []
         }
       ],
       status: 'Potential',
-      description: `Created from ${contactData.source || 'Typeform submission'}`
-    });
+      custom: {
+        source: contactData.source || 'Typeform'
+      }
+    };
     
-    if (!result.success) {
+    // Create the lead in Close CRM
+    const response = await closeApi.post('/lead', payload);
+    
+    if (response.data && response.data.id) {
       return {
-        success: false,
-        error: result.error || 'Failed to create lead in Close CRM',
-        contact: null
+        success: true,
+        contact: response.data
       };
     }
     
     return {
-      success: true,
-      contact: result.lead
+      success: false,
+      contact: null,
+      error: 'Failed to create contact in Close CRM'
     };
   } catch (error: any) {
+    console.error('Error creating contact in Close CRM:', error.message);
     return {
       success: false,
-      error: error.message || 'Unknown error creating contact in Close CRM',
-      contact: null
+      contact: null,
+      error: error.message || 'Unknown error'
     };
   }
 }
 
 /**
- * Match and link Typeform contacts to Close CRM
- * Finds Typeform contacts without Close CRM IDs and attempts to match/create them
+ * Link a typeform submission to a contact
  */
-export async function matchTypeformContactsToCloseCRM(): Promise<{
-  success: boolean;
-  processed: number;
+export async function linkFormToContact(formId: number, contactId: number): Promise<boolean> {
+  try {
+    await db.update(forms)
+      .set({ contactId })
+      .where(eq(forms.id, formId));
+    
+    return true;
+  } catch (error) {
+    console.error('Error linking form to contact:', error);
+    return false;
+  }
+}
+
+/**
+ * Get specific contacts by email
+ */
+export async function getContactsByEmail(emails: string[]): Promise<any[]> {
+  try {
+    const contactList = await db.select()
+      .from(contacts)
+      .where(inArray(contacts.email, emails.map(normalizeEmail)));
+    
+    return contactList;
+  } catch (error) {
+    console.error('Error getting contacts by email:', error);
+    return [];
+  }
+}
+
+/**
+ * Update specific capital contacts with proper company names
+ */
+export async function updateCapitalContacts(): Promise<{
+  updated: number;
+  errors: string[];
+}> {
+  // List of emails from the screenshot that need fixing
+  const targetEmails = [
+    'tom@atlasridge.io',
+    'axel@caucelcapital.com',
+    'nick@stowecap.co',
+    'dimitri@vortexcapital.io',
+    'vlad@light3capital.com',
+    'admin@amaranthcp.com',
+    'alex@lightuscapital.com',
+    'ali@spikecapital.io'
+  ];
+  
+  const companyMappings: Record<string, string> = {
+    'atlasridge.io': 'Atlas Ridge',
+    'caucelcapital.com': 'Caucel Capital',
+    'stowecap.co': 'Stowe Capital',
+    'vortexcapital.io': 'Vortex Capital',
+    'light3capital.com': 'Light3 Capital',
+    'amaranthcp.com': 'Amaranth Capital Partners',
+    'lightuscapital.com': 'Lightus Capital',
+    'spikecapital.io': 'Spike Capital'
+  };
+  
+  let updated = 0;
+  const errors: string[] = [];
+  
+  try {
+    const contactList = await getContactsByEmail(targetEmails);
+    
+    for (const contact of contactList) {
+      try {
+        // Extract domain from email
+        const emailParts = contact.email.split('@');
+        const domain = emailParts[1];
+        
+        // Get proper company name from mapping
+        const companyName = companyMappings[domain];
+        
+        if (companyName) {
+          await db.update(contacts)
+            .set({ 
+              company: companyName,
+              // If name is "Unknown Contact", update it to a better default
+              name: contact.name === 'Unknown Contact' ? 
+                emailParts[0].charAt(0).toUpperCase() + emailParts[0].slice(1) : 
+                contact.name
+            })
+            .where(eq(contacts.id, contact.id));
+          
+          updated++;
+        }
+      } catch (error: any) {
+        errors.push(`Error updating ${contact.email}: ${error.message}`);
+      }
+    }
+    
+    return { updated, errors };
+  } catch (error: any) {
+    return { 
+      updated, 
+      errors: [...errors, `General error: ${error.message}`] 
+    };
+  }
+}
+
+/**
+ * Process a batch of contacts to match with Close CRM
+ */
+export async function processBatch(batch: any[], options: {
+  createIfNotFound?: boolean;
+  updateSourceCount?: boolean;
+} = {}): Promise<{
   matched: number;
   created: number;
   failed: number;
   errors: string[];
 }> {
-  // Stats for reporting
-  const result = {
-    success: false,
-    processed: 0,
+  const results = {
     matched: 0,
     created: 0,
     failed: 0,
     errors: [] as string[]
   };
   
-  try {
-    // Find all Typeform contacts without Close CRM IDs
-    const typeformContacts = await db.select()
-      .from(contacts)
-      .where(eq(contacts.leadSource, 'typeform'))
-      .where(isNull(contacts.closeId));
-    
-    result.processed = typeformContacts.length;
-    
-    if (result.processed === 0) {
-      return { ...result, success: true };
-    }
-    
-    // Process each contact
-    for (const contact of typeformContacts) {
-      try {
-        // Skip if no email
-        if (!contact.email) {
-          result.failed++;
-          result.errors.push(`Contact ID ${contact.id}: No email address`);
-          continue;
-        }
-        
-        // Step 1: Search for matching lead in Close CRM
-        const searchResult = await findContactInCloseCRM(contact.email);
-        
-        if (!searchResult.success) {
-          result.failed++;
-          result.errors.push(`Contact ID ${contact.id}: ${searchResult.error}`);
-          continue;
-        }
-        
-        let closeId: string;
-        
-        if (searchResult.contact) {
-          // Match found - update our record
-          closeId = searchResult.contact.id;
-          result.matched++;
-          
-          // Update the contact with Close CRM data
-          await db.update(contacts)
-            .set({ 
-              closeId: closeId,
-              name: searchResult.contact.display_name || contact.name,
-              company: searchResult.contact.company_name || contact.company,
-              status: searchResult.contact.status_label?.toLowerCase() || contact.status,
-              sourcesCount: contact.sourcesCount ? contact.sourcesCount + 1 : 2
-            })
-            .where(eq(contacts.id, contact.id));
-          
-        } else {
-          // No match found - create new lead in Close CRM
-          const createResult = await createContactInCloseCRM({
-            name: contact.name || 'Unknown Contact',
-            email: contact.email,
-            company: contact.company || 'Unknown Company',
-            source: 'Typeform submission'
-          });
-          
-          if (!createResult.success) {
-            result.failed++;
-            result.errors.push(`Contact ID ${contact.id}: ${createResult.error}`);
-            continue;
-          }
-          
-          closeId = createResult.contact.id;
-          result.created++;
-          
-          // Update the contact with the new Close CRM ID
-          await db.update(contacts)
-            .set({ 
-              closeId: closeId,
-              sourcesCount: contact.sourcesCount ? contact.sourcesCount + 1 : 2
-            })
-            .where(eq(contacts.id, contact.id));
-        }
-      } catch (error: any) {
-        result.failed++;
-        result.errors.push(`Contact ID ${contact.id}: ${error.message || 'Unknown error'}`);
-      }
-    }
-    
-    return { ...result, success: true };
-  } catch (error: any) {
-    return {
-      ...result,
-      success: false,
-      errors: [...result.errors, error.message || 'Unknown error']
-    };
-  }
-}
-
-/**
- * Match a single contact by email across all platforms (Close, Calendly, Typeform)
- */
-export async function matchContactByEmail(email: string): Promise<{
-  success: boolean;
-  contact: any;
-  error?: string;
-}> {
-  try {
-    if (!email) {
-      return { success: false, contact: null, error: 'No email provided' };
-    }
-    
-    const normalizedEmail = normalizeEmail(email);
-    
-    // First check if contact exists in our database
-    const existingContacts = await db.select()
-      .from(contacts)
-      .where(eq(contacts.email, normalizedEmail));
-    
-    if (existingContacts.length > 0) {
-      // Contact exists in our database
-      const contact = existingContacts[0];
+  for (const contact of batch) {
+    try {
+      console.log(`Processing contact: ${contact.email}`);
       
-      // If no Close CRM ID, try to find/create one
-      if (!contact.closeId) {
-        const closeResult = await findContactInCloseCRM(normalizedEmail);
+      // Search for the contact in Close CRM
+      const searchResult = await findContactInCloseCRM(contact.email);
+      
+      if (!searchResult.success) {
+        console.error(`Error searching for contact in Close CRM: ${searchResult.error}`);
+        results.failed++;
+        results.errors.push(`${contact.email}: ${searchResult.error}`);
+        continue;
+      }
+      
+      if (searchResult.contact) {
+        // Match found in Close CRM
+        console.log(`Found matching lead in Close CRM: ${searchResult.contact.id}`);
         
-        if (closeResult.success && closeResult.contact) {
-          // Match found in Close CRM, update our record
-          await db.update(contacts)
-            .set({ 
-              closeId: closeResult.contact.id,
-              name: closeResult.contact.display_name || contact.name,
-              company: closeResult.contact.company_name || contact.company,
-              status: closeResult.contact.status_label?.toLowerCase() || contact.status,
-              sourcesCount: contact.sourcesCount ? contact.sourcesCount + 1 : 2
-            })
-            .where(eq(contacts.id, contact.id));
-            
-          return { success: true, contact: { ...contact, closeId: closeResult.contact.id } };
-        }
+        // Update our contact with Close CRM data
+        await db.update(contacts)
+          .set({ 
+            closeId: searchResult.contact.id,
+            name: searchResult.contact.contacts?.[0]?.name || contact.name,
+            company: searchResult.contact.organization_name || contact.company,
+            status: searchResult.contact.status_label?.toLowerCase() || contact.status,
+            ...(options.updateSourceCount ? { sourcesCount: contact.sourcesCount ? contact.sourcesCount + 1 : 2 } : {})
+          })
+          .where(eq(contacts.id, contact.id));
         
-        // No match in Close CRM, create one
+        results.matched++;
+      } else if (options.createIfNotFound) {
+        // No match found, create a new lead in Close CRM
+        console.log(`No matching lead found for ${contact.email}. Creating new lead...`);
+        
         const createResult = await createContactInCloseCRM({
           name: contact.name || 'Unknown Contact',
           email: contact.email,
           company: contact.company || 'Unknown Company',
           title: contact.title || '',
           phone: contact.phone || '',
-          source: contact.leadSource || 'Unknown'
+          source: 'Typeform'
         });
         
-        if (createResult.success) {
-          // Update our record with the new Close CRM ID
-          await db.update(contacts)
-            .set({ 
-              closeId: createResult.contact.id,
-              sourcesCount: contact.sourcesCount ? contact.sourcesCount + 1 : 2
-            })
-            .where(eq(contacts.id, contact.id));
-            
-          return { success: true, contact: { ...contact, closeId: createResult.contact.id } };
+        if (!createResult.success) {
+          console.error(`Failed to create lead in Close CRM: ${createResult.error}`);
+          results.failed++;
+          results.errors.push(`${contact.email}: ${createResult.error}`);
+          continue;
         }
+        
+        console.log(`Created new lead in Close CRM: ${createResult.contact.id}`);
+        
+        // Update our contact with the new Close CRM ID
+        await db.update(contacts)
+          .set({ 
+            closeId: createResult.contact.id,
+            ...(options.updateSourceCount ? { sourcesCount: contact.sourcesCount ? contact.sourcesCount + 1 : 2 } : {})
+          })
+          .where(eq(contacts.id, contact.id));
+        
+        results.created++;
       }
-      
-      return { success: true, contact };
+    } catch (error: any) {
+      console.error(`Unexpected error processing contact ${contact.email}: ${error.message}`);
+      results.failed++;
+      results.errors.push(`${contact.email}: ${error.message}`);
     }
-    
-    // Contact doesn't exist in our database, check Close CRM
-    const closeResult = await findContactInCloseCRM(normalizedEmail);
-    
-    if (closeResult.success && closeResult.contact) {
-      // Found in Close CRM, create in our database
-      const newContact = {
-        email: normalizedEmail,
-        name: closeResult.contact.display_name || 'Unknown Contact',
-        company: closeResult.contact.company_name || 'Unknown Company',
-        closeId: closeResult.contact.id,
-        leadSource: 'close',
-        status: closeResult.contact.status_label?.toLowerCase() || 'lead',
-        sourcesCount: 1
-      };
-      
-      const insertResult = await db.insert(contacts)
-        .values(newContact)
-        .returning();
-      
-      if (insertResult.length > 0) {
-        return { success: true, contact: insertResult[0] };
-      }
-    }
-    
-    // Not found anywhere, return failure
-    return { success: false, contact: null, error: 'Contact not found in any platform' };
-  } catch (error: any) {
-    return { 
-      success: false, 
-      contact: null, 
-      error: error.message || 'Unknown error matching contact'
-    };
   }
+  
+  return results;
 }
