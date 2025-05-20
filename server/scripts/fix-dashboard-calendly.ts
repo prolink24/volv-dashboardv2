@@ -194,7 +194,7 @@ const fixDashboardCalendly = async () => {
       SELECT "calendly_event_id" FROM meetings WHERE "calendly_event_id" IS NOT NULL
     `);
     
-    const existingEventIds = existingEventsResult.map((row: any) => row.calendlyEventId);
+    const existingEventIds = existingEventsResult.map((row: any) => row.calendly_event_id);
     console.log(`Found ${existingEventIds.length} existing Calendly events in database`);
     
     // Calculate date range for last 30 days
