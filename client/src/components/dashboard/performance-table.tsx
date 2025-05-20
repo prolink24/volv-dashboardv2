@@ -36,12 +36,38 @@ interface SalesTeamMember {
   adminMissingPercent?: number;
 }
 
+interface Meeting {
+  id: number;
+  contactId: number;
+  calendlyEventId?: string;
+  type?: string;
+  title?: string;
+  startTime: string;
+  endTime: string;
+  status?: string;
+  assignedTo?: string;
+  [key: string]: any;
+}
+
 interface PerformanceTableProps {
   data: SalesTeamMember[];
+  meetings?: Meeting[];
   className?: string;
 }
 
-const PerformanceTable = ({ data, className }: PerformanceTableProps) => {
+const PerformanceTable = ({ data, meetings = [], className }: PerformanceTableProps) => {
+  // Count Calendly calls for each user
+  const userCallsMap = new Map<string, number>();
+  
+  // Process meetings to count calls by user
+  if (meetings && meetings.length > 0) {
+    meetings.forEach(meeting => {
+      if (meeting.assignedTo) {
+        const userId = meeting.assignedTo;
+        userCallsMap.set(userId, (userCallsMap.get(userId) || 0) + 1);
+      }
+    });
+  }
   const getClosingRateBadge = (rate: number) => {
     let variant: "default" | "destructive" | "secondary" | "outline" = "default";
     
@@ -116,7 +142,7 @@ const PerformanceTable = ({ data, className }: PerformanceTableProps) => {
                   <TableCell>{member.closed || 0}</TableCell>
                   <TableCell>{formatCurrency(member.cashCollected || 0)}</TableCell>
                   <TableCell>{formatCurrency(member.contractedValue || 0)}</TableCell>
-                  <TableCell>{member.calls || 0}</TableCell>
+                  <TableCell>{userCallsMap.get(member.id) || member.calls || 0}</TableCell>
                   <TableCell>{member.call1 || 0}</TableCell>
                   <TableCell>{member.call2 || 0}</TableCell>
                   <TableCell>{member.call2Sits || 0}</TableCell>

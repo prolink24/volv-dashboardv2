@@ -552,7 +552,11 @@ const Dashboard = () => {
       <DashboardTabs activeTab={activeTab} setActiveTab={setActiveTab} />
       
       {activeTab === "team-performance" && dashboardData?.salesTeam && (
-        <PerformanceTable data={dashboardData.salesTeam} className="mb-6" />
+        <PerformanceTable 
+          data={dashboardData.salesTeam} 
+          meetings={dashboardData.meetings || []} 
+          className="mb-6" 
+        />
       )}
       
       {activeTab === "missing-admins" && dashboardData?.missingAdmins && (
