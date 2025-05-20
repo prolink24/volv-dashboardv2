@@ -24,6 +24,7 @@ import customerJourneyRoutes from "./routes/customer-journey";
 import typeformRoutes from "./routes/typeform";
 import dataEnhancementRoutes from "./routes/data-enhancement"; 
 import typeformEnhancedRoutes from './api/typeform-enhanced';
+import syncRoutes from "./routes/sync-routes";
 import { CloseUser } from "@shared/schema";
 import * as meetingDataService from './services/meeting-data-service';
 
@@ -2329,6 +2330,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register data enhancement routes
   app.use("/api/data-enhancement", dataEnhancementRoutes);
+  
+  // API routes for sync operations
+  app.use("/api/sync", syncRoutes);
   
   // Direct contact details endpoint for customer journey view
   apiRouter.get("/contacts/:contactId", async (req: Request, res: Response) => {

@@ -313,25 +313,31 @@ export const processCalendlyEvent = async (event: any) => {
     console.log(`Using default contact: ${contact.name}`);
   }
   
-  // Prepare event data
-  const eventData = {
-    calendlyEventId: eventId,
-    type: determineEventType(event.name),
-    title: event.name || 'Calendly Meeting',
-    startTime: new Date(event.start_time),
-    endTime: new Date(event.end_time),
-    duration: differenceInMinutes(new Date(event.end_time), new Date(event.start_time)),
-    status: event.status,
-    bookedAt: event.created_at ? new Date(event.created_at) : null,
-    assignedTo: determineAssignedUser(event),
-    contactId: contact.id,
-    inviteeEmail: invitees.length > 0 ? invitees[0].email : null,
-    inviteeName: invitees.length > 0 ? invitees[0].name : null
-  };
-  
-  // Insert into database
   try {
-    await db.insert(meetings).values(eventData);
+    // Use SQL directly to avoid Drizzle validation issues
+    const result = await db.execute(
+      `INSERT INTO meetings (
+        calendly_event_id, type, title, start_time, end_time, duration, status,
+        booked_at, assigned_to, contact_id, invitee_email, invitee_name
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
+      ) RETURNING id`,
+      [
+        eventId,
+        determineEventType(event.name),
+        event.name || 'Calendly Meeting',
+        new Date(event.start_time),
+        new Date(event.end_time),
+        differenceInMinutes(new Date(event.end_time), new Date(event.start_time)),
+        event.status,
+        event.created_at ? new Date(event.created_at) : null,
+        determineAssignedUser(event),
+        contact.id,
+        invitees.length > 0 ? invitees[0].email : null,
+        invitees.length > 0 ? invitees[0].name : null
+      ]
+    );
+    
     console.log(`Successfully imported event: ${eventId}`);
     return true;
   } catch (error: any) {
