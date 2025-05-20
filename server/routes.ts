@@ -2017,6 +2017,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   apiRouter.use('/customer-journey', customerJourneyRoutes);
   apiRouter.use('/typeform', typeformRoutes);
   apiRouter.use('/typeform-enhanced', typeformEnhancedRoutes);
+  apiRouter.use('/sync', syncRoutes);
   
   // Database Health Monitoring - Real-time database metrics
   apiRouter.get('/database-health', async (req: Request, res: Response) => {
