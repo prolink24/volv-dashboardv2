@@ -175,7 +175,9 @@ export async function getDealsByDateRange(
  * @returns Array of meetings within the date range
  */
 export async function getMeetingsByDateRange(dateRange: DateRange): Promise<Meeting[]> {
-  return db
+  console.log(`Looking for meetings between ${dateRange.startDate.toISOString()} and ${dateRange.endDate.toISOString()}`);
+  
+  const result = await db
     .select()
     .from(meetings)
     .where(
@@ -184,6 +186,9 @@ export async function getMeetingsByDateRange(dateRange: DateRange): Promise<Meet
         lte(meetings.startTime, dateRange.endDate)
       )
     );
+    
+  console.log(`Found ${result.length} meetings in date range`);
+  return result;
 }
 
 /**
@@ -519,11 +524,16 @@ export async function getMeetingStatsByDateRange(dateRange: DateRange): Promise<
   // Get all meetings in the date range
   const meetingsInRange = await getMeetingsByDateRange(dateRange);
   
+  console.log(`Meeting stats for date range ${dateRange.startDate.toISOString()} to ${dateRange.endDate.toISOString()}`);
+  console.log(`Total meetings in range: ${meetingsInRange.length}`);
+  
   // Count meetings by status
   const attended = meetingsInRange.filter(meeting => meeting.status === 'attended').length;
   const canceled = meetingsInRange.filter(meeting => meeting.status === 'canceled').length;
   const rescheduled = meetingsInRange.filter(meeting => meeting.rescheduled === true).length;
   const noShow = meetingsInRange.filter(meeting => meeting.status === 'no-show').length;
+  
+  console.log(`Meetings breakdown: attended=${attended}, canceled=${canceled}, rescheduled=${rescheduled}, noShow=${noShow}`);
   
   // Calculate average duration
   let totalDuration = 0;
@@ -540,7 +550,17 @@ export async function getMeetingStatsByDateRange(dateRange: DateRange): Promise<
     statusDistribution[status] = (statusDistribution[status] || 0) + 1;
   });
   
-  return {
+  // Log the first few meetings for debugging
+  if (meetingsInRange.length > 0) {
+    console.log('Sample meeting data:', meetingsInRange.slice(0, 2).map(m => ({
+      id: m.id,
+      startTime: m.startTime,
+      status: m.status,
+      contactId: m.contactId
+    })));
+  }
+  
+  const result = {
     total: meetingsInRange.length,
     attended,
     canceled,
@@ -549,6 +569,9 @@ export async function getMeetingStatsByDateRange(dateRange: DateRange): Promise<
     avgDuration,
     statusDistribution
   };
+  
+  console.log('Final meeting stats:', result);
+  return result;
 }
 
 /**
