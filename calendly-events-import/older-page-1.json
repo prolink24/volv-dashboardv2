@@ -1,0 +1,3618 @@
+{
+  "collection": [
+    {
+      "calendar_event": {
+        "external_id": "lb664eajf3g8hvjtupf8bc54qo",
+        "kind": "google"
+      },
+      "created_at": "2024-11-20T04:19:09.940761Z",
+      "end_time": "2024-11-20T22:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-20T22:45:00.000000Z",
+          "buffered_start_time": "2024-11-20T22:00:00.000000Z",
+          "user": "https://api.calendly.com/users/6641d161-b49d-47cd-b51c-632c6c537313",
+          "user_email": "marco@thedealmaker.io",
+          "user_name": "Marco Garcia"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/32b1d337-7466-4ff8-805b-19594a92cccd/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-11-20T22:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-20T04:19:13.353255Z",
+      "uri": "https://api.calendly.com/scheduled_events/32b1d337-7466-4ff8-805b-19594a92cccd"
+    },
+    {
+      "calendar_event": {
+        "external_id": "obbq64vmd093v85h9kbgebd6jk",
+        "kind": "google"
+      },
+      "created_at": "2024-11-16T15:02:05.740620Z",
+      "end_time": "2024-11-21T15:00:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-21T15:15:00.000000Z",
+          "buffered_start_time": "2024-11-21T14:30:00.000000Z",
+          "user": "https://api.calendly.com/users/e1a5d40f-8718-4657-831b-2215b2e4b381",
+          "user_email": "bogdan@thedealmaker.io",
+          "user_name": "Bogdan Micov"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/cffbd533-0d69-4c08-8e22-d44dc56e0d0c",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/d8d9c8fd-8185-4010-8b05-cb0fe5db12e8/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Next Steps Call",
+      "start_time": "2024-11-21T14:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-16T15:02:08.589281Z",
+      "uri": "https://api.calendly.com/scheduled_events/d8d9c8fd-8185-4010-8b05-cb0fe5db12e8"
+    },
+    {
+      "calendar_event": {
+        "external_id": "m23avnpar756s84s2no1ruk7gk",
+        "kind": "google"
+      },
+      "created_at": "2024-11-19T23:08:43.180885Z",
+      "end_time": "2024-11-21T16:00:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-21T16:15:00.000000Z",
+          "buffered_start_time": "2024-11-21T15:30:00.000000Z",
+          "user": "https://api.calendly.com/users/e1a5d40f-8718-4657-831b-2215b2e4b381",
+          "user_email": "bogdan@thedealmaker.io",
+          "user_name": "Bogdan Micov"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/fc7ddebd-459e-4ff4-ad75-e52d7cf9aa38",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/0df190a8-26c4-4822-a289-8f92a1822e39/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Discovery Call",
+      "start_time": "2024-11-21T15:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-19T23:08:45.820566Z",
+      "uri": "https://api.calendly.com/scheduled_events/0df190a8-26c4-4822-a289-8f92a1822e39"
+    },
+    {
+      "calendar_event": {
+        "external_id": "acos4ivpn0jc7flf24p8jrnt9g",
+        "kind": "google"
+      },
+      "created_at": "2024-11-19T00:12:08.388904Z",
+      "end_time": "2024-11-21T17:00:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-21T17:15:00.000000Z",
+          "buffered_start_time": "2024-11-21T16:30:00.000000Z",
+          "user": "https://api.calendly.com/users/e1a5d40f-8718-4657-831b-2215b2e4b381",
+          "user_email": "bogdan@thedealmaker.io",
+          "user_name": "Bogdan Micov"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/cffbd533-0d69-4c08-8e22-d44dc56e0d0c",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/e6e7deb2-90ab-4205-8026-0f6c01b07936/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Next Steps Call",
+      "start_time": "2024-11-21T16:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-19T00:12:10.741043Z",
+      "uri": "https://api.calendly.com/scheduled_events/e6e7deb2-90ab-4205-8026-0f6c01b07936"
+    },
+    {
+      "calendar_event": {
+        "external_id": "4dt3jfk1jcq8aj5b7thjhcokcg",
+        "kind": "google"
+      },
+      "created_at": "2024-11-15T17:56:06.509051Z",
+      "end_time": "2024-11-21T18:00:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-21T18:15:00.000000Z",
+          "buffered_start_time": "2024-11-21T17:30:00.000000Z",
+          "user": "https://api.calendly.com/users/e1a5d40f-8718-4657-831b-2215b2e4b381",
+          "user_email": "bogdan@thedealmaker.io",
+          "user_name": "Bogdan Micov"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/cffbd533-0d69-4c08-8e22-d44dc56e0d0c",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/7854a3fe-447d-4886-8fdf-307f0831be10/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Next Steps Call",
+      "start_time": "2024-11-21T17:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-15T17:56:08.916677Z",
+      "uri": "https://api.calendly.com/scheduled_events/7854a3fe-447d-4886-8fdf-307f0831be10"
+    },
+    {
+      "calendar_event": {
+        "external_id": "ik2g66eeppnsnpsfltqfg6cdqk",
+        "kind": "google"
+      },
+      "created_at": "2024-11-21T03:58:34.716243Z",
+      "end_time": "2024-11-21T18:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-21T18:45:00.000000Z",
+          "buffered_start_time": "2024-11-21T18:00:00.000000Z",
+          "user": "https://api.calendly.com/users/d11ce41d-7da6-4c0a-a292-723cbfc11be9",
+          "user_email": "mazin@thedealmaker.io",
+          "user_name": "Mazin Gazar"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-11-21T18:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-21T03:58:35.868528Z",
+      "uri": "https://api.calendly.com/scheduled_events/b0b5e686-2f32-4c71-ba14-29177a7356ad"
+    },
+    {
+      "calendar_event": {
+        "external_id": "jn4jp3c3ktiq3u2tll7h8g0mt0",
+        "kind": "google"
+      },
+      "created_at": "2024-11-21T04:40:40.189952Z",
+      "end_time": "2024-11-21T19:00:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-21T19:00:00.000000Z",
+          "buffered_start_time": "2024-11-21T18:30:00.000000Z",
+          "user": "https://api.calendly.com/users/6641d161-b49d-47cd-b51c-632c6c537313",
+          "user_email": "marco@thedealmaker.io",
+          "user_name": "Marco Garcia"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/b6756f0a-02c6-4ce8-bd30-f5e859523524",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/90e05df8-3626-4fc3-a4ab-70546b9098b8/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Marco: Deal Maker",
+      "start_time": "2024-11-21T18:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-21T04:40:41.984664Z",
+      "uri": "https://api.calendly.com/scheduled_events/90e05df8-3626-4fc3-a4ab-70546b9098b8"
+    },
+    {
+      "calendar_event": {
+        "external_id": "69t5vg5il5ifiilslofkpatnt0",
+        "kind": "google"
+      },
+      "created_at": "2024-11-19T20:15:36.820646Z",
+      "end_time": "2024-11-21T20:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-21T20:45:00.000000Z",
+          "buffered_start_time": "2024-11-21T20:00:00.000000Z",
+          "user": "https://api.calendly.com/users/e1a5d40f-8718-4657-831b-2215b2e4b381",
+          "user_email": "bogdan@thedealmaker.io",
+          "user_name": "Bogdan Micov"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/fc7ddebd-459e-4ff4-ad75-e52d7cf9aa38",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/7f2c5655-444f-40f8-a8d8-bd69c7d3f385/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Discovery Call",
+      "start_time": "2024-11-21T20:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-19T20:15:39.946214Z",
+      "uri": "https://api.calendly.com/scheduled_events/7f2c5655-444f-40f8-a8d8-bd69c7d3f385"
+    },
+    {
+      "calendar_event": {
+        "external_id": "sgc1b0oqkiun46sel4b3c9tng0",
+        "kind": "google"
+      },
+      "created_at": "2024-11-19T20:50:10.953632Z",
+      "end_time": "2024-11-21T20:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-21T20:30:00.000000Z",
+          "buffered_start_time": "2024-11-21T20:00:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/282e9b9e-5b03-46a1-a341-eace987e2d6e",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/963dddb0-b20f-42fb-8d9d-77d757a54ed4/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Next Steps Call",
+      "start_time": "2024-11-21T20:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-19T20:50:12.921968Z",
+      "uri": "https://api.calendly.com/scheduled_events/963dddb0-b20f-42fb-8d9d-77d757a54ed4"
+    },
+    {
+      "calendar_event": {
+        "external_id": "mn7s1sifq26vv1canijgchii8c",
+        "kind": "google"
+      },
+      "created_at": "2024-11-20T15:59:18.067207Z",
+      "end_time": "2024-11-21T22:00:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-21T22:15:00.000000Z",
+          "buffered_start_time": "2024-11-21T21:30:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/0e1e5a16-e18b-4f6c-b97a-90e47bd72c96/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-11-21T21:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-20T15:59:20.619683Z",
+      "uri": "https://api.calendly.com/scheduled_events/0e1e5a16-e18b-4f6c-b97a-90e47bd72c96"
+    },
+    {
+      "calendar_event": {
+        "external_id": "euloi9c7hrglbo2ha22q4hupik",
+        "kind": "google"
+      },
+      "created_at": "2024-11-21T06:07:52.112011Z",
+      "end_time": "2024-11-21T22:00:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-21T22:15:00.000000Z",
+          "buffered_start_time": "2024-11-21T21:30:00.000000Z",
+          "user": "https://api.calendly.com/users/d11ce41d-7da6-4c0a-a292-723cbfc11be9",
+          "user_email": "mazin@thedealmaker.io",
+          "user_name": "Mazin Gazar"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-11-21T21:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-21T06:07:53.358370Z",
+      "uri": "https://api.calendly.com/scheduled_events/f77e62ee-8fcd-4f9e-be6f-3d3c95c684b0"
+    },
+    {
+      "calendar_event": {
+        "external_id": "bleh3vs37pmv7250740hurpb50",
+        "kind": "google"
+      },
+      "created_at": "2024-11-20T20:20:13.608793Z",
+      "end_time": "2024-11-22T14:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-22T14:45:00.000000Z",
+          "buffered_start_time": "2024-11-22T14:00:00.000000Z",
+          "user": "https://api.calendly.com/users/e1a5d40f-8718-4657-831b-2215b2e4b381",
+          "user_email": "bogdan@thedealmaker.io",
+          "user_name": "Bogdan Micov"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/1ceb9b0d-9448-407b-9e70-d86ad64cad9c/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-11-22T14:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-20T20:20:18.829486Z",
+      "uri": "https://api.calendly.com/scheduled_events/1ceb9b0d-9448-407b-9e70-d86ad64cad9c"
+    },
+    {
+      "calendar_event": {
+        "external_id": "3osk1fja8qbk8vdpono993djpg",
+        "kind": "google"
+      },
+      "created_at": "2024-11-21T03:50:04.287085Z",
+      "end_time": "2024-11-22T16:00:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-22T16:15:00.000000Z",
+          "buffered_start_time": "2024-11-22T15:30:00.000000Z",
+          "user": "https://api.calendly.com/users/e1a5d40f-8718-4657-831b-2215b2e4b381",
+          "user_email": "bogdan@thedealmaker.io",
+          "user_name": "Bogdan Micov"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/a6b73c09-070a-41cf-bfa5-cbeb21d7bbe8/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-11-22T15:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-21T03:50:06.725233Z",
+      "uri": "https://api.calendly.com/scheduled_events/a6b73c09-070a-41cf-bfa5-cbeb21d7bbe8"
+    },
+    {
+      "calendar_event": {
+        "external_id": "7uves6agjqemsrmldkisenbt0c",
+        "kind": "google"
+      },
+      "created_at": "2024-11-21T16:08:10.968419Z",
+      "end_time": "2024-11-22T16:30:00.000000Z",
+      "event_guests": [
+        {
+          "created_at": "2024-11-21T16:08:11.013661Z",
+          "email": "englartjakub@gmail.com",
+          "updated_at": "2024-11-21T16:08:11.013661Z"
+        },
+        {
+          "created_at": "2024-11-21T16:08:11.017420Z",
+          "email": "metin2@centrum.cz",
+          "updated_at": "2024-11-21T16:08:11.017420Z"
+        }
+      ],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-22T16:45:00.000000Z",
+          "buffered_start_time": "2024-11-22T16:00:00.000000Z",
+          "user": "https://api.calendly.com/users/f930caab-fca8-4afa-99ca-faea905061ab",
+          "user_email": "f930caab-fca8-4afa-99ca-faea905061ab@deleted.calendly.com",
+          "user_name": "deleted"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/262a4e63-0af0-49bc-b5b5-bde9d34f49c7/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-11-22T16:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-21T16:08:13.396150Z",
+      "uri": "https://api.calendly.com/scheduled_events/262a4e63-0af0-49bc-b5b5-bde9d34f49c7"
+    },
+    {
+      "calendar_event": {
+        "external_id": "j2eqepkb8u258lpmvtejjhmtoo",
+        "kind": "google"
+      },
+      "created_at": "2024-11-19T03:49:38.644878Z",
+      "end_time": "2024-11-22T17:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-22T17:45:00.000000Z",
+          "buffered_start_time": "2024-11-22T17:00:00.000000Z",
+          "user": "https://api.calendly.com/users/e1a5d40f-8718-4657-831b-2215b2e4b381",
+          "user_email": "bogdan@thedealmaker.io",
+          "user_name": "Bogdan Micov"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/9931b1a8-da1e-46aa-b983-7a48f4464768/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-11-22T17:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-19T03:49:41.678052Z",
+      "uri": "https://api.calendly.com/scheduled_events/9931b1a8-da1e-46aa-b983-7a48f4464768"
+    },
+    {
+      "calendar_event": {
+        "external_id": "lld47gbdf8ani08oitc3ur2jpk",
+        "kind": "google"
+      },
+      "created_at": "2024-11-19T16:46:21.318309Z",
+      "end_time": "2024-11-22T18:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-22T18:45:00.000000Z",
+          "buffered_start_time": "2024-11-22T18:00:00.000000Z",
+          "user": "https://api.calendly.com/users/6641d161-b49d-47cd-b51c-632c6c537313",
+          "user_email": "marco@thedealmaker.io",
+          "user_name": "Marco Garcia"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/3062e20d-a5ae-4b9b-a6cb-c4aeea6cbd5e/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-11-22T18:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-19T16:46:23.431863Z",
+      "uri": "https://api.calendly.com/scheduled_events/3062e20d-a5ae-4b9b-a6cb-c4aeea6cbd5e"
+    },
+    {
+      "calendar_event": {
+        "external_id": "kn3895l0rha72fo02oko5os8t4",
+        "kind": "google"
+      },
+      "created_at": "2024-11-22T03:12:45.543746Z",
+      "end_time": "2024-11-22T19:00:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-22T19:15:00.000000Z",
+          "buffered_start_time": "2024-11-22T18:30:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/59889e4e-78f2-4ae5-9140-07070e6bd543/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-11-22T18:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-22T03:12:47.281991Z",
+      "uri": "https://api.calendly.com/scheduled_events/59889e4e-78f2-4ae5-9140-07070e6bd543"
+    },
+    {
+      "calendar_event": {
+        "external_id": "g0tfq7qvrm8f4u3dh1i5q5ortc",
+        "kind": "google"
+      },
+      "created_at": "2024-11-19T23:13:58.283989Z",
+      "end_time": "2024-11-22T19:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-22T19:30:00.000000Z",
+          "buffered_start_time": "2024-11-22T19:00:00.000000Z",
+          "user": "https://api.calendly.com/users/d11ce41d-7da6-4c0a-a292-723cbfc11be9",
+          "user_email": "mazin@thedealmaker.io",
+          "user_name": "Mazin Gazar"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/6e3912d8-826b-4287-b7fe-d0833b750d45",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/becb4660-a3d3-43e8-83ab-9671c516a48b/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Next Steps Call",
+      "start_time": "2024-11-22T19:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-19T23:14:00.030221Z",
+      "uri": "https://api.calendly.com/scheduled_events/becb4660-a3d3-43e8-83ab-9671c516a48b"
+    },
+    {
+      "calendar_event": {
+        "external_id": "jm2r7o5remsor66b082qp1ke1g",
+        "kind": "google"
+      },
+      "created_at": "2024-11-21T17:21:43.714574Z",
+      "end_time": "2024-11-22T20:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-22T20:45:00.000000Z",
+          "buffered_start_time": "2024-11-22T20:00:00.000000Z",
+          "user": "https://api.calendly.com/users/e1a5d40f-8718-4657-831b-2215b2e4b381",
+          "user_email": "bogdan@thedealmaker.io",
+          "user_name": "Bogdan Micov"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/fc7ddebd-459e-4ff4-ad75-e52d7cf9aa38",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/f122d3db-2d07-4ce1-b0fc-6b3fc46b18b9/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Discovery Call",
+      "start_time": "2024-11-22T20:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-21T17:21:46.026741Z",
+      "uri": "https://api.calendly.com/scheduled_events/f122d3db-2d07-4ce1-b0fc-6b3fc46b18b9"
+    },
+    {
+      "calendar_event": {
+        "external_id": "tukt071b1b3v10hbn49dqecid8",
+        "kind": "google"
+      },
+      "created_at": "2024-11-20T11:11:52.244652Z",
+      "end_time": "2024-11-22T21:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-22T21:45:00.000000Z",
+          "buffered_start_time": "2024-11-22T21:00:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/b5742d5c-eb10-4850-b191-246339c157ff/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-11-22T21:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-20T11:11:54.755589Z",
+      "uri": "https://api.calendly.com/scheduled_events/b5742d5c-eb10-4850-b191-246339c157ff"
+    },
+    {
+      "calendar_event": {
+        "external_id": "95drjjn998nqqvr38s0sods7s4",
+        "kind": "google"
+      },
+      "created_at": "2024-11-21T15:35:37.622322Z",
+      "end_time": "2024-11-22T21:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-22T21:30:00.000000Z",
+          "buffered_start_time": "2024-11-22T21:00:00.000000Z",
+          "user": "https://api.calendly.com/users/6641d161-b49d-47cd-b51c-632c6c537313",
+          "user_email": "marco@thedealmaker.io",
+          "user_name": "Marco Garcia"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/b6756f0a-02c6-4ce8-bd30-f5e859523524",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/baa6a9dd-c341-4f4e-a802-5971a0d58052/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Marco: Deal Maker",
+      "start_time": "2024-11-22T21:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-21T15:35:40.033196Z",
+      "uri": "https://api.calendly.com/scheduled_events/baa6a9dd-c341-4f4e-a802-5971a0d58052"
+    },
+    {
+      "calendar_event": {
+        "external_id": "a9fvqrrsevkerbpjiflns8hf0s",
+        "kind": "google"
+      },
+      "created_at": "2024-11-22T13:46:14.903510Z",
+      "end_time": "2024-11-23T04:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-23T04:45:00.000000Z",
+          "buffered_start_time": "2024-11-23T04:00:00.000000Z",
+          "user": "https://api.calendly.com/users/d11ce41d-7da6-4c0a-a292-723cbfc11be9",
+          "user_email": "mazin@thedealmaker.io",
+          "user_name": "Mazin Gazar"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-11-23T04:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-22T13:46:16.548552Z",
+      "uri": "https://api.calendly.com/scheduled_events/e13a973d-51cb-4257-b737-80ac7feae6d3"
+    },
+    {
+      "calendar_event": {
+        "external_id": "l0i8gpvu4pdo77spepjgf9j70k",
+        "kind": "google"
+      },
+      "created_at": "2024-11-23T08:38:09.646283Z",
+      "end_time": "2024-11-24T17:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-24T17:45:00.000000Z",
+          "buffered_start_time": "2024-11-24T17:00:00.000000Z",
+          "user": "https://api.calendly.com/users/d11ce41d-7da6-4c0a-a292-723cbfc11be9",
+          "user_email": "mazin@thedealmaker.io",
+          "user_name": "Mazin Gazar"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-11-24T17:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-23T08:38:11.075225Z",
+      "uri": "https://api.calendly.com/scheduled_events/9988223d-ebd4-49ec-bc85-3606152bfcae"
+    },
+    {
+      "calendar_event": {
+        "external_id": "nioob511fpaq934suij4vajmfc",
+        "kind": "google"
+      },
+      "created_at": "2024-11-23T03:06:36.828923Z",
+      "end_time": "2024-11-24T19:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-24T19:45:00.000000Z",
+          "buffered_start_time": "2024-11-24T19:00:00.000000Z",
+          "user": "https://api.calendly.com/users/d11ce41d-7da6-4c0a-a292-723cbfc11be9",
+          "user_email": "mazin@thedealmaker.io",
+          "user_name": "Mazin Gazar"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-11-24T19:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-23T03:06:37.893269Z",
+      "uri": "https://api.calendly.com/scheduled_events/98394d92-607b-4448-bf28-f44075823ce3"
+    },
+    {
+      "calendar_event": {
+        "external_id": "01uobjamkcg63js24s78j1sm38",
+        "kind": "google"
+      },
+      "created_at": "2024-11-23T22:22:22.846388Z",
+      "end_time": "2024-11-24T20:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-24T20:45:00.000000Z",
+          "buffered_start_time": "2024-11-24T20:00:00.000000Z",
+          "user": "https://api.calendly.com/users/d11ce41d-7da6-4c0a-a292-723cbfc11be9",
+          "user_email": "mazin@thedealmaker.io",
+          "user_name": "Mazin Gazar"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-11-24T20:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-23T22:22:24.217496Z",
+      "uri": "https://api.calendly.com/scheduled_events/2c9db4d6-e1f9-4e78-9f5b-478025c18acb"
+    },
+    {
+      "calendar_event": {
+        "external_id": "77rtv3am71pf64kcmtu293njf4",
+        "kind": "google"
+      },
+      "created_at": "2024-11-21T19:32:59.855885Z",
+      "end_time": "2024-11-25T01:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-25T01:30:00.000000Z",
+          "buffered_start_time": "2024-11-25T01:00:00.000000Z",
+          "user": "https://api.calendly.com/users/d11ce41d-7da6-4c0a-a292-723cbfc11be9",
+          "user_email": "mazin@thedealmaker.io",
+          "user_name": "Mazin Gazar"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/a3c754bf-b1ba-4613-8ab2-74935a37fb07",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/41317f25-8868-46b2-9010-2e06376681a3/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call with Mazin",
+      "start_time": "2024-11-25T01:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-21T19:33:02.135649Z",
+      "uri": "https://api.calendly.com/scheduled_events/41317f25-8868-46b2-9010-2e06376681a3"
+    },
+    {
+      "calendar_event": {
+        "external_id": "u29q8hhksn3husigo1qrnpr3h8",
+        "kind": "google"
+      },
+      "created_at": "2024-11-24T04:24:53.485776Z",
+      "end_time": "2024-11-25T04:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-25T04:45:00.000000Z",
+          "buffered_start_time": "2024-11-25T04:00:00.000000Z",
+          "user": "https://api.calendly.com/users/d11ce41d-7da6-4c0a-a292-723cbfc11be9",
+          "user_email": "mazin@thedealmaker.io",
+          "user_name": "Mazin Gazar"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-11-25T04:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-24T04:24:54.874196Z",
+      "uri": "https://api.calendly.com/scheduled_events/75b100fb-d303-4f3f-9d96-1fa9384d86cf"
+    },
+    {
+      "calendar_event": {
+        "external_id": "6l4ldsfep0i74ensuqvrbrm5q4",
+        "kind": "google"
+      },
+      "created_at": "2024-11-23T14:03:08.176783Z",
+      "end_time": "2024-11-25T14:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-25T14:45:00.000000Z",
+          "buffered_start_time": "2024-11-25T14:00:00.000000Z",
+          "user": "https://api.calendly.com/users/e1a5d40f-8718-4657-831b-2215b2e4b381",
+          "user_email": "bogdan@thedealmaker.io",
+          "user_name": "Bogdan Micov"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/4d01171e-cb15-4238-82c8-c923efd86351/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-11-25T14:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-23T14:03:10.354624Z",
+      "uri": "https://api.calendly.com/scheduled_events/4d01171e-cb15-4238-82c8-c923efd86351"
+    },
+    {
+      "calendar_event": {
+        "external_id": "tdqtv4fvnscot08460k8344djo",
+        "kind": "google"
+      },
+      "created_at": "2024-11-24T01:14:10.623978Z",
+      "end_time": "2024-11-25T16:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-25T16:45:00.000000Z",
+          "buffered_start_time": "2024-11-25T16:00:00.000000Z",
+          "user": "https://api.calendly.com/users/e1a5d40f-8718-4657-831b-2215b2e4b381",
+          "user_email": "bogdan@thedealmaker.io",
+          "user_name": "Bogdan Micov"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/3e164513-3a75-43c4-8b12-5f460ab6e1ba/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-11-25T16:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-24T01:14:13.351952Z",
+      "uri": "https://api.calendly.com/scheduled_events/3e164513-3a75-43c4-8b12-5f460ab6e1ba"
+    },
+    {
+      "calendar_event": {
+        "external_id": "qaiea118cjil9cprlk6ti5pg10",
+        "kind": "google"
+      },
+      "created_at": "2024-11-22T19:12:37.370701Z",
+      "end_time": "2024-11-25T19:00:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-25T19:00:00.000000Z",
+          "buffered_start_time": "2024-11-25T18:30:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/282e9b9e-5b03-46a1-a341-eace987e2d6e",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/a62e59e2-3a37-4835-a175-f79b9210206f/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Next Steps Call",
+      "start_time": "2024-11-25T18:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-22T19:12:39.334474Z",
+      "uri": "https://api.calendly.com/scheduled_events/a62e59e2-3a37-4835-a175-f79b9210206f"
+    },
+    {
+      "calendar_event": {
+        "external_id": "pb4ioq6477q73f4u6jfbp7ivag",
+        "kind": "google"
+      },
+      "created_at": "2024-11-24T17:25:59.661965Z",
+      "end_time": "2024-11-25T19:00:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-25T19:15:00.000000Z",
+          "buffered_start_time": "2024-11-25T18:30:00.000000Z",
+          "user": "https://api.calendly.com/users/e1a5d40f-8718-4657-831b-2215b2e4b381",
+          "user_email": "bogdan@thedealmaker.io",
+          "user_name": "Bogdan Micov"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/fc7ddebd-459e-4ff4-ad75-e52d7cf9aa38",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/c57b5baf-29e3-4211-b94c-13eec948ba66/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Discovery Call",
+      "start_time": "2024-11-25T18:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-24T17:26:01.504408Z",
+      "uri": "https://api.calendly.com/scheduled_events/c57b5baf-29e3-4211-b94c-13eec948ba66"
+    },
+    {
+      "calendar_event": {
+        "external_id": "fj5n1ik3m3nht53lqljgh959f8",
+        "kind": "google"
+      },
+      "created_at": "2024-11-24T19:27:59.020345Z",
+      "end_time": "2024-11-25T19:00:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-25T19:00:00.000000Z",
+          "buffered_start_time": "2024-11-25T18:30:00.000000Z",
+          "user": "https://api.calendly.com/users/6641d161-b49d-47cd-b51c-632c6c537313",
+          "user_email": "marco@thedealmaker.io",
+          "user_name": "Marco Garcia"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/b6756f0a-02c6-4ce8-bd30-f5e859523524",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/4198ef4e-1315-4b19-a23b-239aeebf6fa9/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Marco: Deal Maker",
+      "start_time": "2024-11-25T18:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-24T19:28:00.731207Z",
+      "uri": "https://api.calendly.com/scheduled_events/4198ef4e-1315-4b19-a23b-239aeebf6fa9"
+    },
+    {
+      "calendar_event": {
+        "external_id": "k8g7nd3spfalv0u6cc0q5vakus",
+        "kind": "google"
+      },
+      "created_at": "2024-11-21T19:21:21.418072Z",
+      "end_time": "2024-11-25T19:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-25T19:45:00.000000Z",
+          "buffered_start_time": "2024-11-25T19:00:00.000000Z",
+          "user": "https://api.calendly.com/users/6641d161-b49d-47cd-b51c-632c6c537313",
+          "user_email": "marco@thedealmaker.io",
+          "user_name": "Marco Garcia"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/6e95dce6-85f7-4e84-ac45-5b428dc11052/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-11-25T19:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-21T19:21:23.338663Z",
+      "uri": "https://api.calendly.com/scheduled_events/6e95dce6-85f7-4e84-ac45-5b428dc11052"
+    },
+    {
+      "calendar_event": {
+        "external_id": "9137idhpo9fds4eap7u43rci4c",
+        "kind": "google"
+      },
+      "created_at": "2024-11-21T21:24:53.823383Z",
+      "end_time": "2024-11-25T20:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-25T20:45:00.000000Z",
+          "buffered_start_time": "2024-11-25T20:00:00.000000Z",
+          "user": "https://api.calendly.com/users/e1a5d40f-8718-4657-831b-2215b2e4b381",
+          "user_email": "bogdan@thedealmaker.io",
+          "user_name": "Bogdan Micov"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/fc7ddebd-459e-4ff4-ad75-e52d7cf9aa38",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/0c4ecd92-0cd9-4a34-8b94-9604036668e4/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Discovery Call",
+      "start_time": "2024-11-25T20:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-21T21:24:56.244287Z",
+      "uri": "https://api.calendly.com/scheduled_events/0c4ecd92-0cd9-4a34-8b94-9604036668e4"
+    },
+    {
+      "calendar_event": {
+        "external_id": "dgp78hoc7rkdi4q4mm0fr4v6g8",
+        "kind": "google"
+      },
+      "created_at": "2024-11-24T21:03:26.587114Z",
+      "end_time": "2024-11-25T20:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-25T20:45:00.000000Z",
+          "buffered_start_time": "2024-11-25T20:00:00.000000Z",
+          "user": "https://api.calendly.com/users/f930caab-fca8-4afa-99ca-faea905061ab",
+          "user_email": "f930caab-fca8-4afa-99ca-faea905061ab@deleted.calendly.com",
+          "user_name": "deleted"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/962b7c4a-fd78-4a19-9025-ae349fc8bc1b/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-11-25T20:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-24T21:03:28.419422Z",
+      "uri": "https://api.calendly.com/scheduled_events/962b7c4a-fd78-4a19-9025-ae349fc8bc1b"
+    },
+    {
+      "calendar_event": {
+        "external_id": "urm0ag433n3qobnm5fqlripbls",
+        "kind": "google"
+      },
+      "created_at": "2024-11-24T18:37:03.868825Z",
+      "end_time": "2024-11-25T23:00:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-25T23:00:00.000000Z",
+          "buffered_start_time": "2024-11-25T22:30:00.000000Z",
+          "user": "https://api.calendly.com/users/6641d161-b49d-47cd-b51c-632c6c537313",
+          "user_email": "marco@thedealmaker.io",
+          "user_name": "Marco Garcia"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/b6756f0a-02c6-4ce8-bd30-f5e859523524",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/3fc7599f-5d4c-4c9c-9981-b2a505c31f86/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Marco: Deal Maker",
+      "start_time": "2024-11-25T22:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-24T18:37:05.750091Z",
+      "uri": "https://api.calendly.com/scheduled_events/3fc7599f-5d4c-4c9c-9981-b2a505c31f86"
+    },
+    {
+      "calendar_event": {
+        "external_id": "brq7hho8ofa3cgrgnkbfdo9l38",
+        "kind": "google"
+      },
+      "created_at": "2024-11-23T15:12:40.982160Z",
+      "end_time": "2024-11-26T00:00:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-26T00:15:00.000000Z",
+          "buffered_start_time": "2024-11-25T23:30:00.000000Z",
+          "user": "https://api.calendly.com/users/6641d161-b49d-47cd-b51c-632c6c537313",
+          "user_email": "marco@thedealmaker.io",
+          "user_name": "Marco Garcia"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/337dec07-770f-40ac-9f2b-f67db7f1fef3/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-11-25T23:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-23T15:12:42.672173Z",
+      "uri": "https://api.calendly.com/scheduled_events/337dec07-770f-40ac-9f2b-f67db7f1fef3"
+    },
+    {
+      "calendar_event": {
+        "external_id": "cevvum05g5k0u9eb75v56jepn0",
+        "kind": "google"
+      },
+      "created_at": "2024-11-25T06:45:06.524356Z",
+      "end_time": "2024-11-26T00:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-26T00:45:00.000000Z",
+          "buffered_start_time": "2024-11-26T00:00:00.000000Z",
+          "user": "https://api.calendly.com/users/e1a5d40f-8718-4657-831b-2215b2e4b381",
+          "user_email": "bogdan@thedealmaker.io",
+          "user_name": "Bogdan Micov"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/e895fcb2-e7ee-4d1d-be2c-5932eecdce77/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-11-26T00:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-25T06:45:08.456465Z",
+      "uri": "https://api.calendly.com/scheduled_events/e895fcb2-e7ee-4d1d-be2c-5932eecdce77"
+    },
+    {
+      "calendar_event": {
+        "external_id": "e5bhf3asfh81fqq1qa6g038phk",
+        "kind": "google"
+      },
+      "created_at": "2024-11-25T21:37:09.387618Z",
+      "end_time": "2024-11-26T15:00:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-26T15:15:00.000000Z",
+          "buffered_start_time": "2024-11-26T14:30:00.000000Z",
+          "user": "https://api.calendly.com/users/f930caab-fca8-4afa-99ca-faea905061ab",
+          "user_email": "f930caab-fca8-4afa-99ca-faea905061ab@deleted.calendly.com",
+          "user_name": "deleted"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/48d1495a-cd47-4ad7-a907-f78db8f44615/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-11-26T14:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-25T21:37:11.481578Z",
+      "uri": "https://api.calendly.com/scheduled_events/48d1495a-cd47-4ad7-a907-f78db8f44615"
+    },
+    {
+      "calendar_event": {
+        "external_id": "03dh8bqhldr5vrt56oi4su3f3k",
+        "kind": "google"
+      },
+      "created_at": "2024-11-22T17:31:34.850847Z",
+      "end_time": "2024-11-26T15:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-26T15:45:00.000000Z",
+          "buffered_start_time": "2024-11-26T15:00:00.000000Z",
+          "user": "https://api.calendly.com/users/e1a5d40f-8718-4657-831b-2215b2e4b381",
+          "user_email": "bogdan@thedealmaker.io",
+          "user_name": "Bogdan Micov"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/cffbd533-0d69-4c08-8e22-d44dc56e0d0c",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/6dcedf6d-cb6f-436b-9fc9-42c1f2bbd8dd/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Next Steps Call",
+      "start_time": "2024-11-26T15:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-22T17:31:37.307940Z",
+      "uri": "https://api.calendly.com/scheduled_events/6dcedf6d-cb6f-436b-9fc9-42c1f2bbd8dd"
+    },
+    {
+      "calendar_event": {
+        "external_id": "uvjfhuuetbq9jlg8ejs6pk00rs",
+        "kind": "google"
+      },
+      "created_at": "2024-11-25T06:08:29.238268Z",
+      "end_time": "2024-11-26T17:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-26T17:45:00.000000Z",
+          "buffered_start_time": "2024-11-26T17:00:00.000000Z",
+          "user": "https://api.calendly.com/users/e1a5d40f-8718-4657-831b-2215b2e4b381",
+          "user_email": "bogdan@thedealmaker.io",
+          "user_name": "Bogdan Micov"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/fc7ddebd-459e-4ff4-ad75-e52d7cf9aa38",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/f8c373df-e1f3-4211-b6c0-259c56965dbd/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Discovery Call",
+      "start_time": "2024-11-26T17:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-25T06:08:31.005189Z",
+      "uri": "https://api.calendly.com/scheduled_events/f8c373df-e1f3-4211-b6c0-259c56965dbd"
+    },
+    {
+      "calendar_event": {
+        "external_id": "ipee2jd9k3g8dgiomp823jpri0",
+        "kind": "google"
+      },
+      "created_at": "2024-11-26T02:00:55.819678Z",
+      "end_time": "2024-11-26T17:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-26T17:45:00.000000Z",
+          "buffered_start_time": "2024-11-26T17:00:00.000000Z",
+          "user": "https://api.calendly.com/users/d11ce41d-7da6-4c0a-a292-723cbfc11be9",
+          "user_email": "mazin@thedealmaker.io",
+          "user_name": "Mazin Gazar"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-11-26T17:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-26T02:00:57.375422Z",
+      "uri": "https://api.calendly.com/scheduled_events/f44b531d-186d-4661-9733-1ac8938f351b"
+    },
+    {
+      "calendar_event": {
+        "external_id": "ej0meldvbgb4vkjab6csuvtsng",
+        "kind": "google"
+      },
+      "created_at": "2024-11-25T23:48:58.759251Z",
+      "end_time": "2024-11-26T19:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-26T19:45:00.000000Z",
+          "buffered_start_time": "2024-11-26T19:00:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/a46e2316-2def-4b50-acd8-dc694294b27e/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-11-26T19:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-25T23:49:00.709527Z",
+      "uri": "https://api.calendly.com/scheduled_events/a46e2316-2def-4b50-acd8-dc694294b27e"
+    },
+    {
+      "calendar_event": {
+        "external_id": "1gvm8obnoujhluer8korcv0iqs",
+        "kind": "google"
+      },
+      "created_at": "2024-11-25T19:58:43.801153Z",
+      "end_time": "2024-11-26T20:00:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-26T20:15:00.000000Z",
+          "buffered_start_time": "2024-11-26T19:30:00.000000Z",
+          "user": "https://api.calendly.com/users/e1a5d40f-8718-4657-831b-2215b2e4b381",
+          "user_email": "bogdan@thedealmaker.io",
+          "user_name": "Bogdan Micov"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/fc7ddebd-459e-4ff4-ad75-e52d7cf9aa38",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/86779eca-8d90-4344-9c5a-5c58681668e2/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Discovery Call",
+      "start_time": "2024-11-26T19:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-25T19:58:46.371842Z",
+      "uri": "https://api.calendly.com/scheduled_events/86779eca-8d90-4344-9c5a-5c58681668e2"
+    },
+    {
+      "calendar_event": {
+        "external_id": "i740s48hbt320pecm59kfu8sjk",
+        "kind": "google"
+      },
+      "created_at": "2024-11-22T20:47:26.153409Z",
+      "end_time": "2024-11-26T22:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-26T22:30:00.000000Z",
+          "buffered_start_time": "2024-11-26T22:00:00.000000Z",
+          "user": "https://api.calendly.com/users/8a38dfe7-c1a6-4eae-acfd-2eb24121eab0",
+          "user_email": "contact@thedealmaker.io",
+          "user_name": "Dealmaker"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/89d4ac2d-88e4-4349-8629-1e5052e57ba7",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/d278cff2-3a67-4917-b989-b3b0f4e77d7f/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Deal Maker Orientation",
+      "start_time": "2024-11-26T22:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-22T20:47:28.321753Z",
+      "uri": "https://api.calendly.com/scheduled_events/d278cff2-3a67-4917-b989-b3b0f4e77d7f"
+    },
+    {
+      "calendar_event": {
+        "external_id": "lplg698vqdmdjq830a6uqidac4",
+        "kind": "google"
+      },
+      "created_at": "2024-11-24T21:56:03.279829Z",
+      "end_time": "2024-11-26T22:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-26T22:45:00.000000Z",
+          "buffered_start_time": "2024-11-26T22:00:00.000000Z",
+          "user": "https://api.calendly.com/users/d11ce41d-7da6-4c0a-a292-723cbfc11be9",
+          "user_email": "mazin@thedealmaker.io",
+          "user_name": "Mazin Gazar"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-11-26T22:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-24T21:56:04.820336Z",
+      "uri": "https://api.calendly.com/scheduled_events/33fb338a-9ee4-4521-9d1f-da4487ebc8d4"
+    },
+    {
+      "calendar_event": {
+        "external_id": "s7d08hhuns2g2g1aupren45fu4",
+        "kind": "google"
+      },
+      "created_at": "2024-11-26T08:45:10.224368Z",
+      "end_time": "2024-11-27T00:00:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-27T00:15:00.000000Z",
+          "buffered_start_time": "2024-11-26T23:30:00.000000Z",
+          "user": "https://api.calendly.com/users/6641d161-b49d-47cd-b51c-632c6c537313",
+          "user_email": "marco@thedealmaker.io",
+          "user_name": "Marco Garcia"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/7f0da4ab-ea9f-4d32-ab3b-624334670ee4/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-11-26T23:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-26T08:45:11.773447Z",
+      "uri": "https://api.calendly.com/scheduled_events/7f0da4ab-ea9f-4d32-ab3b-624334670ee4"
+    },
+    {
+      "calendar_event": {
+        "external_id": "rg27gntj4vfetkuojv1c282f30",
+        "kind": "google"
+      },
+      "created_at": "2024-11-26T19:32:57.272503Z",
+      "end_time": "2024-11-27T15:00:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-27T15:15:00.000000Z",
+          "buffered_start_time": "2024-11-27T14:30:00.000000Z",
+          "user": "https://api.calendly.com/users/e1a5d40f-8718-4657-831b-2215b2e4b381",
+          "user_email": "bogdan@thedealmaker.io",
+          "user_name": "Bogdan Micov"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/fc7ddebd-459e-4ff4-ad75-e52d7cf9aa38",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/8252fb8a-76df-451d-9898-e7cab5c736ba/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Discovery Call",
+      "start_time": "2024-11-27T14:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-26T19:33:00.383323Z",
+      "uri": "https://api.calendly.com/scheduled_events/8252fb8a-76df-451d-9898-e7cab5c736ba"
+    },
+    {
+      "calendar_event": {
+        "external_id": "k98gp975b5k0svenuhkht1c8ig",
+        "kind": "google"
+      },
+      "created_at": "2024-11-26T08:51:37.491788Z",
+      "end_time": "2024-11-27T16:00:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-27T16:15:00.000000Z",
+          "buffered_start_time": "2024-11-27T15:30:00.000000Z",
+          "user": "https://api.calendly.com/users/e1a5d40f-8718-4657-831b-2215b2e4b381",
+          "user_email": "bogdan@thedealmaker.io",
+          "user_name": "Bogdan Micov"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/659ad729-0fc9-48c1-be20-561fbdb93636/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-11-27T15:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-26T08:51:40.257961Z",
+      "uri": "https://api.calendly.com/scheduled_events/659ad729-0fc9-48c1-be20-561fbdb93636"
+    },
+    {
+      "calendar_event": {
+        "external_id": "nh55v5k9ocp7e38cd1dc9soar0",
+        "kind": "google"
+      },
+      "created_at": "2024-11-24T14:00:59.114807Z",
+      "end_time": "2024-11-27T17:00:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-27T17:15:00.000000Z",
+          "buffered_start_time": "2024-11-27T16:30:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/791fc659-752a-4910-bf89-f40c3c9adf4c/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-11-27T16:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-24T14:01:00.838385Z",
+      "uri": "https://api.calendly.com/scheduled_events/791fc659-752a-4910-bf89-f40c3c9adf4c"
+    },
+    {
+      "calendar_event": {
+        "external_id": "rpo0s1cr2scdn86r7vvs9ton90",
+        "kind": "google"
+      },
+      "created_at": "2024-11-25T22:53:02.857600Z",
+      "end_time": "2024-11-27T17:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-27T17:45:00.000000Z",
+          "buffered_start_time": "2024-11-27T17:00:00.000000Z",
+          "user": "https://api.calendly.com/users/e1a5d40f-8718-4657-831b-2215b2e4b381",
+          "user_email": "bogdan@thedealmaker.io",
+          "user_name": "Bogdan Micov"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/cffbd533-0d69-4c08-8e22-d44dc56e0d0c",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/c60e010b-20a2-4de3-815b-50d81f3893a0/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Next Steps Call",
+      "start_time": "2024-11-27T17:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-25T22:53:05.128055Z",
+      "uri": "https://api.calendly.com/scheduled_events/c60e010b-20a2-4de3-815b-50d81f3893a0"
+    },
+    {
+      "calendar_event": {
+        "external_id": "ho3rjm9uck022tjfsgp65qouq8",
+        "kind": "google"
+      },
+      "created_at": "2024-11-26T09:22:41.203700Z",
+      "end_time": "2024-11-27T18:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-27T18:45:00.000000Z",
+          "buffered_start_time": "2024-11-27T18:00:00.000000Z",
+          "user": "https://api.calendly.com/users/e1a5d40f-8718-4657-831b-2215b2e4b381",
+          "user_email": "bogdan@thedealmaker.io",
+          "user_name": "Bogdan Micov"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/cffbd533-0d69-4c08-8e22-d44dc56e0d0c",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/f9f20df7-1c0d-43aa-a970-953d9badeb66/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Next Steps Call",
+      "start_time": "2024-11-27T18:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-26T09:22:43.217222Z",
+      "uri": "https://api.calendly.com/scheduled_events/f9f20df7-1c0d-43aa-a970-953d9badeb66"
+    },
+    {
+      "calendar_event": {
+        "external_id": "uujd7atqd6n72uvhtttbmpdjho",
+        "kind": "google"
+      },
+      "created_at": "2024-11-23T22:40:51.539890Z",
+      "end_time": "2024-11-27T19:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-27T19:45:00.000000Z",
+          "buffered_start_time": "2024-11-27T19:00:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/fc938189-62fe-4a10-9b92-7007c4a4ddc0/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-11-27T19:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-23T22:40:53.251609Z",
+      "uri": "https://api.calendly.com/scheduled_events/fc938189-62fe-4a10-9b92-7007c4a4ddc0"
+    },
+    {
+      "calendar_event": {
+        "external_id": "gbo4sc0j5asrd5uolpamclsl54",
+        "kind": "google"
+      },
+      "created_at": "2024-11-26T15:41:27.150881Z",
+      "end_time": "2024-11-27T19:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-27T19:45:00.000000Z",
+          "buffered_start_time": "2024-11-27T19:00:00.000000Z",
+          "user": "https://api.calendly.com/users/e1a5d40f-8718-4657-831b-2215b2e4b381",
+          "user_email": "bogdan@thedealmaker.io",
+          "user_name": "Bogdan Micov"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/fc7ddebd-459e-4ff4-ad75-e52d7cf9aa38",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/67f3cafa-f097-42d9-b77a-6568ac0f0c72/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Discovery Call",
+      "start_time": "2024-11-27T19:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-26T15:41:31.880718Z",
+      "uri": "https://api.calendly.com/scheduled_events/67f3cafa-f097-42d9-b77a-6568ac0f0c72"
+    },
+    {
+      "calendar_event": {
+        "external_id": "m0nsdk2j98lk88q8o15ts9tjlk",
+        "kind": "google"
+      },
+      "created_at": "2024-11-27T03:47:47.698972Z",
+      "end_time": "2024-11-27T19:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-27T19:45:00.000000Z",
+          "buffered_start_time": "2024-11-27T19:00:00.000000Z",
+          "user": "https://api.calendly.com/users/d11ce41d-7da6-4c0a-a292-723cbfc11be9",
+          "user_email": "mazin@thedealmaker.io",
+          "user_name": "Mazin Gazar"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-11-27T19:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-27T03:47:48.944793Z",
+      "uri": "https://api.calendly.com/scheduled_events/c444399e-e514-4c3e-bdcf-92d2bd13d188"
+    },
+    {
+      "calendar_event": {
+        "external_id": "alc22tbi26gntkmt31p62p4ns8",
+        "kind": "google"
+      },
+      "created_at": "2024-11-27T03:11:13.967643Z",
+      "end_time": "2024-11-28T17:00:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-28T17:15:00.000000Z",
+          "buffered_start_time": "2024-11-28T16:30:00.000000Z",
+          "user": "https://api.calendly.com/users/e1a5d40f-8718-4657-831b-2215b2e4b381",
+          "user_email": "bogdan@thedealmaker.io",
+          "user_name": "Bogdan Micov"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/27ee1fc0-996b-49b0-bd36-efe2b75c2fdc/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-11-28T16:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-27T03:11:16.092362Z",
+      "uri": "https://api.calendly.com/scheduled_events/27ee1fc0-996b-49b0-bd36-efe2b75c2fdc"
+    },
+    {
+      "calendar_event": {
+        "external_id": "5jfu0vnasvnfps5aipp1ptt2bc",
+        "kind": "google"
+      },
+      "created_at": "2024-11-26T18:14:30.316758Z",
+      "end_time": "2024-11-28T17:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-28T17:30:00.000000Z",
+          "buffered_start_time": "2024-11-28T17:00:00.000000Z",
+          "user": "https://api.calendly.com/users/6641d161-b49d-47cd-b51c-632c6c537313",
+          "user_email": "marco@thedealmaker.io",
+          "user_name": "Marco Garcia"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/b6756f0a-02c6-4ce8-bd30-f5e859523524",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/97fd417d-13cd-4f5b-95aa-729a9e699b4d/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Marco: Deal Maker",
+      "start_time": "2024-11-28T17:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-26T18:14:31.943426Z",
+      "uri": "https://api.calendly.com/scheduled_events/97fd417d-13cd-4f5b-95aa-729a9e699b4d"
+    },
+    {
+      "calendar_event": {
+        "external_id": "3hoee3un9u4amg6cfndssacm2o",
+        "kind": "google"
+      },
+      "created_at": "2024-11-27T20:03:24.050455Z",
+      "end_time": "2024-11-28T20:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-28T20:45:00.000000Z",
+          "buffered_start_time": "2024-11-28T20:00:00.000000Z",
+          "user": "https://api.calendly.com/users/6641d161-b49d-47cd-b51c-632c6c537313",
+          "user_email": "marco@thedealmaker.io",
+          "user_name": "Marco Garcia"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/34fdd6fa-6433-466a-9b5a-10fd78459931/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-11-28T20:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-27T20:03:26.003739Z",
+      "uri": "https://api.calendly.com/scheduled_events/34fdd6fa-6433-466a-9b5a-10fd78459931"
+    },
+    {
+      "calendar_event": {
+        "external_id": "uidruescm1lkuu76givmpg7pjc",
+        "kind": "google"
+      },
+      "created_at": "2024-11-26T02:44:05.223453Z",
+      "end_time": "2024-11-29T14:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-29T14:45:00.000000Z",
+          "buffered_start_time": "2024-11-29T14:00:00.000000Z",
+          "user": "https://api.calendly.com/users/e1a5d40f-8718-4657-831b-2215b2e4b381",
+          "user_email": "bogdan@thedealmaker.io",
+          "user_name": "Bogdan Micov"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/71163159-ca08-49ba-85c0-5b456836880d/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-11-29T14:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-26T02:44:07.384090Z",
+      "uri": "https://api.calendly.com/scheduled_events/71163159-ca08-49ba-85c0-5b456836880d"
+    },
+    {
+      "calendar_event": {
+        "external_id": "h48rid6ggtenfkvbgftge6996o",
+        "kind": "google"
+      },
+      "created_at": "2024-11-26T22:12:10.977226Z",
+      "end_time": "2024-11-29T14:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-29T14:45:00.000000Z",
+          "buffered_start_time": "2024-11-29T14:00:00.000000Z",
+          "user": "https://api.calendly.com/users/f930caab-fca8-4afa-99ca-faea905061ab",
+          "user_email": "f930caab-fca8-4afa-99ca-faea905061ab@deleted.calendly.com",
+          "user_name": "deleted"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/0c2ad7c5-c235-4e2c-80d0-b0eebc262d63/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-11-29T14:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-26T22:12:12.467545Z",
+      "uri": "https://api.calendly.com/scheduled_events/0c2ad7c5-c235-4e2c-80d0-b0eebc262d63"
+    },
+    {
+      "calendar_event": {
+        "external_id": "qhbmqun9tqj8ra7ip4bvj7coac",
+        "kind": "google"
+      },
+      "created_at": "2024-11-27T15:05:32.133918Z",
+      "end_time": "2024-11-29T16:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-29T16:45:00.000000Z",
+          "buffered_start_time": "2024-11-29T16:00:00.000000Z",
+          "user": "https://api.calendly.com/users/e1a5d40f-8718-4657-831b-2215b2e4b381",
+          "user_email": "bogdan@thedealmaker.io",
+          "user_name": "Bogdan Micov"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/cffbd533-0d69-4c08-8e22-d44dc56e0d0c",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/87b58650-46bd-4af3-82da-1a6ae10aad37/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Next Steps Call",
+      "start_time": "2024-11-29T16:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-27T15:05:34.330981Z",
+      "uri": "https://api.calendly.com/scheduled_events/87b58650-46bd-4af3-82da-1a6ae10aad37"
+    },
+    {
+      "calendar_event": {
+        "external_id": "31u3m0mgnad0oaske99anfektc",
+        "kind": "google"
+      },
+      "created_at": "2024-11-27T19:25:11.159300Z",
+      "end_time": "2024-11-29T17:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-29T17:45:00.000000Z",
+          "buffered_start_time": "2024-11-29T17:00:00.000000Z",
+          "user": "https://api.calendly.com/users/e1a5d40f-8718-4657-831b-2215b2e4b381",
+          "user_email": "bogdan@thedealmaker.io",
+          "user_name": "Bogdan Micov"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/cffbd533-0d69-4c08-8e22-d44dc56e0d0c",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/31359ad4-a5d8-440d-9b7c-d2c9759dc9b2/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Next Steps Call",
+      "start_time": "2024-11-29T17:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-27T19:25:15.789733Z",
+      "uri": "https://api.calendly.com/scheduled_events/31359ad4-a5d8-440d-9b7c-d2c9759dc9b2"
+    },
+    {
+      "calendar_event": {
+        "external_id": "uookj8bqt9sph1vkfac4lsa1bg",
+        "kind": "google"
+      },
+      "created_at": "2024-11-27T01:43:18.870660Z",
+      "end_time": "2024-11-29T18:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-29T18:45:00.000000Z",
+          "buffered_start_time": "2024-11-29T18:00:00.000000Z",
+          "user": "https://api.calendly.com/users/e1a5d40f-8718-4657-831b-2215b2e4b381",
+          "user_email": "bogdan@thedealmaker.io",
+          "user_name": "Bogdan Micov"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/dd38cf45-0c02-4e58-b49a-2986e4ece1ce/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-11-29T18:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-27T01:43:20.628385Z",
+      "uri": "https://api.calendly.com/scheduled_events/dd38cf45-0c02-4e58-b49a-2986e4ece1ce"
+    },
+    {
+      "calendar_event": {
+        "external_id": "gfeukjlmmi56muqgip07ml6h0o",
+        "kind": "google"
+      },
+      "created_at": "2024-11-27T22:36:31.615967Z",
+      "end_time": "2024-11-29T20:00:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-29T20:15:00.000000Z",
+          "buffered_start_time": "2024-11-29T19:30:00.000000Z",
+          "user": "https://api.calendly.com/users/d11ce41d-7da6-4c0a-a292-723cbfc11be9",
+          "user_email": "mazin@thedealmaker.io",
+          "user_name": "Mazin Gazar"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-11-29T19:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-27T22:36:32.865727Z",
+      "uri": "https://api.calendly.com/scheduled_events/0a517181-076d-40f7-ab3b-bf2f5a39697b"
+    },
+    {
+      "calendar_event": {
+        "external_id": "jqkatc1hdrhtmgjc46trqjtdck",
+        "kind": "google"
+      },
+      "created_at": "2024-11-27T19:48:11.575858Z",
+      "end_time": "2024-11-29T20:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-29T20:45:00.000000Z",
+          "buffered_start_time": "2024-11-29T20:00:00.000000Z",
+          "user": "https://api.calendly.com/users/e1a5d40f-8718-4657-831b-2215b2e4b381",
+          "user_email": "bogdan@thedealmaker.io",
+          "user_name": "Bogdan Micov"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/fc7ddebd-459e-4ff4-ad75-e52d7cf9aa38",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/52df7600-6726-4d9e-ae27-e9418db9f7dc/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Discovery Call",
+      "start_time": "2024-11-29T20:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-27T19:48:13.836666Z",
+      "uri": "https://api.calendly.com/scheduled_events/52df7600-6726-4d9e-ae27-e9418db9f7dc"
+    },
+    {
+      "calendar_event": {
+        "external_id": "74te2qve55qtn209i428g783dc",
+        "kind": "google"
+      },
+      "created_at": "2024-11-27T22:28:16.766060Z",
+      "end_time": "2024-11-29T20:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-29T20:45:00.000000Z",
+          "buffered_start_time": "2024-11-29T20:00:00.000000Z",
+          "user": "https://api.calendly.com/users/f930caab-fca8-4afa-99ca-faea905061ab",
+          "user_email": "f930caab-fca8-4afa-99ca-faea905061ab@deleted.calendly.com",
+          "user_name": "deleted"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/46a0f2aa-9388-4644-89a2-9654e8a0d824/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-11-29T20:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-27T22:28:18.744508Z",
+      "uri": "https://api.calendly.com/scheduled_events/46a0f2aa-9388-4644-89a2-9654e8a0d824"
+    },
+    {
+      "calendar_event": {
+        "external_id": "7qvl9bk5alioukft3hum9s83dc",
+        "kind": "google"
+      },
+      "created_at": "2024-11-27T20:38:54.709349Z",
+      "end_time": "2024-11-30T00:00:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-11-30T00:15:00.000000Z",
+          "buffered_start_time": "2024-11-29T23:30:00.000000Z",
+          "user": "https://api.calendly.com/users/d11ce41d-7da6-4c0a-a292-723cbfc11be9",
+          "user_email": "mazin@thedealmaker.io",
+          "user_name": "Mazin Gazar"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-11-29T23:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-27T20:38:56.883328Z",
+      "uri": "https://api.calendly.com/scheduled_events/2dd3eb4f-364d-4605-a92f-fd31e74d3789"
+    },
+    {
+      "calendar_event": {
+        "external_id": "itgb3g5oacfi3j94qq7hiodm9c",
+        "kind": "google"
+      },
+      "created_at": "2024-12-02T02:46:52.327378Z",
+      "end_time": "2024-12-02T19:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-12-02T19:45:00.000000Z",
+          "buffered_start_time": "2024-12-02T19:00:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/b90f9959-e2cc-4c7e-95f9-593778ae648a/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-12-02T19:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-12-02T02:46:54.728131Z",
+      "uri": "https://api.calendly.com/scheduled_events/b90f9959-e2cc-4c7e-95f9-593778ae648a"
+    },
+    {
+      "calendar_event": {
+        "external_id": "r03olkjvajvtmebk52cq8ujk68",
+        "kind": "google"
+      },
+      "created_at": "2024-11-27T19:16:10.104991Z",
+      "end_time": "2024-12-02T20:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-12-02T20:30:00.000000Z",
+          "buffered_start_time": "2024-12-02T20:00:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/3b2c847d-22b7-425d-8fd5-3ef71c8f874d",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/ab205031-affa-44c7-8cbd-f5e48d62784d/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Solution Call",
+      "start_time": "2024-12-02T20:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-27T19:16:11.941766Z",
+      "uri": "https://api.calendly.com/scheduled_events/ab205031-affa-44c7-8cbd-f5e48d62784d"
+    },
+    {
+      "calendar_event": {
+        "external_id": "42m7co31uorgk4oevt8n2t4so4",
+        "kind": "google"
+      },
+      "created_at": "2024-11-29T21:01:01.030099Z",
+      "end_time": "2024-12-02T21:00:00.000000Z",
+      "event_guests": [
+        {
+          "created_at": "2024-11-29T21:01:01.079838Z",
+          "email": "jake@crowleydesigngroup.com",
+          "updated_at": "2024-11-29T21:01:01.079838Z"
+        }
+      ],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-12-02T21:15:00.000000Z",
+          "buffered_start_time": "2024-12-02T20:30:00.000000Z",
+          "user": "https://api.calendly.com/users/e1a5d40f-8718-4657-831b-2215b2e4b381",
+          "user_email": "bogdan@thedealmaker.io",
+          "user_name": "Bogdan Micov"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/c3464769-513e-4acd-a1db-2e272bc62550/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-12-02T20:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-29T21:01:03.826199Z",
+      "uri": "https://api.calendly.com/scheduled_events/c3464769-513e-4acd-a1db-2e272bc62550"
+    },
+    {
+      "calendar_event": {
+        "external_id": "ml0onj3df5q0enidpg04udaqa4",
+        "kind": "google"
+      },
+      "created_at": "2024-11-29T19:50:34.342528Z",
+      "end_time": "2024-12-02T21:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-12-02T21:30:00.000000Z",
+          "buffered_start_time": "2024-12-02T21:00:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/3b2c847d-22b7-425d-8fd5-3ef71c8f874d",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/ae01d0e4-b009-4414-9f9a-3238d1ebf3d6/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Solution Call",
+      "start_time": "2024-12-02T21:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-29T19:50:36.289959Z",
+      "uri": "https://api.calendly.com/scheduled_events/ae01d0e4-b009-4414-9f9a-3238d1ebf3d6"
+    },
+    {
+      "calendar_event": {
+        "external_id": "9aeijc18j6c0tkld9ir6g0p1hc",
+        "kind": "google"
+      },
+      "created_at": "2024-12-02T13:03:17.058071Z",
+      "end_time": "2024-12-03T17:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-12-03T17:30:00.000000Z",
+          "buffered_start_time": "2024-12-03T17:00:00.000000Z",
+          "user": "https://api.calendly.com/users/6641d161-b49d-47cd-b51c-632c6c537313",
+          "user_email": "marco@thedealmaker.io",
+          "user_name": "Marco Garcia"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/b6756f0a-02c6-4ce8-bd30-f5e859523524",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/0e188d07-d2dc-403f-af00-c16a8c51caf1/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Marco: Deal Maker",
+      "start_time": "2024-12-03T17:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-12-02T13:03:18.623462Z",
+      "uri": "https://api.calendly.com/scheduled_events/0e188d07-d2dc-403f-af00-c16a8c51caf1"
+    },
+    {
+      "calendar_event": {
+        "external_id": "f4p3s805qoedu63ir8ts5qt6ao",
+        "kind": "google"
+      },
+      "created_at": "2024-12-02T15:15:21.053066Z",
+      "end_time": "2024-12-03T17:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-12-03T17:45:00.000000Z",
+          "buffered_start_time": "2024-12-03T17:00:00.000000Z",
+          "user": "https://api.calendly.com/users/d11ce41d-7da6-4c0a-a292-723cbfc11be9",
+          "user_email": "mazin@thedealmaker.io",
+          "user_name": "Mazin Gazar"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-12-03T17:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-12-02T15:15:22.381322Z",
+      "uri": "https://api.calendly.com/scheduled_events/53ac22d5-c4b9-4023-8d97-67d9a24b9e55"
+    },
+    {
+      "calendar_event": {
+        "external_id": "dds17pli7sk5bandejdnj81l0o",
+        "kind": "google"
+      },
+      "created_at": "2024-12-03T04:44:52.621756Z",
+      "end_time": "2024-12-03T21:30:00.000000Z",
+      "event_guests": [
+        {
+          "created_at": "2024-12-03T04:44:52.671855Z",
+          "email": "michaeldearring@gmail.com",
+          "updated_at": "2024-12-03T04:44:52.671855Z"
+        }
+      ],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-12-03T21:45:00.000000Z",
+          "buffered_start_time": "2024-12-03T21:00:00.000000Z",
+          "user": "https://api.calendly.com/users/e1a5d40f-8718-4657-831b-2215b2e4b381",
+          "user_email": "bogdan@thedealmaker.io",
+          "user_name": "Bogdan Micov"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/cdce1a42-89a8-4cdb-ba2c-3b4c133a95ca/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-12-03T21:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-12-03T04:44:54.423345Z",
+      "uri": "https://api.calendly.com/scheduled_events/cdce1a42-89a8-4cdb-ba2c-3b4c133a95ca"
+    },
+    {
+      "calendar_event": {
+        "external_id": "de9omk43aopq2b84ha05lhjugk",
+        "kind": "google"
+      },
+      "created_at": "2024-12-03T06:37:02.239452Z",
+      "end_time": "2024-12-04T00:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-12-04T00:45:00.000000Z",
+          "buffered_start_time": "2024-12-04T00:00:00.000000Z",
+          "user": "https://api.calendly.com/users/e1a5d40f-8718-4657-831b-2215b2e4b381",
+          "user_email": "bogdan@thedealmaker.io",
+          "user_name": "Bogdan Micov"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/cffbd533-0d69-4c08-8e22-d44dc56e0d0c",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/7255a5b3-3fe2-4388-b1ea-cb09ec5c6f7e/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Next Steps Call",
+      "start_time": "2024-12-04T00:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-12-03T06:37:04.149795Z",
+      "uri": "https://api.calendly.com/scheduled_events/7255a5b3-3fe2-4388-b1ea-cb09ec5c6f7e"
+    },
+    {
+      "calendar_event": {
+        "external_id": "rvsukneompbb7de6vjnhtkoef0",
+        "kind": "google"
+      },
+      "created_at": "2024-12-03T03:19:06.915124Z",
+      "end_time": "2024-12-04T15:00:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-12-04T15:15:00.000000Z",
+          "buffered_start_time": "2024-12-04T14:30:00.000000Z",
+          "user": "https://api.calendly.com/users/e1a5d40f-8718-4657-831b-2215b2e4b381",
+          "user_email": "bogdan@thedealmaker.io",
+          "user_name": "Bogdan Micov"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/21b3a261-a0c1-48c7-99e8-043c32aabaa6/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-12-04T14:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-12-03T03:19:09.060821Z",
+      "uri": "https://api.calendly.com/scheduled_events/21b3a261-a0c1-48c7-99e8-043c32aabaa6"
+    },
+    {
+      "calendar_event": {
+        "external_id": "8vjao3rrmp8t1kqe0af8clprio",
+        "kind": "google"
+      },
+      "created_at": "2024-12-03T22:04:28.051431Z",
+      "end_time": "2024-12-04T15:00:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-12-04T15:15:00.000000Z",
+          "buffered_start_time": "2024-12-04T14:30:00.000000Z",
+          "user": "https://api.calendly.com/users/f930caab-fca8-4afa-99ca-faea905061ab",
+          "user_email": "f930caab-fca8-4afa-99ca-faea905061ab@deleted.calendly.com",
+          "user_name": "deleted"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/9b66ed9c-71f6-4c0a-9d6b-03557fa4c0bd/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-12-04T14:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-12-03T22:04:29.539376Z",
+      "uri": "https://api.calendly.com/scheduled_events/9b66ed9c-71f6-4c0a-9d6b-03557fa4c0bd"
+    },
+    {
+      "calendar_event": {
+        "external_id": "i9m0506aua7rasvfr3ibe2g3cs",
+        "kind": "google"
+      },
+      "created_at": "2024-12-03T23:00:09.446947Z",
+      "end_time": "2024-12-04T17:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-12-04T17:45:00.000000Z",
+          "buffered_start_time": "2024-12-04T17:00:00.000000Z",
+          "user": "https://api.calendly.com/users/6641d161-b49d-47cd-b51c-632c6c537313",
+          "user_email": "marco@thedealmaker.io",
+          "user_name": "Marco Garcia"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/d8414fcc-a1cf-4d72-aee3-b549437fbee0/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-12-04T17:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-12-03T23:00:11.263696Z",
+      "uri": "https://api.calendly.com/scheduled_events/d8414fcc-a1cf-4d72-aee3-b549437fbee0"
+    },
+    {
+      "calendar_event": {
+        "external_id": "t0fftdtm8660noad14tt6jb6p4",
+        "kind": "google"
+      },
+      "created_at": "2024-12-03T04:20:54.492523Z",
+      "end_time": "2024-12-04T18:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-12-04T18:45:00.000000Z",
+          "buffered_start_time": "2024-12-04T18:00:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/b0958258-6728-4142-98a0-2e59f4faed8d/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-12-04T18:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-12-03T04:20:55.824100Z",
+      "uri": "https://api.calendly.com/scheduled_events/b0958258-6728-4142-98a0-2e59f4faed8d"
+    },
+    {
+      "calendar_event": {
+        "external_id": "oglc30p6u5sbojgtpqer9ssilo",
+        "kind": "google"
+      },
+      "created_at": "2024-12-04T03:27:56.349744Z",
+      "end_time": "2024-12-04T19:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-12-04T19:30:00.000000Z",
+          "buffered_start_time": "2024-12-04T19:00:00.000000Z",
+          "user": "https://api.calendly.com/users/6641d161-b49d-47cd-b51c-632c6c537313",
+          "user_email": "marco@thedealmaker.io",
+          "user_name": "Marco Garcia"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/b6756f0a-02c6-4ce8-bd30-f5e859523524",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/faab194f-dd56-4c1b-ad3c-235b85131cc7/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Marco: Deal Maker",
+      "start_time": "2024-12-04T19:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-12-04T03:27:57.883851Z",
+      "uri": "https://api.calendly.com/scheduled_events/faab194f-dd56-4c1b-ad3c-235b85131cc7"
+    },
+    {
+      "calendar_event": {
+        "external_id": "q8gl4dkfjfk65l6vnmc94umbu0",
+        "kind": "google"
+      },
+      "created_at": "2024-12-02T20:58:51.116651Z",
+      "end_time": "2024-12-04T21:00:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-12-04T21:15:00.000000Z",
+          "buffered_start_time": "2024-12-04T20:30:00.000000Z",
+          "user": "https://api.calendly.com/users/e1a5d40f-8718-4657-831b-2215b2e4b381",
+          "user_email": "bogdan@thedealmaker.io",
+          "user_name": "Bogdan Micov"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/cffbd533-0d69-4c08-8e22-d44dc56e0d0c",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/beb7aff3-49c9-4ddf-ac43-5aa9285b4732/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Next Steps Call",
+      "start_time": "2024-12-04T20:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-12-02T20:58:53.488376Z",
+      "uri": "https://api.calendly.com/scheduled_events/beb7aff3-49c9-4ddf-ac43-5aa9285b4732"
+    },
+    {
+      "calendar_event": {
+        "external_id": "kj929q7qhl1dgm91dgpmc6mlrs",
+        "kind": "google"
+      },
+      "created_at": "2024-12-03T18:01:03.671961Z",
+      "end_time": "2024-12-05T18:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-12-05T18:30:00.000000Z",
+          "buffered_start_time": "2024-12-05T18:00:00.000000Z",
+          "user": "https://api.calendly.com/users/d11ce41d-7da6-4c0a-a292-723cbfc11be9",
+          "user_email": "mazin@thedealmaker.io",
+          "user_name": "Mazin Gazar"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/6e3912d8-826b-4287-b7fe-d0833b750d45",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/fb7d84cd-a8b4-4c80-a02b-13b88e9a25aa/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Next Steps Call",
+      "start_time": "2024-12-05T18:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-12-03T18:01:06.309384Z",
+      "uri": "https://api.calendly.com/scheduled_events/fb7d84cd-a8b4-4c80-a02b-13b88e9a25aa"
+    },
+    {
+      "calendar_event": {
+        "external_id": "sh33n24pkm1j3lucu0abbl7l08",
+        "kind": "google"
+      },
+      "created_at": "2024-12-04T17:59:56.564212Z",
+      "end_time": "2024-12-05T18:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-12-05T18:45:00.000000Z",
+          "buffered_start_time": "2024-12-05T18:00:00.000000Z",
+          "user": "https://api.calendly.com/users/e1a5d40f-8718-4657-831b-2215b2e4b381",
+          "user_email": "bogdan@thedealmaker.io",
+          "user_name": "Bogdan Micov"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/69932b51-daa4-4c07-81f8-c61aafb802af/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-12-05T18:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-12-04T17:59:58.280081Z",
+      "uri": "https://api.calendly.com/scheduled_events/69932b51-daa4-4c07-81f8-c61aafb802af"
+    },
+    {
+      "calendar_event": {
+        "external_id": "f9kh5i4ckft3jlduh8tb1ioeg8",
+        "kind": "google"
+      },
+      "created_at": "2024-12-05T03:52:29.131906Z",
+      "end_time": "2024-12-05T18:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-12-05T18:45:00.000000Z",
+          "buffered_start_time": "2024-12-05T18:00:00.000000Z",
+          "user": "https://api.calendly.com/users/f930caab-fca8-4afa-99ca-faea905061ab",
+          "user_email": "f930caab-fca8-4afa-99ca-faea905061ab@deleted.calendly.com",
+          "user_name": "deleted"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/d31ed2f9-1449-4f1e-b576-388fd93058ff/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-12-05T18:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-12-05T03:52:30.480834Z",
+      "uri": "https://api.calendly.com/scheduled_events/d31ed2f9-1449-4f1e-b576-388fd93058ff"
+    },
+    {
+      "calendar_event": {
+        "external_id": "mld0gt442bq5mh8ksv2op1pjj0",
+        "kind": "google"
+      },
+      "created_at": "2024-11-27T19:49:52.807318Z",
+      "end_time": "2024-12-05T19:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-12-05T19:30:00.000000Z",
+          "buffered_start_time": "2024-12-05T19:00:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/282e9b9e-5b03-46a1-a341-eace987e2d6e",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/bea385f3-c9a5-42fb-ba81-cfd1c7d60bd1/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Next Steps Call",
+      "start_time": "2024-12-05T19:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-27T19:49:54.499384Z",
+      "uri": "https://api.calendly.com/scheduled_events/bea385f3-c9a5-42fb-ba81-cfd1c7d60bd1"
+    },
+    {
+      "calendar_event": {
+        "external_id": "m9um54gbr58fjes20qbtuetl44",
+        "kind": "google"
+      },
+      "created_at": "2024-12-03T17:35:36.169784Z",
+      "end_time": "2024-12-05T20:00:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-12-05T20:00:00.000000Z",
+          "buffered_start_time": "2024-12-05T19:30:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/282e9b9e-5b03-46a1-a341-eace987e2d6e",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/bbf28ecb-b1ef-4a75-ba26-dde4e40048bc/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Next Steps Call",
+      "start_time": "2024-12-05T19:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-12-03T17:35:38.843499Z",
+      "uri": "https://api.calendly.com/scheduled_events/bbf28ecb-b1ef-4a75-ba26-dde4e40048bc"
+    },
+    {
+      "calendar_event": {
+        "external_id": "8phbahblm7c45jlc55mvs2ntjo",
+        "kind": "google"
+      },
+      "created_at": "2024-12-02T19:44:24.490698Z",
+      "end_time": "2024-12-05T22:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-12-05T22:30:00.000000Z",
+          "buffered_start_time": "2024-12-05T22:00:00.000000Z",
+          "user": "https://api.calendly.com/users/6641d161-b49d-47cd-b51c-632c6c537313",
+          "user_email": "marco@thedealmaker.io",
+          "user_name": "Marco Garcia"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/b6756f0a-02c6-4ce8-bd30-f5e859523524",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/7e98e3cf-96a6-4df6-9ef6-5cf2d59b4d24/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Marco: Deal Maker",
+      "start_time": "2024-12-05T22:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-12-02T19:44:26.361878Z",
+      "uri": "https://api.calendly.com/scheduled_events/7e98e3cf-96a6-4df6-9ef6-5cf2d59b4d24"
+    },
+    {
+      "calendar_event": {
+        "external_id": "i1c54bk3thq74s24bknhapqlcc",
+        "kind": "google"
+      },
+      "created_at": "2024-12-05T06:12:33.706651Z",
+      "end_time": "2024-12-06T01:00:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-12-06T01:15:00.000000Z",
+          "buffered_start_time": "2024-12-06T00:30:00.000000Z",
+          "user": "https://api.calendly.com/users/6641d161-b49d-47cd-b51c-632c6c537313",
+          "user_email": "marco@thedealmaker.io",
+          "user_name": "Marco Garcia"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/5fe1ad8e-2748-4908-b472-a6fa286d715b/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-12-06T00:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-12-05T06:12:35.018398Z",
+      "uri": "https://api.calendly.com/scheduled_events/5fe1ad8e-2748-4908-b472-a6fa286d715b"
+    },
+    {
+      "calendar_event": {
+        "external_id": "423ibc0407til4o4goa4clms0s",
+        "kind": "google"
+      },
+      "created_at": "2024-12-03T14:00:46.118163Z",
+      "end_time": "2024-12-06T14:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-12-06T14:45:00.000000Z",
+          "buffered_start_time": "2024-12-06T14:00:00.000000Z",
+          "user": "https://api.calendly.com/users/e1a5d40f-8718-4657-831b-2215b2e4b381",
+          "user_email": "bogdan@thedealmaker.io",
+          "user_name": "Bogdan Micov"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/46923930-f4bb-471d-a274-c68ff2571c60/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-12-06T14:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-12-03T14:00:48.453871Z",
+      "uri": "https://api.calendly.com/scheduled_events/46923930-f4bb-471d-a274-c68ff2571c60"
+    },
+    {
+      "calendar_event": {
+        "external_id": "neilgv7os9kekhohk6gbojrs44",
+        "kind": "google"
+      },
+      "created_at": "2024-12-05T18:30:45.728923Z",
+      "end_time": "2024-12-06T15:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-12-06T15:45:00.000000Z",
+          "buffered_start_time": "2024-12-06T15:00:00.000000Z",
+          "user": "https://api.calendly.com/users/e1a5d40f-8718-4657-831b-2215b2e4b381",
+          "user_email": "bogdan@thedealmaker.io",
+          "user_name": "Bogdan Micov"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/308988d0-0388-4b36-85ad-cd3c5b8a2683/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-12-06T15:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-12-05T18:30:47.810145Z",
+      "uri": "https://api.calendly.com/scheduled_events/308988d0-0388-4b36-85ad-cd3c5b8a2683"
+    },
+    {
+      "calendar_event": {
+        "external_id": "ksas0iamke5s4h2re6khp05uuk",
+        "kind": "google"
+      },
+      "created_at": "2024-12-05T06:30:50.427506Z",
+      "end_time": "2024-12-06T16:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-12-06T16:45:00.000000Z",
+          "buffered_start_time": "2024-12-06T16:00:00.000000Z",
+          "user": "https://api.calendly.com/users/d11ce41d-7da6-4c0a-a292-723cbfc11be9",
+          "user_email": "mazin@thedealmaker.io",
+          "user_name": "Mazin Gazar"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-12-06T16:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-12-05T06:30:51.612297Z",
+      "uri": "https://api.calendly.com/scheduled_events/bd28439a-4453-4ee9-88e7-a771a71cd7bc"
+    },
+    {
+      "calendar_event": {
+        "external_id": "q6u3qum1nallm39vh3o0bkdipo",
+        "kind": "google"
+      },
+      "created_at": "2024-12-03T07:39:03.724624Z",
+      "end_time": "2024-12-06T17:00:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-12-06T17:15:00.000000Z",
+          "buffered_start_time": "2024-12-06T16:30:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/1710b672-039b-425e-a401-a6b35d8a36e7/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-12-06T16:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-12-03T07:39:05.240644Z",
+      "uri": "https://api.calendly.com/scheduled_events/1710b672-039b-425e-a401-a6b35d8a36e7"
+    },
+    {
+      "calendar_event": {
+        "external_id": "bu30usq230ioc6enk98f3oqmts",
+        "kind": "google"
+      },
+      "created_at": "2024-12-06T01:10:40.228925Z",
+      "end_time": "2024-12-06T17:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-12-06T17:45:00.000000Z",
+          "buffered_start_time": "2024-12-06T17:00:00.000000Z",
+          "user": "https://api.calendly.com/users/6641d161-b49d-47cd-b51c-632c6c537313",
+          "user_email": "marco@thedealmaker.io",
+          "user_name": "Marco Garcia"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/1e8d70ad-2657-43a4-abb5-bd0fa6ed563d/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-12-06T17:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-12-06T01:10:41.609696Z",
+      "uri": "https://api.calendly.com/scheduled_events/1e8d70ad-2657-43a4-abb5-bd0fa6ed563d"
+    },
+    {
+      "calendar_event": {
+        "external_id": "m442hc3ouoicnsgog7khur6o3k",
+        "kind": "google"
+      },
+      "created_at": "2024-12-06T02:24:30.922094Z",
+      "end_time": "2024-12-06T18:00:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-12-06T18:15:00.000000Z",
+          "buffered_start_time": "2024-12-06T17:30:00.000000Z",
+          "user": "https://api.calendly.com/users/d11ce41d-7da6-4c0a-a292-723cbfc11be9",
+          "user_email": "mazin@thedealmaker.io",
+          "user_name": "Mazin Gazar"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-12-06T17:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-12-06T02:24:32.189071Z",
+      "uri": "https://api.calendly.com/scheduled_events/088640fa-ea0d-47e8-a99a-26d9ca7d7dcb"
+    },
+    {
+      "calendar_event": {
+        "external_id": "njetaap9qq7lo69sprl66un1v8",
+        "kind": "google"
+      },
+      "created_at": "2024-12-04T15:07:14.997154Z",
+      "end_time": "2024-12-06T19:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-12-06T19:45:00.000000Z",
+          "buffered_start_time": "2024-12-06T19:00:00.000000Z",
+          "user": "https://api.calendly.com/users/e1a5d40f-8718-4657-831b-2215b2e4b381",
+          "user_email": "bogdan@thedealmaker.io",
+          "user_name": "Bogdan Micov"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/d69a0f92-fca3-4ff5-bc0c-f2fe52a5b6a6/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-12-06T19:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-12-04T15:07:17.203260Z",
+      "uri": "https://api.calendly.com/scheduled_events/d69a0f92-fca3-4ff5-bc0c-f2fe52a5b6a6"
+    },
+    {
+      "calendar_event": {
+        "external_id": "8rp22rsc2c8as9m9qik0qfhcb0",
+        "kind": "google"
+      },
+      "created_at": "2024-12-06T02:25:13.188554Z",
+      "end_time": "2024-12-06T19:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-12-06T19:45:00.000000Z",
+          "buffered_start_time": "2024-12-06T19:00:00.000000Z",
+          "user": "https://api.calendly.com/users/f930caab-fca8-4afa-99ca-faea905061ab",
+          "user_email": "f930caab-fca8-4afa-99ca-faea905061ab@deleted.calendly.com",
+          "user_name": "deleted"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/7f4790cd-9f54-4a86-9b0d-487360099543/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-12-06T19:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-12-06T02:25:14.705371Z",
+      "uri": "https://api.calendly.com/scheduled_events/7f4790cd-9f54-4a86-9b0d-487360099543"
+    },
+    {
+      "calendar_event": {
+        "external_id": "bfb0m1f7cfi38h7oakfcaptj1k",
+        "kind": "google"
+      },
+      "created_at": "2024-11-08T00:08:43.655226Z",
+      "end_time": "2024-12-06T20:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-12-06T20:30:00.000000Z",
+          "buffered_start_time": "2024-12-06T20:00:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/282e9b9e-5b03-46a1-a341-eace987e2d6e",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/242e7f04-a560-4e28-833c-92a0cfa474ca/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Next Steps Call",
+      "start_time": "2024-12-06T20:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-11-08T00:08:45.892958Z",
+      "uri": "https://api.calendly.com/scheduled_events/242e7f04-a560-4e28-833c-92a0cfa474ca"
+    },
+    {
+      "calendar_event": {
+        "external_id": "2l92j0h7at47bj89a8celu2nc4",
+        "kind": "google"
+      },
+      "created_at": "2024-12-03T04:14:57.590233Z",
+      "end_time": "2024-12-06T21:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-12-06T21:45:00.000000Z",
+          "buffered_start_time": "2024-12-06T21:00:00.000000Z",
+          "user": "https://api.calendly.com/users/6641d161-b49d-47cd-b51c-632c6c537313",
+          "user_email": "marco@thedealmaker.io",
+          "user_name": "Marco Garcia"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/b479ae0a-23fe-42e9-901b-0c4badb24581/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-12-06T21:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-12-03T04:14:58.899574Z",
+      "uri": "https://api.calendly.com/scheduled_events/b479ae0a-23fe-42e9-901b-0c4badb24581"
+    },
+    {
+      "calendar_event": {
+        "external_id": "hvfjk8i0hfje72hefhjortb31g",
+        "kind": "google"
+      },
+      "created_at": "2024-12-06T16:03:21.774394Z",
+      "end_time": "2024-12-07T01:00:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-12-07T01:00:00.000000Z",
+          "buffered_start_time": "2024-12-07T00:30:00.000000Z",
+          "user": "https://api.calendly.com/users/d11ce41d-7da6-4c0a-a292-723cbfc11be9",
+          "user_email": "mazin@thedealmaker.io",
+          "user_name": "Mazin Gazar"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/6e3912d8-826b-4287-b7fe-d0833b750d45",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/b48c8fba-90d0-4c0c-842b-ddc3316b8442/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Next Steps Call",
+      "start_time": "2024-12-07T00:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-12-06T16:03:23.837233Z",
+      "uri": "https://api.calendly.com/scheduled_events/b48c8fba-90d0-4c0c-842b-ddc3316b8442"
+    },
+    {
+      "calendar_event": {
+        "external_id": "434bnd06st8ll91r8a36lboveg",
+        "kind": "google"
+      },
+      "created_at": "2024-12-06T01:57:06.109595Z",
+      "end_time": "2024-12-07T01:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2024-12-07T01:45:00.000000Z",
+          "buffered_start_time": "2024-12-07T01:00:00.000000Z",
+          "user": "https://api.calendly.com/users/d11ce41d-7da6-4c0a-a292-723cbfc11be9",
+          "user_email": "mazin@thedealmaker.io",
+          "user_name": "Mazin Gazar"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/05acd1bc-5566-45b4-a74a-83566b1bc773",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "DealMaker | Solution Call",
+      "start_time": "2024-12-07T01:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2024-12-06T01:57:07.194287Z",
+      "uri": "https://api.calendly.com/scheduled_events/dab5cd4c-c01e-4de2-bad5-0a45f94d0e4d"
+    }
+  ],
+  "pagination": {
+    "count": 100,
+    "next_page": "https://api.calendly.com/scheduled_events?count=100&max_start_time=2025-02-20T21%3A35%3A21.769000Z&min_start_time=2024-11-20T21%3A35%3A21.769000Z&organization=https%3A%2F%2Fapi.calendly.com%2Forganizations%2F54858790-a2e4-4696-9d19-7c6dc22ef508&page_token=-_PoRHohD743FRWoQbPsRoxibInFP_m8&status=active",
+    "next_page_token": "-_PoRHohD743FRWoQbPsRoxibInFP_m8",
+    "previous_page": null,
+    "previous_page_token": null
+  }
+}

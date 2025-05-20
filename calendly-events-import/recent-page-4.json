@@ -1,0 +1,3273 @@
+{
+  "collection": [
+    {
+      "calendar_event": {
+        "external_id": "v1a23ccbejafflsgr6ai6a2a98",
+        "kind": "google"
+      },
+      "created_at": "2025-04-28T23:33:22.400195Z",
+      "end_time": "2025-04-30T11:45:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-04-30T11:45:00.000000Z",
+          "buffered_start_time": "2025-04-30T11:30:00.000000Z",
+          "user": "https://api.calendly.com/users/8eca8ffd-9fb9-4d6f-b6aa-6d6fc8434a67",
+          "user_email": "ruben@thedealmaker.io",
+          "user_name": "Ruben Schwagermann"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/88f5122b-93e6-471c-b290-4b2f07bddf83",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-04-30T11:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-04-28T23:33:24.573711Z",
+      "uri": "https://api.calendly.com/scheduled_events/33ec838c-121d-4d1b-b99f-1c16739252ee"
+    },
+    {
+      "calendar_event": {
+        "external_id": "vca2jaic28iolll2dklain8kks",
+        "kind": "google"
+      },
+      "created_at": "2025-04-28T12:01:18.525138Z",
+      "end_time": "2025-04-30T12:15:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-04-30T12:15:00.000000Z",
+          "buffered_start_time": "2025-04-30T12:00:00.000000Z",
+          "user": "https://api.calendly.com/users/8eca8ffd-9fb9-4d6f-b6aa-6d6fc8434a67",
+          "user_email": "ruben@thedealmaker.io",
+          "user_name": "Ruben Schwagermann"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/88f5122b-93e6-471c-b290-4b2f07bddf83",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-04-30T12:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-04-28T12:01:19.831788Z",
+      "uri": "https://api.calendly.com/scheduled_events/2ac414ea-8b37-4d73-97cb-019c2b2deb95"
+    },
+    {
+      "calendar_event": {
+        "external_id": "7pfn0oagmtt95hkoq00p3u6g1s",
+        "kind": "google"
+      },
+      "created_at": "2025-04-29T14:57:38.607714Z",
+      "end_time": "2025-04-30T12:45:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-04-30T12:45:00.000000Z",
+          "buffered_start_time": "2025-04-30T12:30:00.000000Z",
+          "user": "https://api.calendly.com/users/8eca8ffd-9fb9-4d6f-b6aa-6d6fc8434a67",
+          "user_email": "ruben@thedealmaker.io",
+          "user_name": "Ruben Schwagermann"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/88f5122b-93e6-471c-b290-4b2f07bddf83",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-04-30T12:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-04-29T14:57:42.843427Z",
+      "uri": "https://api.calendly.com/scheduled_events/e4aab5c5-1f60-4ce0-aad0-4a6af7a7222b"
+    },
+    {
+      "calendar_event": {
+        "external_id": "g3eqvpldupmbrhbc5b2hh2osc0",
+        "kind": "google"
+      },
+      "created_at": "2025-04-28T15:28:55.037024Z",
+      "end_time": "2025-04-30T14:15:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-04-30T14:15:00.000000Z",
+          "buffered_start_time": "2025-04-30T14:00:00.000000Z",
+          "user": "https://api.calendly.com/users/8eca8ffd-9fb9-4d6f-b6aa-6d6fc8434a67",
+          "user_email": "ruben@thedealmaker.io",
+          "user_name": "Ruben Schwagermann"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/88f5122b-93e6-471c-b290-4b2f07bddf83",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-04-30T14:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-04-28T15:28:57.297532Z",
+      "uri": "https://api.calendly.com/scheduled_events/edbbcc27-4ff6-4c7d-8e21-9bd922aec10c"
+    },
+    {
+      "calendar_event": {
+        "external_id": "dbl3eqv0e999f5suudnkesoigs",
+        "kind": "google"
+      },
+      "created_at": "2025-04-28T20:58:05.591861Z",
+      "end_time": "2025-04-30T14:15:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-04-30T14:15:00.000000Z",
+          "buffered_start_time": "2025-04-30T14:00:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/88f5122b-93e6-471c-b290-4b2f07bddf83",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-04-30T14:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-04-28T20:58:07.616437Z",
+      "uri": "https://api.calendly.com/scheduled_events/69f86a3a-fcc5-4458-b9ae-ce89f5eea226"
+    },
+    {
+      "calendar_event": {
+        "external_id": "j3m5k6meripfj1jre06ocoqtfc",
+        "kind": "google"
+      },
+      "created_at": "2025-04-28T21:31:49.257405Z",
+      "end_time": "2025-04-30T14:45:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-04-30T14:45:00.000000Z",
+          "buffered_start_time": "2025-04-30T14:30:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/7a7eb2a3-78d6-4016-aabe-aa891fe30bb9",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/ce18f6d0-628f-40b8-a7b6-a8dc083be58f/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-04-30T14:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-04-28T21:31:51.277319Z",
+      "uri": "https://api.calendly.com/scheduled_events/ce18f6d0-628f-40b8-a7b6-a8dc083be58f"
+    },
+    {
+      "calendar_event": {
+        "external_id": "n6kc3of6q923e9pmg4n0h24io8",
+        "kind": "google"
+      },
+      "created_at": "2025-04-29T02:43:58.632954Z",
+      "end_time": "2025-04-30T14:45:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-04-30T14:45:00.000000Z",
+          "buffered_start_time": "2025-04-30T14:30:00.000000Z",
+          "user": "https://api.calendly.com/users/8eca8ffd-9fb9-4d6f-b6aa-6d6fc8434a67",
+          "user_email": "ruben@thedealmaker.io",
+          "user_name": "Ruben Schwagermann"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/88f5122b-93e6-471c-b290-4b2f07bddf83",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-04-30T14:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-04-29T02:43:59.982262Z",
+      "uri": "https://api.calendly.com/scheduled_events/8e27693e-ccc7-4378-84e9-d9349b3e364d"
+    },
+    {
+      "calendar_event": {
+        "external_id": "0e5u8cmodj3ircu8v7rb9fr1do",
+        "kind": "google"
+      },
+      "created_at": "2025-04-29T17:25:54.253048Z",
+      "end_time": "2025-04-30T15:30:00.000000Z",
+      "event_guests": [
+        {
+          "created_at": "2025-04-29T17:25:54.348242Z",
+          "email": "petehafen@gmail.com",
+          "updated_at": "2025-04-29T17:25:54.348242Z"
+        }
+      ],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-04-30T15:30:00.000000Z",
+          "buffered_start_time": "2025-04-30T15:00:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/5b26682e-54ad-4bc7-9b84-a426a6dec562",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/2ab1aff1-86b4-4b8a-8521-e6a25e559de6/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Solution Call",
+      "start_time": "2025-04-30T15:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-04-29T17:25:56.487643Z",
+      "uri": "https://api.calendly.com/scheduled_events/2ab1aff1-86b4-4b8a-8521-e6a25e559de6"
+    },
+    {
+      "calendar_event": {
+        "external_id": "skrk51jsa9lgv6ngl24r3m0754",
+        "kind": "google"
+      },
+      "created_at": "2025-04-28T18:36:12.407611Z",
+      "end_time": "2025-04-30T16:15:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-04-30T16:15:00.000000Z",
+          "buffered_start_time": "2025-04-30T16:00:00.000000Z",
+          "user": "https://api.calendly.com/users/8eca8ffd-9fb9-4d6f-b6aa-6d6fc8434a67",
+          "user_email": "ruben@thedealmaker.io",
+          "user_name": "Ruben Schwagermann"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/88f5122b-93e6-471c-b290-4b2f07bddf83",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-04-30T16:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-04-28T18:36:13.814424Z",
+      "uri": "https://api.calendly.com/scheduled_events/60419632-b969-4438-b9d9-117c5f06fcf3"
+    },
+    {
+      "calendar_event": {
+        "external_id": "j5i1d6gjgk6l85alanovh2cjuo",
+        "kind": "google"
+      },
+      "created_at": "2025-04-29T20:03:55.506987Z",
+      "end_time": "2025-04-30T17:00:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-04-30T17:00:00.000000Z",
+          "buffered_start_time": "2025-04-30T16:30:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/5b26682e-54ad-4bc7-9b84-a426a6dec562",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/aea72ec6-71da-4ee3-bba6-7af93254b404/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Solution Call",
+      "start_time": "2025-04-30T16:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-04-29T20:03:59.010899Z",
+      "uri": "https://api.calendly.com/scheduled_events/aea72ec6-71da-4ee3-bba6-7af93254b404"
+    },
+    {
+      "calendar_event": {
+        "external_id": "54rk36djhas993h8khlulh4u6s",
+        "kind": "google"
+      },
+      "created_at": "2025-04-29T06:45:57.475240Z",
+      "end_time": "2025-04-30T18:15:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-04-30T18:15:00.000000Z",
+          "buffered_start_time": "2025-04-30T18:00:00.000000Z",
+          "user": "https://api.calendly.com/users/8eca8ffd-9fb9-4d6f-b6aa-6d6fc8434a67",
+          "user_email": "ruben@thedealmaker.io",
+          "user_name": "Ruben Schwagermann"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/88f5122b-93e6-471c-b290-4b2f07bddf83",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-04-30T18:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-04-29T06:45:58.610791Z",
+      "uri": "https://api.calendly.com/scheduled_events/b43c027f-91d6-40c9-acbb-a3b18cc4d78f"
+    },
+    {
+      "calendar_event": {
+        "external_id": "6sf6jv7diub82lq311g29khqns",
+        "kind": "google"
+      },
+      "created_at": "2025-04-26T00:09:33.544809Z",
+      "end_time": "2025-04-30T19:00:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-04-30T19:00:00.000000Z",
+          "buffered_start_time": "2025-04-30T18:30:00.000000Z",
+          "user": "https://api.calendly.com/users/58653410-a745-4149-819d-9e9051da2ec3",
+          "user_email": "josh@thedealmaker.io",
+          "user_name": "Josh Sweetnam"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/319ce835-3126-4973-a9ad-2ecdbdfffef5",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/a59f08ec-2ba0-474e-8ebb-c4878c28533e/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Solution Call",
+      "start_time": "2025-04-30T18:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-04-26T00:09:35.527283Z",
+      "uri": "https://api.calendly.com/scheduled_events/a59f08ec-2ba0-474e-8ebb-c4878c28533e"
+    },
+    {
+      "calendar_event": {
+        "external_id": "rvhnq5ivrst5a28575bjkf5cf0",
+        "kind": "google"
+      },
+      "created_at": "2025-04-30T01:10:55.614084Z",
+      "end_time": "2025-04-30T18:45:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-04-30T18:45:00.000000Z",
+          "buffered_start_time": "2025-04-30T18:30:00.000000Z",
+          "user": "https://api.calendly.com/users/8eca8ffd-9fb9-4d6f-b6aa-6d6fc8434a67",
+          "user_email": "ruben@thedealmaker.io",
+          "user_name": "Ruben Schwagermann"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/88f5122b-93e6-471c-b290-4b2f07bddf83",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-04-30T18:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-04-30T01:10:57.167064Z",
+      "uri": "https://api.calendly.com/scheduled_events/acba89b2-da0c-41b3-b836-20a41127c38c"
+    },
+    {
+      "calendar_event": {
+        "external_id": "h1lb8pssh9vh25us7tk09vqf7c",
+        "kind": "google"
+      },
+      "created_at": "2025-04-29T21:18:21.760736Z",
+      "end_time": "2025-04-30T19:45:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-04-30T19:45:00.000000Z",
+          "buffered_start_time": "2025-04-30T19:30:00.000000Z",
+          "user": "https://api.calendly.com/users/8eca8ffd-9fb9-4d6f-b6aa-6d6fc8434a67",
+          "user_email": "ruben@thedealmaker.io",
+          "user_name": "Ruben Schwagermann"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/88f5122b-93e6-471c-b290-4b2f07bddf83",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-04-30T19:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-04-29T21:18:23.108985Z",
+      "uri": "https://api.calendly.com/scheduled_events/672cda42-15fb-4352-89d0-6b6612ab2791"
+    },
+    {
+      "calendar_event": {
+        "external_id": "1gd9vjms1j2jhf6h52k2edpid8",
+        "kind": "google"
+      },
+      "created_at": "2025-04-30T20:07:17.864249Z",
+      "end_time": "2025-04-30T21:15:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-04-30T21:15:00.000000Z",
+          "buffered_start_time": "2025-04-30T21:00:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/7a7eb2a3-78d6-4016-aabe-aa891fe30bb9",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/f38c5ec1-f5f5-43d1-a4e1-d4826b93deda/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-04-30T21:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-04-30T20:07:23.137369Z",
+      "uri": "https://api.calendly.com/scheduled_events/f38c5ec1-f5f5-43d1-a4e1-d4826b93deda"
+    },
+    {
+      "calendar_event": {
+        "external_id": "pigjg98fgsh981616gr884qvvo",
+        "kind": "google"
+      },
+      "created_at": "2025-04-29T16:26:24.979763Z",
+      "end_time": "2025-04-30T22:15:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-04-30T22:15:00.000000Z",
+          "buffered_start_time": "2025-04-30T22:00:00.000000Z",
+          "user": "https://api.calendly.com/users/d11ce41d-7da6-4c0a-a292-723cbfc11be9",
+          "user_email": "mazin@thedealmaker.io",
+          "user_name": "Mazin Gazar"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/88f5122b-93e6-471c-b290-4b2f07bddf83",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-04-30T22:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-04-29T16:26:26.945187Z",
+      "uri": "https://api.calendly.com/scheduled_events/ee598ae7-f47e-4672-a240-6204efd3228d"
+    },
+    {
+      "calendar_event": {
+        "external_id": "1fgr0kju39ibmb2fi7hs3dtm7s",
+        "kind": "google"
+      },
+      "created_at": "2025-04-30T17:38:37.192785Z",
+      "end_time": "2025-04-30T22:45:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-04-30T22:45:00.000000Z",
+          "buffered_start_time": "2025-04-30T22:30:00.000000Z",
+          "user": "https://api.calendly.com/users/d11ce41d-7da6-4c0a-a292-723cbfc11be9",
+          "user_email": "mazin@thedealmaker.io",
+          "user_name": "Mazin Gazar"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/88f5122b-93e6-471c-b290-4b2f07bddf83",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-04-30T22:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-04-30T17:38:38.636394Z",
+      "uri": "https://api.calendly.com/scheduled_events/a261bfad-8459-4637-92a5-f3a700d445b2"
+    },
+    {
+      "calendar_event": {
+        "external_id": "bmg48mndamb8mb03hun2ct47v0",
+        "kind": "google"
+      },
+      "created_at": "2025-04-30T12:01:15.585732Z",
+      "end_time": "2025-04-30T23:45:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-04-30T23:45:00.000000Z",
+          "buffered_start_time": "2025-04-30T23:30:00.000000Z",
+          "user": "https://api.calendly.com/users/d11ce41d-7da6-4c0a-a292-723cbfc11be9",
+          "user_email": "mazin@thedealmaker.io",
+          "user_name": "Mazin Gazar"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/88f5122b-93e6-471c-b290-4b2f07bddf83",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-04-30T23:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-04-30T12:01:17.114952Z",
+      "uri": "https://api.calendly.com/scheduled_events/dc2bc6ee-5cce-4a2b-9009-d951702ca184"
+    },
+    {
+      "calendar_event": {
+        "external_id": "c00ulnlcbuq0r2j4t8iircektc",
+        "kind": "google"
+      },
+      "created_at": "2025-05-01T00:02:45.828639Z",
+      "end_time": "2025-05-01T11:45:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-01T11:45:00.000000Z",
+          "buffered_start_time": "2025-05-01T11:30:00.000000Z",
+          "user": "https://api.calendly.com/users/8eca8ffd-9fb9-4d6f-b6aa-6d6fc8434a67",
+          "user_email": "ruben@thedealmaker.io",
+          "user_name": "Ruben Schwagermann"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/ea542731-12a1-4a1e-af39-b7492cae176f",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-01T11:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-01T00:02:50.662273Z",
+      "uri": "https://api.calendly.com/scheduled_events/e639d614-0294-48bb-a718-ca4b30b70b5e"
+    },
+    {
+      "calendar_event": {
+        "external_id": "od964qcabjpuig153rlejrnq6g",
+        "kind": "google"
+      },
+      "created_at": "2025-04-29T13:42:22.768278Z",
+      "end_time": "2025-05-01T13:45:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-01T13:45:00.000000Z",
+          "buffered_start_time": "2025-05-01T13:30:00.000000Z",
+          "user": "https://api.calendly.com/users/8eca8ffd-9fb9-4d6f-b6aa-6d6fc8434a67",
+          "user_email": "ruben@thedealmaker.io",
+          "user_name": "Ruben Schwagermann"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/88f5122b-93e6-471c-b290-4b2f07bddf83",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-01T13:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-04-29T13:42:24.782706Z",
+      "uri": "https://api.calendly.com/scheduled_events/e73310b8-b866-44cb-8943-855a20f17106"
+    },
+    {
+      "calendar_event": {
+        "external_id": "k24r2da2cav3a0gurga8m29u2s",
+        "kind": "google"
+      },
+      "created_at": "2025-04-29T14:54:09.157085Z",
+      "end_time": "2025-05-01T14:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-01T14:30:00.000000Z",
+          "buffered_start_time": "2025-05-01T14:00:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/5b26682e-54ad-4bc7-9b84-a426a6dec562",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/55f6a32a-c9a6-49a0-aeb3-579cce69ea08/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Solution Call",
+      "start_time": "2025-05-01T14:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-04-29T14:54:11.598220Z",
+      "uri": "https://api.calendly.com/scheduled_events/55f6a32a-c9a6-49a0-aeb3-579cce69ea08"
+    },
+    {
+      "calendar_event": {
+        "external_id": "9spvn0i0qfqi5j2vfa2jad4dks",
+        "kind": "google"
+      },
+      "created_at": "2025-04-29T17:29:09.079447Z",
+      "end_time": "2025-05-01T14:45:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-01T14:45:00.000000Z",
+          "buffered_start_time": "2025-05-01T14:30:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/88f5122b-93e6-471c-b290-4b2f07bddf83",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-01T14:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-04-29T17:29:10.425903Z",
+      "uri": "https://api.calendly.com/scheduled_events/a9c839db-e76e-4a05-ad17-5b6c9160aab3"
+    },
+    {
+      "calendar_event": {
+        "external_id": "im17qdat042307h7kpjt7koisc",
+        "kind": "google"
+      },
+      "created_at": "2025-04-29T17:57:11.831466Z",
+      "end_time": "2025-05-01T17:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-01T17:30:00.000000Z",
+          "buffered_start_time": "2025-05-01T17:00:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/5b26682e-54ad-4bc7-9b84-a426a6dec562",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/216d9ac8-9547-4478-96d7-a26ef951340c/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Solution Call",
+      "start_time": "2025-05-01T17:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-04-29T17:57:14.933432Z",
+      "uri": "https://api.calendly.com/scheduled_events/216d9ac8-9547-4478-96d7-a26ef951340c"
+    },
+    {
+      "calendar_event": {
+        "external_id": "322s6l51e59o3d4jrum7q3uef8",
+        "kind": "google"
+      },
+      "created_at": "2025-05-01T07:56:07.966874Z",
+      "end_time": "2025-05-01T17:15:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-01T17:15:00.000000Z",
+          "buffered_start_time": "2025-05-01T17:00:00.000000Z",
+          "user": "https://api.calendly.com/users/8eca8ffd-9fb9-4d6f-b6aa-6d6fc8434a67",
+          "user_email": "ruben@thedealmaker.io",
+          "user_name": "Ruben Schwagermann"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/88f5122b-93e6-471c-b290-4b2f07bddf83",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-01T17:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-01T07:56:09.341817Z",
+      "uri": "https://api.calendly.com/scheduled_events/ed86758e-a6c5-4ae8-82ea-0f377552ff05"
+    },
+    {
+      "calendar_event": {
+        "external_id": "s1bn691fi433l57jhsrbgfh1fs",
+        "kind": "google"
+      },
+      "created_at": "2025-04-23T18:50:20.678027Z",
+      "end_time": "2025-05-01T18:00:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-01T18:00:00.000000Z",
+          "buffered_start_time": "2025-05-01T17:30:00.000000Z",
+          "user": "https://api.calendly.com/users/58653410-a745-4149-819d-9e9051da2ec3",
+          "user_email": "josh@thedealmaker.io",
+          "user_name": "Josh Sweetnam"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/319ce835-3126-4973-a9ad-2ecdbdfffef5",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/866bf946-feb1-4c0e-a499-5664ce099002/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Solution Call",
+      "start_time": "2025-05-01T17:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-04-23T18:50:24.672106Z",
+      "uri": "https://api.calendly.com/scheduled_events/866bf946-feb1-4c0e-a499-5664ce099002"
+    },
+    {
+      "calendar_event": {
+        "external_id": "khckmu6id71jfrvorhcrqvlbfk",
+        "kind": "google"
+      },
+      "created_at": "2025-04-29T15:32:10.536852Z",
+      "end_time": "2025-05-01T19:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-01T19:30:00.000000Z",
+          "buffered_start_time": "2025-05-01T19:00:00.000000Z",
+          "user": "https://api.calendly.com/users/8eca8ffd-9fb9-4d6f-b6aa-6d6fc8434a67",
+          "user_email": "ruben@thedealmaker.io",
+          "user_name": "Ruben Schwagermann"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/f5ac64b3-9265-4104-94bc-3625e8ab5be4",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/2859aac3-6067-48e4-9676-a771df74fdab/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Solution Call",
+      "start_time": "2025-05-01T19:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-04-29T15:32:12.334753Z",
+      "uri": "https://api.calendly.com/scheduled_events/2859aac3-6067-48e4-9676-a771df74fdab"
+    },
+    {
+      "calendar_event": {
+        "external_id": "c5lf72or96kki4hgiqrhiurkmk",
+        "kind": "google"
+      },
+      "created_at": "2025-04-30T19:02:37.836481Z",
+      "end_time": "2025-05-01T20:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-01T20:30:00.000000Z",
+          "buffered_start_time": "2025-05-01T20:00:00.000000Z",
+          "user": "https://api.calendly.com/users/8a38dfe7-c1a6-4eae-acfd-2eb24121eab0",
+          "user_email": "contact@thedealmaker.io",
+          "user_name": "Dealmaker"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/89d4ac2d-88e4-4349-8629-1e5052e57ba7",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/897a6a7a-a64d-4cff-b35d-8ef1e9dcb7cf/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Deal Maker Orientation",
+      "start_time": "2025-05-01T20:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-04-30T19:02:39.819374Z",
+      "uri": "https://api.calendly.com/scheduled_events/897a6a7a-a64d-4cff-b35d-8ef1e9dcb7cf"
+    },
+    {
+      "calendar_event": {
+        "external_id": "3ensi1g5v8tlr7j11l7rn45des",
+        "kind": "google"
+      },
+      "created_at": "2025-05-01T05:10:02.538773Z",
+      "end_time": "2025-05-01T20:15:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-01T20:15:00.000000Z",
+          "buffered_start_time": "2025-05-01T20:00:00.000000Z",
+          "user": "https://api.calendly.com/users/8eca8ffd-9fb9-4d6f-b6aa-6d6fc8434a67",
+          "user_email": "ruben@thedealmaker.io",
+          "user_name": "Ruben Schwagermann"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/88f5122b-93e6-471c-b290-4b2f07bddf83",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-01T20:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-01T05:10:04.058457Z",
+      "uri": "https://api.calendly.com/scheduled_events/a56866cd-d0cd-467b-8046-c8b76ebe1f5c"
+    },
+    {
+      "calendar_event": {
+        "external_id": "cr2vc5fbf6efb31hsrdjkgo9cg",
+        "kind": "google"
+      },
+      "created_at": "2025-04-30T02:13:54.525290Z",
+      "end_time": "2025-05-01T23:15:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-01T23:15:00.000000Z",
+          "buffered_start_time": "2025-05-01T23:00:00.000000Z",
+          "user": "https://api.calendly.com/users/d11ce41d-7da6-4c0a-a292-723cbfc11be9",
+          "user_email": "mazin@thedealmaker.io",
+          "user_name": "Mazin Gazar"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/ea542731-12a1-4a1e-af39-b7492cae176f",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-01T23:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-04-30T02:13:55.969225Z",
+      "uri": "https://api.calendly.com/scheduled_events/b3f7f06c-dfc9-4297-883a-1000f882f7eb"
+    },
+    {
+      "calendar_event": {
+        "external_id": "166ca7v1ht1rc5imdis0tfoib4",
+        "kind": "google"
+      },
+      "created_at": "2025-05-01T21:40:25.426619Z",
+      "end_time": "2025-05-02T12:15:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-02T12:25:00.000000Z",
+          "buffered_start_time": "2025-05-02T12:00:00.000000Z",
+          "user": "https://api.calendly.com/users/742de81b-242d-4e00-9f1c-768ab3714e0b",
+          "user_email": "morgan@kadenwood.capital",
+          "user_name": "Morgan Clark"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/228c882c-1998-4ed7-a6ff-043a33abb485",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": "Phone Call",
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Apprentice Call",
+      "start_time": "2025-05-02T12:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-01T21:40:26.815272Z",
+      "uri": "https://api.calendly.com/scheduled_events/97b20057-b378-4d88-8434-a2ea625b7132"
+    },
+    {
+      "calendar_event": {
+        "external_id": "4slkld8s2alp7q71gqs866l7no",
+        "kind": "google"
+      },
+      "created_at": "2025-05-01T20:34:56.340050Z",
+      "end_time": "2025-05-02T18:15:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-02T18:15:00.000000Z",
+          "buffered_start_time": "2025-05-02T18:00:00.000000Z",
+          "user": "https://api.calendly.com/users/d11ce41d-7da6-4c0a-a292-723cbfc11be9",
+          "user_email": "mazin@thedealmaker.io",
+          "user_name": "Mazin Gazar"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/88f5122b-93e6-471c-b290-4b2f07bddf83",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-02T18:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-01T20:35:00.889527Z",
+      "uri": "https://api.calendly.com/scheduled_events/ae949751-54bb-4790-845c-f09bf33198e9"
+    },
+    {
+      "calendar_event": {
+        "external_id": "04rrhrd9krg6cuaeuv0ftmchhk",
+        "kind": "google"
+      },
+      "created_at": "2025-05-02T07:36:48.720861Z",
+      "end_time": "2025-05-02T18:45:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-02T18:45:00.000000Z",
+          "buffered_start_time": "2025-05-02T18:30:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/88f5122b-93e6-471c-b290-4b2f07bddf83",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-02T18:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-02T07:36:50.023558Z",
+      "uri": "https://api.calendly.com/scheduled_events/7d23118f-1210-4c29-ad09-3cf17302d163"
+    },
+    {
+      "calendar_event": {
+        "external_id": "9d0ctvsj8dhpuna900n6hksm7s",
+        "kind": "google"
+      },
+      "created_at": "2025-05-02T07:55:48.181412Z",
+      "end_time": "2025-05-02T18:45:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-02T18:45:00.000000Z",
+          "buffered_start_time": "2025-05-02T18:30:00.000000Z",
+          "user": "https://api.calendly.com/users/d11ce41d-7da6-4c0a-a292-723cbfc11be9",
+          "user_email": "mazin@thedealmaker.io",
+          "user_name": "Mazin Gazar"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/88f5122b-93e6-471c-b290-4b2f07bddf83",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-02T18:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-02T07:55:49.751782Z",
+      "uri": "https://api.calendly.com/scheduled_events/2879ce95-c0fc-4ec4-9506-d9a1f5d89d75"
+    },
+    {
+      "calendar_event": {
+        "external_id": "m3lvc1531ggpfmdkt0r0e29fuk",
+        "kind": "google"
+      },
+      "created_at": "2025-05-01T06:46:14.625127Z",
+      "end_time": "2025-05-02T19:45:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-02T19:45:00.000000Z",
+          "buffered_start_time": "2025-05-02T19:30:00.000000Z",
+          "user": "https://api.calendly.com/users/8eca8ffd-9fb9-4d6f-b6aa-6d6fc8434a67",
+          "user_email": "ruben@thedealmaker.io",
+          "user_name": "Ruben Schwagermann"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/88f5122b-93e6-471c-b290-4b2f07bddf83",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-02T19:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-01T06:46:16.064630Z",
+      "uri": "https://api.calendly.com/scheduled_events/f0ee39fc-9495-41d3-84d0-e0512d459cac"
+    },
+    {
+      "calendar_event": {
+        "external_id": "fupjt22megfr9c0rrvrc22b73o",
+        "kind": "google"
+      },
+      "created_at": "2025-05-02T02:26:40.606084Z",
+      "end_time": "2025-05-02T19:45:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-02T19:45:00.000000Z",
+          "buffered_start_time": "2025-05-02T19:30:00.000000Z",
+          "user": "https://api.calendly.com/users/d11ce41d-7da6-4c0a-a292-723cbfc11be9",
+          "user_email": "mazin@thedealmaker.io",
+          "user_name": "Mazin Gazar"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/88f5122b-93e6-471c-b290-4b2f07bddf83",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-02T19:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-02T02:26:41.934266Z",
+      "uri": "https://api.calendly.com/scheduled_events/b303afda-3498-4f68-bc6c-a1d28271a4bb"
+    },
+    {
+      "calendar_event": {
+        "external_id": "3v56ffqtkp7sjj962qv27gj0l8",
+        "kind": "google"
+      },
+      "created_at": "2025-05-01T23:34:46.538081Z",
+      "end_time": "2025-05-02T22:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-02T22:30:00.000000Z",
+          "buffered_start_time": "2025-05-02T22:00:00.000000Z",
+          "user": "https://api.calendly.com/users/d11ce41d-7da6-4c0a-a292-723cbfc11be9",
+          "user_email": "mazin@thedealmaker.io",
+          "user_name": "Mazin Gazar"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/6e3912d8-826b-4287-b7fe-d0833b750d45",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/604e3d74-540b-4aba-9814-67f2a0344be2/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Next Steps Call",
+      "start_time": "2025-05-02T22:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-01T23:34:47.974186Z",
+      "uri": "https://api.calendly.com/scheduled_events/604e3d74-540b-4aba-9814-67f2a0344be2"
+    },
+    {
+      "calendar_event": {
+        "external_id": "9lqg5fq7ppvtrhncmfbfsf0v5k",
+        "kind": "google"
+      },
+      "created_at": "2025-05-02T03:30:31.724443Z",
+      "end_time": "2025-05-02T22:45:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-02T22:45:00.000000Z",
+          "buffered_start_time": "2025-05-02T22:30:00.000000Z",
+          "user": "https://api.calendly.com/users/d11ce41d-7da6-4c0a-a292-723cbfc11be9",
+          "user_email": "mazin@thedealmaker.io",
+          "user_name": "Mazin Gazar"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/88f5122b-93e6-471c-b290-4b2f07bddf83",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-02T22:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-02T03:30:32.918118Z",
+      "uri": "https://api.calendly.com/scheduled_events/f4c77c81-dadd-4083-b51c-682fc4666ee8"
+    },
+    {
+      "calendar_event": {
+        "external_id": "q6enbtta9bctp7648hroqokam4",
+        "kind": "google"
+      },
+      "created_at": "2025-05-01T23:56:11.396134Z",
+      "end_time": "2025-05-02T23:45:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-02T23:45:00.000000Z",
+          "buffered_start_time": "2025-05-02T23:30:00.000000Z",
+          "user": "https://api.calendly.com/users/8a38dfe7-c1a6-4eae-acfd-2eb24121eab0",
+          "user_email": "contact@thedealmaker.io",
+          "user_name": "Dealmaker"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/3179a142-df6d-4fa3-b842-62ff93dfe8e0",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/0a2de1cb-d76a-42d5-b98b-bd55c167a836/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Deal Maker Mentee Call",
+      "start_time": "2025-05-02T23:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-01T23:56:12.908063Z",
+      "uri": "https://api.calendly.com/scheduled_events/0a2de1cb-d76a-42d5-b98b-bd55c167a836"
+    },
+    {
+      "calendar_event": {
+        "external_id": "3703jkaar1j8pa3ur0o0d9hv0o",
+        "kind": "google"
+      },
+      "created_at": "2025-05-02T11:40:09.859675Z",
+      "end_time": "2025-05-02T23:45:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-02T23:45:00.000000Z",
+          "buffered_start_time": "2025-05-02T23:30:00.000000Z",
+          "user": "https://api.calendly.com/users/d11ce41d-7da6-4c0a-a292-723cbfc11be9",
+          "user_email": "mazin@thedealmaker.io",
+          "user_name": "Mazin Gazar"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/88f5122b-93e6-471c-b290-4b2f07bddf83",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-02T23:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-02T11:40:11.225565Z",
+      "uri": "https://api.calendly.com/scheduled_events/86c47600-400b-4017-9294-d4e38dc7b8af"
+    },
+    {
+      "calendar_event": {
+        "external_id": "ou46hefu9l3390bpkf5gdmarg4",
+        "kind": "google"
+      },
+      "created_at": "2025-05-02T09:38:47.924459Z",
+      "end_time": "2025-05-03T22:15:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-03T22:15:00.000000Z",
+          "buffered_start_time": "2025-05-03T22:00:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/88f5122b-93e6-471c-b290-4b2f07bddf83",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-03T22:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-02T09:38:50.523785Z",
+      "uri": "https://api.calendly.com/scheduled_events/1b032111-c686-4e4b-b4cf-5065bad0c153"
+    },
+    {
+      "calendar_event": {
+        "external_id": "sbe2c89ooh2fpd4f4uis8vi5dc",
+        "kind": "google"
+      },
+      "created_at": "2025-05-04T21:07:09.485232Z",
+      "end_time": "2025-05-05T12:15:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-05T12:15:00.000000Z",
+          "buffered_start_time": "2025-05-05T12:00:00.000000Z",
+          "user": "https://api.calendly.com/users/8eca8ffd-9fb9-4d6f-b6aa-6d6fc8434a67",
+          "user_email": "ruben@thedealmaker.io",
+          "user_name": "Ruben Schwagermann"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/ea542731-12a1-4a1e-af39-b7492cae176f",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-05T12:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-04T21:07:10.784948Z",
+      "uri": "https://api.calendly.com/scheduled_events/e51835b1-ba79-4a89-ac1f-9f9884106dbf"
+    },
+    {
+      "calendar_event": {
+        "external_id": "m05ch9fib339l6brisi3u5k2bs",
+        "kind": "google"
+      },
+      "created_at": "2025-04-30T21:26:31.542316Z",
+      "end_time": "2025-05-05T14:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-05T14:30:00.000000Z",
+          "buffered_start_time": "2025-05-05T14:00:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/5b26682e-54ad-4bc7-9b84-a426a6dec562",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/633808ab-f504-4c64-b161-c5d4f8bbd481/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Solution Call",
+      "start_time": "2025-05-05T14:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-04-30T21:26:33.171097Z",
+      "uri": "https://api.calendly.com/scheduled_events/633808ab-f504-4c64-b161-c5d4f8bbd481"
+    },
+    {
+      "calendar_event": {
+        "external_id": "vibrttf0q62fkl4sacvtcsk8nc",
+        "kind": "google"
+      },
+      "created_at": "2025-05-01T14:44:58.800763Z",
+      "end_time": "2025-05-05T14:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-05T14:30:00.000000Z",
+          "buffered_start_time": "2025-05-05T14:00:00.000000Z",
+          "user": "https://api.calendly.com/users/8eca8ffd-9fb9-4d6f-b6aa-6d6fc8434a67",
+          "user_email": "ruben@thedealmaker.io",
+          "user_name": "Ruben Schwagermann"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/f5ac64b3-9265-4104-94bc-3625e8ab5be4",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/e9c82461-42ad-467d-892c-d6c328c5735f/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Solution Call",
+      "start_time": "2025-05-05T14:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-01T14:45:00.981102Z",
+      "uri": "https://api.calendly.com/scheduled_events/e9c82461-42ad-467d-892c-d6c328c5735f"
+    },
+    {
+      "calendar_event": {
+        "external_id": "bftl604jbofm4g99nifhgpivd8",
+        "kind": "google"
+      },
+      "created_at": "2025-05-03T18:56:48.366747Z",
+      "end_time": "2025-05-05T18:45:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-05T18:45:00.000000Z",
+          "buffered_start_time": "2025-05-05T18:30:00.000000Z",
+          "user": "https://api.calendly.com/users/8eca8ffd-9fb9-4d6f-b6aa-6d6fc8434a67",
+          "user_email": "ruben@thedealmaker.io",
+          "user_name": "Ruben Schwagermann"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/ea542731-12a1-4a1e-af39-b7492cae176f",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-05T18:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-03T18:56:53.978263Z",
+      "uri": "https://api.calendly.com/scheduled_events/1d9e9000-10b5-415a-a6ad-e842e694f93c"
+    },
+    {
+      "calendar_event": {
+        "external_id": "rfnc0220h5e0o77s9vao59htms",
+        "kind": "google"
+      },
+      "created_at": "2025-05-05T13:55:07.270169Z",
+      "end_time": "2025-05-05T20:15:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-05T20:15:00.000000Z",
+          "buffered_start_time": "2025-05-05T20:00:00.000000Z",
+          "user": "https://api.calendly.com/users/742de81b-242d-4e00-9f1c-768ab3714e0b",
+          "user_email": "morgan@kadenwood.capital",
+          "user_name": "Morgan Clark"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/a5ed5c7e-0179-4219-8c4f-7f50d0d21c2b",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/db6fbdad-b857-44c1-846b-a6e9cdcfb1b4/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Conversation with Morgan Clark",
+      "start_time": "2025-05-05T20:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-05T13:55:08.947019Z",
+      "uri": "https://api.calendly.com/scheduled_events/db6fbdad-b857-44c1-846b-a6e9cdcfb1b4"
+    },
+    {
+      "calendar_event": {
+        "external_id": "4av58cte9ggpqk10ddkdvot4u0",
+        "kind": "google"
+      },
+      "created_at": "2025-05-02T21:59:44.466807Z",
+      "end_time": "2025-05-05T22:45:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-05T22:45:00.000000Z",
+          "buffered_start_time": "2025-05-05T22:30:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/7a7eb2a3-78d6-4016-aabe-aa891fe30bb9",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/5f7b824d-59e7-4d8b-81b2-475cee4fee41/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-05T22:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-02T21:59:47.066979Z",
+      "uri": "https://api.calendly.com/scheduled_events/5f7b824d-59e7-4d8b-81b2-475cee4fee41"
+    },
+    {
+      "calendar_event": {
+        "external_id": "mp49v6l5mc58viud6pnf0lm8c0",
+        "kind": "google"
+      },
+      "created_at": "2025-05-05T23:45:48.116746Z",
+      "end_time": "2025-05-06T17:15:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-06T17:15:00.000000Z",
+          "buffered_start_time": "2025-05-06T17:00:00.000000Z",
+          "user": "https://api.calendly.com/users/8eca8ffd-9fb9-4d6f-b6aa-6d6fc8434a67",
+          "user_email": "ruben@thedealmaker.io",
+          "user_name": "Ruben Schwagermann"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/ea542731-12a1-4a1e-af39-b7492cae176f",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-06T17:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-05T23:45:49.416957Z",
+      "uri": "https://api.calendly.com/scheduled_events/a8496add-bb5f-4576-96e6-ee884de94a02"
+    },
+    {
+      "calendar_event": {
+        "external_id": "6mqv0gethvumt7j9pd95bkugl8",
+        "kind": "google"
+      },
+      "created_at": "2025-05-02T18:58:36.965980Z",
+      "end_time": "2025-05-06T18:00:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-06T18:00:00.000000Z",
+          "buffered_start_time": "2025-05-06T17:30:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/cfc5507c-023c-4330-bb8d-fb172d710971",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/ee6cdc23-d162-4a5f-9592-e0520f6f9f86/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Diligence Call [M]",
+      "start_time": "2025-05-06T17:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-02T18:58:39.098432Z",
+      "uri": "https://api.calendly.com/scheduled_events/ee6cdc23-d162-4a5f-9592-e0520f6f9f86"
+    },
+    {
+      "calendar_event": {
+        "external_id": "2ejlvjr9gdhvod0kn218h6b154",
+        "kind": "google"
+      },
+      "created_at": "2025-05-02T19:14:38.831358Z",
+      "end_time": "2025-05-06T21:15:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-06T21:15:00.000000Z",
+          "buffered_start_time": "2025-05-06T21:00:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/7a7eb2a3-78d6-4016-aabe-aa891fe30bb9",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/0b21f6aa-1256-45ec-902a-861bc6b75d27/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-06T21:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-02T19:14:40.211422Z",
+      "uri": "https://api.calendly.com/scheduled_events/0b21f6aa-1256-45ec-902a-861bc6b75d27"
+    },
+    {
+      "calendar_event": {
+        "external_id": "mh3ioqe8tj1ervh4s1033rdja8",
+        "kind": "google"
+      },
+      "created_at": "2025-05-06T14:34:26.151764Z",
+      "end_time": "2025-05-06T22:15:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-06T22:15:00.000000Z",
+          "buffered_start_time": "2025-05-06T22:00:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/7a7eb2a3-78d6-4016-aabe-aa891fe30bb9",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/8394dc4c-dc08-4892-bac6-964467653d58/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-06T22:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-06T14:34:28.378746Z",
+      "uri": "https://api.calendly.com/scheduled_events/8394dc4c-dc08-4892-bac6-964467653d58"
+    },
+    {
+      "calendar_event": {
+        "external_id": "umdi64hetuecjk04ja4uf48s5s",
+        "kind": "google"
+      },
+      "created_at": "2025-05-06T14:33:31.690408Z",
+      "end_time": "2025-05-07T16:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-07T16:30:00.000000Z",
+          "buffered_start_time": "2025-05-07T16:00:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/5b26682e-54ad-4bc7-9b84-a426a6dec562",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/7ca855d7-a7c3-4e11-9a8c-873875bd4d17/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Solution Call",
+      "start_time": "2025-05-07T16:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-06T14:33:38.804572Z",
+      "uri": "https://api.calendly.com/scheduled_events/7ca855d7-a7c3-4e11-9a8c-873875bd4d17"
+    },
+    {
+      "calendar_event": {
+        "external_id": "kfcvc97p5ar8ci6g6k1pi0bv3g",
+        "kind": "google"
+      },
+      "created_at": "2025-05-06T22:58:34.104571Z",
+      "end_time": "2025-05-07T18:45:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-07T18:45:00.000000Z",
+          "buffered_start_time": "2025-05-07T18:30:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/7a7eb2a3-78d6-4016-aabe-aa891fe30bb9",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/923bebee-dc41-4ce5-8012-36d0d9c14d97/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-07T18:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-06T22:58:35.877511Z",
+      "uri": "https://api.calendly.com/scheduled_events/923bebee-dc41-4ce5-8012-36d0d9c14d97"
+    },
+    {
+      "calendar_event": {
+        "external_id": "k0i3vug2sona9h7jf25c1d0p3c",
+        "kind": "google"
+      },
+      "created_at": "2025-04-30T21:41:20.368653Z",
+      "end_time": "2025-05-07T21:30:00.000000Z",
+      "event_guests": [
+        {
+          "created_at": "2025-04-30T21:41:20.400711Z",
+          "email": "maloblan72@gmail.com",
+          "updated_at": "2025-04-30T21:41:20.400711Z"
+        },
+        {
+          "created_at": "2025-04-30T21:41:20.403064Z",
+          "email": "mateolopez@vsfholdings.com",
+          "updated_at": "2025-04-30T21:41:20.403064Z"
+        }
+      ],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-07T21:30:00.000000Z",
+          "buffered_start_time": "2025-05-07T21:00:00.000000Z",
+          "user": "https://api.calendly.com/users/d11ce41d-7da6-4c0a-a292-723cbfc11be9",
+          "user_email": "mazin@thedealmaker.io",
+          "user_name": "Mazin Gazar"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/6e3912d8-826b-4287-b7fe-d0833b750d45",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/9121b7d2-a38e-4ca1-9118-eb266a21172f/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Next Steps Call",
+      "start_time": "2025-05-07T21:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-04-30T21:41:22.542445Z",
+      "uri": "https://api.calendly.com/scheduled_events/9121b7d2-a38e-4ca1-9118-eb266a21172f"
+    },
+    {
+      "calendar_event": {
+        "external_id": "mtc46no9liiae496an3gas1qhk",
+        "kind": "google"
+      },
+      "created_at": "2025-05-05T21:22:30.295261Z",
+      "end_time": "2025-05-07T21:15:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-07T21:15:00.000000Z",
+          "buffered_start_time": "2025-05-07T21:00:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/7a7eb2a3-78d6-4016-aabe-aa891fe30bb9",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/c96fb272-6a38-4694-a49c-882320afe92e/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-07T21:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-05T21:22:35.139306Z",
+      "uri": "https://api.calendly.com/scheduled_events/c96fb272-6a38-4694-a49c-882320afe92e"
+    },
+    {
+      "calendar_event": {
+        "external_id": "jufu41rrf4tr1ucml5bcqtvqgo",
+        "kind": "google"
+      },
+      "created_at": "2025-05-05T19:12:10.320924Z",
+      "end_time": "2025-05-08T18:45:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-08T18:45:00.000000Z",
+          "buffered_start_time": "2025-05-08T18:30:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/7a7eb2a3-78d6-4016-aabe-aa891fe30bb9",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/11bdb8cc-a49f-46fd-b016-705d9cb4911d/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-08T18:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-05T19:12:12.200116Z",
+      "uri": "https://api.calendly.com/scheduled_events/11bdb8cc-a49f-46fd-b016-705d9cb4911d"
+    },
+    {
+      "calendar_event": {
+        "external_id": "csj5t4m3ksc0t5uo1uqbmtcm2k",
+        "kind": "google"
+      },
+      "created_at": "2025-05-01T16:43:49.610148Z",
+      "end_time": "2025-05-08T23:45:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-08T23:45:00.000000Z",
+          "buffered_start_time": "2025-05-08T23:30:00.000000Z",
+          "user": "https://api.calendly.com/users/8a38dfe7-c1a6-4eae-acfd-2eb24121eab0",
+          "user_email": "contact@thedealmaker.io",
+          "user_name": "Dealmaker"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/3179a142-df6d-4fa3-b842-62ff93dfe8e0",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/1c9b6277-d2d5-4453-b3af-db5dc3b85628/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Deal Maker Mentee Call",
+      "start_time": "2025-05-08T23:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-01T16:43:51.235930Z",
+      "uri": "https://api.calendly.com/scheduled_events/1c9b6277-d2d5-4453-b3af-db5dc3b85628"
+    },
+    {
+      "calendar_event": {
+        "external_id": "9auts1hgusc799nggdhdn1nc0k",
+        "kind": "google"
+      },
+      "created_at": "2025-05-08T19:37:50.318922Z",
+      "end_time": "2025-05-09T00:00:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-09T00:00:00.000000Z",
+          "buffered_start_time": "2025-05-08T23:45:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/ea542731-12a1-4a1e-af39-b7492cae176f",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": "Phone Call",
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-08T23:45:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-08T19:37:51.621868Z",
+      "uri": "https://api.calendly.com/scheduled_events/a6d405eb-4c4f-4b97-8a5b-bc60644922ae"
+    },
+    {
+      "calendar_event": {
+        "external_id": "hje31pithbf13mcdvhkarrte80",
+        "kind": "google"
+      },
+      "created_at": "2025-05-05T22:50:47.945522Z",
+      "end_time": "2025-05-09T16:45:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-09T16:45:00.000000Z",
+          "buffered_start_time": "2025-05-09T16:30:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/7a7eb2a3-78d6-4016-aabe-aa891fe30bb9",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/3d78f2da-c7e9-46f3-a5ba-7f1bb9f59994/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-09T16:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-05T22:50:49.546503Z",
+      "uri": "https://api.calendly.com/scheduled_events/3d78f2da-c7e9-46f3-a5ba-7f1bb9f59994"
+    },
+    {
+      "calendar_event": {
+        "external_id": "rltob4l04qok94a7plrhfeprak",
+        "kind": "google"
+      },
+      "created_at": "2025-05-08T19:03:04.124317Z",
+      "end_time": "2025-05-09T16:45:00.000000Z",
+      "event_guests": [
+        {
+          "created_at": "2025-05-05T21:26:30.631092Z",
+          "email": "morgan@kadenwood.capital",
+          "updated_at": "2025-05-08T19:03:04.237361Z"
+        }
+      ],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-09T16:45:00.000000Z",
+          "buffered_start_time": "2025-05-09T16:30:00.000000Z",
+          "user": "https://api.calendly.com/users/8eca8ffd-9fb9-4d6f-b6aa-6d6fc8434a67",
+          "user_email": "ruben@thedealmaker.io",
+          "user_name": "Ruben Schwagermann"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/493c25e2-83ad-45f6-b495-77919ff57bb0",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "additional_info": "",
+        "location": "+1 531-534-3230",
+        "type": "inbound_call"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-09T16:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-08T19:03:06.522156Z",
+      "uri": "https://api.calendly.com/scheduled_events/ee9897b1-b69c-42cf-beef-88ed34feda91"
+    },
+    {
+      "calendar_event": {
+        "external_id": "pqrqk5ts1ps9u39dl3isofvuic",
+        "kind": "google"
+      },
+      "created_at": "2025-05-09T14:25:22.905930Z",
+      "end_time": "2025-05-10T15:15:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-10T15:15:00.000000Z",
+          "buffered_start_time": "2025-05-10T15:00:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/ea542731-12a1-4a1e-af39-b7492cae176f",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": "Phone Call",
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-10T15:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-09T14:25:25.038504Z",
+      "uri": "https://api.calendly.com/scheduled_events/37ac9532-a0b9-462c-86d9-a84b5c391a30"
+    },
+    {
+      "calendar_event": {
+        "external_id": "qfiraneta73j4gr6gfp40revfg",
+        "kind": "google"
+      },
+      "created_at": "2025-05-09T14:57:17.997169Z",
+      "end_time": "2025-05-12T15:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-12T15:30:00.000000Z",
+          "buffered_start_time": "2025-05-12T15:00:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/cfc5507c-023c-4330-bb8d-fb172d710971",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/4dc8d861-e32d-4065-bd62-b0996b8a5174/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Diligence Call [M]",
+      "start_time": "2025-05-12T15:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-09T14:57:21.720373Z",
+      "uri": "https://api.calendly.com/scheduled_events/4dc8d861-e32d-4065-bd62-b0996b8a5174"
+    },
+    {
+      "calendar_event": {
+        "external_id": "6p0742uitapsvv53e91q2htjmg",
+        "kind": "google"
+      },
+      "created_at": "2025-05-08T18:59:37.328691Z",
+      "end_time": "2025-05-12T18:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-12T18:30:00.000000Z",
+          "buffered_start_time": "2025-05-12T18:00:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/5b26682e-54ad-4bc7-9b84-a426a6dec562",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/246fc927-55e4-44ba-8fd7-57e90343fc96/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Solution Call",
+      "start_time": "2025-05-12T18:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-08T18:59:39.735819Z",
+      "uri": "https://api.calendly.com/scheduled_events/246fc927-55e4-44ba-8fd7-57e90343fc96"
+    },
+    {
+      "calendar_event": {
+        "external_id": "hpekn7flvk1fpa0e5f11c79lc4",
+        "kind": "google"
+      },
+      "created_at": "2025-05-12T17:16:15.723139Z",
+      "end_time": "2025-05-13T14:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-13T14:40:00.000000Z",
+          "buffered_start_time": "2025-05-13T14:15:00.000000Z",
+          "user": "https://api.calendly.com/users/1499fd62-b447-4cf0-8b61-90ba39827f4f",
+          "user_email": "fred@thedealmaker.io",
+          "user_name": "Fred McCurry"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/228c882c-1998-4ed7-a6ff-043a33abb485",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": null,
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Apprentice Call",
+      "start_time": "2025-05-13T14:15:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-12T17:16:19.713301Z",
+      "uri": "https://api.calendly.com/scheduled_events/75847637-7c79-49d7-9108-0b9db4d18433"
+    },
+    {
+      "calendar_event": {
+        "external_id": "k3a8ilnbjicc8jpa5ff4vloja4",
+        "kind": "google"
+      },
+      "created_at": "2025-05-12T21:26:51.560817Z",
+      "end_time": "2025-05-13T21:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-13T21:30:00.000000Z",
+          "buffered_start_time": "2025-05-13T21:00:00.000000Z",
+          "user": "https://api.calendly.com/users/d11ce41d-7da6-4c0a-a292-723cbfc11be9",
+          "user_email": "mazin@thedealmaker.io",
+          "user_name": "Mazin Gazar"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/28bfe67e-82fa-42ca-9a50-b3cc2c8c06e6",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/c8469f6d-ef95-4b74-b9c7-8264ed342f88/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Solution Call",
+      "start_time": "2025-05-13T21:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-12T21:26:54.149696Z",
+      "uri": "https://api.calendly.com/scheduled_events/c8469f6d-ef95-4b74-b9c7-8264ed342f88"
+    },
+    {
+      "calendar_event": {
+        "external_id": "t0ffspbce0ll1ko27gtq1bp6mc",
+        "kind": "google"
+      },
+      "created_at": "2025-05-13T21:51:00.532547Z",
+      "end_time": "2025-05-14T16:15:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-14T16:15:00.000000Z",
+          "buffered_start_time": "2025-05-14T16:00:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/7a7eb2a3-78d6-4016-aabe-aa891fe30bb9",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": "Phone Call",
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-14T16:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-13T21:51:02.530951Z",
+      "uri": "https://api.calendly.com/scheduled_events/9ebc7aea-3506-4079-b494-6be6373ad707"
+    },
+    {
+      "calendar_event": {
+        "external_id": "mmdirgrup2jhe1ptjqn8sckv3g",
+        "kind": "google"
+      },
+      "created_at": "2025-05-15T00:55:45.939152Z",
+      "end_time": "2025-05-15T18:15:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-15T18:15:00.000000Z",
+          "buffered_start_time": "2025-05-15T18:00:00.000000Z",
+          "user": "https://api.calendly.com/users/58653410-a745-4149-819d-9e9051da2ec3",
+          "user_email": "josh@thedealmaker.io",
+          "user_name": "Josh Sweetnam"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/ea542731-12a1-4a1e-af39-b7492cae176f",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "additional_info": "",
+        "location": "+1 754-290-6480",
+        "type": "inbound_call"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-15T18:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-15T00:55:47.477980Z",
+      "uri": "https://api.calendly.com/scheduled_events/8775ec23-5285-4577-86d6-4122f5663850"
+    },
+    {
+      "calendar_event": {
+        "external_id": "qvvpcdpsmsq5oj3gp7derrbrb8",
+        "kind": "google"
+      },
+      "created_at": "2025-05-13T16:59:52.958247Z",
+      "end_time": "2025-05-15T19:00:00.000000Z",
+      "event_guests": [
+        {
+          "created_at": "2025-05-13T16:59:53.005166Z",
+          "email": "andreemerzian@gmail.com",
+          "updated_at": "2025-05-13T16:59:53.005166Z"
+        }
+      ],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-15T19:00:00.000000Z",
+          "buffered_start_time": "2025-05-15T18:30:00.000000Z",
+          "user": "https://api.calendly.com/users/8a38dfe7-c1a6-4eae-acfd-2eb24121eab0",
+          "user_email": "contact@thedealmaker.io",
+          "user_name": "Dealmaker"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/89d4ac2d-88e4-4349-8629-1e5052e57ba7",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/c772a2ba-e4e8-404b-ba8a-55eb0f46e35b/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Deal Maker Orientation",
+      "start_time": "2025-05-15T18:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-13T16:59:55.723617Z",
+      "uri": "https://api.calendly.com/scheduled_events/c772a2ba-e4e8-404b-ba8a-55eb0f46e35b"
+    },
+    {
+      "calendar_event": {
+        "external_id": "hq8cr2ga2oekkt6aj11qsvf1jk",
+        "kind": "google"
+      },
+      "created_at": "2025-05-14T22:58:15.806864Z",
+      "end_time": "2025-05-15T20:45:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-15T20:45:00.000000Z",
+          "buffered_start_time": "2025-05-15T20:30:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/7a7eb2a3-78d6-4016-aabe-aa891fe30bb9",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": "Phone Call",
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-15T20:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-14T22:58:17.262960Z",
+      "uri": "https://api.calendly.com/scheduled_events/d47f81a6-cc82-48e2-8bfa-7f0744100453"
+    },
+    {
+      "calendar_event": {
+        "external_id": "lttk911d182sd39budkqaln9h4",
+        "kind": "google"
+      },
+      "created_at": "2025-05-14T20:48:35.161602Z",
+      "end_time": "2025-05-15T23:15:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-15T23:25:00.000000Z",
+          "buffered_start_time": "2025-05-15T23:00:00.000000Z",
+          "user": "https://api.calendly.com/users/d11ce41d-7da6-4c0a-a292-723cbfc11be9",
+          "user_email": "mazin@thedealmaker.io",
+          "user_name": "Mazin Gazar"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/228c882c-1998-4ed7-a6ff-043a33abb485",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": "Phone Call",
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Apprentice Call",
+      "start_time": "2025-05-15T23:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-14T20:48:36.617720Z",
+      "uri": "https://api.calendly.com/scheduled_events/dc5c864a-fdd8-411b-ad48-b8ac1c531f85"
+    },
+    {
+      "calendar_event": {
+        "external_id": "jcfmh5t8cibf3k3i7l0hua02no",
+        "kind": "google"
+      },
+      "created_at": "2025-05-16T15:31:28.781201Z",
+      "end_time": "2025-05-16T17:45:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-16T17:45:00.000000Z",
+          "buffered_start_time": "2025-05-16T17:30:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/7a7eb2a3-78d6-4016-aabe-aa891fe30bb9",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": "Phone Call",
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-16T17:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-16T15:31:30.617199Z",
+      "uri": "https://api.calendly.com/scheduled_events/fa53b99e-efaa-4403-af13-83caf362c1fc"
+    },
+    {
+      "calendar_event": {
+        "external_id": "5l13mv41eduojm76b6fa7h7m18",
+        "kind": "google"
+      },
+      "created_at": "2025-05-16T18:33:31.187787Z",
+      "end_time": "2025-05-16T20:15:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-16T20:15:00.000000Z",
+          "buffered_start_time": "2025-05-16T20:00:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/7a7eb2a3-78d6-4016-aabe-aa891fe30bb9",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": "Phone Call",
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-16T20:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-16T18:33:32.531304Z",
+      "uri": "https://api.calendly.com/scheduled_events/93f31c8c-5532-4c33-8b90-7ddd88920867"
+    },
+    {
+      "calendar_event": {
+        "external_id": "gtp7juvq4ougbpk1u42ld10gmg",
+        "kind": "google"
+      },
+      "created_at": "2025-05-15T16:04:12.337067Z",
+      "end_time": "2025-05-16T22:15:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-16T22:15:00.000000Z",
+          "buffered_start_time": "2025-05-16T22:00:00.000000Z",
+          "user": "https://api.calendly.com/users/8a38dfe7-c1a6-4eae-acfd-2eb24121eab0",
+          "user_email": "contact@thedealmaker.io",
+          "user_name": "Dealmaker"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/3179a142-df6d-4fa3-b842-62ff93dfe8e0",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/c4e72e3a-472a-4a4b-878f-9a156a2d10ed/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Deal Maker Mentee Call",
+      "start_time": "2025-05-16T22:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-15T16:04:15.859707Z",
+      "uri": "https://api.calendly.com/scheduled_events/c4e72e3a-472a-4a4b-878f-9a156a2d10ed"
+    },
+    {
+      "calendar_event": {
+        "external_id": "8eljnk8fchqsiridr8ubdnda2o",
+        "kind": "google"
+      },
+      "created_at": "2025-05-17T01:16:08.766072Z",
+      "end_time": "2025-05-18T13:45:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-18T13:45:00.000000Z",
+          "buffered_start_time": "2025-05-18T13:30:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/ea542731-12a1-4a1e-af39-b7492cae176f",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": "Phone Call",
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-18T13:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-17T01:16:09.864595Z",
+      "uri": "https://api.calendly.com/scheduled_events/40da22f1-3d52-41c7-8489-876f1dd323f8"
+    },
+    {
+      "calendar_event": {
+        "external_id": "vbnv2eia5jbh5tqt47as1dqkmo",
+        "kind": "google"
+      },
+      "created_at": "2025-05-17T14:32:59.261370Z",
+      "end_time": "2025-05-19T12:15:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-19T12:15:00.000000Z",
+          "buffered_start_time": "2025-05-19T12:00:00.000000Z",
+          "user": "https://api.calendly.com/users/8eca8ffd-9fb9-4d6f-b6aa-6d6fc8434a67",
+          "user_email": "ruben@thedealmaker.io",
+          "user_name": "Ruben Schwagermann"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/ea542731-12a1-4a1e-af39-b7492cae176f",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "additional_info": "",
+        "location": "+1 531-534-3230",
+        "type": "inbound_call"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-19T12:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-17T14:33:00.587119Z",
+      "uri": "https://api.calendly.com/scheduled_events/8fbc7e7c-a4cf-4d9f-9c20-9805b248a7f9"
+    },
+    {
+      "calendar_event": {
+        "external_id": "rtvd49a24uc38btlav3galvmt8",
+        "kind": "google"
+      },
+      "created_at": "2025-05-17T22:46:02.716635Z",
+      "end_time": "2025-05-19T12:45:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-19T12:45:00.000000Z",
+          "buffered_start_time": "2025-05-19T12:30:00.000000Z",
+          "user": "https://api.calendly.com/users/8eca8ffd-9fb9-4d6f-b6aa-6d6fc8434a67",
+          "user_email": "ruben@thedealmaker.io",
+          "user_name": "Ruben Schwagermann"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/ea542731-12a1-4a1e-af39-b7492cae176f",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "additional_info": "",
+        "location": "+1 531-534-3230",
+        "type": "inbound_call"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-19T12:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-17T22:46:04.060146Z",
+      "uri": "https://api.calendly.com/scheduled_events/f2e149c8-5f4d-441e-9cc4-a649a60c39d8"
+    },
+    {
+      "calendar_event": {
+        "external_id": "u039j5juvo8pusv2s232ai11qo",
+        "kind": "google"
+      },
+      "created_at": "2025-05-16T13:42:43.573061Z",
+      "end_time": "2025-05-19T14:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-19T14:30:00.000000Z",
+          "buffered_start_time": "2025-05-19T14:00:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/5b26682e-54ad-4bc7-9b84-a426a6dec562",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/75ea8686-59b3-40f1-9883-15f8b9cbcd6d/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Solution Call",
+      "start_time": "2025-05-19T14:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-16T13:42:45.677047Z",
+      "uri": "https://api.calendly.com/scheduled_events/75ea8686-59b3-40f1-9883-15f8b9cbcd6d"
+    },
+    {
+      "calendar_event": {
+        "external_id": "dnn9jqb6bov9gs5s5jiodk7e7s",
+        "kind": "google"
+      },
+      "created_at": "2025-05-17T15:41:57.741436Z",
+      "end_time": "2025-05-19T15:45:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-19T15:45:00.000000Z",
+          "buffered_start_time": "2025-05-19T15:30:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/ea542731-12a1-4a1e-af39-b7492cae176f",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": "Phone Call",
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-19T15:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-17T15:41:58.853790Z",
+      "uri": "https://api.calendly.com/scheduled_events/7101699f-9298-4cf5-936a-0bc29f2515ef"
+    },
+    {
+      "calendar_event": {
+        "external_id": "d2vdbs1kdlrbr9vfp7ufe4vf48",
+        "kind": "google"
+      },
+      "created_at": "2025-05-16T23:55:02.437943Z",
+      "end_time": "2025-05-19T17:00:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-19T17:00:00.000000Z",
+          "buffered_start_time": "2025-05-19T16:30:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/5b26682e-54ad-4bc7-9b84-a426a6dec562",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/84af9b05-d49b-46df-9406-500b4898777d/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Solution Call",
+      "start_time": "2025-05-19T16:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-16T23:55:04.020497Z",
+      "uri": "https://api.calendly.com/scheduled_events/84af9b05-d49b-46df-9406-500b4898777d"
+    },
+    {
+      "calendar_event": {
+        "external_id": "ghoof4m6g8dsqr9i0uemk7u04c",
+        "kind": "google"
+      },
+      "created_at": "2025-05-19T15:08:45.058902Z",
+      "end_time": "2025-05-19T20:15:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-19T20:15:00.000000Z",
+          "buffered_start_time": "2025-05-19T20:00:00.000000Z",
+          "user": "https://api.calendly.com/users/8eca8ffd-9fb9-4d6f-b6aa-6d6fc8434a67",
+          "user_email": "ruben@thedealmaker.io",
+          "user_name": "Ruben Schwagermann"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/ea542731-12a1-4a1e-af39-b7492cae176f",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "additional_info": "",
+        "location": "+1 531-534-3230",
+        "type": "inbound_call"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-19T20:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-19T15:08:46.806600Z",
+      "uri": "https://api.calendly.com/scheduled_events/9c1b6bc2-54ad-4cfc-b6b6-a8eb819c8201"
+    },
+    {
+      "calendar_event": {
+        "external_id": "7tvtoopsftm34jl43oof2stg0g",
+        "kind": "google"
+      },
+      "created_at": "2025-05-18T22:18:50.253802Z",
+      "end_time": "2025-05-19T20:45:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-19T20:45:00.000000Z",
+          "buffered_start_time": "2025-05-19T20:30:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/ea542731-12a1-4a1e-af39-b7492cae176f",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": "Phone Call",
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-19T20:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-18T22:18:51.989969Z",
+      "uri": "https://api.calendly.com/scheduled_events/757e1e42-9916-4e04-a583-8ce1dd5308eb"
+    },
+    {
+      "calendar_event": {
+        "external_id": "64cuc9m0pmjp7qk2ljebqh03ek",
+        "kind": "google"
+      },
+      "created_at": "2025-05-19T18:13:14.678849Z",
+      "end_time": "2025-05-19T20:45:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-19T20:45:00.000000Z",
+          "buffered_start_time": "2025-05-19T20:30:00.000000Z",
+          "user": "https://api.calendly.com/users/d11ce41d-7da6-4c0a-a292-723cbfc11be9",
+          "user_email": "mazin@thedealmaker.io",
+          "user_name": "Mazin Gazar"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/a914a8de-49d1-4032-b4a1-247ef8e6c8bb",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "additional_info": "",
+        "location": "+1 202-915-9498",
+        "type": "inbound_call"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-19T20:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-19T18:13:17.845149Z",
+      "uri": "https://api.calendly.com/scheduled_events/27661229-d2ea-4334-b5de-333534c7a8a1"
+    },
+    {
+      "calendar_event": {
+        "external_id": "dnt1scqbjf2978el2630l43qek",
+        "kind": "google"
+      },
+      "created_at": "2025-05-19T14:59:19.749865Z",
+      "end_time": "2025-05-19T22:15:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-19T22:15:00.000000Z",
+          "buffered_start_time": "2025-05-19T22:00:00.000000Z",
+          "user": "https://api.calendly.com/users/8a38dfe7-c1a6-4eae-acfd-2eb24121eab0",
+          "user_email": "contact@thedealmaker.io",
+          "user_name": "Dealmaker"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/3179a142-df6d-4fa3-b842-62ff93dfe8e0",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "join_url": "https://calendly.com/events/272d3bf4-b6af-48e0-aa72-b4b052b0e230/google_meet",
+        "status": "pushed",
+        "type": "google_conference"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Deal Maker Mentee Call",
+      "start_time": "2025-05-19T22:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-19T14:59:22.703009Z",
+      "uri": "https://api.calendly.com/scheduled_events/272d3bf4-b6af-48e0-aa72-b4b052b0e230"
+    },
+    {
+      "calendar_event": {
+        "external_id": "j5kncr1snj5oc1815ldd5vpe70",
+        "kind": "google"
+      },
+      "created_at": "2025-05-17T00:34:20.345705Z",
+      "end_time": "2025-05-19T22:45:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-19T22:45:00.000000Z",
+          "buffered_start_time": "2025-05-19T22:30:00.000000Z",
+          "user": "https://api.calendly.com/users/46f58a05-085e-4f54-99aa-171857823602",
+          "user_email": "bryann@thedealmaker.io",
+          "user_name": "Bryann Cabral"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/7a7eb2a3-78d6-4016-aabe-aa891fe30bb9",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "location": "Phone Call",
+        "type": "custom"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-19T22:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-17T00:34:21.535193Z",
+      "uri": "https://api.calendly.com/scheduled_events/1a11dfd8-47e4-4de6-9150-7b001e2728cd"
+    },
+    {
+      "calendar_event": {
+        "external_id": "9p68ealknrk8ph5ht8njlik8vo",
+        "kind": "google"
+      },
+      "created_at": "2025-05-19T17:31:11.270484Z",
+      "end_time": "2025-05-19T22:45:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-19T22:45:00.000000Z",
+          "buffered_start_time": "2025-05-19T22:30:00.000000Z",
+          "user": "https://api.calendly.com/users/d11ce41d-7da6-4c0a-a292-723cbfc11be9",
+          "user_email": "mazin@thedealmaker.io",
+          "user_name": "Mazin Gazar"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/ea542731-12a1-4a1e-af39-b7492cae176f",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "additional_info": "",
+        "location": "+1 202-915-9498",
+        "type": "inbound_call"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-19T22:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-19T17:31:13.287597Z",
+      "uri": "https://api.calendly.com/scheduled_events/f85f217f-f802-44bd-892d-d25387599a05"
+    },
+    {
+      "calendar_event": {
+        "external_id": "7l56h6ctveeg0f216fog0uc23k",
+        "kind": "google"
+      },
+      "created_at": "2025-05-19T17:56:55.183686Z",
+      "end_time": "2025-05-19T22:45:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-19T22:45:00.000000Z",
+          "buffered_start_time": "2025-05-19T22:30:00.000000Z",
+          "user": "https://api.calendly.com/users/58653410-a745-4149-819d-9e9051da2ec3",
+          "user_email": "josh@thedealmaker.io",
+          "user_name": "Josh Sweetnam"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/ea542731-12a1-4a1e-af39-b7492cae176f",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "additional_info": "",
+        "location": "+1 754-290-6480",
+        "type": "inbound_call"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-19T22:30:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-19T17:56:57.005692Z",
+      "uri": "https://api.calendly.com/scheduled_events/e07402b1-6382-4b7d-b9cc-a04da31411ab"
+    },
+    {
+      "calendar_event": {
+        "external_id": "cubhlgp6ddfevvtdok2g00er60",
+        "kind": "google"
+      },
+      "created_at": "2025-05-19T22:25:37.413735Z",
+      "end_time": "2025-05-20T13:15:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-20T13:15:00.000000Z",
+          "buffered_start_time": "2025-05-20T13:00:00.000000Z",
+          "user": "https://api.calendly.com/users/8eca8ffd-9fb9-4d6f-b6aa-6d6fc8434a67",
+          "user_email": "ruben@thedealmaker.io",
+          "user_name": "Ruben Schwagermann"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/ea542731-12a1-4a1e-af39-b7492cae176f",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "additional_info": "",
+        "location": "+1 531-534-3230",
+        "type": "inbound_call"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-20T13:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-19T22:25:38.547278Z",
+      "uri": "https://api.calendly.com/scheduled_events/3c70f3f1-4cc0-4076-bd82-1d38f34c327a"
+    },
+    {
+      "calendar_event": {
+        "external_id": "6oc3f8mt2cijvqj81qdlcvci74",
+        "kind": "google"
+      },
+      "created_at": "2025-05-19T22:24:28.140754Z",
+      "end_time": "2025-05-20T13:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-20T13:30:00.000000Z",
+          "buffered_start_time": "2025-05-20T13:15:00.000000Z",
+          "user": "https://api.calendly.com/users/8eca8ffd-9fb9-4d6f-b6aa-6d6fc8434a67",
+          "user_email": "ruben@thedealmaker.io",
+          "user_name": "Ruben Schwagermann"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/ea542731-12a1-4a1e-af39-b7492cae176f",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "additional_info": "",
+        "location": "+1 531-534-3230",
+        "type": "inbound_call"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-20T13:15:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-19T22:24:29.394767Z",
+      "uri": "https://api.calendly.com/scheduled_events/fe822ac3-bb28-4473-ac13-286ce3a7e546"
+    },
+    {
+      "calendar_event": {
+        "external_id": "561ds38kf1dso8tlgirv2j3jl4",
+        "kind": "google"
+      },
+      "created_at": "2025-05-20T01:56:47.077873Z",
+      "end_time": "2025-05-20T15:15:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-20T15:15:00.000000Z",
+          "buffered_start_time": "2025-05-20T15:00:00.000000Z",
+          "user": "https://api.calendly.com/users/8eca8ffd-9fb9-4d6f-b6aa-6d6fc8434a67",
+          "user_email": "ruben@thedealmaker.io",
+          "user_name": "Ruben Schwagermann"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/ea542731-12a1-4a1e-af39-b7492cae176f",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "additional_info": "",
+        "location": "+1 531-534-3230",
+        "type": "inbound_call"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-20T15:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-20T01:56:48.111925Z",
+      "uri": "https://api.calendly.com/scheduled_events/73ea85ac-2b6b-4eef-b061-ca6beeaef942"
+    },
+    {
+      "calendar_event": {
+        "external_id": "re593u7ra87aj8hcafq3vbdis4",
+        "kind": "google"
+      },
+      "created_at": "2025-05-15T21:19:06.687092Z",
+      "end_time": "2025-05-20T16:30:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-20T16:30:00.000000Z",
+          "buffered_start_time": "2025-05-20T16:00:00.000000Z",
+          "user": "https://api.calendly.com/users/1499fd62-b447-4cf0-8b61-90ba39827f4f",
+          "user_email": "fred@thedealmaker.io",
+          "user_name": "Fred McCurry"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/9fba3efc-0d50-4269-bf52-7a340ec82e76",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "additional_info": "",
+        "location": "+1 864-635-4908",
+        "type": "inbound_call"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "30 Minute Meeting",
+      "start_time": "2025-05-20T16:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-15T21:19:08.160072Z",
+      "uri": "https://api.calendly.com/scheduled_events/6607fcfc-a31e-454e-831b-2a74fdf46557"
+    },
+    {
+      "calendar_event": {
+        "external_id": "j9tcl60lqn00sf8m1tvgl5kftk",
+        "kind": "google"
+      },
+      "created_at": "2025-05-20T08:06:02.684133Z",
+      "end_time": "2025-05-20T17:15:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-20T17:15:00.000000Z",
+          "buffered_start_time": "2025-05-20T17:00:00.000000Z",
+          "user": "https://api.calendly.com/users/8eca8ffd-9fb9-4d6f-b6aa-6d6fc8434a67",
+          "user_email": "ruben@thedealmaker.io",
+          "user_name": "Ruben Schwagermann"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/ea542731-12a1-4a1e-af39-b7492cae176f",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "additional_info": "",
+        "location": "+1 531-534-3230",
+        "type": "inbound_call"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-20T17:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-20T08:06:04.310535Z",
+      "uri": "https://api.calendly.com/scheduled_events/aac7987e-2864-4c1b-8b7d-65a90f0d62f8"
+    },
+    {
+      "calendar_event": {
+        "external_id": "9ge09im0c46d999pen61nsvid4",
+        "kind": "google"
+      },
+      "created_at": "2025-05-20T13:25:18.948043Z",
+      "end_time": "2025-05-20T19:15:00.000000Z",
+      "event_guests": [],
+      "event_memberships": [
+        {
+          "buffered_end_time": "2025-05-20T19:15:00.000000Z",
+          "buffered_start_time": "2025-05-20T19:00:00.000000Z",
+          "user": "https://api.calendly.com/users/8eca8ffd-9fb9-4d6f-b6aa-6d6fc8434a67",
+          "user_email": "ruben@thedealmaker.io",
+          "user_name": "Ruben Schwagermann"
+        }
+      ],
+      "event_type": "https://api.calendly.com/event_types/ea542731-12a1-4a1e-af39-b7492cae176f",
+      "invitees_counter": {
+        "active": 1,
+        "limit": 1,
+        "total": 1
+      },
+      "location": {
+        "additional_info": "",
+        "location": "+1 531-534-3230",
+        "type": "inbound_call"
+      },
+      "meeting_notes_html": null,
+      "meeting_notes_plain": null,
+      "name": "Dealmaker | Introduction Call",
+      "start_time": "2025-05-20T19:00:00.000000Z",
+      "status": "active",
+      "updated_at": "2025-05-20T13:25:21.926475Z",
+      "uri": "https://api.calendly.com/scheduled_events/0e3e8618-ee5e-4844-872a-1540f48bfe2d"
+    }
+  ],
+  "pagination": {
+    "count": 91,
+    "next_page": null,
+    "next_page_token": null,
+    "previous_page": "https://api.calendly.com/scheduled_events?count=100&max_start_time=2025-05-20T21%3A35%3A21.769000Z&min_start_time=2025-02-20T21%3A35%3A21.769000Z&organization=https%3A%2F%2Fapi.calendly.com%2Forganizations%2F54858790-a2e4-4696-9d19-7c6dc22ef508&page_token=rka9BUom4z4CsVtBzYzN-3r914qbRpwF&status=active",
+    "previous_page_token": "rka9BUom4z4CsVtBzYzN-3r914qbRpwF"
+  }
+}
