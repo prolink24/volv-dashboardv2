@@ -52,6 +52,98 @@ async function testApiConnection() {
 }
 
 /**
+ * Search for leads in Close CRM by email address
+ * @param email The email address to search for
+ */
+export async function searchLeadsByEmail(email: string) {
+  try {
+    console.log(`Searching for leads in Close CRM with email: ${email}`);
+    if (!email) {
+      return { success: false, error: 'No email provided', leads: [] };
+    }
+    
+    // Normalize email
+    const normalizedEmail = email.trim().toLowerCase();
+    
+    const response = await closeApiClient.get('/lead', {
+      params: {
+        query: `email:${normalizedEmail}`,
+        _fields: 'id,display_name,contacts,status_label,organization_name,addresses'
+      }
+    });
+    
+    if (response.data && response.data.data && Array.isArray(response.data.data)) {
+      console.log(`Found ${response.data.data.length} leads matching email ${normalizedEmail}`);
+      return { 
+        success: true, 
+        leads: response.data.data,
+        count: response.data.data.length
+      };
+    }
+    
+    return { success: true, leads: [], count: 0 };
+  } catch (error: any) {
+    console.error(`Error searching for leads by email ${email}:`, error.message);
+    return { 
+      success: false, 
+      error: error.message || 'Unknown error searching for leads', 
+      leads: [] 
+    };
+  }
+}
+
+/**
+ * Create a new lead in Close CRM
+ * @param leadData Data for the new lead
+ */
+export async function createLead(leadData: {
+  name: string;
+  contacts: Array<{
+    name: string;
+    title?: string;
+    emails?: Array<{ email: string; type: string }>;
+    phones?: Array<{ phone: string; type: string }>;
+  }>;
+  status?: string;
+  description?: string;
+}) {
+  try {
+    console.log(`Creating new lead in Close CRM: ${leadData.name}`);
+    
+    // Validate required fields
+    if (!leadData.name) {
+      return { success: false, error: 'Lead name is required', lead: null };
+    }
+    
+    if (!leadData.contacts || !Array.isArray(leadData.contacts) || leadData.contacts.length === 0) {
+      return { success: false, error: 'At least one contact is required', lead: null };
+    }
+    
+    // Set default status if not provided
+    const payload = {
+      ...leadData,
+      status: leadData.status || 'Potential'
+    };
+    
+    const response = await closeApiClient.post('/lead', payload);
+    
+    if (response.data && response.data.id) {
+      console.log(`Successfully created lead in Close CRM with ID: ${response.data.id}`);
+      return { success: true, lead: response.data };
+    }
+    
+    return { success: false, error: 'Failed to create lead', lead: null };
+  } catch (error: any) {
+    console.error('Error creating lead in Close CRM:', error.message);
+    return { 
+      success: false, 
+      error: error.message || 'Unknown error creating lead', 
+      lead: null 
+    };
+  }
+}
+
+/**
  * Sync all leads from Close CRM
  * Handles pagination and batch processing for 5000+ contacts
  * @param resetMode If true, create new contacts instead of updating existing ones

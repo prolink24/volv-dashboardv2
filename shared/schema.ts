@@ -81,6 +81,10 @@ export const contacts = pgTable("contacts", {
   phone: text("phone"),
   company: text("company"),
   title: text("title"),
+  // External system IDs for cross-platform matching
+  closeId: text("close_id"), // Close CRM lead ID
+  calendlyId: text("calendly_id"), // Calendly invitee ID
+  typeformId: text("typeform_id"), // Typeform response ID
   // Source tracking
   sourceId: text("source_id"),
   leadSource: text("lead_source"), // "close", "calendly", "typeform" or comma-separated combination
