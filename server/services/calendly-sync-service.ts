@@ -314,29 +314,26 @@ export const processCalendlyEvent = async (event: any) => {
   }
   
   try {
-    // Use SQL directly to avoid Drizzle validation issues
-    const result = await db.execute(
-      `INSERT INTO meetings (
+    // Insert directly into the database using a more direct approach
+    const result = await db.execute(sql`
+      INSERT INTO meetings (
         calendly_event_id, type, title, start_time, end_time, duration, status,
         booked_at, assigned_to, contact_id, invitee_email, invitee_name
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
-      ) RETURNING id`,
-      [
-        eventId,
-        determineEventType(event.name),
-        event.name || 'Calendly Meeting',
-        new Date(event.start_time),
-        new Date(event.end_time),
-        differenceInMinutes(new Date(event.end_time), new Date(event.start_time)),
-        event.status,
-        event.created_at ? new Date(event.created_at) : null,
-        determineAssignedUser(event),
-        contact.id,
-        invitees.length > 0 ? invitees[0].email : null,
-        invitees.length > 0 ? invitees[0].name : null
-      ]
-    );
+        ${eventId},
+        ${determineEventType(event.name)},
+        ${event.name || 'Calendly Meeting'},
+        ${new Date(event.start_time)},
+        ${new Date(event.end_time)},
+        ${differenceInMinutes(new Date(event.end_time), new Date(event.start_time))},
+        ${event.status},
+        ${event.created_at ? new Date(event.created_at) : null},
+        ${determineAssignedUser(event)},
+        ${contact.id},
+        ${invitees.length > 0 ? invitees[0].email : null},
+        ${invitees.length > 0 ? invitees[0].name : null}
+      ) RETURNING id
+    `);
     
     console.log(`Successfully imported event: ${eventId}`);
     return true;
@@ -351,11 +348,12 @@ export const processCalendlyEvent = async (event: any) => {
  */
 export const syncCalendlyEvents = async (options: { 
   includeHistorical?: boolean,
-  daysBack?: number
+  daysBack?: number,
+  limit?: number
 } = {}) => {
   try {
-    const { includeHistorical = false, daysBack = 30 } = options;
-    console.log(`Starting Calendly sync (includeHistorical: ${includeHistorical}, daysBack: ${daysBack})`);
+    const { includeHistorical = false, daysBack = 30, limit = 0 } = options;
+    console.log(`Starting Calendly sync (includeHistorical: ${includeHistorical}, daysBack: ${daysBack}, limit: ${limit})`);
     
     // Define time periods to sync
     const now = new Date();
@@ -386,6 +384,7 @@ export const syncCalendlyEvents = async (options: {
     // Process each time period
     let totalEvents = 0;
     let importedEvents = 0;
+    let totalEventsCounted = 0;
     
     for (const period of periods) {
       // Get events for this period
@@ -397,16 +396,36 @@ export const syncCalendlyEvents = async (options: {
       
       totalEvents += events.length;
       
+      // Process events (with limit if specified)
+      let eventsToProcess = events;
+      
+      // Apply limit if specified
+      if (limit > 0) {
+        const remainingLimit = limit - totalEventsCounted;
+        if (remainingLimit <= 0) {
+          console.log(`Reached limit of ${limit} events, skipping ${period.label} period`);
+          continue;
+        }
+        
+        // Take only up to the remaining limit
+        eventsToProcess = events.slice(0, remainingLimit);
+        console.log(`Processing ${eventsToProcess.length} of ${events.length} events for ${period.label} period (limit: ${limit})`);
+        totalEventsCounted += eventsToProcess.length;
+      }
+      
       // Process each event
-      for (const event of events) {
+      for (const event of eventsToProcess) {
         const success = await processCalendlyEvent(event);
         if (success) {
           importedEvents++;
         }
+        
+        // Short delay to avoid overwhelming the database
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
     }
     
-    console.log(`Calendly sync complete. Processed ${totalEvents} events, imported ${importedEvents}`);
+    console.log(`Calendly sync complete. Processed ${totalEventsCounted > 0 ? totalEventsCounted : totalEvents} events, imported ${importedEvents}`);
     return { totalEvents, importedEvents };
     
   } catch (error: any) {
