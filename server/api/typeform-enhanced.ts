@@ -10,7 +10,7 @@
 
 import { Router } from 'express';
 import { db } from '../db';
-import { contacts, formSubmissions } from '../../shared/schema';
+import { contacts, forms } from '../../shared/schema';
 import { and, eq, isNull, like, or } from 'drizzle-orm';
 import axios from 'axios';
 
@@ -204,16 +204,16 @@ router.get('/health', async (req, res) => {
     
     // Count total form submissions
     const totalFormSubmissions = await db.select({
-      count: db.fn.count(formSubmissions.id)
+      count: db.fn.count(forms.id)
     })
-    .from(formSubmissions);
+    .from(forms);
     
     // Count orphaned form submissions
     const orphanedFormSubmissions = await db.select({
-      count: db.fn.count(formSubmissions.id)
+      count: db.fn.count(forms.id)
     })
-    .from(formSubmissions)
-    .where(isNull(formSubmissions.contactId));
+    .from(forms)
+    .where(isNull(forms.contactId));
     
     // Calculate multi-source contacts
     const multiSourceContacts = await db.select({
