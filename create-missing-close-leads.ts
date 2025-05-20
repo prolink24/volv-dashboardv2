@@ -73,9 +73,9 @@ async function createMissingCloseLeads() {
   const unlinkedContacts = await db.select()
     .from(contacts)
     .where(isNull(contacts.closeId))
-    .limit(25); // Process 25 contacts per batch
+    .limit(50); // Process 50 contacts per batch
   
-  log.info(`Found ${unlinkedContacts.length} contacts without Close CRM IDs (processing 25)`);
+  log.info(`Found ${unlinkedContacts.length} contacts without Close CRM IDs (processing 50)`);
   
   let created = 0;
   let updated = 0;
