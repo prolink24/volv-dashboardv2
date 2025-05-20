@@ -18,6 +18,7 @@ import { WebSocketServer } from "ws";
 import { z } from "zod";
 import metricsRouter from "./routes/metrics";
 import cacheService from "./services/cache";
+import calendlyImportRouter from "./routes/import-calendly-events";
 import settingsRouter from "./api/settings";
 import kpiConfiguratorRouter from "./api/kpi-configurator";
 import customerJourneyRoutes from "./routes/customer-journey";

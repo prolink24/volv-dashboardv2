@@ -73,4 +73,34 @@ router.get('/recent-calendly', async (req, res) => {
   }
 });
 
+/**
+ * Special endpoint to fix Calendly data for dashboard
+ * GET /api/sync/fix-calendly-data
+ */
+router.get('/fix-calendly-data', async (req, res) => {
+  try {
+    console.log('Calendly data fix requested for dashboard');
+    
+    // Run a complete sync with all recent events (no limit)
+    const result = await calendlySyncService.syncCalendlyEvents({
+      includeHistorical: true,
+      daysBack: 90, // Get events from the last 90 days
+      limit: 0      // No limit - import all events
+    });
+    
+    // Return the results
+    res.json({
+      success: true,
+      message: `Calendly data fix completed. Processed ${result.totalEvents} events, imported ${result.importedEvents} new events.`,
+      data: result
+    });
+  } catch (error: any) {
+    console.error('Calendly data fix failed:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: `Calendly data fix failed: ${error.message}` 
+    });
+  }
+});
+
 export default router;
