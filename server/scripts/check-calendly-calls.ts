@@ -1,288 +1,207 @@
 /**
- * Check Calendly Calls
+ * Check Missing Calendly Calls
  * 
- * This script directly analyzes the database and API responses to diagnose
- * why Calendly calls aren't showing correctly on the dashboard for the
- * last 30 days timeframe.
+ * This script performs a direct comparison between calls in the Calendly API
+ * and what exists in our database to identify missing events.
  */
 
-import { db } from '../db';
-import { meetings } from '@shared/schema';
-import { sql, count, gte, lte, and, isNotNull } from 'drizzle-orm';
 import axios from 'axios';
+import { drizzle } from 'drizzle-orm/neon-serverless';
+import { neon } from '@neondatabase/serverless';
+import { eq, gte, lte, isNull, and } from 'drizzle-orm';
 import chalk from 'chalk';
+import { format } from 'date-fns';
+import dotenv from 'dotenv';
 
-// Helper functions
-function log(message: string): void {
-  console.log(`${chalk.blue('ℹ')} ${message}`);
-}
+// Load environment variables
+dotenv.config();
 
-function success(message: string): void {
-  console.log(`${chalk.green('✓')} ${message}`);
-}
+// Database connection
+const sql = neon(process.env.DATABASE_URL!);
+const db = drizzle(sql);
 
-function warn(message: string): void {
-  console.log(`${chalk.yellow('⚠')} ${message}`);
-}
+// Import schema
+import { meetings } from '../../shared/schema';
 
-function error(message: string): void {
-  console.log(`${chalk.red('✗')} ${message}`);
-}
+// Calendly API client setup
+const CALENDLY_API_KEY = process.env.CALENDLY_API_KEY;
+const CALENDLY_BASE_URL = 'https://api.calendly.com';
 
-function hr(): void {
-  console.log(chalk.gray('─'.repeat(80)));
-}
-
-// Calculate date range for the last 30 days
-function getLast30DaysRange() {
-  const endDate = new Date();
-  const startDate = new Date(endDate);
-  startDate.setDate(endDate.getDate() - 30);
-  
-  return { startDate, endDate };
-}
-
-// Direct database check for meeting counts
-async function checkMeetingsInDatabase() {
-  log('Checking meetings directly in the database...');
-  
-  try {
-    const { startDate, endDate } = getLast30DaysRange();
-    
-    // Format dates for display
-    const startStr = startDate.toISOString().split('T')[0];
-    const endStr = endDate.toISOString().split('T')[0];
-    log(`Date range: ${startStr} to ${endStr}`);
-    
-    // Query all meetings
-    const allMeetingsCount = await db.select({ count: count() }).from(meetings);
-    success(`Total meetings in database: ${allMeetingsCount[0].count}`);
-    
-    // Query Calendly meetings
-    const calendlyMeetingsCount = await db.select({ count: count() })
-      .from(meetings)
-      .where(isNotNull(meetings.calendlyEventId));
-    success(`Total Calendly meetings in database: ${calendlyMeetingsCount[0].count}`);
-    
-    // Query meetings in the last 30 days
-    const dateRangeMeetingsCount = await db.select({ count: count() })
-      .from(meetings)
-      .where(
-        and(
-          gte(meetings.startTime, startDate),
-          lte(meetings.startTime, endDate)
-        )
-      );
-    success(`Meetings in last 30 days: ${dateRangeMeetingsCount[0].count}`);
-    
-    // Query Calendly meetings in the last 30 days
-    const calendlyDateRangeMeetingsCount = await db.select({ count: count() })
-      .from(meetings)
-      .where(
-        and(
-          gte(meetings.startTime, startDate),
-          lte(meetings.startTime, endDate),
-          isNotNull(meetings.calendlyEventId)
-        )
-      );
-    success(`Calendly meetings in last 30 days: ${calendlyDateRangeMeetingsCount[0].count}`);
-    
-    // Get sample meeting data for debugging
-    const sampleMeetings = await db.select()
-      .from(meetings)
-      .where(isNotNull(meetings.calendlyEventId))
-      .limit(5);
-    
-    if (sampleMeetings.length > 0) {
-      log('Sample Calendly meeting data:');
-      console.log(JSON.stringify(sampleMeetings[0], null, 2));
-    } else {
-      warn('No Calendly meetings found to display as sample');
-    }
-    
-    return {
-      totalMeetings: allMeetingsCount[0].count,
-      totalCalendlyMeetings: calendlyMeetingsCount[0].count,
-      last30DaysMeetings: dateRangeMeetingsCount[0].count,
-      last30DaysCalendlyMeetings: calendlyDateRangeMeetingsCount[0].count
-    };
-  } catch (e) {
-    error(`Database query error: ${e}`);
-    return null;
-  }
-}
-
-// Check API endpoints for meeting data
-async function checkAPIEndpoints() {
-  log('Checking API endpoints for meeting data...');
-  
-  const { startDate, endDate } = getLast30DaysRange();
-  const dateParam = `${startDate.toISOString().split('T')[0]}_${endDate.toISOString().split('T')[0]}`;
-  
-  try {
-    // Check dashboard endpoint
-    log('Testing dashboard API endpoint...');
-    const dashboardResponse = await axios.get(`http://localhost:3000/api/enhanced-dashboard?dateRange=${dateParam}`);
-    
-    if (dashboardResponse.status === 200) {
-      success('Dashboard API returned data successfully');
-      
-      const data = dashboardResponse.data;
-      const meetings = data.meetings || [];
-      const kpis = data.kpis || {};
-      
-      log(`Total meetings in response: ${meetings.length}`);
-      log(`Total calls KPI: ${kpis.totalCalls?.current || 0}`);
-      
-      // Check if meeting data matches database counts
-      if (meetings.length === 0) {
-        warn('Dashboard API returned 0 meetings');
-      }
-    } else {
-      error(`Dashboard API call failed with status ${dashboardResponse.status}`);
-    }
-    
-    // Check attribution stats endpoint
-    log('Testing attribution stats API endpoint...');
-    const attributionResponse = await axios.get(`http://localhost:3000/api/attribution/stats?dateRange=${dateParam}`);
-    
-    if (attributionResponse.status === 200) {
-      success('Attribution API returned data successfully');
-      
-      const data = attributionResponse.data;
-      const meetingStats = data.meetingStats || {};
-      
-      log(`Meeting stats from attribution API:`);
-      log(`Total meetings: ${meetingStats.total || 0}`);
-      log(`Scheduled: ${meetingStats.scheduled || 0}`);
-      log(`Completed: ${meetingStats.completed || 0}`);
-      log(`Canceled: ${meetingStats.canceled || 0}`);
-      
-      // Check if meeting stats match database counts
-      if (!meetingStats.total || meetingStats.total === 0) {
-        warn('Attribution API returned 0 total meetings');
-      }
-    } else {
-      error(`Attribution API call failed with status ${attributionResponse.status}`);
-    }
-    
-    return {
-      dashboardSuccess: dashboardResponse.status === 200,
-      attributionSuccess: attributionResponse.status === 200
-    };
-  } catch (e) {
-    error(`API request error: ${e.message}`);
-    return null;
-  }
-}
-
-// Function to check date range filtering logic 
-async function checkDateFilteringLogic() {
-  log('Checking date range filtering logic in the codebase...');
-  
-  try {
-    // Check meeting counts for different fixed date ranges to identify potential issues
-    
-    // Check April 2025 (a month with known data)
-    const april2025Start = new Date(2025, 3, 1); // April is month 3 (0-indexed)
-    const april2025End = new Date(2025, 3, 30);
-    
-    const april2025MeetingsCount = await db.select({ count: count() })
-      .from(meetings)
-      .where(
-        and(
-          gte(meetings.startTime, april2025Start),
-          lte(meetings.startTime, april2025End)
-        )
-      );
-    
-    log(`Meetings in April 2025: ${april2025MeetingsCount[0].count}`);
-    
-    // Check entire year 2025
-    const year2025Start = new Date(2025, 0, 1);
-    const year2025End = new Date(2025, 11, 31);
-    
-    const year2025MeetingsCount = await db.select({ count: count() })
-      .from(meetings)
-      .where(
-        and(
-          gte(meetings.startTime, year2025Start),
-          lte(meetings.startTime, year2025End)
-        )
-      );
-    
-    log(`Meetings in entire year 2025: ${year2025MeetingsCount[0].count}`);
-    
-    return {
-      april2025Meetings: april2025MeetingsCount[0].count,
-      year2025Meetings: year2025MeetingsCount[0].count
-    };
-  } catch (e) {
-    error(`Error checking date filtering: ${e}`);
-    return null;
-  }
-}
-
-// Main function
-async function main() {
-  hr();
-  log('CALENDLY CALL DATA AUDIT');
-  hr();
-  
-  // Step 1: Check database for meeting data
-  const dbResults = await checkMeetingsInDatabase();
-  hr();
-  
-  // Step 2: Check API endpoints
-  const apiResults = await checkAPIEndpoints();
-  hr();
-  
-  // Step 3: Check date filtering logic
-  const dateFilterResults = await checkDateFilteringLogic();
-  hr();
-  
-  // Summary of findings
-  log('SUMMARY OF FINDINGS:');
-  
-  if (dbResults) {
-    if (dbResults.totalCalendlyMeetings === 0) {
-      error('No Calendly meetings exist in the database. This is the root cause of the issue.');
-      log('Action needed: Run the Calendly sync script to import meetings from Calendly');
-    } else if (dbResults.last30DaysCalendlyMeetings === 0) {
-      warn('Calendly meetings exist in the database but none in the last 30 days period');
-      log('Possible solution: Check if there are meetings in other date ranges');
-    } else if (dbResults.last30DaysCalendlyMeetings > 0 && apiResults?.dashboardSuccess) {
-      error('Calendly meetings exist in the database for the last 30 days but are not showing in the dashboard');
-      log('Possible issues:');
-      log('1. Dashboard API is not correctly including Calendly meeting data');
-      log('2. Frontend rendering issue with the meeting data');
-      log('3. Cache might need to be cleared');
-    }
-  }
-  
-  if (dateFilterResults && dateFilterResults.april2025Meetings > 0) {
-    log('Meetings exist for April 2025. Try using this as a test date range in the dashboard');
-  }
-  
-  hr();
-  log('RECOMMENDED NEXT STEPS:');
-  
-  if (dbResults?.totalCalendlyMeetings === 0) {
-    log('1. Run the Calendly sync script to import meetings');
-    log('2. Verify API credentials for Calendly are correct');
-  } else if (dbResults?.last30DaysCalendlyMeetings === 0) {
-    log('1. Check if Calendly meetings exist in other date ranges (try April 2025)');
-    log('2. If other date ranges have data, the issue may be with recent sync');
-  } else {
-    log('1. Verify the dashboard API is including Calendly meeting data in the response');
-    log('2. Check if the data is filtered out in the frontend components');
-    log('3. Clear any data caches that might be affecting the dashboard');
-  }
-  hr();
-}
-
-// Run the script
-main().catch(e => {
-  error(`Script error: ${e}`);
+if (!CALENDLY_API_KEY) {
+  console.error(chalk.red('Error: CALENDLY_API_KEY not found in environment variables'));
   process.exit(1);
+}
+
+const calendlyApiClient = axios.create({
+  baseURL: CALENDLY_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${CALENDLY_API_KEY}`
+  }
+});
+
+// Helper function to format dates for output
+function formatDate(date: Date | string): string {
+  return format(new Date(date), 'yyyy-MM-dd HH:mm:ss');
+}
+
+// Get organization information
+async function getOrganization() {
+  try {
+    const response = await calendlyApiClient.get('/users/me');
+    const currentUser = response.data;
+    const orgUri = currentUser.resource.current_organization;
+    
+    console.log(chalk.blue(`Found organization: ${orgUri}`));
+    return orgUri;
+  } catch (error) {
+    console.error(chalk.red('Error fetching organization:'), error);
+    throw error;
+  }
+}
+
+// Get all events for a given time period
+async function getAllCalendlyEvents(startTime: string, endTime: string) {
+  try {
+    console.log(chalk.blue(`Fetching Calendly events from ${startTime} to ${endTime}...`));
+    
+    let events: any[] = [];
+    let count = 0;
+    let nextPage = `${CALENDLY_BASE_URL}/scheduled_events?count=100&min_start_time=${startTime}&max_start_time=${endTime}&status=active,canceled`;
+    
+    // Paginate through all events
+    while (nextPage && count < 1000) { // Safety limit to prevent infinite loops
+      const response = await calendlyApiClient.get(nextPage);
+      const data = response.data;
+      
+      events = [...events, ...data.collection];
+      count += data.collection.length;
+      
+      // Check if there are more pages
+      const pagination = data.pagination;
+      nextPage = pagination.next_page;
+      
+      console.log(chalk.green(`Retrieved ${events.length} events so far...`));
+    }
+    
+    return events;
+  } catch (error) {
+    console.error(chalk.red('Error fetching Calendly events:'), error);
+    throw error;
+  }
+}
+
+// Get all events in our database
+async function getDatabaseEvents(startTime: string, endTime: string) {
+  try {
+    console.log(chalk.blue(`Fetching database events from ${startTime} to ${endTime}...`));
+    
+    const results = await db.select()
+      .from(meetings)
+      .where(
+        and(
+          gte(meetings.start_time, new Date(startTime)),
+          lte(meetings.end_time, new Date(endTime)),
+          // Only include Calendly events
+          isNull(meetings.calendly_event_id).not()
+        )
+      );
+    
+    console.log(chalk.green(`Found ${results.length} Calendly events in database`));
+    return results;
+  } catch (error) {
+    console.error(chalk.red('Error fetching database events:'), error);
+    throw error;
+  }
+}
+
+// Main function to check for missing Calendly calls
+async function checkMissingCalendlyCalls() {
+  console.log(chalk.yellow('===== Checking for Missing Calendly Calls ====='));
+  
+  try {
+    // Get the date range - default to the last 12 months
+    const endTime = new Date().toISOString();
+    const startTime = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString();
+    
+    console.log(chalk.yellow(`Date range: ${startTime} to ${endTime}`));
+    
+    // Get organization info
+    await getOrganization();
+    
+    // 1. Get all Calendly events from the API
+    const apiEvents = await getAllCalendlyEvents(startTime, endTime);
+    console.log(chalk.blue(`Found ${apiEvents.length} events in Calendly API`));
+    
+    // 2. Get all events in our database
+    const dbEvents = await getDatabaseEvents(startTime, endTime);
+    console.log(chalk.blue(`Found ${dbEvents.length} Calendly events in database`));
+    
+    // 3. Find events that are in the API but not in our database
+    const dbEventIds = new Set(dbEvents.map(event => event.calendly_event_id));
+    
+    const missingEvents = apiEvents.filter(apiEvent => {
+      // Extract just the ID from the URI for comparison
+      const eventId = apiEvent.uri.split('/').pop();
+      return !dbEventIds.has(eventId) && !dbEventIds.has(apiEvent.uri);
+    });
+    
+    console.log(chalk.yellow(`Found ${missingEvents.length} Calendly events that are not in our database!`));
+    
+    // 4. Print details about missing events
+    if (missingEvents.length > 0) {
+      console.log(chalk.yellow('\nMissing Event Details:'));
+      
+      missingEvents.slice(0, 10).forEach((event, index) => {
+        console.log(chalk.green(`\n${index + 1}. Event: ${event.name || 'Unnamed event'}`));
+        console.log(`   URI: ${event.uri}`);
+        console.log(`   Created: ${formatDate(event.created_at)}`);
+        console.log(`   Start Time: ${formatDate(event.start_time)}`);
+        console.log(`   End Time: ${formatDate(event.end_time)}`);
+        console.log(`   Status: ${event.status}`);
+      });
+      
+      if (missingEvents.length > 10) {
+        console.log(chalk.yellow(`\n...and ${missingEvents.length - 10} more events`));
+      }
+      
+      // 5. Generate curl command to get invitees for a sample missing event
+      if (missingEvents.length > 0) {
+        const sampleEvent = missingEvents[0];
+        console.log(chalk.yellow('\nCurl Command to Get Invitees for a Sample Missing Event:'));
+        console.log(`curl -H "Authorization: Bearer ${CALENDLY_API_KEY}" \\
+  -H "Content-Type: application/json" \\
+  "${CALENDLY_BASE_URL}/scheduled_events/${sampleEvent.uri.split('/').pop()}/invitees"`);
+      }
+    }
+    
+    // 6. Generate curl command to get all events for a specific time period
+    console.log(chalk.yellow('\nCurl Command to Get All Calendly Events:'));
+    console.log(`curl -H "Authorization: Bearer ${CALENDLY_API_KEY}" \\
+  -H "Content-Type: application/json" \\
+  "${CALENDLY_BASE_URL}/scheduled_events?count=100&min_start_time=${startTime}&max_start_time=${endTime}&status=active,canceled"`);
+
+    return {
+      totalCalendlyEvents: apiEvents.length,
+      databaseEvents: dbEvents.length,
+      missingEvents: missingEvents.length
+    };
+    
+  } catch (error) {
+    console.error(chalk.red('Error checking missing Calendly calls:'), error);
+  }
+}
+
+// Run the check
+checkMissingCalendlyCalls().then(result => {
+  if (result) {
+    console.log(chalk.green('\nSummary:'));
+    console.log(`Total Calendly Events: ${result.totalCalendlyEvents}`);
+    console.log(`Events in Database: ${result.databaseEvents}`);
+    console.log(`Missing Events: ${result.missingEvents}`);
+  }
+  
+  console.log(chalk.yellow('\nProcess complete!'));
+}).catch(e => {
+  console.error('Error in check process:', e);
 });
