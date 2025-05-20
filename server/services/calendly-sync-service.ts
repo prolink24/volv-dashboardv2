@@ -314,26 +314,21 @@ export const processCalendlyEvent = async (event: any) => {
   }
   
   try {
-    // Insert directly into the database using a more direct approach
-    const result = await db.execute(sql`
-      INSERT INTO meetings (
-        calendly_event_id, type, title, start_time, end_time, duration, status,
-        booked_at, assigned_to, contact_id, invitee_email, invitee_name
-      ) VALUES (
-        ${eventId},
-        ${determineEventType(event.name)},
-        ${event.name || 'Calendly Meeting'},
-        ${new Date(event.start_time)},
-        ${new Date(event.end_time)},
-        ${differenceInMinutes(new Date(event.end_time), new Date(event.start_time))},
-        ${event.status},
-        ${event.created_at ? new Date(event.created_at) : null},
-        ${determineAssignedUser(event)},
-        ${contact.id},
-        ${invitees.length > 0 ? invitees[0].email : null},
-        ${invitees.length > 0 ? invitees[0].name : null}
-      ) RETURNING id
-    `);
+    // Insert using the actual schema column names (camelCase vs snake_case)
+    await db.insert(meetings).values({
+      calendlyEventId: eventId,
+      type: determineEventType(event.name),
+      title: event.name || 'Calendly Meeting',
+      startTime: new Date(event.start_time),
+      endTime: new Date(event.end_time),
+      duration: differenceInMinutes(new Date(event.end_time), new Date(event.start_time)),
+      status: event.status,
+      bookedAt: event.created_at ? new Date(event.created_at) : null,
+      assignedTo: determineAssignedUser(event),
+      contactId: contact.id,
+      inviteeEmail: invitees.length > 0 ? invitees[0].email : null,
+      inviteeName: invitees.length > 0 ? invitees[0].name : null
+    });
     
     console.log(`Successfully imported event: ${eventId}`);
     return true;
