@@ -174,7 +174,7 @@ router.get('/health', async (req, res) => {
       count: db.fn.count(contacts.id)
     })
     .from(contacts)
-    .where(like(contacts.source, '%typeform%'));
+    .where(like(contacts.leadSource, '%typeform%'));
     
     // Count unknown contact names
     const unknownContactNames = await db.select({
@@ -220,7 +220,7 @@ router.get('/health', async (req, res) => {
       count: db.fn.count(contacts.id)
     })
     .from(contacts)
-    .where(eq(contacts.multiSource, true));
+    .where(eq(contacts.sourcesCount, 2));
     
     res.json({
       status: 'success',

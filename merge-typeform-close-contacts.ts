@@ -1,327 +1,290 @@
 /**
  * Merge Typeform and Close CRM Contacts
  * 
- * This script efficiently merges Typeform and Close CRM contacts by:
- * 1. Processing contacts in small batches to avoid timeouts
- * 2. Using email matching to find existing Close CRM contacts
- * 3. Updating our database to link contacts from both systems
+ * This script intelligently links Typeform form submissions with existing Close CRM leads
+ * by checking email addresses and creating proper connections in our database. It also 
+ * creates new Close CRM leads for Typeform contacts that don't exist in Close.
+ * 
+ * The script processes contacts in batches for optimal performance.
  */
 
-import dotenv from 'dotenv';
-import chalk from 'chalk';
-import { db } from './server/db';
-import { eq, isNull, sql } from 'drizzle-orm';
-import { contacts } from './shared/schema';
 import axios from 'axios';
+import { db } from './server/db';
+import { contacts } from './shared/schema';
+import { eq, isNull, and, or } from 'drizzle-orm';
+import chalk from 'chalk';
 
-dotenv.config();
+// Constants
+const CLOSE_API_URL = 'https://api.close.com/api/v1';
+const BATCH_SIZE = 50; // Process 50 contacts at a time for optimal performance
+const API_KEY = process.env.CLOSE_API_KEY;
 
-// Configure Close API client
-const CLOSE_API_KEY = process.env.CLOSE_API_KEY;
-
-if (!CLOSE_API_KEY) {
-  console.error(chalk.red('ERROR: CLOSE_API_KEY is not defined in environment variables'));
-  process.exit(1);
-}
-
-const closeApi = axios.create({
-  baseURL: 'https://api.close.com/api/v1',
-  auth: {
-    username: CLOSE_API_KEY,
-    password: ''
-  },
-  headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json'
-  }
-});
-
-// Utility for logging with colors
-const log = {
-  info: (msg: string) => console.log(chalk.blue(`[INFO] ${msg}`)),
-  success: (msg: string) => console.log(chalk.green(`[SUCCESS] ${msg}`)),
-  warning: (msg: string) => console.log(chalk.yellow(`[WARNING] ${msg}`)),
-  error: (msg: string) => console.log(chalk.red(`[ERROR] ${msg}`)),
-  section: (msg: string) => console.log(chalk.cyan(`\n=== ${msg.toUpperCase()} ===\n`))
-};
-
+// Helper functions for formatting output
 function hr() {
   console.log(chalk.gray('─'.repeat(80)));
 }
 
-/**
- * Normalize email for consistent comparison
- */
-function normalizeEmail(email: string): string {
-  return email.trim().toLowerCase();
+// Helper function to extract company name from email domain
+function extractCompanyFromDomain(email: string): string | null {
+  if (!email || typeof email !== 'string') return null;
+  
+  try {
+    // Get the domain part after @
+    const domain = email.split('@')[1];
+    if (!domain) return null;
+    
+    // Remove TLD and split by dots
+    const parts = domain.split('.');
+    if (parts.length < 2) return null;
+    
+    // For common email providers, return null
+    const commonProviders = ['gmail', 'yahoo', 'hotmail', 'outlook', 'aol', 'icloud', 'protonmail'];
+    if (commonProviders.includes(parts[0].toLowerCase())) return null;
+    
+    // Otherwise, capitalize the domain name without TLD
+    return parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
+  } catch (e) {
+    return null;
+  }
 }
 
-/**
- * Search for a lead in Close CRM by email
- */
-async function findLeadInClose(email: string): Promise<any> {
+// Find a lead in Close CRM by email address
+async function findLeadByEmail(email: string) {
+  if (!API_KEY) {
+    console.error(chalk.red('Error: CLOSE_API_KEY environment variable is not set'));
+    return null;
+  }
+
   try {
-    const normalizedEmail = normalizeEmail(email);
-    
-    const response = await closeApi.get('/lead', {
+    const response = await axios.get(`${CLOSE_API_URL}/lead/`, {
+      auth: {
+        username: API_KEY,
+        password: ''
+      },
       params: {
-        query: `email:${normalizedEmail}`,
-        _fields: 'id,display_name,contacts,status_label,organization_name'
+        email_address: email
       }
     });
     
     if (response.data && response.data.data && response.data.data.length > 0) {
-      return {
-        success: true,
-        lead: response.data.data[0]
-      };
+      return response.data.data[0];
     }
     
-    return {
-      success: true,
-      lead: null
-    };
-  } catch (error: any) {
-    return {
-      success: false,
-      error: error.message || 'Unknown error searching for lead',
-      lead: null
-    };
+    return null;
+  } catch (error) {
+    console.error(chalk.red('Error finding lead by email:'), error);
+    return null;
   }
 }
 
-/**
- * Create a new lead in Close CRM
- */
-async function createLeadInClose(contactData: any): Promise<any> {
+// Create a new lead in Close CRM
+async function createLeadInClose(contact: any) {
+  if (!API_KEY) {
+    console.error(chalk.red('Error: CLOSE_API_KEY environment variable is not set'));
+    return null;
+  }
+
   try {
+    const companyName = contact.company || extractCompanyFromDomain(contact.email);
+    
     const payload = {
-      name: contactData.company || 'Unknown Company',
-      contacts: [
-        {
-          name: contactData.name || 'Unknown Contact',
-          emails: [
-            { email: contactData.email, type: 'office' }
-          ],
-          phones: contactData.phone ? [{ phone: contactData.phone, type: 'office' }] : []
-        }
-      ],
-      status: 'Potential',
+      name: companyName || contact.name,
+      contacts: [{
+        name: contact.name,
+        emails: [{ email: contact.email, type: 'office' }],
+        phones: contact.phone ? [{ phone: contact.phone, type: 'office' }] : []
+      }],
       custom: {
-        source: 'Typeform'
+        source: 'Typeform Integration',
+        integration_date: new Date().toISOString().split('T')[0]
       }
     };
+
+    const response = await axios.post(`${CLOSE_API_URL}/lead/`, payload, {
+      auth: {
+        username: API_KEY,
+        password: ''
+      }
+    });
     
-    const response = await closeApi.post('/lead', payload);
-    
-    if (response.data && response.data.id) {
-      return {
-        success: true,
-        lead: response.data
-      };
-    }
-    
-    return {
-      success: false,
-      error: 'Failed to create lead',
-      lead: null
-    };
-  } catch (error: any) {
-    return {
-      success: false, 
-      error: error.message || 'Unknown error creating lead',
-      lead: null
-    };
+    return response.data;
+  } catch (error) {
+    console.error(chalk.red('Error creating lead in Close:'), error);
+    return null;
   }
 }
 
-/**
- * Process a batch of contacts
- */
-async function processBatch(batch: any[]): Promise<{
-  matched: number;
-  created: number;
-  failed: number;
-  errors: string[];
-}> {
-  const results = {
-    matched: 0,
+// Process a batch of contacts - check for existing Close leads and link or create them
+async function processContactBatch(contactBatch: any[]) {
+  console.log(`Processing batch of ${contactBatch.length} contacts...`);
+  
+  const updates = {
+    linked: 0,
     created: 0,
     failed: 0,
-    errors: [] as string[]
+    skipped: 0
   };
-  
-  for (const contact of batch) {
+
+  for (const contact of contactBatch) {
     try {
-      log.info(`Processing contact: ${contact.email}`);
-      
-      // Search for the contact in Close CRM
-      const searchResult = await findLeadInClose(contact.email);
-      
-      if (!searchResult.success) {
-        log.error(`Error searching for contact in Close CRM: ${searchResult.error}`);
-        results.failed++;
-        results.errors.push(`${contact.email}: ${searchResult.error}`);
+      // Skip contacts that already have Close IDs
+      if (contact.closeId) {
+        updates.skipped++;
         continue;
       }
       
-      if (searchResult.lead) {
-        // Match found in Close CRM
-        log.success(`Found matching lead in Close CRM: ${searchResult.lead.id}`);
-        
-        // Update our contact with Close CRM data
+      // Find existing lead in Close CRM
+      const existingLead = await findLeadByEmail(contact.email);
+      
+      if (existingLead) {
+        // Update local contact with Close ID
         await db.update(contacts)
           .set({ 
-            closeId: searchResult.lead.id,
-            name: searchResult.lead.contacts?.[0]?.name || contact.name,
-            company: searchResult.lead.organization_name || contact.company,
-            status: searchResult.lead.status_label?.toLowerCase() || contact.status,
-            sourcesCount: contact.sourcesCount ? contact.sourcesCount + 1 : 2
+            closeId: existingLead.id,
+            // Update lead source to include "close" if it's not already there
+            leadSource: contact.leadSource?.includes('close') 
+              ? contact.leadSource 
+              : `${contact.leadSource || 'typeform'},close`,
+            // Increment sources count if not already counted
+            sourcesCount: (contact.sourcesCount || 1) + (contact.leadSource?.includes('close') ? 0 : 1),
+            // Update company if it's missing and available in Close
+            company: contact.company || existingLead.name
           })
           .where(eq(contacts.id, contact.id));
         
-        results.matched++;
+        updates.linked++;
+        console.log(chalk.green(`✓ Linked contact ${contact.email} to existing Close lead ${existingLead.id}`));
       } else {
-        // No match found, create a new lead in Close CRM
-        log.info(`No matching lead found for ${contact.email}. Creating new lead...`);
+        // Create new lead in Close
+        const newLead = await createLeadInClose(contact);
         
-        const createResult = await createLeadInClose({
-          name: contact.name,
-          email: contact.email,
-          company: contact.company,
-          phone: contact.phone
-        });
-        
-        if (!createResult.success) {
-          log.error(`Failed to create lead in Close CRM: ${createResult.error}`);
-          results.failed++;
-          results.errors.push(`${contact.email}: ${createResult.error}`);
-          continue;
+        if (newLead) {
+          // Update local contact with new Close ID
+          await db.update(contacts)
+            .set({ 
+              closeId: newLead.id,
+              // Update lead source to include "close"
+              leadSource: contact.leadSource?.includes('close') 
+                ? contact.leadSource 
+                : `${contact.leadSource || 'typeform'},close`,
+              // Increment sources count
+              sourcesCount: (contact.sourcesCount || 1) + 1
+            })
+            .where(eq(contacts.id, contact.id));
+          
+          updates.created++;
+          console.log(chalk.blue(`+ Created new Close lead ${newLead.id} for contact ${contact.email}`));
+        } else {
+          updates.failed++;
+          console.log(chalk.red(`✗ Failed to create Close lead for contact ${contact.email}`));
         }
-        
-        log.success(`Created new lead in Close CRM: ${createResult.lead.id}`);
-        
-        // Update our contact with the new Close CRM ID
-        await db.update(contacts)
-          .set({ 
-            closeId: createResult.lead.id,
-            sourcesCount: contact.sourcesCount ? contact.sourcesCount + 1 : 2
-          })
-          .where(eq(contacts.id, contact.id));
-        
-        results.created++;
       }
-    } catch (error: any) {
-      log.error(`Unexpected error processing contact ${contact.email}: ${error.message}`);
-      results.failed++;
-      results.errors.push(`${contact.email}: ${error.message}`);
+    } catch (error) {
+      updates.failed++;
+      console.error(chalk.red(`Error processing contact ${contact.email}:`), error);
     }
   }
-  
-  return results;
+
+  return updates;
 }
 
-/**
- * Main function to merge Typeform and Close CRM contacts
- */
-async function mergeTypeformCloseContacts() {
-  log.section('Merge Typeform and Close CRM Contacts');
-  
-  // Find all Typeform contacts without Close CRM IDs
-  const unlinkedCount = await db.select({ count: sql`count(${contacts.id})` })
+// Get a batch of contacts that need processing
+async function getContactsToProcess(limit: number = BATCH_SIZE) {
+  // Get contacts that have Typeform as a source but don't have Close IDs
+  const typeformContacts = await db.select()
     .from(contacts)
-    .where(eq(contacts.leadSource, 'typeform'))
-    .where(isNull(contacts.closeId));
+    .where(
+      and(
+        or(
+          like(contacts.leadSource, '%typeform%'),
+          eq(contacts.typeformId, isNull(false))
+        ),
+        eq(contacts.closeId, isNull(true))
+      )
+    )
+    .limit(limit);
+
+  return typeformContacts;
+}
+
+// Main function to merge Typeform and Close contacts
+async function mergeTypeformCloseContacts() {
+  console.log(chalk.blue('Starting Typeform-Close contact merging process'));
+  hr();
+
+  let processedTotal = 0;
+  let batchCount = 0;
+  let continueProcessing = true;
   
-  const totalUnlinked = Number(unlinkedCount[0]?.count) || 0;
-  log.info(`Found ${totalUnlinked} Typeform contacts without Close CRM IDs`);
-  
-  if (totalUnlinked === 0) {
-    log.success('All Typeform contacts are already linked to Close CRM.');
+  const totals = {
+    linked: 0,
+    created: 0,
+    failed: 0,
+    skipped: 0
+  };
+
+  // Check for API key
+  if (!API_KEY) {
+    console.error(chalk.red('Error: CLOSE_API_KEY environment variable is not set'));
+    console.log(chalk.yellow('Please set the CLOSE_API_KEY environment variable and try again'));
     return;
   }
-  
-  // Process in batches
-  const BATCH_SIZE = 10;
-  let processedCount = 0;
-  let totalMatched = 0;
-  let totalCreated = 0;
-  let totalFailed = 0;
-  const allErrors: string[] = [];
-  
-  log.info(`Processing contacts in batches of ${BATCH_SIZE}`);
-  hr();
-  
-  while (processedCount < totalUnlinked) {
-    // Get the next batch of contacts
-    const batch = await db.select()
-      .from(contacts)
-      .where(eq(contacts.leadSource, 'typeform'))
-      .where(isNull(contacts.closeId))
-      .limit(BATCH_SIZE)
-      .offset(processedCount);
+
+  // Process contacts in batches until we run out or hit a limit
+  while (continueProcessing) {
+    const contactBatch = await getContactsToProcess();
     
-    if (batch.length === 0) {
+    if (contactBatch.length === 0) {
+      console.log(chalk.green('No more contacts to process!'));
       break;
     }
-    
-    log.info(`Processing batch ${Math.floor(processedCount / BATCH_SIZE) + 1}: ${batch.length} contacts`);
-    
-    // Process the batch
-    const batchResults = await processBatch(batch);
+
+    console.log(`\nBatch ${++batchCount}: Processing ${contactBatch.length} contacts`);
+    const batchResults = await processContactBatch(contactBatch);
     
     // Update totals
-    totalMatched += batchResults.matched;
-    totalCreated += batchResults.created;
-    totalFailed += batchResults.failed;
-    allErrors.push(...batchResults.errors);
+    totals.linked += batchResults.linked;
+    totals.created += batchResults.created;
+    totals.failed += batchResults.failed;
+    totals.skipped += batchResults.skipped;
     
-    // Update processed count
-    processedCount += batch.length;
+    processedTotal += contactBatch.length;
     
-    // Display progress
-    const percentComplete = Math.floor((processedCount / totalUnlinked) * 100);
-    log.info(`Progress: ${processedCount}/${totalUnlinked} contacts (${percentComplete}%)`);
+    // Status update
     hr();
+    console.log(chalk.cyan('Batch Results:'));
+    console.log(`- Linked to existing Close leads: ${batchResults.linked}`);
+    console.log(`- Created new Close leads: ${batchResults.created}`);
+    console.log(`- Failed to process: ${batchResults.failed}`);
+    console.log(`- Skipped (already linked): ${batchResults.skipped}`);
     
-    // Add a small delay to avoid rate limiting
+    // Optional: add a small delay to avoid hammering the API
     await new Promise(resolve => setTimeout(resolve, 1000));
-  }
-  
-  // Final report
-  log.section('Results');
-  log.info(`Total contacts processed: ${processedCount}`);
-  log.success(`Matched with existing Close CRM leads: ${totalMatched}`);
-  log.success(`Created new Close CRM leads: ${totalCreated}`);
-  log.warning(`Failed to process: ${totalFailed}`);
-  
-  if (allErrors.length > 0) {
-    log.section('Errors');
-    allErrors.slice(0, 10).forEach(error => log.error(error));
-    if (allErrors.length > 10) {
-      log.warning(`... and ${allErrors.length - 10} more errors`);
+    
+    // Safety check - stop after processing a large number
+    if (processedTotal >= 1000) {
+      console.log(chalk.yellow('Reached maximum processing limit of 1000 contacts'));
+      continueProcessing = false;
     }
   }
-  
-  // Check for any remaining unlinked contacts
-  const remainingUnlinked = await db.select({ count: sql`count(${contacts.id})` })
-    .from(contacts)
-    .where(eq(contacts.leadSource, 'typeform'))
-    .where(isNull(contacts.closeId));
-  
-  const remainingCount = Number(remainingUnlinked[0]?.count) || 0;
-  
-  if (remainingCount === 0) {
-    log.success('All Typeform contacts are now linked to Close CRM!');
-  } else {
-    log.warning(`There are still ${remainingCount} Typeform contacts without Close CRM IDs.`);
-    log.info('Run this script again to process the remaining contacts.');
-  }
+
+  hr();
+  console.log(chalk.green('Typeform-Close contact merging completed!'));
+  console.log(chalk.cyan('Final Results:'));
+  console.log(`- Total contacts processed: ${processedTotal}`);
+  console.log(`- Total linked to existing Close leads: ${totals.linked}`);
+  console.log(`- Total new Close leads created: ${totals.created}`);
+  console.log(`- Total failed to process: ${totals.failed}`);
+  console.log(`- Total skipped (already linked): ${totals.skipped}`);
 }
 
-// Run the script and handle errors
-mergeTypeformCloseContacts().catch(error => {
-  log.error(`Fatal error: ${error.message}`);
-  console.error(error);
-  process.exit(1);
-});
+// Run the script
+mergeTypeformCloseContacts()
+  .then(() => {
+    console.log('Script completed successfully');
+    process.exit(0);
+  })
+  .catch(error => {
+    console.error('Script failed with error:', error);
+    process.exit(1);
+  });
