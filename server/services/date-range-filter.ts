@@ -580,7 +580,7 @@ export async function getDashboardDataByDateRange(
     closedDeals: dealStats.won,
     cashCollected: dealStats.cashCollected,
     revenueGenerated: dealStats.totalValue,
-    totalCalls: activityStats.calls + meetingStats.attended,
+    totalCalls: meetingStats.total,
     call1Taken: activityStats.callsAnswered,
     call2Taken: meetingStats.attended,
     closingRate: dealStats.total > 0 ? (dealStats.won / dealStats.total) * 100 : 0,
