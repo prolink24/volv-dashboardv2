@@ -1,279 +1,446 @@
 /**
- * Enhanced Typeform API Integration
+ * Enhanced Typeform Integration API
  * 
- * This module provides improved Typeform integration with proper contact
- * matching and merging functionality.
+ * This API provides endpoints for advanced integration between Typeform and Close CRM:
+ * - Automatic name extraction from email addresses
+ * - Company name derivation from business domains
+ * - Contact matching and linking to Close CRM
+ * - Integration health monitoring
  */
 
-import express from 'express';
+import { Router } from 'express';
 import { db } from '../db';
-import { eq, inArray, sql } from 'drizzle-orm';
-import { contacts, forms, InsertContact } from '../../shared/schema';
-import { normalizeEmail } from '../services/contact-matching';
+import { contacts, formSubmissions } from '../../shared/schema';
+import { and, eq, isNull, like, or } from 'drizzle-orm';
+import axios from 'axios';
 
-const router = express.Router();
+const router = Router();
+
+// Cache configuration
+const CACHE_TTL = 3600; // 1 hour cache lifetime
+
+// Constants
+const CLOSE_API_URL = 'https://api.close.com/api/v1';
+
+// Helper function to extract name from email
+function extractNameFromEmail(email: string): string {
+  if (!email || typeof email !== 'string') {
+    return 'Unknown Contact';
+  }
+
+  // Extract the part before @ symbol
+  const namePart = email.split('@')[0];
+  
+  if (!namePart) {
+    return 'Unknown Contact';
+  }
+
+  // Replace dots, underscores, dashes, and numbers with spaces
+  const withSpaces = namePart.replace(/[._\-0-9]/g, ' ');
+  
+  // Capitalize each word
+  const capitalized = withSpaces
+    .split(' ')
+    .filter(word => word.length > 0)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+  
+  return capitalized || 'Unknown Contact';
+}
+
+// Helper function to extract company from domain
+function extractCompanyFromDomain(email: string): string | null {
+  if (!email || typeof email !== 'string' || !email.includes('@')) {
+    return null;
+  }
+
+  const domain = email.split('@')[1];
+  if (!domain) {
+    return null;
+  }
+
+  // Skip common email providers
+  const commonProviders = [
+    'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 
+    'aol.com', 'icloud.com', 'mail.com', 'protonmail.com', 
+    'zoho.com', 'yandex.com', 'gmx.com', 'live.com',
+    'msn.com', 'protonmail.ch', 'mail.ru', 'example.com',
+    'placeholder.com'
+  ];
+
+  if (commonProviders.includes(domain.toLowerCase())) {
+    return null;
+  }
+
+  // Process domain to create a company name
+  const domainParts = domain.split('.');
+  
+  // Use only the main domain part, typically the second-to-last segment
+  let companyPart = domainParts[0];
+  
+  if (domainParts.length > 2) {
+    companyPart = domainParts[domainParts.length - 2];
+  }
+
+  // Format: replace hyphens and underscores with spaces, capitalize
+  let companyName = companyPart
+    .replace(/[-_]/g, ' ')
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+  
+  // Special case for capital-related domains
+  if (domain.includes('capital') || domain.includes('ventures') || domain.includes('partners')) {
+    companyName += ' ' + domain.split('.')[0].split('-').join(' ').toUpperCase();
+  }
+  
+  return companyName;
+}
+
+// Find a lead in Close CRM by email
+async function findLeadByEmail(email: string, apiKey: string) {
+  try {
+    const response = await axios.get(`${CLOSE_API_URL}/lead/`, {
+      auth: {
+        username: apiKey,
+        password: ''
+      },
+      params: {
+        email_address: email
+      }
+    });
+    
+    if (response.data && response.data.data && response.data.data.length > 0) {
+      return response.data.data[0];
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error finding lead by email:', error);
+    return null;
+  }
+}
+
+// Create a lead in Close CRM
+async function createLeadInClose(contact: any, apiKey: string) {
+  try {
+    const companyName = contact.company || extractCompanyFromDomain(contact.email);
+    
+    const payload = {
+      name: contact.name,
+      contacts: [{
+        name: contact.name,
+        emails: [{ email: contact.email, type: 'office' }],
+        phones: contact.phone ? [{ phone: contact.phone, type: 'office' }] : []
+      }],
+      custom: {
+        source: contact.source || 'Attribution Platform'
+      }
+    };
+
+    if (companyName) {
+      // @ts-ignore
+      payload.custom.company = companyName;
+    }
+
+    const response = await axios.post(`${CLOSE_API_URL}/lead/`, payload, {
+      auth: {
+        username: apiKey,
+        password: ''
+      }
+    });
+    
+    return response.data;
+  } catch (error) {
+    console.error('Error creating lead in Close:', error);
+    return null;
+  }
+}
 
 /**
- * Update specific capital contacts with proper company names
+ * GET /api/typeform-enhanced/health
+ * Returns health metrics for Typeform integration
  */
-router.post('/fix-capital-contacts', async (req, res) => {
+router.get('/health', async (req, res) => {
   try {
-    // List of emails from the screenshot
-    const targetEmails = [
-      'tom@atlasridge.io',
-      'axel@caucelcapital.com',
-      'nick@stowecap.co',
-      'dimitri@vortexcapital.io',
-      'vlad@light3capital.com',
-      'admin@amaranthcp.com',
-      'alex@lightuscapital.com',
-      'ali@spikecapital.io'
-    ];
+    // Count total contacts
+    const totalContacts = await db.select({
+      count: db.fn.count(contacts.id)
+    })
+    .from(contacts);
     
-    const companyMappings: Record<string, string> = {
-      'atlasridge.io': 'Atlas Ridge',
-      'caucelcapital.com': 'Caucel Capital',
-      'stowecap.co': 'Stowe Capital',
-      'vortexcapital.io': 'Vortex Capital',
-      'light3capital.com': 'Light3 Capital',
-      'amaranthcp.com': 'Amaranth Capital Partners',
-      'lightuscapital.com': 'Lightus Capital',
-      'spikecapital.io': 'Spike Capital'
+    // Count Typeform contacts
+    const typeformContacts = await db.select({
+      count: db.fn.count(contacts.id)
+    })
+    .from(contacts)
+    .where(like(contacts.source, '%typeform%'));
+    
+    // Count unknown contact names
+    const unknownContactNames = await db.select({
+      count: db.fn.count(contacts.id)
+    })
+    .from(contacts)
+    .where(like(contacts.name, 'Unknown Contact%'));
+    
+    // Count missing company names
+    const missingCompanyNames = await db.select({
+      count: db.fn.count(contacts.id)
+    })
+    .from(contacts)
+    .where(
+      or(
+        isNull(contacts.company),
+        eq(contacts.company, '')
+      )
+    );
+    
+    // Count missing Close CRM IDs
+    const missingCloseIds = await db.select({
+      count: db.fn.count(contacts.id)
+    })
+    .from(contacts)
+    .where(isNull(contacts.closeId));
+    
+    // Count total form submissions
+    const totalFormSubmissions = await db.select({
+      count: db.fn.count(formSubmissions.id)
+    })
+    .from(formSubmissions);
+    
+    // Count orphaned form submissions
+    const orphanedFormSubmissions = await db.select({
+      count: db.fn.count(formSubmissions.id)
+    })
+    .from(formSubmissions)
+    .where(isNull(formSubmissions.contactId));
+    
+    // Calculate multi-source contacts
+    const multiSourceContacts = await db.select({
+      count: db.fn.count(contacts.id)
+    })
+    .from(contacts)
+    .where(eq(contacts.multiSource, true));
+    
+    res.json({
+      status: 'success',
+      data: {
+        totalContacts: Number(totalContacts[0].count || 0),
+        typeformContacts: Number(typeformContacts[0].count || 0),
+        typeformPercentage: Number(totalContacts[0].count) > 0 
+          ? (Number(typeformContacts[0].count) / Number(totalContacts[0].count) * 100).toFixed(2) 
+          : 0,
+        dataQuality: {
+          unknownContactNames: Number(unknownContactNames[0].count || 0),
+          missingCompanyNames: Number(missingCompanyNames[0].count || 0),
+          missingCloseIds: Number(missingCloseIds[0].count || 0),
+        },
+        formSubmissions: {
+          total: Number(totalFormSubmissions[0].count || 0),
+          orphaned: Number(orphanedFormSubmissions[0].count || 0),
+          linkageRate: Number(totalFormSubmissions[0].count) > 0
+            ? ((Number(totalFormSubmissions[0].count) - Number(orphanedFormSubmissions[0].count)) / Number(totalFormSubmissions[0].count) * 100).toFixed(2)
+            : 0
+        },
+        attribution: {
+          multiSourceContacts: Number(multiSourceContacts[0].count || 0),
+          multiSourceRate: Number(totalContacts[0].count) > 0
+            ? (Number(multiSourceContacts[0].count) / Number(totalContacts[0].count) * 100).toFixed(2)
+            : 0
+        },
+        lastUpdated: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching integration health:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch integration health metrics',
+      error: String(error)
+    });
+  }
+});
+
+/**
+ * POST /api/typeform-enhanced/process-batch
+ * Process a batch of contacts to improve data quality
+ */
+router.post('/process-batch', async (req, res) => {
+  try {
+    const { 
+      batchSize = 25, 
+      fixNames = true, 
+      addCompanies = true, 
+      linkToClose = true,
+      closeApiKey
+    } = req.body;
+    
+    // Validate input
+    if (linkToClose && !closeApiKey) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Close API key is required when linkToClose is true'
+      });
+    }
+    
+    // Build query conditions based on requested fixes
+    const conditions = [];
+    
+    if (fixNames) {
+      conditions.push(like(contacts.name, 'Unknown Contact%'));
+    }
+    
+    if (addCompanies) {
+      conditions.push(
+        or(
+          isNull(contacts.company),
+          eq(contacts.company, '')
+        )
+      );
+    }
+    
+    if (linkToClose) {
+      conditions.push(isNull(contacts.closeId));
+    }
+    
+    let contactsToProcess;
+    
+    if (conditions.length > 0) {
+      contactsToProcess = await db.select()
+        .from(contacts)
+        .where(or(...conditions))
+        .limit(batchSize);
+    } else {
+      contactsToProcess = await db.select()
+        .from(contacts)
+        .limit(batchSize);
+    }
+    
+    // Process the batch
+    const results = {
+      totalProcessed: contactsToProcess.length,
+      namesFixed: 0,
+      companiesAdded: 0,
+      linkedToExistingLeads: 0,
+      newLeadsCreated: 0,
+      errors: 0
     };
     
-    // Get all the contacts with these emails
-    const contactList = await db.select()
-      .from(contacts)
-      .where(inArray(contacts.email, targetEmails));
-    
-    let updated = 0;
-    const errors: string[] = [];
-    
-    // Update each contact with proper company name
-    for (const contact of contactList) {
+    for (const contact of contactsToProcess) {
       try {
-        // Extract domain from email
-        const emailParts = contact.email.split('@');
-        const domain = emailParts[1];
+        const updates: any = {};
+        let madeUpdates = false;
         
-        // Get proper company name from mapping
-        const companyName = companyMappings[domain];
-        
-        if (companyName) {
-          await db.update(contacts)
-            .set({ 
-              company: companyName,
-              // Improve the name if it's "Unknown Contact"
-              name: contact.name === 'Unknown Contact' ? 
-                emailParts[0].charAt(0).toUpperCase() + emailParts[0].slice(1) : 
-                contact.name
-            })
-            .where(eq(contacts.id, contact.id));
-          
-          updated++;
+        // Fix unknown contact names
+        if (fixNames && contact.name?.includes('Unknown Contact') && contact.email) {
+          const extractedName = extractNameFromEmail(contact.email);
+          if (extractedName !== 'Unknown Contact') {
+            updates.name = extractedName;
+            madeUpdates = true;
+            results.namesFixed++;
+          }
         }
-      } catch (error: any) {
-        errors.push(`Error updating ${contact.email}: ${error.message}`);
+        
+        // Add company names
+        if (addCompanies && (!contact.company || contact.company === '') && contact.email) {
+          const companyName = extractCompanyFromDomain(contact.email);
+          if (companyName) {
+            updates.company = companyName;
+            madeUpdates = true;
+            results.companiesAdded++;
+          }
+        }
+        
+        // Link to Close CRM
+        if (linkToClose && !contact.closeId && contact.email && closeApiKey) {
+          // First try to find an existing lead
+          const lead = await findLeadByEmail(contact.email, closeApiKey);
+          
+          if (lead) {
+            updates.closeId = lead.id;
+            madeUpdates = true;
+            results.linkedToExistingLeads++;
+          } else {
+            // Create a new lead if not found
+            const newLead = await createLeadInClose(contact, closeApiKey);
+            if (newLead) {
+              updates.closeId = newLead.id;
+              madeUpdates = true;
+              results.newLeadsCreated++;
+            }
+          }
+        }
+        
+        // Apply updates
+        if (madeUpdates) {
+          await db.update(contacts)
+            .set(updates)
+            .where(eq(contacts.id, contact.id));
+        }
+      } catch (error) {
+        console.error(`Error processing contact ${contact.id}:`, error);
+        results.errors++;
       }
     }
     
-    return res.json({ 
-      success: true, 
-      updated,
-      total: contactList.length,
-      errors
+    res.json({
+      status: 'success',
+      message: `Processed ${results.totalProcessed} contacts`,
+      data: results
     });
-  } catch (error: any) {
-    console.error('Error fixing capital contacts:', error);
-    return res.status(500).json({ 
-      success: false, 
-      error: error.message 
+  } catch (error) {
+    console.error('Error processing contact batch:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to process contact batch',
+      error: String(error)
     });
   }
 });
 
 /**
- * Typeform submission handler with improved contact matching
+ * POST /api/typeform-enhanced/connect-lead
+ * Manually connect a contact to a Close CRM lead
  */
-router.post('/submit', async (req, res) => {
+router.post('/connect-lead', async (req, res) => {
   try {
-    const { email, name, company, formData, formId, formName } = req.body;
+    const { contactId, closeId } = req.body;
     
-    if (!email) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Email is required' 
+    if (!contactId || !closeId) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Both contactId and closeId are required'
       });
     }
     
-    const normalizedEmail = normalizeEmail(email);
-    
-    // Check if contact already exists
-    const existingContact = await db.select()
+    // Find the contact
+    const contactExists = await db.select()
       .from(contacts)
-      .where(eq(contacts.email, normalizedEmail))
+      .where(eq(contacts.id, contactId))
       .limit(1);
     
-    let contactId: number;
-    
-    if (existingContact.length > 0) {
-      // Update existing contact
-      contactId = existingContact[0].id;
-      
-      // Only update if fields are provided and better than what we have
-      const updateData: Partial<InsertContact> = {};
-      
-      if (name && (existingContact[0].name === 'Unknown Contact' || !existingContact[0].name)) {
-        updateData.name = name;
-      }
-      
-      if (company && !existingContact[0].company) {
-        updateData.company = company;
-      }
-      
-      // Update sourcesCount if not already set
-      if (!existingContact[0].sourcesCount || existingContact[0].sourcesCount < 1) {
-        updateData.sourcesCount = 1;
-      }
-      
-      // Update contact if we have new data
-      if (Object.keys(updateData).length > 0) {
-        await db.update(contacts)
-          .set(updateData)
-          .where(eq(contacts.id, contactId));
-      }
-    } else {
-      // Create new contact
-      const insertResult = await db.insert(contacts)
-        .values({
-          email: normalizedEmail,
-          name: name || 'Unknown Contact',
-          company: company || '',
-          leadSource: 'typeform',
-          sourcesCount: 1,
-          status: 'lead'
-        })
-        .returning({ id: contacts.id });
-      
-      contactId = insertResult[0].id;
-    }
-    
-    // Store form submission
-    await db.insert(forms)
-      .values({
-        contactId,
-        formId: formId || 'unknown',
-        formName: formName || 'Unknown Form',
-        formData: formData || {},
-        submittedAt: new Date()
+    if (contactExists.length === 0) {
+      return res.status(404).json({
+        status: 'error',
+        message: `Contact with ID ${contactId} not found`
       });
-    
-    return res.json({ 
-      success: true, 
-      contactId,
-      message: existingContact.length > 0 ? 'Updated existing contact' : 'Created new contact'
-    });
-  } catch (error: any) {
-    console.error('Error processing typeform submission:', error);
-    return res.status(500).json({ 
-      success: false, 
-      error: error.message 
-    });
-  }
-});
-
-/**
- * API endpoint to fix all unknown contacts
- */
-router.post('/fix-unknown-contacts', async (req, res) => {
-  try {
-    // Find all contacts with "Unknown Contact" as name
-    const unknownContacts = await db.select()
-      .from(contacts)
-      .where(eq(contacts.name, 'Unknown Contact'));
-    
-    let updated = 0;
-    const errors: string[] = [];
-    
-    // Update each contact with a better name based on email
-    for (const contact of unknownContacts) {
-      try {
-        if (contact.email) {
-          const emailPrefix = contact.email.split('@')[0];
-          const betterName = emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1);
-          
-          await db.update(contacts)
-            .set({ name: betterName })
-            .where(eq(contacts.id, contact.id));
-          
-          updated++;
-        }
-      } catch (error: any) {
-        errors.push(`Error updating ${contact.email}: ${error.message}`);
-      }
     }
     
-    return res.json({ 
-      success: true, 
-      updated,
-      total: unknownContacts.length,
-      errors
+    // Update the contact
+    await db.update(contacts)
+      .set({ closeId })
+      .where(eq(contacts.id, contactId));
+    
+    res.json({
+      status: 'success',
+      message: `Successfully linked contact ${contactId} to Close lead ${closeId}`
     });
-  } catch (error: any) {
-    console.error('Error fixing unknown contacts:', error);
-    return res.status(500).json({ 
-      success: false, 
-      error: error.message 
-    });
-  }
-});
-
-/**
- * API endpoint to check typeform-close integration status
- */
-router.get('/integration-status', async (req, res) => {
-  try {
-    // Count how many typeform contacts are in the system
-    const typeformContacts = await db.select({ count: sql`count(*)` })
-      .from(contacts)
-      .where(eq(contacts.leadSource, 'typeform'));
-    
-    const typeformCount = Number(typeformContacts[0]?.count || 0);
-    
-    // Count how many have company names
-    const withCompany = await db.select({ count: sql`count(*)` })
-      .from(contacts)
-      .where(eq(contacts.leadSource, 'typeform'))
-      .where(sql`${contacts.company} != ''`);
-    
-    const withCompanyCount = Number(withCompany[0]?.count || 0);
-    
-    // Count how many have "Unknown Contact" as name
-    const unknownContacts = await db.select({ count: sql`count(*)` })
-      .from(contacts)
-      .where(eq(contacts.leadSource, 'typeform'))
-      .where(eq(contacts.name, 'Unknown Contact'));
-    
-    const unknownCount = Number(unknownContacts[0]?.count || 0);
-    
-    // Calculate percentages
-    const companyRate = typeformCount > 0 ? Math.round((withCompanyCount / typeformCount) * 100) : 0;
-    const unknownRate = typeformCount > 0 ? Math.round((unknownCount / typeformCount) * 100) : 0;
-    
-    return res.json({
-      success: true,
-      typeformContacts: typeformCount,
-      withCompany: withCompanyCount,
-      companyRate: `${companyRate}%`,
-      unknownContacts: unknownCount,
-      unknownRate: `${unknownRate}%`,
-      health: unknownRate < 10 && companyRate > 80 ? 'Good' : 'Needs Improvement'
-    });
-  } catch (error: any) {
-    console.error('Error checking integration status:', error);
-    return res.status(500).json({ 
-      success: false, 
-      error: error.message 
+  } catch (error) {
+    console.error('Error connecting lead:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to connect lead',
+      error: String(error)
     });
   }
 });

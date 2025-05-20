@@ -23,6 +23,7 @@ import kpiConfiguratorRouter from "./api/kpi-configurator";
 import customerJourneyRoutes from "./routes/customer-journey";
 import typeformRoutes from "./routes/typeform";
 import dataEnhancementRoutes from "./routes/data-enhancement"; 
+import typeformEnhancedRoutes from './api/typeform-enhanced';
 import { CloseUser } from "@shared/schema";
 
 // Enhanced attribution response types
@@ -1954,6 +1955,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Mount customer journey routes
   apiRouter.use('/customer-journey', customerJourneyRoutes);
   apiRouter.use('/typeform', typeformRoutes);
+  apiRouter.use('/typeform-enhanced', typeformEnhancedRoutes);
   
   // Database Health Monitoring - Real-time database metrics
   apiRouter.get('/database-health', async (req: Request, res: Response) => {
