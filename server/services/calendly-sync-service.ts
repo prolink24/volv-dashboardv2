@@ -314,27 +314,64 @@ export const processCalendlyEvent = async (event: any) => {
   }
   
   try {
-    // Insert using the actual schema column names (camelCase vs snake_case)
+    // Get duration in minutes
+    const duration = Math.floor(
+      (new Date(event.end_time).getTime() - new Date(event.start_time).getTime()) / 60000
+    );
+    
+    // Use the meetings table definition exactly as in the schema
     await db.insert(meetings).values({
       calendlyEventId: eventId,
       type: determineEventType(event.name),
       title: event.name || 'Calendly Meeting',
       startTime: new Date(event.start_time),
       endTime: new Date(event.end_time),
-      duration: differenceInMinutes(new Date(event.end_time), new Date(event.start_time)),
+      duration: duration,
       status: event.status,
       bookedAt: event.created_at ? new Date(event.created_at) : null,
       assignedTo: determineAssignedUser(event),
       contactId: contact.id,
       inviteeEmail: invitees.length > 0 ? invitees[0].email : null,
-      inviteeName: invitees.length > 0 ? invitees[0].name : null
+      inviteeName: invitees.length > 0 ? invitees[0].name : null,
+      source: 'Calendly',  // Add source field
+      sequenceNumber: 1,   // Default sequence number
+      meetingType: 'online'  // Default meeting type
     });
     
     console.log(`Successfully imported event: ${eventId}`);
     return true;
   } catch (error: any) {
     console.error(`Failed to import event ${eventId}: ${error.message}`);
-    return false;
+    // Try a more direct approach with SQL if the first method fails
+    try {
+      await db.execute(sql`
+        INSERT INTO meetings 
+        ("calendlyEventId", "type", "title", "startTime", "endTime", "duration", 
+         "status", "bookedAt", "assignedTo", "contactId", "inviteeEmail", "inviteeName",
+         "source", "sequenceNumber", "meetingType")
+        VALUES 
+        (${eventId}, 
+         ${determineEventType(event.name)}, 
+         ${event.name || 'Calendly Meeting'}, 
+         ${new Date(event.start_time).toISOString()}, 
+         ${new Date(event.end_time).toISOString()}, 
+         ${duration}, 
+         ${event.status}, 
+         ${event.created_at ? new Date(event.created_at).toISOString() : null}, 
+         ${determineAssignedUser(event)}, 
+         ${contact.id}, 
+         ${invitees.length > 0 ? invitees[0].email : null}, 
+         ${invitees.length > 0 ? invitees[0].name : null},
+         ${'Calendly'},
+         ${1},
+         ${'online'})
+      `);
+      console.log(`Successfully imported event using fallback method: ${eventId}`);
+      return true;
+    } catch (fallbackError: any) {
+      console.error(`Failed to import event ${eventId} using fallback method: ${fallbackError.message}`);
+      return false;
+    }
   }
 };
 
