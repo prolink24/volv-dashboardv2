@@ -545,6 +545,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const meetings = dashboardData?.meetings || [];
       const salesTeam = dashboardData?.salesTeam || [];
       
+      // Apply any meeting KPIs we calculated earlier
+      if (meetingKPIs && dashboardData.kpis) {
+        console.log('[MEETINGS] Updating dashboard KPIs with Calendly call data');
+        dashboardData.kpis.totalCalls = meetingKPIs.totalCalls;
+        dashboardData.kpis.call1Taken = meetingKPIs.call1Taken;
+        dashboardData.kpis.call2Taken = meetingKPIs.call2Taken;
+        dashboardData.usingEnhancedMeetingData = true;
+      }
+      
       // Initial response structure without attribution
       const enhancedDashboard: any = {
         ...dashboardData,
