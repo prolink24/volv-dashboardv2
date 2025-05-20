@@ -11,7 +11,7 @@
 import axios from 'axios';
 import { db } from './server/db';
 import { contacts } from './shared/schema';
-import { eq, isNull, and, or } from 'drizzle-orm';
+import { eq, isNull, and, or, like } from 'drizzle-orm';
 import chalk from 'chalk';
 
 // Constants
