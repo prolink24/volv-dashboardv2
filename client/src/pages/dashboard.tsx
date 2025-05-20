@@ -21,6 +21,7 @@ import DashboardFilters from "@/components/dashboard/dashboard-filters";
 import AttributionStats from "@/components/dashboard/attribution-stats";
 import AttributionChannels from "@/components/dashboard/attribution-channels";
 import AttributionInsights from "@/components/dashboard/attribution-insights";
+import MeetingDataDebug from "@/components/dashboard/meeting-data-debug";
 
 import { formatCurrency } from "@/lib/utils";
 
