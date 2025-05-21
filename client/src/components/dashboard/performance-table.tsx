@@ -165,8 +165,8 @@ const PerformanceTable = ({ data, meetings = [], className }: PerformanceTablePr
                   <TableRow key={member.id}>
                     <TableCell>
                       <div className="flex items-center">
-                        <Avatar className={cn("h-8 w-8", getAvatarColor(member.name))}>
-                          <AvatarFallback className="text-foreground font-medium">{getInitials(member.name)}</AvatarFallback>
+                        <Avatar className={cn("h-8 w-8 ring-2 ring-background shadow-sm", getAvatarColor(member.name))}>
+                          <AvatarFallback className="text-primary-foreground font-semibold text-xs">{getInitials(member.name)}</AvatarFallback>
                         </Avatar>
                         <div className="ml-3">
                           <div className="text-sm font-medium">{member.name || 'Unknown User'}</div>
