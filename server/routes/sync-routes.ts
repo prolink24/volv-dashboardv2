@@ -5,7 +5,7 @@
  */
 
 import { Request, Response, Router } from 'express';
-import { db } from '../lib/db';
+import { db } from '../db';
 import { meetings, contacts } from '../schema';
 import { sql, eq, and, gte, lte, isNull } from 'drizzle-orm';
 import axios from 'axios';
