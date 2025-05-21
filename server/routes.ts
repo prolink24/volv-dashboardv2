@@ -2336,6 +2336,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // API routes for sync operations
   app.use("/api/sync", syncRoutes);
   
+  // Register Calendly API routes
+  app.use("/api/calendly", calendlyApiRoutes);
+  
   // Direct contact details endpoint for customer journey view
   apiRouter.get("/contacts/:contactId", async (req: Request, res: Response) => {
     try {
